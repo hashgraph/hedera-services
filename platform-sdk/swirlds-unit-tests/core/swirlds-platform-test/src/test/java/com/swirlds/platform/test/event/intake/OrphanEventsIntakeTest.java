@@ -125,7 +125,10 @@ class OrphanEventsIntakeTest {
                     .limit(numEvents)
                     .collect(Collectors.toList());
             Collections.shuffle(generatedList, r);
-            generatedList.forEach(intake::addUnlinkedEvent);
+            generatedList.forEach(event -> {
+                event.buildDescriptor();
+                intake.addUnlinkedEvent(event);
+            });
         }
 
         public List<EventImpl> getConsensusEvents() {

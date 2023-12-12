@@ -19,7 +19,6 @@ package com.swirlds.platform.event.creation.tipset;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
-import static com.swirlds.platform.event.creation.tipset.TipsetUtils.buildDescriptor;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
@@ -168,7 +167,7 @@ public class TipsetEventCreator implements EventCreator {
             if (lastSelfEvent == null || lastSelfEvent.getGeneration() < event.getGeneration()) {
                 // Normally we will ingest self events before we get to this point, but it's possible
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
-                lastSelfEvent = buildDescriptor(event);
+                lastSelfEvent = event.getDescriptor();
                 lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
                 lastSelfEventTransactionCount = event.getHashedData().getTransactions() == null
                         ? 0
@@ -181,7 +180,7 @@ public class TipsetEventCreator implements EventCreator {
             }
         }
 
-        final EventDescriptor descriptor = buildDescriptor(event);
+        final EventDescriptor descriptor = event.getDescriptor();
         final List<EventDescriptor> parentDescriptors = getParentDescriptors(event);
 
         tipsetTracker.addEvent(descriptor, parentDescriptors);
@@ -376,7 +375,7 @@ public class TipsetEventCreator implements EventCreator {
 
         final GossipEvent event = assembleEventObject(otherParent);
 
-        final EventDescriptor descriptor = buildDescriptor(event);
+        final EventDescriptor descriptor = event.getDescriptor();
         tipsetTracker.addEvent(descriptor, parentDescriptors);
         final TipsetAdvancementWeight advancementWeight =
                 tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);

@@ -142,8 +142,14 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
      * hashed before the descriptor can be built.
+     *
+     * @throws IllegalStateException if the descriptor has already been built
      */
     public void buildDescriptor() {
+        if (descriptor != null) {
+            throw new IllegalStateException("Descriptor has already been built");
+        }
+
         this.descriptor = hashedData.createEventDescriptor();
     }
 

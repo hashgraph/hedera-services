@@ -45,17 +45,6 @@ public final class TipsetUtils {
     }
 
     /**
-     * Build a descriptor from a GossipEvent.
-     *
-     * @param event the event
-     * @return the descriptor
-     */
-    public static EventDescriptor buildDescriptor(@NonNull final GossipEvent event) {
-        event.buildDescriptor();
-        return event.getDescriptor();
-    }
-
-    /**
      * Get the descriptors of an event's parents.
      *
      * @param event the event to get parent descriptors for
