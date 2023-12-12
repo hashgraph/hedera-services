@@ -105,7 +105,7 @@ public record FullResult(
                 null);
     }
 
-    public static FullResult completionResult(
+    public static FullResult successResult(
             @NonNull final ByteBuffer encoded,
             final long gasRequirement,
             @NonNull final ContractCallRecordBuilder recordBuilder) {
