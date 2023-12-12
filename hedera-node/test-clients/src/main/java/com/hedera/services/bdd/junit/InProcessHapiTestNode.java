@@ -170,9 +170,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
     @Override
     public void shutdown() {
         if (th != null && (th.hedera.isFrozen() || th.hedera.isActive())) {
-            if (th.hedera != null) {
-                th.hedera.shutdown();
-            }
+            th.hedera.shutdown();
             th.interrupt();
 
             // This is a hack, but it's the best I can do without classloader isolation and without a systematic
