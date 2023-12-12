@@ -17,7 +17,7 @@
 package com.swirlds.common.time;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.units.UnitConstants;
 
 /**
  * A wrapper around a {@link Time} instance that provides the lower 31 bits of the epoch, and calculates elapsed time.

@@ -16,14 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.clearMessageCallHaltedForMissingReceiverSigReq;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.maybeNext;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.messageCallHaltedForMissingReceiverSigReq;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.successFrom;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.NONE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -39,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
@@ -132,7 +130,6 @@ public class FrameRunner {
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
-        clearMessageCallHaltedForMissingReceiverSigReq(frame);
         final var executor =
                 switch (frame.getType()) {
                     case MESSAGE_CALL -> messageCall;
@@ -142,10 +139,11 @@ public class FrameRunner {
         // For mono-service compatibility, we need to also halt the frame on the stack that
         // executed the CALL operation whose dispatched frame failed due to a missing receiver
         // signature; since mono-service did that check as part of the CALL operation itself
-        if (messageCallHaltedForMissingReceiverSigReq(frame)) {
+        final var maybeFailureToPropagate = getAndClearPropagatedCallFailure(frame);
+        if (maybeFailureToPropagate != NONE) {
             maybeNext(frame).ifPresent(f -> {
                 f.setState(EXCEPTIONAL_HALT);
-                f.setExceptionalHaltReason(Optional.of(INVALID_SIGNATURE));
+                f.setExceptionalHaltReason(maybeFailureToPropagate.exceptionalHaltReason());
             });
         }
     }

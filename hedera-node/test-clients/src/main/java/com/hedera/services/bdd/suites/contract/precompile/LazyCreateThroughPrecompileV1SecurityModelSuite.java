@@ -411,7 +411,9 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                         cryptoTransfer(moving(500, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
                         cryptoTransfer(moving(500, FUNGIBLE_TOKEN_2).between(TOKEN_TREASURY, SENDER)),
                         uploadInitCode(NESTED_LAZY_PRECOMPILE_CONTRACT),
-                        contractCreate(NESTED_LAZY_PRECOMPILE_CONTRACT).maxAutomaticTokenAssociations(1),
+                        contractCreate(NESTED_LAZY_PRECOMPILE_CONTRACT)
+                                .gas(500_000L)
+                                .maxAutomaticTokenAssociations(1),
                         getContractInfo(NESTED_LAZY_PRECOMPILE_CONTRACT)
                                 .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
                                 .logged())
@@ -757,7 +759,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT).gas(500_000L),
                         tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
@@ -820,7 +822,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT).gas(500_000L),
                         tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
@@ -883,7 +885,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT).gas(500_000L),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT, NON_FUNGIBLE_TOKEN),
@@ -946,7 +948,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT).gas(500_000L),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT, NON_FUNGIBLE_TOKEN),
