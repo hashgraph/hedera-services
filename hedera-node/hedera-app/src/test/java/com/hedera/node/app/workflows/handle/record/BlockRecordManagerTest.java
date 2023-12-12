@@ -17,6 +17,7 @@
 package com.hedera.node.app.records;
 
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.BlockRecordService.NAME;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.records.RecordTestData.BLOCK_NUM;
@@ -67,6 +68,9 @@ final class BlockRecordManagerTest extends AppTestBase {
     /** Make it small enough to trigger roll over code with the number of test blocks we have */
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 4;
 
+    private static final Timestamp FIRST_CONS_TIME_OF_LAST_BLOCK = new Timestamp(1682899224, 38693760);
+    private static final Instant FORCED_BLOCK_SWITCH_TIME = Instant.ofEpochSecond(1682899224L, 38693760);
+
     /** Temporary in memory file system used for testing */
     private FileSystem fs;
 
@@ -103,7 +107,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         RUNNING_HASHES_STATE_KEY, new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null))
                 .withSingletonState(
                         BLOCK_INFO_STATE_KEY,
-                        new BlockInfo(0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash(), null, false))
+                        new BlockInfo(-1, EPOCH, STARTING_RUNNING_HASH_OBJ.hash(), null, false, EPOCH))
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
@@ -125,7 +129,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         // setup initial block info
         final long STARTING_BLOCK;
         if (startMode.equals("GENESIS")) {
-            STARTING_BLOCK = 1;
+            STARTING_BLOCK = 0;
         } else {
             // pretend that previous block was 2 seconds before first test transaction
             STARTING_BLOCK = BLOCK_NUM;
@@ -145,7 +149,8 @@ final class BlockRecordManagerTest extends AppTestBase {
                                             0),
                                     STARTING_RUNNING_HASH_OBJ.hash(),
                                     CONSENSUS_TIME,
-                                    true))
+                                    true,
+                                    FIRST_CONS_TIME_OF_LAST_BLOCK))
                     .commit();
         }
 
@@ -161,7 +166,9 @@ final class BlockRecordManagerTest extends AppTestBase {
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
-
+            if (!startMode.equals("GENESIS")) {
+                blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
+            }
             // write a blocks & record files
             int transactionCount = 0;
             final List<Bytes> endOfBlockHashes = new ArrayList<>();
@@ -232,7 +239,8 @@ final class BlockRecordManagerTest extends AppTestBase {
                                         0),
                                 STARTING_RUNNING_HASH_OBJ.hash(),
                                 CONSENSUS_TIME,
-                                true))
+                                true,
+                                FIRST_CONS_TIME_OF_LAST_BLOCK))
                 .commit();
 
         final Random random = new Random(82792874);
@@ -242,6 +250,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
+            blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
             Bytes runningHash = STARTING_RUNNING_HASH_OBJ.hash();
