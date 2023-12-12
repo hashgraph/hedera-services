@@ -50,6 +50,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -145,7 +146,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final AccountID creator,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final Transaction platformTx) {
+            @NonNull final Transaction platformTx,
+            @Nullable final PreHandleResult maybeReusableResult) {
 
         // 1. Parse the Transaction and check the syntax
         final var txBytes = Bytes.wrap(platformTx.getContents());
