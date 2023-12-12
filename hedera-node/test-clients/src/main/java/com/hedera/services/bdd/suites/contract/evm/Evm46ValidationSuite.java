@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -152,27 +153,19 @@ public class Evm46ValidationSuite extends HapiSuite {
                 internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess(),
                 // EOA -calls-> InternalCaller -calls-> Existing reverting without revert message
                 internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn(),
-                // todo EOA -calls-> InternalCaller -calls-> ExistingNonMirror, expect successful
-                // call
 
                 // Internal transfers:
                 // EOA -calls-> InternalCaller -transfer-> NonExistingMirror, expect revert
-                // todo is this all we expect? no contract function result?
-                // INVALID_SOLIDITY_ADDRESS?
                 internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey(),
                 // EOA -calls-> InternalCaller -transfer-> ExistingMirror, expect success
                 internalTransferToExistingMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -transfer-> NonExistingNonMirror, expect revert
-                // todo is this all we expect? no contract function result?
-                // CONTRACT_REVERT_EXECUTED?
                 internalTransferToNonExistingNonMirrorAddressResultsInRevert(),
                 // EOA -calls-> InternalCaller -transfer-> ExistingNonMirror, expect success
                 internalTransferToExistingNonMirrorAddressResultsInSuccess(),
 
                 // Internal sends:
                 // EOA -calls-> InternalCaller -send-> NonExistingMirror, expect revert
-                // todo is this all we expect? no contract function result?
-                // INVALID_SOLIDITY_ADDRESS?
                 internalSendToNonExistingMirrorAddressResultsInInvalidAliasKey(),
                 // EOA -calls-> InternalCaller -send-> ExistingMirror, expect success
                 internalSendToExistingMirrorAddressResultsInSuccess(),
@@ -183,10 +176,8 @@ public class Evm46ValidationSuite extends HapiSuite {
 
                 // Internal calls with value:
                 // EOA -calls-> InternalCaller -callWValue-> NonExistingMirror, expect revert
-                // todo should the top-level revert or just the internal?
                 internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey(),
                 // EOA -calls-> InternalCaller -callWValue-> ExistingMirror, expect success
-                // todo test somehow that a noop was executed?
                 internalCallWithValueToExistingMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror, expect success
                 internalCallWithValueToNonExistingNonMirrorAddressResultsInSuccess(),
@@ -195,7 +186,6 @@ public class Evm46ValidationSuite extends HapiSuite {
 
                 // Internal calls to selfdestruct:
                 // EOA -calls-> InternalCaller -selfdestruct-> NonExistingNonMirror, expect INVALID_SOLIDITY_ADDRESS
-                // todo should execute lazy create if gas is enough
                 selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress(),
                 // EOA -calls-> InternalCaller -selfdestruct-> NonExistingMirror, expect INVALID_SOLIDITY_ADDRESS
                 selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress(),
@@ -239,10 +229,14 @@ public class Evm46ValidationSuite extends HapiSuite {
                 internalCallWithValueToAccountWithReceiverSigRequiredTrue(),
 
                 // Internal call to system account
+                // EOA -calls-> InternalCaller -call-> 0.0.2 (ethereum precompile)
+                internalCallToEthereumPrecompile0x2ResultsInSuccess(),
+                // EOA -calls-> InternalCaller -callWithValue-> 0.0.2 (ethereum precompile)
+                internalCallWithValueToEthereumPrecompile0x2ResultsInRevert(),
                 // EOA -calls-> InternalCaller -call-> 0.0.564 (system account < 0.0.750)
                 internalCallToSystemAccount564ResultsInSuccessNoop(),
                 // EOA -calls-> InternalCaller -call-> 0.0.800 (existing system account > 0.0.750)
-                internalCallToExistingSystemAccount800ResultsInSuccesNoop(),
+                internalCallToExistingSystemAccount800ResultsInSuccessNoop(),
                 // EOA -calls-> InternalCaller -call-> 0.0.852 (non-existing system account > 0.0.750)
                 internalCallToNonExistingSystemAccount852ResultsInSuccessNoop(),
 
@@ -251,19 +245,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.800 (existing system account > 0.0.750)
                 internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer(),
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.852 (non-existing system account > 0.0.750)
-                internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey()
-
-                // todo
-                // add grandfathered contract scenario
-                // call to accounts with receiverSigRequired
-                // deleted: call - noop; transfer - whatever HAPI is doing
-                // expired: make check but treat as a normal account for now
-                // system accounts
-                // top-level calls to eth precompiles work, top-level calls to hed precompiles don’t work
-                // call to normal account (non-contract)
-                // static calls
-                // hollow account creation on self destruct with non-existing beneficiary
-                );
+                internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey());
     }
 
     @HapiTest
@@ -391,17 +373,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
-        return propertyPreservingHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
-                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "true"),
-                        withOpContext((spec, ctxLog) -> spec.registry()
-                                .saveContractId(
-                                        "nonExistingMirrorAddress",
-                                        asContractIdWithEvmAddress(
-                                                ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
+        return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
+                .given(withOpContext((spec, ctxLog) -> spec.registry()
+                        .saveContractId(
+                                "nonExistingMirrorAddress",
+                                asContractIdWithEvmAddress(ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
                 .when(withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi("nonExistingMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
@@ -1282,6 +1258,68 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    private HapiSpec internalCallToEthereumPrecompile0x2ResultsInSuccess() {
+        AtomicReference<AccountID> targetId = new AtomicReference<>();
+        targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
+
+        return defaultHapiSpec("internalCallToEthereumPrecompile0x2ResultsInSuccess")
+                .given(
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(
+                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                        withOpContext((spec, op) -> allRunFor(
+                                spec,
+                                contractCall(
+                                                INTERNAL_CALLER_CONTRACT,
+                                                CALL_EXTERNAL_FUNCTION,
+                                                mirrorAddrWith(targetId.get().getAccountNum()))
+                                        .gas(GAS_LIMIT_FOR_CALL * 4)
+                                        .via(INNER_TXN))))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(INNER_TXN);
+                            allRunFor(spec, lookup);
+                            final var result = lookup.getResponseRecord()
+                                    .getContractCallResult()
+                                    .getContractCallResult();
+                            assertNotEquals(ByteString.copyFrom(new byte[32]), result);
+                        }),
+                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
+                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+    }
+
+    private HapiSpec internalCallWithValueToEthereumPrecompile0x2ResultsInRevert() {
+        AtomicReference<AccountID> targetId = new AtomicReference<>();
+        targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
+
+        return defaultHapiSpec("internalCallWithValueToEthereumPrecompile0x2ResultsInRevert")
+                .given(
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(
+                        balanceSnapshot("initialBalance", INTERNAL_CALLER_CONTRACT),
+                        withOpContext((spec, op) -> allRunFor(
+                                spec,
+                                contractCall(
+                                                INTERNAL_CALLER_CONTRACT,
+                                                CALL_WITH_VALUE_TO_FUNCTION,
+                                                mirrorAddrWith(targetId.get().getAccountNum()))
+                                        .gas(GAS_LIMIT_FOR_CALL * 4)
+                                        .via(INNER_TXN))))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(INNER_TXN);
+                            allRunFor(spec, lookup);
+                            final var result = lookup.getResponseRecord()
+                                    .getContractCallResult()
+                                    .getContractCallResult();
+                            assertEquals(ByteString.copyFrom(new byte[0]), result);
+                        }),
+                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
+                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+    }
+
     @HapiTest
     private HapiSpec internalCallToNonExistingSystemAccount852ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
@@ -1384,11 +1422,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToExistingSystemAccount800ResultsInSuccesNoop() {
+    private HapiSpec internalCallToExistingSystemAccount800ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
 
-        return defaultHapiSpec("internalCallToExistingSystemAccount800ResultsInSuccesNoop")
+        return defaultHapiSpec("internalCallToExistingSystemAccount800ResultsInSuccessNoop")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))

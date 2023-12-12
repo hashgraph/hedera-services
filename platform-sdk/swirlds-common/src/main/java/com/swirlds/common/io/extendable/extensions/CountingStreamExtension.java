@@ -16,10 +16,10 @@
 
 package com.swirlds.common.io.extendable.extensions;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.io.extendable.extensions.internal.Counter;
 import com.swirlds.common.io.extendable.extensions.internal.StandardCounter;
 import com.swirlds.common.io.extendable.extensions.internal.ThreadSafeCounter;
-import com.swirlds.common.units.UnitConstants;
 
 /**
  * A stream extension that counts the number of bytes that pass through it

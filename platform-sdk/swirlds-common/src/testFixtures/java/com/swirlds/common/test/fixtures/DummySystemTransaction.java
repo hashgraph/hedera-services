@@ -18,8 +18,8 @@ package com.swirlds.common.test.fixtures;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.transaction.SystemTransactionType;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransactionType;
 import java.io.IOException;
 
 /**

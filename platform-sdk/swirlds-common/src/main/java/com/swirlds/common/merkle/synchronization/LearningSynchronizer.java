@@ -16,7 +16,7 @@
 
 package com.swirlds.common.merkle.synchronization;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.state;
 
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransaction;
 
 public class TestPrioritySystemTransactionConsumer {
 

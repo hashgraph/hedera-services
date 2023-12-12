@@ -17,13 +17,14 @@
 package com.swirlds.platform.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 
 /**
  * A {@link com.swirlds.common.notification.Notification Notification} that a signed state has collected all necessary
  * signatures. Unlike
- * {@link com.swirlds.common.system.state.notifications.NewSignedStateNotification NewSignedStateNotification}, this is
+ * {@link NewSignedStateNotification NewSignedStateNotification}, this is
  * called on every single state that becomes signed, even if signing happens out of order. NOT called when a state is
  * read from disk or received from reconnect. State is guaranteed to hold a reservation until callback is finished.
  */

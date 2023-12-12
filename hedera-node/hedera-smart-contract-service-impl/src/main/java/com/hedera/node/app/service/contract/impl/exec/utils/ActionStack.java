@@ -75,24 +75,6 @@ public class ActionStack {
         OFF
     }
 
-    /**
-     * Controls whether the action being finalized should be popped from the top of the stack; or
-     * read from the end of the full list of actions that have been created up to this point. (The
-     * exact rationale for this pattern is hard to articulate, but was presumably derived through
-     * bitter experience with the mono-service tracer implementation...)
-     */
-    public enum Source {
-        /**
-         * The action being finalized should be popped from the stack.
-         */
-        POPPED_FROM_STACK,
-
-        /**
-         * The action being finalized should be read from the end of the full list of actions.
-         */
-        READ_FROM_LIST_END
-    }
-
     public ActionStack() {
         this(new ActionsHelper(), new ArrayList<>(), new ArrayDeque<>(), new ArrayList<>());
     }
@@ -100,9 +82,9 @@ public class ActionStack {
     /**
      * Convenience constructor for testing.
      *
-     * @param helper         the helper to use for action creation
-     * @param allActions     the container to use for all tracked actions
-     * @param actionsStack   the stack to use for actions
+     * @param helper the helper to use for action creation
+     * @param allActions the container to use for all tracked actions
+     * @param actionsStack the stack to use for actions
      * @param invalidActions the container to use for invalid actions
      */
     public ActionStack(
@@ -133,22 +115,20 @@ public class ActionStack {
      *     sets the error causing the failure. When the error is {@code INVALID_SOLIDITY_ADDRESS},
      *     also constructs a synthetic action to represent the invalid call.
      * </ul>
+     *  @param frame      the frame to use for finalization context
      *
-     * @param source     the source of the action to finalize
-     * @param frame      the frame to use for finalization context
      * @param validation whether to validate the final action
      */
-    public void finalizeLastAction(
-            @NonNull final Source source, @NonNull final MessageFrame frame, @NonNull final Validation validation) {
-        internalFinalize(source, validation, frame);
+    public void finalizeLastAction(@NonNull final MessageFrame frame, @NonNull final Validation validation) {
+        internalFinalize(validation, frame);
     }
 
     /**
-     * Does the same work as {@link #finalizeLastAction(Source, MessageFrame, Validation)}, but takes a couple
+     * Does the same work as {@link #finalizeLastAction(MessageFrame, Validation)}, but takes a couple
      * extra steps to ensure the final action is customized for the given precompile type.
      *
-     * @param frame      the frame to use for finalization context
-     * @param type       the finalized action's precompile type
+     * @param frame the frame to use for finalization context
+     * @param type the finalized action's precompile type
      * @param validation whether to validate the final action
      */
     public void finalizeLastStackActionAsPrecompile(
@@ -156,42 +136,30 @@ public class ActionStack {
             @NonNull final ContractActionType type,
             @NonNull final Validation validation) {
         if (!isAlreadyFinalized(frame, type)) {
-            internalFinalize(Source.POPPED_FROM_STACK, validation, frame, action -> action.copyBuilder()
+            internalFinalize(validation, frame, action -> action.copyBuilder()
                     .recipientContract(asNumberedContractId(frame.getContractAddress()))
                     .callType(type)
                     .build());
         }
     }
 
-    private void internalFinalize(
-            @NonNull final Source source, @NonNull final Validation validateAction, @NonNull final MessageFrame frame) {
-        internalFinalize(source, validateAction, frame, null);
+    private void internalFinalize(@NonNull final Validation validateAction, @NonNull final MessageFrame frame) {
+        internalFinalize(validateAction, frame, null);
     }
 
     private void internalFinalize(
-            @NonNull final Source source,
             @NonNull final Validation validateAction,
             @NonNull final MessageFrame frame,
             @Nullable final UnaryOperator<ContractAction> transform) {
         requireNonNull(frame);
-        requireNonNull(source);
 
         // Try to get the action from the stack or the list as requested; warn and return if not found
         final ActionWrapper lastWrappedAction;
-        if (source == Source.POPPED_FROM_STACK) {
-            if (actionsStack.isEmpty()) {
-                log.warn("Action stack prematurely empty ({})", () -> formatFrameContextForLog(frame));
-                return;
-            } else {
-                lastWrappedAction = actionsStack.pop();
-            }
+        if (actionsStack.isEmpty()) {
+            log.warn("Action stack prematurely empty ({})", () -> formatFrameContextForLog(frame));
+            return;
         } else {
-            if (allActions.isEmpty()) {
-                log.warn("Action list prematurely empty ({})", () -> formatFrameContextForLog(frame));
-                return;
-            } else {
-                lastWrappedAction = allActions.get(allActions.size() - 1);
-            }
+            lastWrappedAction = actionsStack.pop();
         }
 
         // Swap in the final form of the action
