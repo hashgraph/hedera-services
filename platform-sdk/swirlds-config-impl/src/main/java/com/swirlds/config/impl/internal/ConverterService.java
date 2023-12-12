@@ -136,7 +136,8 @@ class ConverterService implements ConfigLifecycle {
             } catch (final IllegalArgumentException e) {
                 throw new IllegalArgumentException(
                         "Can not convert value '%s' of Enum '%s' by default. Please add a custom config converter."
-                                .formatted(value, targetClass), e);
+                                .formatted(value, targetClass),
+                        e);
             }
         }
 
