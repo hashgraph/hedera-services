@@ -32,6 +32,7 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -376,7 +377,31 @@ public final class RecordListBuilder {
                 followingChildRemoved = true;
             } else {
                 if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+                    // clear "side effect" fields
+                    child.accountID(null);
+                    child.contractID(null);
+                    child.fileID(null);
+                    child.tokenID(null);
+                    child.scheduleID(null);
+                    child.scheduledTransactionID(null);
+                    child.serialNumbers().clear();
+                    child.topicRunningHash(Bytes.EMPTY);
+                    child.newTotalSupply(-1L);
+                    child.topicRunningHashVersion(0L);
+                    child.topicSequenceNumber(0L);
                     child.tokenTransferLists().clear();
+                    child.automaticTokenAssociations().clear();
+                    if (child.transferList().hasAccountAmounts()) {
+                        child.transferList().accountAmounts().clear();
+                    }
+                    child.paidStakingRewards().clear();
+                    child.contractCreateResult(null);
+                    child.scheduleRef(null);
+                    child.assessedCustomFees().clear();
+                    child.alias(Bytes.EMPTY);
+                    child.ethereumHash(Bytes.EMPTY);
+                    child.evmAddress(Bytes.EMPTY);
+
                     child.status(ResponseCodeEnum.REVERTED_SUCCESS);
                 }
 

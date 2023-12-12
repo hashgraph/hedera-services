@@ -483,6 +483,17 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the transferList.
+     *
+     * @return transferList
+     */
+    @Override
+    @NonNull
+    public TransferList transferList() {
+        return transferList;
+    }
+
+    /**
      * Sets the transferList.
      *
      * @param transferList the transferList
@@ -494,12 +505,6 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(transferList, "transferList must not be null");
         this.transferList = transferList;
         return this;
-    }
-
-    @Override
-    @NonNull
-    public TransferList transferList() {
-        return transferList;
     }
 
     /**
@@ -550,6 +555,16 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the assessedCustomFees.
+     *
+     * @return assessedCustomFees
+     */
+    @NonNull
+    public List<AssessedCustomFee> assessedCustomFees() {
+        return this.assessedCustomFees;
+    }
+
+    /**
      * Sets the assessedCustomFees.
      *
      * @param assessedCustomFees the assessedCustomFees
@@ -575,6 +590,16 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(assessedCustomFee, "assessedCustomFee must not be null");
         assessedCustomFees.add(assessedCustomFee);
         return this;
+    }
+
+    /**
+     * Gets the automaticTokenAssociations.
+     *
+     * @return automaticTokenAssociations
+     */
+    @NonNull
+    public List<TokenAssociation> automaticTokenAssociations() {
+        return this.automaticTokenAssociations;
     }
 
     /**
@@ -629,6 +654,16 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(ethereumHash, "ethereumHash must not be null");
         transactionRecordBuilder.ethereumHash(ethereumHash);
         return this;
+    }
+
+    /**
+     * Gets the paidStakingRewards.
+     *
+     * @return paidStakingRewards
+     */
+    @NonNull
+    public final List<AccountAmount> paidStakingRewards() {
+        return this.paidStakingRewards;
     }
 
     /**
