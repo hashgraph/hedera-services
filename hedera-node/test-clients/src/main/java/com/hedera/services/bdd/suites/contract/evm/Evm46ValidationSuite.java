@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -43,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -111,6 +113,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String CUSTOM_PAYER = "customPayer";
     private static final String BENEFICIARY = "beneficiary";
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
+    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
+    private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
+            "contracts.evm.allowCallsToNonContractAccounts";
+    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
+    private static final String EVM_VERSION_046 = "v0.46";
 
     public static void main(String... args) {
         new Evm46ValidationSuite().runSuiteAsync();
@@ -384,11 +391,17 @@ public class Evm46ValidationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
-        return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
-                .given(withOpContext((spec, ctxLog) -> spec.registry()
-                        .saveContractId(
-                                "nonExistingMirrorAddress",
-                                asContractIdWithEvmAddress(ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
+        return propertyPreservingHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
+                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "true"),
+                        withOpContext((spec, ctxLog) -> spec.registry()
+                                .saveContractId(
+                                        "nonExistingMirrorAddress",
+                                        asContractIdWithEvmAddress(
+                                                ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
                 .when(withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi("nonExistingMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
