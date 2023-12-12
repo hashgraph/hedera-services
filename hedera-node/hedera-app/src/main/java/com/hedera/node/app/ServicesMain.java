@@ -19,10 +19,14 @@ package com.hedera.node.app;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.platform.ApplicationDefinition;
+import com.swirlds.platform.ApplicationDefinitionLoader;
+import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -30,6 +34,7 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -95,7 +100,20 @@ public class ServicesMain implements SwirldMain {
         final var registry = ConstructableRegistry.getInstance();
 
         final Hedera hedera = new Hedera(registry);
-        final NodeId selfId = args != null && args.length > 0 ? new NodeId(Integer.parseInt(args[0])) : new NodeId(0);
+
+        // Determine which node to run locally
+        // Load config.txt address book file and parse address book
+        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(
+                FileUtils.getAbsolutePath(PlatformBuilder.DEFAULT_CONFIG_FILE_NAME));
+        // parse command line arguments
+        final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
+        // get the list of configured nodes from the address book
+        // for each node in the address book, check if it has a local IP (local to this computer)
+        // additionally if a command line arg is supplied then limit matching nodes to that node id
+        final List<NodeId> nodesToRun =
+                BootstrapUtils.getNodesToRun(appDefinition.getConfigAddressBook(), commandLineArgs.localNodesToStart());
+        // hard exit if there is not exactly one matching node to run
+        BootstrapUtils.checkNodesToRun(nodesToRun, false);
 
         final var config = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
@@ -106,7 +124,7 @@ public class ServicesMain implements SwirldMain {
                 .withConfigurationBuilder(config);
 
         final Platform platform = builder.build();
-        hedera.init(platform, selfId);
+        hedera.init(platform, nodesToRun.get(0));
         platform.start();
         hedera.run();
     }
