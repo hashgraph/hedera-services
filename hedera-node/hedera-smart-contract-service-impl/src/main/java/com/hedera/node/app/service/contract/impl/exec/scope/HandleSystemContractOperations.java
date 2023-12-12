@@ -26,20 +26,19 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.function.Predicate;
 import javax.inject.Inject;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Provides the "extended" scope a Hedera system contract needs to perform its operations.
@@ -110,13 +109,16 @@ public class HandleSystemContractOperations implements SystemContractOperations 
 
     @Override
     public void externalizeResult(
-            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus, @Nullable Transaction transaction) {
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResponseCodeEnum responseStatus,
+            @Nullable Transaction transaction) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
 
-        if(transaction != null && transaction.body() != null) {
+        if (transaction != null && transaction.body() != null) {
             childRecordBuilder.transaction(transaction);
-            if(transaction.body().transactionID() != null) {
-                childRecordBuilder.transactionID(transaction.body().transactionID())
+            if (transaction.body().transactionID() != null) {
+                childRecordBuilder
+                        .transactionID(transaction.body().transactionID())
                         .status(responseStatus)
                         .contractCallResult(result);
             }
@@ -127,23 +129,16 @@ public class HandleSystemContractOperations implements SystemContractOperations 
 
     @Override
     public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
-        var parentRecordBuilder = context.recordBuilder(ContractCallRecordBuilder.class);
         var functionParameters = tuweniToPbjBytes(input);
-        var transactionId = parentRecordBuilder.transactionID().copyBuilder()
-                .nonce(parentRecordBuilder.transactionID().nonce() + 1).build();
-
-        var contractCallBodyBuilder = ContractCallTransactionBody.newBuilder()
-                .contractID(contractID)
-                .functionParameters(functionParameters);
-        if(isViewCall) {
+        var contractCallBodyBuilder =
+                ContractCallTransactionBody.newBuilder().contractID(contractID).functionParameters(functionParameters);
+        if (isViewCall) {
             contractCallBodyBuilder.gas(1L);
         }
-
         var transactionBody = TransactionBody.newBuilder()
-                .transactionID(transactionId)
+                .transactionID(TransactionID.DEFAULT)
                 .contractCall(contractCallBodyBuilder.build())
                 .build();
-
         return transactionWith(transactionBody);
     }
 

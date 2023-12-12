@@ -205,8 +205,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                     final var contractId = ContractID.newBuilder()
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
-                    //exclude nonce info if contract was destructed
-                    if(!newAccount.deleted()) {
+                    // exclude nonce info if contract was destructed
+                    if (!newAccount.deleted()) {
                         updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
                     }
                     if (oldAccount == null) {
