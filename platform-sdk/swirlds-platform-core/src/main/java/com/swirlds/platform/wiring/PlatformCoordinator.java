@@ -62,6 +62,19 @@ public class PlatformCoordinator {
     }
 
     /**
+     * Flushes the intake pipeline
+     */
+    public void flushIntakePipeline() {
+        internalEventValidatorWiring.flushRunnable().run();
+        eventDeduplicatorWiring.flushRunnable().run();
+        eventSignatureValidatorWiring.flushRunnable().run();
+        orphanBufferWiring.flushRunnable().run();
+        eventCreationManagerWiring.flush();
+        inOrderLinkerWiring.flushRunnable().run();
+        linkedEventIntakeWiring.flushRunnable().run();
+    }
+
+    /**
      * Safely clears the intake pipeline
      * <p>
      * Future work: this method should be expanded to coordinate the clearing of the entire system
@@ -77,13 +90,7 @@ public class PlatformCoordinator {
 
         // Phase 2: flush
         // Flush everything remaining in the intake pipeline out into the void.
-        internalEventValidatorWiring.flushRunnable().run();
-        eventDeduplicatorWiring.flushRunnable().run();
-        eventSignatureValidatorWiring.flushRunnable().run();
-        orphanBufferWiring.flushRunnable().run();
-        eventCreationManagerWiring.flush();
-        inOrderLinkerWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+        flushIntakePipeline();
 
         // Phase 3: clear
         // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.

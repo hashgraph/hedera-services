@@ -297,6 +297,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * Flush the intake pipeline.
+     */
+    public void flushIntakePipeline() {
+        platformCoordinator.flushIntakePipeline();
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override

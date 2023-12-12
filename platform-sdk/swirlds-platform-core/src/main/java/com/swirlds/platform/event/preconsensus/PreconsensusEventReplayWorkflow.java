@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
@@ -61,6 +62,8 @@ public final class PreconsensusEventReplayWorkflow {
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
      * @param stateManagementComponent           manages various copies of the state
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
+     * @param flushIntakePipeline                flushes the intake pipeline. only used if the new intake pipeline is
+     *                                           enabled
      */
     public static void replayPreconsensusEvents(
             @NonNull final PlatformContext platformContext,
@@ -73,7 +76,8 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
-            final long initialMinimumGenerationNonAncient) {
+            final long initialMinimumGenerationNonAncient,
+            @NonNull Runnable flushIntakePipeline) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -101,7 +105,13 @@ public final class PreconsensusEventReplayWorkflow {
                     new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, intakeHandler);
             eventReplayPipeline.replayEvents();
 
-            waitForReplayToComplete(intakeQueue, consensusRoundHandler, stateHashSignQueue);
+            final boolean useLegacyIntake = platformContext
+                    .getConfiguration()
+                    .getConfigData(EventConfig.class)
+                    .useLegacyIntake();
+
+            waitForReplayToComplete(
+                    intakeQueue, consensusRoundHandler, stateHashSignQueue, useLegacyIntake, flushIntakePipeline);
 
             final Instant finish = time.now();
             final Duration elapsed = Duration.between(start, finish);
@@ -127,11 +137,20 @@ public final class PreconsensusEventReplayWorkflow {
     private static void waitForReplayToComplete(
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
-            @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue)
+            @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
+            final boolean useLegacyIntake,
+            @NonNull final Runnable flushIntakePipeline)
             throws InterruptedException {
 
         // Wait until all events from the preconsensus event stream have been fully ingested.
         intakeQueue.waitUntilNotBusy();
+
+        if (!useLegacyIntake) {
+            // The old intake has an empty intake pipeline as soon as the intake queue is empty.
+            // The new intake has more steps to the intake pipeline, so we need to flush it before certifying that
+            // the replay is complete.
+            flushIntakePipeline.run();
+        }
 
         // Wait until all rounds from the preconsensus event stream have been fully processed.
         consensusRoundHandler.waitUntilNotBusy();

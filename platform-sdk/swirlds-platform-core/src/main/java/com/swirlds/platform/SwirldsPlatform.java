@@ -1319,7 +1319,8 @@ public class SwirldsPlatform implements Platform {
                     consensusRoundHandler,
                     stateHashSignQueue,
                     stateManagementComponent,
-                    initialMinimumGenerationNonAncient);
+                    initialMinimumGenerationNonAncient,
+                    platformWiring::flushIntakePipeline);
         }
 
         consensusHashManager.signalEndOfPreconsensusReplay();

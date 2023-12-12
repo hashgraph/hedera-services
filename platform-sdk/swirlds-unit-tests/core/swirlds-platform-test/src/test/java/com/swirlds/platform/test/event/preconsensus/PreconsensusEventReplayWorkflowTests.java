@@ -175,7 +175,8 @@ class PreconsensusEventReplayWorkflowTests {
                 consensusRoundHandler,
                 stateHashSignQueue,
                 stateManagementComponent,
-                minimumGenerationNonAncient);
+                minimumGenerationNonAncient,
+                () -> {});
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());
     }
