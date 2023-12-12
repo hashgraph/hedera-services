@@ -52,7 +52,7 @@ public class CreateSuccessSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec targetsAppear() {
+    final HapiSpec targetsAppear() {
         var lifetime = 100_000L;
         var requestedExpiry = Instant.now().getEpochSecond() + lifetime;
         var contents = "SOMETHING".getBytes();

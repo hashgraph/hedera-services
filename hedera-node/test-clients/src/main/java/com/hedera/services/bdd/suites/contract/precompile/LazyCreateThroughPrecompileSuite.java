@@ -248,7 +248,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec erc20TransferLazyCreate() {
+    final HapiSpec erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return defaultHapiSpec("erc20TransferLazyCreate")
@@ -318,7 +318,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
-    private HapiSpec erc20TransferFromLazyCreate() {
+    final HapiSpec erc20TransferFromLazyCreate() {
         return defaultHapiSpec("erc20TransferFromLazyCreate")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -421,7 +421,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec erc721TransferFromLazyCreate() {
+    final HapiSpec erc721TransferFromLazyCreate() {
         return defaultHapiSpec("erc721TransferFromLazyCreate")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -504,7 +504,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTransferFromFungibleTokenLazyCreate() {
+    final HapiSpec htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         return defaultHapiSpec("htsTransferFromFungibleTokenLazyCreate")
@@ -577,7 +577,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTransferFromForNFTLazyCreate() {
+    final HapiSpec htsTransferFromForNFTLazyCreate() {
         return defaultHapiSpec("htsTransferFromForNFTLazyCreate")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
