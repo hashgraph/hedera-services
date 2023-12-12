@@ -48,8 +48,8 @@ class RecordListBuilderTest extends AppTestBase {
     private static final long MAX_CHILDREN = 10;
 
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.create()
-            .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-            .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+            .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+            .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
             .getOrCreateConfig();
     private static final int EXPECTED_CHILD_NANO_INCREMENT = 0;
     private static final int EXPECTED_CHILD_NANO_INCREMENT_SCHEDULED =
@@ -138,8 +138,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -242,8 +242,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -356,8 +356,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 4L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -452,8 +452,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxChildren = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-                .withValue("consensus.message.maxFollowingRecords", maxChildren)
+                .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+                .withValue("consensus.handle.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -681,8 +681,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxChildren = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-                .withValue("consensus.message.maxFollowingRecords", maxChildren)
+                .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+                .withValue("consensus.handle.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);

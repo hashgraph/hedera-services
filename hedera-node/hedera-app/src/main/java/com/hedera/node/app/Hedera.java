@@ -573,27 +573,19 @@ public final class Hedera implements SwirldMain {
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                         startGrpcServer();
                     }
-                    case BEHIND -> {
-                        logger.info("Hederanode#{} is BEHIND", nodeId);
+
+                    case REPLAYING_EVENTS,
+                            STARTING_UP,
+                            OBSERVING,
+                            RECONNECT_COMPLETE,
+                            CHECKING,
+                            FREEZING,
+                            BEHIND -> logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
+
+                    case CATASTROPHIC_FAILURE, FREEZE_COMPLETE -> {
+                        logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
                         if (wasActive) shutdownGrpcServer();
                     }
-                    case FREEZE_COMPLETE -> logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
-                    case REPLAYING_EVENTS -> logger.info("Hederanode#{} is REPLAYING_EVENTS", nodeId);
-                    case STARTING_UP -> logger.info("Hederanode#{} is STARTING_UP", nodeId);
-                    case CATASTROPHIC_FAILURE -> {
-                        logger.info("Hederanode#{} is in CATASTROPHIC_FAILURE", nodeId);
-                        if (wasActive) shutdownGrpcServer();
-                    }
-                    case CHECKING -> {
-                        logger.info("Hederanode#{} is CHECKING", nodeId);
-                        if (wasActive) shutdownGrpcServer();
-                    }
-                    case OBSERVING -> logger.info("Hederanode#{} is OBSERVING", nodeId);
-                    case FREEZING -> {
-                        logger.info("Hederanode#{} is FREEZING", nodeId);
-                        if (wasActive) shutdownGrpcServer();
-                    }
-                    case RECONNECT_COMPLETE -> logger.info("Hederanode#{} is RECONNECT_COMPLETE", nodeId);
                 }
             });
 

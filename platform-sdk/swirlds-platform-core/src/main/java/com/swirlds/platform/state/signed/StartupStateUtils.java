@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 
 import com.swirlds.common.config.StateConfig;
@@ -96,7 +95,9 @@ public final class StartupStateUtils {
                         + "Any states with a round number higher than {} will be recycled.",
                 initialStateRound);
 
-        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStateFiles = new SignedStateFilePath(
+                        platformContext.getConfiguration().getConfigData(StateConfig.class))
+                .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
             if (stateInfo.metadata().round() > initialStateRound) {
                 recycleState(recycleBin, stateInfo);
@@ -201,7 +202,9 @@ public final class StartupStateUtils {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
-        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStateFiles = new SignedStateFilePath(
+                        platformContext.getConfiguration().getConfigData(StateConfig.class))
+                .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         logStatesFound(savedStateFiles);
 
         if (savedStateFiles.isEmpty()) {

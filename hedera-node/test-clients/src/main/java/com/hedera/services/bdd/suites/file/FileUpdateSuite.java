@@ -373,7 +373,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
                 .then(contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                         .gas(300_000L)
-                        .has(resultWith().gasUsed(26_451)));
+                        .has(resultWith().gasUsed(26_515)));
     }
 
     @HapiTest
