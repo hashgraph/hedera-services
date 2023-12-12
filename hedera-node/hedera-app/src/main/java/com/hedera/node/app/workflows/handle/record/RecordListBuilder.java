@@ -397,15 +397,34 @@ public final class RecordListBuilder {
     }
 
     /**
-     *
+     * Reverts or removes all child transactions after the given checkpoint.
+     * If there are no following records in the checkpoint, it means that the revert was executed on the user transaction.
      */
     public void revertChildrenFrom(@NonNull RecordListCheckPoint checkPoint) {
-        if (checkPoint.lastFollowingRecord() != null) {
-            revertChildrenOf((SingleTransactionRecordBuilderImpl) checkPoint.lastFollowingRecord());
+        // If there are no following transactions than this means that the revert was executed on the user transaction
+        if (checkPoint.lastFollowingRecord() == null) {
+            revertChildrenOf(userTxnRecordBuilder);
+            return;
         }
-        if (checkPoint.firstPrecedingRecord() != null) {
-            // revert preceding records
 
+        // We get to here when the revert was executed on a child transaction
+        // We need to revert all children that were added after the child transaction that was reverted
+        revertChildrenOf((SingleTransactionRecordBuilderImpl) checkPoint.lastFollowingRecord());
+
+        // We also need to revert all preceding transactions that were added after the first preceding transaction
+        if (checkPoint.firstPrecedingRecord() != null) {
+            var indexOf = precedingTxnRecordBuilders.indexOf(checkPoint.firstPrecedingRecord());
+            if (indexOf != -1) {
+                for (int i = indexOf; i < precedingTxnRecordBuilders.size(); i++) {
+                    final var preceding = precedingTxnRecordBuilders.get(i);
+                    if (preceding.reversingBehavior() == ReversingBehavior.REVERSIBLE
+                            && SUCCESSES.contains(preceding.status())) {
+                        preceding.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    } else if (preceding.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+                        precedingTxnRecordBuilders.set(i, null);
+                    }
+                }
+            }
         }
     }
 

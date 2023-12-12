@@ -77,6 +77,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Nullable
     private final WorldUpdater parent;
+
+    /**
+     * The current checkpoint of the child records for this ProxyWorldUpdater.
+     */
+    private final RecordListCheckPoint recordListCheckPoint;
+
     /**
      * The {@link EvmFrameState} managing this {@code ProxyWorldUpdater}'s state.
      */
@@ -86,11 +92,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * Enhancements needed by Hedera EVM customizations and system contracts.
      */
     protected final Enhancement enhancement;
-
-    /**
-     * The current checkpoint of the child records for this ProxyWorldUpdater.
-     */
-    private RecordListCheckPoint recordListCheckPoint;
 
     /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and
@@ -124,6 +125,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.enhancement = requireNonNull(enhancement);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
+        // Everytime we create a new child updater, we need to create a new record list checkpoint containing the
+        // last preceding record and the first following record, so that we can revert the child records from the
+        // checkpoint
+        // when revert() operation is called.
+        this.recordListCheckPoint = enhancement.operations().createRecordListCheckPoint();
     }
 
     /**
@@ -419,14 +425,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public @NonNull ProxyWorldUpdater updater() {
         enhancement.operations().begin();
-        // Everytime we create a new child updater, we need to create a new record list checkpoint containing the
-        // last preceding record and the first following record, so that we can revert the child records from the
-        // checkpoint
-        // when revert() operation is called.
-        if (enhancement.operations().createRecordListCheckPoint() != null) {
-            this.recordListCheckPoint = enhancement.operations().createRecordListCheckPoint();
-        }
-
         final var child = new ProxyWorldUpdater(enhancement, evmFrameStateFactory, this);
         // Hand off any pending creation to the child updater; this a bit of a hack, but
         // lets the TransactionProcessor client code "flow" as naturally as possible,

@@ -851,7 +851,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         SingleTransactionRecordBuilder firstPreceding = null;
 
         if (!precedingRecordBuilders.isEmpty()) {
-            firstPreceding = precedingRecordBuilders.get(0);
+            firstPreceding = precedingRecordBuilders.get(precedingRecordBuilders.size() - 1);
         }
         if (!childRecordBuilders.isEmpty()) {
             lastFollowing = childRecordBuilders.get(childRecordBuilders.size() - 1);
