@@ -1084,7 +1084,7 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @return the in-progress {@link TransactionBody}
      */
-    public TransactionBody inProgressBody() {
+    private TransactionBody inProgressBody() {
         try {
             final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
                     transaction.signedTransactionBytes().toReadableSequentialData());

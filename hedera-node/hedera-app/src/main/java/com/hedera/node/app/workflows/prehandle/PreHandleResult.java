@@ -37,6 +37,25 @@ import java.util.concurrent.Future;
  * Metadata collected when transactions are handled as part of "pre-handle". This is then made available to the
  * handle workflow.
  *
+ * <p>Several fields are pure functions of the input transaction. These are,
+ * <ul>
+ *     <li>{@link #payer}</li>
+ *     <li>{@link #txInfo}</li>
+ * </ul>
+ *
+ * <p>But the remaining fields depend on both the input transaction and the state of the world
+ * in which the transaction is being handled; both state and configuration. These are,
+ * <ul>
+ *     <li>{@link #payerKey}</li>
+ *     <li>{@link #status}</li>
+ *     <li>{@link #responseCode}</li>
+ *     <li>{@link #requiredKeys}</li>
+ *     <li>{@link #optionalKeys}</li>
+ *     <li>{@link #hollowAccounts}</li>
+ *     <li>{@link #verificationResults}</li>
+ *     <li>{@link #configVersion}</li>
+ * </ul>
+ *
  * @param payer payer for the transaction, which could be from the transaction body, or could be a node account.
  *              The payer **may be null** only in the event of a catastrophic unknown exception. That is, if the
  *              status is {@link Status#UNKNOWN_FAILURE}, then the payer will be null. If the status is

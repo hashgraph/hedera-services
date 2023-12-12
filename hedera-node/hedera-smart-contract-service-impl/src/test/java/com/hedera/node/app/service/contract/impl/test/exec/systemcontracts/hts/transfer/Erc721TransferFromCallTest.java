@@ -35,10 +35,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
     private VerificationStrategy verificationStrategy;
 
     @Mock
-    private CryptoTransferRecordBuilder recordBuilder;
+    private ContractCallRecordBuilder recordBuilder;
 
     private Erc721TransferFromCall subject;
 
@@ -71,7 +71,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(CryptoTransferRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(addressIdConverter.convert(FROM_ADDRESS)).willReturn(SENDER_ID);
@@ -96,7 +96,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(CryptoTransferRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
