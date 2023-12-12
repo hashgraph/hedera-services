@@ -129,7 +129,7 @@ class ConverterService implements ConfigLifecycle {
         final ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(targetClass);
 
         if (converter == null && targetClass.isEnum()) {
-            //FUTURE WORK: once logging is added to this module, log a warning here
+            // FUTURE WORK: once logging is added to this module, log a warning here
             // ("No converter defined for type '" + targetClass + "'. Converting using backup enum converter.");
             return (T) Enum.valueOf((Class<Enum>) targetClass, value);
         }
