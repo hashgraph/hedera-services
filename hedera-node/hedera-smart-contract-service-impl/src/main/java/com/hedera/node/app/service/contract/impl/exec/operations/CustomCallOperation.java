@@ -67,14 +67,15 @@ public class CustomCallOperation extends CallOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var toAddress = to(frame);
+            final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
+            if (isMissing) {
+                return new OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
+            }
             if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
-                return new Operation.OperationResult(cost(frame), INVALID_ALIAS_KEY);
+                return new OperationResult(cost(frame), INVALID_ALIAS_KEY);
             }
 
-            final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-            return isMissing
-                    ? new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS)
-                    : super.execute(frame, evm);
+            return super.execute(frame, evm);
         } catch (final FixedStack.UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
