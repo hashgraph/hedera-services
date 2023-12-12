@@ -88,6 +88,7 @@ public class Issue305Spec extends HapiSuite {
                         getFileInfo(nextFileId::get).hasDeleted(true));
     }
 
+    @HapiTest
     private HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";
