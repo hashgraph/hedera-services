@@ -22,7 +22,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 
 /**
- * A roster is the set of nodes that are creating events and contributing to consensus.
+ * A roster is the set of nodes that are creating events and contributing to consensus. The data in a Roster object is
+ * immutable must not change over time.
  */
 public interface Roster extends Iterable<RosterEntry>, SelfSerializable {
 
@@ -38,18 +39,6 @@ public interface Roster extends Iterable<RosterEntry>, SelfSerializable {
      */
     @NonNull
     RosterEntry getEntry(NodeId nodeId);
-
-    /**
-     * @return a mutable copy of the roster
-     */
-    @NonNull
-    public MutableRoster copy();
-
-    /**
-     * @return an immutable copy of the roster
-     */
-    @NonNull
-    public Roster seal();
 
     /**
      * @return the total weight of all nodes in the roster

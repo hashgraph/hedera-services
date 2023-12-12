@@ -24,7 +24,7 @@ import java.security.cert.X509Certificate;
 
 /**
  * A RosterEntry is a single node in the roster.  It contains the node's ID, weight, network address, and public signing
- * key in the form of an X509Certificate.
+ * key in the form of an X509Certificate.  The data in a RosterEntry object is immutable and must not change over time.
  */
 public interface RosterEntry extends SelfSerializable {
 
@@ -63,18 +63,6 @@ public interface RosterEntry extends SelfSerializable {
     default PublicKey getSigningPublicKey() {
         return getSigningCertificate().getPublicKey();
     }
-
-    /**
-     * @return a mutable copy of this roster entry
-     */
-    @NonNull
-    MutableRosterEntry copy();
-
-    /**
-     * @return an immutable copy of this roster entry
-     */
-    @NonNull
-    RosterEntry seal();
 
     /**
      * @return true if the weight is zero, false otherwise
