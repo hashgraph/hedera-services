@@ -296,11 +296,6 @@ class FreezeHandlerTest {
         // these freeze types require a valid update file to have been set via FileService
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, TELEMETRY_UPGRADE};
 
-        //        // set up the file store to return a fake upgrade file
-        //        given(upgradeFileStore.peek(invalidFileUpgradeFileId))
-        //                .willReturn(File.newBuilder().build());
-        //        given(upgradeFileStore.getFull(invalidFileUpgradeFileId)).willThrow(IOException.class);
-
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
                     .accountID(nonAdminAccount)
