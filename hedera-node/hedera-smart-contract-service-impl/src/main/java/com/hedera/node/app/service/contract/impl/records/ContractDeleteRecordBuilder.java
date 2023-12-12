@@ -17,11 +17,10 @@
 package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import com.hedera.hapi.node.base.Transaction;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractDelete}.
