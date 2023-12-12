@@ -26,13 +26,8 @@ import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -43,8 +38,15 @@ import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.event.GossipEventBuilder;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,14 +69,19 @@ class EventValidatorTests {
         final long creatorId = 0;
         final Instant timeCreated = Instant.now();
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[0];
+        final NodeId selfId = new NodeId(creatorId);
+        final NodeId otherId = new NodeId(0);
+        final EventDescriptor selfParent =
+                selfParentHash == null ? null : new EventDescriptor(selfParentHash, selfId, selfParentGen, -1);
+        final EventDescriptor otherParent =
+                otherParentHash == null ? null : new EventDescriptor(otherParentHash, otherId, otherParentGen, -1);
         Mockito.when(event.getHashedData())
                 .thenReturn(new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
-                        new NodeId(creatorId),
-                        selfParentGen,
-                        otherParentGen,
-                        selfParentHash,
-                        otherParentHash,
+                        selfId,
+                        selfParent,
+                        otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
+                        EventConstants.BIRTH_ROUND_UNDEFINED,
                         timeCreated,
                         transactions));
         return event;
@@ -177,10 +184,6 @@ class EventValidatorTests {
 
         final GossipEventValidator validator = StaticValidators.buildParentValidator(10);
 
-        // has generation but no hash
-        assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
-        assertFalse(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, nullHash)));
-
         // has hash but no generation
         assertFalse(
                 validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, hash1, nullHash)));
@@ -209,10 +212,6 @@ class EventValidatorTests {
         final Hash nullHash = null;
 
         final GossipEventValidator validator = StaticValidators.buildParentValidator(1);
-
-        // has generation but no hash
-        assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
-        assertFalse(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, nullHash)));
 
         // has hash but no generation
         assertFalse(

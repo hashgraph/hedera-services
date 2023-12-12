@@ -115,7 +115,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
 
-        super.setupFields(contractCreation);
+        super.setupFields(payload, contractCreation);
 
         final var chargingResult = chargeForGas(
                 gasCost,

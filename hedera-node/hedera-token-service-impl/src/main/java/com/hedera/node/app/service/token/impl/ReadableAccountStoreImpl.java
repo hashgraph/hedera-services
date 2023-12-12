@@ -115,6 +115,11 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         return aliases.contains(new ProtoBytes(alias));
     }
 
+    @Override
+    public boolean contains(@NonNull final AccountID accountID) {
+        return accountState().contains(accountID);
+    }
+
     /* Helper methods */
 
     /**

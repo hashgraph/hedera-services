@@ -16,9 +16,9 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_SHORT;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_INT;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_LONG;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_SHORT;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 

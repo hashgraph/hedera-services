@@ -156,6 +156,7 @@ class ProxyWorldUpdaterTest {
     void getsHederaContractByNumber() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
+        given(hederaOperations.shardAndRealmValidated(numericId)).willReturn(numericId);
         given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(numericId));
@@ -173,6 +174,7 @@ class ProxyWorldUpdaterTest {
     void returnsNullHederaContractIfMissing() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
+        given(hederaOperations.shardAndRealmValidated(numericId)).willReturn(numericId);
         doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(num);
         assertNull(subject.getHederaAccount(numericId));
     }
@@ -193,6 +195,7 @@ class ProxyWorldUpdaterTest {
                 .evmAddress(tuweniToPbjBytes(
                         asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
+        given(hederaOperations.shardAndRealmValidated(aliasId)).willReturn(aliasId);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
     }
@@ -434,7 +437,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void abortsLazyCreationIfRemainingGasInsufficient() {
         final var pretendCost = 1_234L;
-        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas(SOME_EVM_ADDRESS)).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost - 1);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
         assertTrue(maybeHaltReason.isPresent());
@@ -444,7 +447,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesLazyCreationAndDecrementsGasCostOnSuccess() {
         final var pretendCost = 1_234L;
-        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas(SOME_EVM_ADDRESS)).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(Optional.empty());
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -456,7 +459,7 @@ class ProxyWorldUpdaterTest {
     void doesntBothDecrementingGasOnLazyCreationFailureSinceAboutToHalt() {
         final var pretendCost = 1_234L;
         final var haltReason = Optional.<ExceptionalHaltReason>of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
-        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas(SOME_EVM_ADDRESS)).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(haltReason);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);

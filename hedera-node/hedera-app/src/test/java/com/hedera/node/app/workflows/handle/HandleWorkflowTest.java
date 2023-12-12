@@ -78,11 +78,11 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -1698,7 +1698,7 @@ class HandleWorkflowTest extends AppTestBase {
     void testConsensusTimeHooksCalled() {
         workflow.handleRound(state, dualState, round);
         verify(genesisRecordsTimeHook).process(notNull());
-        verify(stakingPeriodTimeHook).process(notNull());
+        verify(stakingPeriodTimeHook).process(notNull(), notNull());
     }
 
     private SingleTransactionRecord getRecordFromStream() {

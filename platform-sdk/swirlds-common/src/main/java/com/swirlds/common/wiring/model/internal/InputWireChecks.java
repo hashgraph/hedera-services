@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -43,6 +44,7 @@ public final class InputWireChecks {
             @NonNull final Set<InputWireDescriptor> inputWires,
             @NonNull final Set<InputWireDescriptor> boundInputWires) {
         if (inputWires.size() == boundInputWires.size()) {
+            logger.info(STARTUP.getMarker(), "All input wires have been bound.");
             return false;
         }
 
@@ -51,11 +53,11 @@ public final class InputWireChecks {
         for (final InputWireDescriptor inputWire : inputWires) {
             if (!boundInputWires.contains(inputWire)) {
                 sb.append("  - ")
-                        .append("Input wire ")
+                        .append("Input wire '")
                         .append(inputWire.name())
-                        .append(" in scheduler ")
+                        .append("' in scheduler '")
                         .append(inputWire.taskSchedulerName())
-                        .append("\n");
+                        .append("'\n");
             }
         }
 

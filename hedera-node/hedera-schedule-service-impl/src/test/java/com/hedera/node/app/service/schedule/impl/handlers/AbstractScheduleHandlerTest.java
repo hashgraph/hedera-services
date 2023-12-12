@@ -158,7 +158,8 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             realPreContext = new PreHandleContextImpl(
                     mockStoreFactory, next.originalCreateTransaction(), testConfig, mockDispatcher);
             Set<Key> keysObtained = testHandler.allKeysForTransaction(next, realPreContext);
-            assertThat(keysObtained).isNotEmpty().hasSize(1).containsExactly(schedulerKey);
+            // Should have no keys, because the mock dispatcher returns no keys
+            assertThat(keysObtained).isEmpty();
         }
         // One check with a complex set of key returns, to ensure we process required and optional correctly.
         final TransactionKeys testKeys =
@@ -171,7 +172,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.doReturn(testKeys).when(spiedContext).allKeysForTransaction(any(), any());
         final Set<Key> keysObtained = testHandler.allKeysForTransaction(scheduleInState, spiedContext);
         assertThat(keysObtained).isNotEmpty();
-        assertThat(keysObtained).containsExactly(otherKey, optionKey, payerKey, schedulerKey, adminKey);
+        assertThat(keysObtained).containsExactly(otherKey, optionKey, payerKey, adminKey);
     }
 
     @Test
@@ -195,7 +196,10 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             // we *mock* verificationFor side effects, which is what fills in/clears the sets,
             // so results should all be the same, despite empty signatories and mocked HandleContext.
             // We do so based on verifier calls, so it still exercises the code to be tested, however.
-            assertThat(keysRequired).isNotEmpty().hasSize(2).containsExactly(optionKey, schedulerKey);
+            // @todo('9447') add the schedulerKey back in.
+            // Note, however, we exclude the schedulerKey because it paid for the original create, so it
+            //    is "deemed valid" and not included.
+            assertThat(keysRequired).isNotEmpty().hasSize(1).containsExactly(optionKey);
             assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactly(payerKey, adminKey);
         }
     }

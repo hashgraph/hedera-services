@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.context;
 
 import com.hedera.node.app.service.mono.ServicesApp;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;

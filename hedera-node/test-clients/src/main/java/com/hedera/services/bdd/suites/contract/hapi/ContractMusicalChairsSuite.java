@@ -32,6 +32,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -44,6 +46,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ContractMusicalChairsSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractMusicalChairsSuite.class);
@@ -62,6 +65,7 @@ public class ContractMusicalChairsSuite extends HapiSuite {
         return List.of(playGame());
     }
 
+    @HapiTest
     private HapiSpec playGame() {
         final var dj = "dj";
         final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();

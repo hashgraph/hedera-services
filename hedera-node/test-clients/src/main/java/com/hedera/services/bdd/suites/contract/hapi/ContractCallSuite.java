@@ -77,6 +77,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -252,7 +253,31 @@ public class ContractCallSuite extends HapiSuite {
                 depositMoreThanBalanceFailsGracefully(),
                 lowLevelEcrecCallBehavior(),
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
-                hollowCreationFailsCleanly());
+                hollowCreationFailsCleanly(),
+                repeatedCreate2FailsWithInterpretableActionSidecars());
+    }
+
+    private HapiSpec repeatedCreate2FailsWithInterpretableActionSidecars() {
+        final var contract = "Create2PrecompileUser";
+        final var salt = unhex(SALT);
+        final var firstCreation = "firstCreation";
+        final var secondCreation = "secondCreation";
+        return defaultHapiSpec("repeatedCreate2FailsWithInterpretableActionSidecars")
+                .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(
+                        contractCall(contract, "createUser", salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .via(firstCreation),
+                        contractCall(contract, "createUser", salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .via(secondCreation)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then();
     }
 
     private HapiSpec hollowCreationFailsCleanly() {
@@ -579,6 +604,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L))));
     }
 
+    @HapiTest
     private HapiSpec whitelistingAliasedContract() {
         final var creationTxn = "creationTxn";
         final var mirrorWhitelistCheckTxn = "mirrorWhitelistCheckTxn";
@@ -632,6 +658,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
         final var creationTxn = "creationTxn";
         final var ASSOCIATOR = "Associator";
@@ -706,9 +733,11 @@ public class ContractCallSuite extends HapiSuite {
                                 .getContractAccountID())))),
                         uploadInitCode(addressBook, jurisdictions),
                         contractCreate(addressBook)
+                                .gas(1_000_000L)
                                 .exposingNumTo(num -> addressBookMirror.set(asHexedSolidityAddress(0, 0, num)))
                                 .payingWith(DEFAULT_CONTRACT_SENDER),
                         contractCreate(jurisdictions)
+                                .gas(1_000_000L)
                                 .exposingNumTo(num -> jurisdictionMirror.set(asHexedSolidityAddress(0, 0, num)))
                                 .withExplicitParams(() -> EXPLICIT_JURISDICTION_CONS_PARAMS)
                                 .payingWith(DEFAULT_CONTRACT_SENDER),
@@ -717,6 +746,7 @@ public class ContractCallSuite extends HapiSuite {
                                 minters,
                                 bookInterpolated(literalInitcodeFor(minters).toByteArray(), addressBookMirror.get()))),
                         contractCreate(minters)
+                                .gas(2_000_000L)
                                 .withExplicitParams(
                                         () -> String.format(EXPLICIT_MINTER_CONS_PARAMS_TPL, jurisdictionMirror.get()))
                                 .payingWith(DEFAULT_CONTRACT_SENDER))
@@ -820,6 +850,7 @@ public class ContractCallSuite extends HapiSuite {
      * @return a spec characterizing this behavior
      */
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently() {
         final var contractAlternatives = "ErcAndHtsAlternatives";
         final AtomicReference<Address> nftAddr = new AtomicReference<>();
@@ -1074,6 +1105,7 @@ public class ContractCallSuite extends HapiSuite {
     // For this test we use refusingEthConversion() for the Eth Call isomer,
     // since we should modify the expected balances and change the test itself in order to pass with
     // Eth Calls
+    @HapiTest
     HapiSpec ocToken() {
         final var contract = "OcToken";
 
@@ -1370,7 +1402,7 @@ public class ContractCallSuite extends HapiSuite {
     private HapiSpec multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
         return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
+                .given(uploadInitCode(contract), contractCreate(contract).gas(600_000))
                 .when(contractCall(contract, "light").via("lightTxn").scrambleTxnBody(tx -> tx))
                 .then(getTxnRecord("lightTxn").logged());
     }
@@ -1483,6 +1515,7 @@ public class ContractCallSuite extends HapiSuite {
                         .hasKnownStatus(CONTRACT_DELETED));
     }
 
+    @HapiTest
     HapiSpec insufficientGas() {
         return defaultHapiSpec("InsufficientGas")
                 .given(
@@ -1496,6 +1529,7 @@ public class ContractCallSuite extends HapiSuite {
                         .hasPrecheck(INSUFFICIENT_GAS));
     }
 
+    @HapiTest
     HapiSpec insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 
@@ -1523,6 +1557,7 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
     }
 
+    @HapiTest
     HapiSpec invalidContract() {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
@@ -1532,6 +1567,7 @@ public class ContractCallSuite extends HapiSuite {
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
         return defaultHapiSpec("smartContractFailFirst")
@@ -1694,6 +1730,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(2_000L));
     }
 
+    @HapiTest
     private HapiSpec contractTransferToSigReqAccountWithoutKeyFails() {
         return defaultHapiSpec("ContractTransferToSigReqAccountWithoutKeyFails")
                 .given(
@@ -1856,6 +1893,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(TRANSFERRING_CONTRACT + to).hasTinyBars(10_000 + 10L));
     }
 
+    @HapiTest
     private HapiSpec hscsEvm010ReceiverMustSignContractTx() {
         final var ACC = "acc";
         final var RECEIVER_KEY = "receiverKey";
@@ -1892,6 +1930,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hscsEvm010MultiSignatureAccounts() {
         final var ACC = "acc";
         final var PAYER_KEY = "pkey";
@@ -2094,6 +2133,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L - 50L))));
     }
 
+    @HapiTest
     private HapiSpec sendHbarsToCallerFromDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
                 .given(withOpContext((spec, log) -> {
@@ -2309,6 +2349,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L));
     }
 
+    @HapiTest
     private HapiSpec consTimeManagementWorksWithRevertedInternalCreations() {
         final var contract = "ConsTimeRepro";
         final var failingCall = "FailingCall";
