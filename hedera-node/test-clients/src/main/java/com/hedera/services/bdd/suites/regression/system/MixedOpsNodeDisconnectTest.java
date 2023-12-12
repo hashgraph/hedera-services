@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.T
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -52,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  * blocks network for one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
  * submits the same burst of mixed operations again.
  */
-// @HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes.
+@HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes.
 // This test doesn't work yet, will be improved in next PR.
 public class MixedOpsNodeDisconnectTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsNodeDisconnectTest.class);
@@ -105,7 +106,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         // Once node 2 reconnects successfully it goes to ACTIVE
                         waitForNodeToBecomeActive("Carol", 60))
                 .then(
-                        // Once nodes come back ACTIVE, submit some operations again
+                        //                         Once nodes come back ACTIVE, submit some operations again
                         cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),

@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.InProcessHapiTestNode.START_PORT;
-import static com.hedera.services.bdd.junit.InProcessHapiTestNode.STOP_PORT;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -77,6 +75,9 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     private final Path workingDir;
     /** The port on which the grpc server will be listening */
     private final int grpcPort;
+
+    /** The port on which the gossip is happening */
+    private final int gossipPort;
     /** The HTTP Request to use for accessing prometheus to get the current node status (ACTIVE, CHECKING, etc) */
     private final HttpRequest prometheusRequest;
     /** The client used to make prometheus HTTP Requests */
@@ -85,23 +86,26 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     /**
      * Create a new sub-process node.
      *
-     * @param name the name of the node, like Alice, Bob
-     * @param nodeId The node ID
-     * @param accountId The account ID of the node, such as 0.0.3.
+     * @param name       the name of the node, like Alice, Bob
+     * @param nodeId     The node ID
+     * @param accountId  The account ID of the node, such as 0.0.3.
      * @param workingDir The working directory. Must already be created and setup with all the files.
-     * @param grpcPort The grpc port to configure the server with.
+     * @param grpcPort   The grpc port to configure the server with.
+     * @param gossipPort The gossip port to configure the server with.
      */
     public SubProcessHapiTestNode(
             @NonNull final String name,
             final long nodeId,
             @NonNull final AccountID accountId,
             @NonNull final Path workingDir,
-            final int grpcPort) {
+            final int grpcPort,
+            final int gossipPort) {
         this.name = requireNonNull(name);
         this.nodeId = nodeId;
         this.accountId = requireNonNull(accountId);
         this.workingDir = requireNonNull(workingDir);
         this.grpcPort = grpcPort;
+        this.gossipPort = gossipPort;
 
         try {
             prometheusRequest = HttpRequest.newBuilder()
@@ -239,33 +243,73 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     @Override
     public void blockNetworkPort() {
         if (handle != null && handle.isAlive()) {
-            final String[] cmd = new String[] {
-                "sudo",
-                "-n",
-                "iptables",
-                "-A",
-                "INPUT",
-                "-p",
-                "tcp",
-                "--dport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;",
-                "sudo",
-                "-n",
-                "iptables",
-                "-A",
-                "OUTPUT",
-                "-p",
-                "tcp",
-                "--sport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;"
-            };
+            final var os = getOperatingSystem();
+            String[] cmd;
+            if (os.contains("Mac")) {
+                cmd = new String[] {
+                    "sudo",
+                    "pfctl",
+                    "-sr",
+                    "2>/dev/null;",
+                    "echo",
+                    "\"",
+                    "block",
+                    "drop",
+                    "quick",
+                    "on",
+                    "lo0",
+                    "proto",
+                    "tcp",
+                    "from",
+                    "any",
+                    "to",
+                    "{127.0.0.1}",
+                    "port",
+                    "=",
+                    String.valueOf(gossipPort),
+                    "\"",
+                    "|",
+                    "sudo",
+                    "pfctl",
+                    "-e",
+                    "-f",
+                    "-",
+                    "2>/dev/null"
+                };
+            } else {
+                cmd = new String[] {
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-A",
+                    "INPUT",
+                    "-p",
+                    "tcp",
+                    "--dport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;",
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-A",
+                    "OUTPUT",
+                    "-p",
+                    "tcp",
+                    "--sport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;"
+                };
+            }
             try {
                 final Process process = Runtime.getRuntime().exec(cmd);
-                logger.info("Blocking Network port {} for node {}", grpcPort, nodeId);
+                logger.info(
+                        "Blocking Network port {} for node {} running with OS {} running command {}",
+                        grpcPort,
+                        nodeId,
+                        os,
+                        cmd);
                 process.waitFor(75, TimeUnit.SECONDS);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
@@ -275,33 +319,73 @@ final class SubProcessHapiTestNode implements HapiTestNode {
 
     public void unblockNetworkPort() {
         if (handle != null && handle.isAlive()) {
-            final String[] cmd = new String[] {
-                "sudo",
-                "-n",
-                "iptables",
-                "-D",
-                "INPUT",
-                "-p",
-                "tcp",
-                "--dport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;",
-                "sudo",
-                "-n",
-                "iptables",
-                "-D",
-                "OUTPUT",
-                "-p",
-                "tcp",
-                "--sport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;"
-            };
+            final var os = getOperatingSystem();
+            String[] cmd;
+            if (os.contains("Mac")) {
+                cmd = new String[] {
+                    "sudo",
+                    "pfctl",
+                    "-sr",
+                    "2>/dev/null",
+                    "|",
+                    "fgrep",
+                    "-v",
+                    "\"",
+                    "block",
+                    "drop",
+                    "quick",
+                    "on",
+                    "lo0",
+                    "proto",
+                    "tcp",
+                    "from",
+                    "any",
+                    "to",
+                    "{127.0.0.1}",
+                    "port",
+                    "=",
+                    String.valueOf(gossipPort),
+                    "\"",
+                    "|",
+                    "sudo",
+                    "pfctl",
+                    "-f",
+                    "-"
+                };
+            } else {
+                cmd = new String[] {
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-D",
+                    "INPUT",
+                    "-p",
+                    "tcp",
+                    "--dport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;",
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-D",
+                    "OUTPUT",
+                    "-p",
+                    "tcp",
+                    "--sport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;"
+                };
+            }
             try {
                 final Process process = Runtime.getRuntime().exec(cmd);
-                logger.info("Unblocking Network port {} for node {}", grpcPort, nodeId);
+                logger.info(
+                        "Unblocking Network port {} for node {} running with OS {} running command {}",
+                        grpcPort,
+                        nodeId,
+                        os,
+                        cmd);
                 process.waitFor(75, TimeUnit.SECONDS);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);

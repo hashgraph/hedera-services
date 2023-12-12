@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException;
 
 public class HapiTestEnv {
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
-    private static final int FIRST_GOSSIP_PORT = 60000;
+    public static final int FIRST_GOSSIP_PORT = 60000;
     private static final int FIRST_GOSSIP_TLS_PORT = 60001;
     private static final int FIRST_GRPC_PORT = 50211;
     private static final int CAPTIVE_NODE_STARTUP_TIME_LIMIT = 300;
@@ -77,10 +77,16 @@ public class HapiTestEnv {
                 final AccountID acct =
                         AccountID.newBuilder().accountNum(3L + nodeId).build();
                 if (useInProcessAlice && nodeId == 0) {
-                    nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
+                    nodes.add(new InProcessHapiTestNode(
+                            nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT, FIRST_GOSSIP_PORT));
                 } else {
                     nodes.add(new SubProcessHapiTestNode(
-                            nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT + (nodeId * 2)));
+                            nodeName,
+                            nodeId,
+                            acct,
+                            workingDir,
+                            FIRST_GRPC_PORT + (nodeId * 2),
+                            FIRST_GOSSIP_PORT + (nodeId * 2)));
                 }
             }
         } catch (Exception e) {

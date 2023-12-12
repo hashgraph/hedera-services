@@ -82,29 +82,32 @@ public class InProcessHapiTestNode implements HapiTestNode {
     /** The port on which the grpc server will be listening */
     private final int grpcPort;
 
-    public static final int START_PORT = 10000;
-    public static final int STOP_PORT = 65535;
+    /** The port on which the gossip is happening */
+    private final int gossipPort;
 
     /**
      * Create a new in-process node.
      *
-     * @param name the name of the node, like Alice, Bob
-     * @param nodeId The node ID
-     * @param accountId The account ID of the node, such as 0.0.3.
-     * @param workingDir The working directory. Must already be created and setup with all the files.
-     * @param grpcPort   The grpc port to configure the server with.
+     * @param name            the name of the node, like Alice, Bob
+     * @param nodeId          The node ID
+     * @param accountId       The account ID of the node, such as 0.0.3.
+     * @param workingDir      The working directory. Must already be created and setup with all the files.
+     * @param grpcPort        The grpc port to configure the server with.
+     * @param gossipPort
      */
     public InProcessHapiTestNode(
             @NonNull final String name,
             final long nodeId,
             @NonNull final AccountID accountId,
             @NonNull final Path workingDir,
-            final int grpcPort) {
+            final int grpcPort,
+            final int gossipPort) {
         this.name = requireNonNull(name);
         this.nodeId = nodeId;
         this.accountId = requireNonNull(accountId);
         this.workingDir = requireNonNull(workingDir);
         this.grpcPort = grpcPort;
+        this.gossipPort = gossipPort;
     }
 
     @Override
@@ -181,30 +184,34 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     public void blockNetworkPort() {
         if (th != null && th.hedera.isActive()) {
-            final String[] cmd = new String[] {
-                "sudo",
-                "-n",
-                "iptables",
-                "-A",
-                "INPUT",
-                "-p",
-                "tcp",
-                "--dport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;",
-                "sudo",
-                "-n",
-                "iptables",
-                "-A",
-                "OUTPUT",
-                "-p",
-                "tcp",
-                "--sport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;"
-            };
+            String[] cmd = new String[0];
+            final var os = getOperatingSystem();
+            if (os.contains("LINUX")) {
+                cmd = new String[] {
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-A",
+                    "INPUT",
+                    "-p",
+                    "tcp",
+                    "--dport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;",
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-A",
+                    "OUTPUT",
+                    "-p",
+                    "tcp",
+                    "--sport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;"
+                };
+            }
             try {
                 final Process process = Runtime.getRuntime().exec(cmd);
                 logger.info("Blocking Network port {} for node {}", grpcPort, nodeId);
@@ -225,30 +232,36 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     public void unblockNetworkPort() {
         if (th != null && th.hedera.isActive()) {
-            final String[] cmd = new String[] {
-                "sudo",
-                "-n",
-                "iptables",
-                "-D",
-                "INPUT",
-                "-p",
-                "tcp",
-                "--dport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;",
-                "sudo",
-                "-n",
-                "iptables",
-                "-D",
-                "OUTPUT",
-                "-p",
-                "tcp",
-                "--sport",
-                format("%d:%d", START_PORT, STOP_PORT),
-                "-j",
-                "DROP;"
-            };
+            String[] cmd = new String[0];
+            final var os = getOperatingSystem();
+            if (os.contains("LINUX")) {
+                cmd = new String[] {
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-D",
+                    "INPUT",
+                    "-p",
+                    "tcp",
+                    "--dport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;",
+                    "sudo",
+                    "-n",
+                    "iptables",
+                    "-D",
+                    "OUTPUT",
+                    "-p",
+                    "tcp",
+                    "--sport",
+                    format("%d:%d", gossipPort, gossipPort),
+                    "-j",
+                    "DROP;"
+                };
+            } else if (os.equals("MACOS")) {
+
+            }
             try {
                 final Process process = Runtime.getRuntime().exec(cmd);
                 logger.info("Unblocking Network port {} for node {}", grpcPort, nodeId);

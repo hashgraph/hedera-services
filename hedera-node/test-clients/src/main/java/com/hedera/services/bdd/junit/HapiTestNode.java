@@ -95,4 +95,10 @@ public interface HapiTestNode {
      * Deletes all saved state. Useful for testing genesis reconnects.
      */
     void clearState();
+
+    default String getOperatingSystem() {
+        String os = System.getProperty("os.name");
+        System.out.println("Using System Property: " + os);
+        return os;
+    }
 }
