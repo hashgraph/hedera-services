@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -127,13 +128,14 @@ public class DuplicateManagementTest extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
-                        cryptoCreate(CIVILIAN),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, TO, 100_000_000L)))
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, TO, ONE_HBAR)))
                 .when(
                         uncheckedSubmit(cryptoCreate("nope")
                                 .payingWith(CIVILIAN)
