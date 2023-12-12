@@ -1305,14 +1305,15 @@ public class SwirldsPlatform implements Platform {
             eventCreator.start();
         }
         replayPreconsensusEvents();
-        try (final ReservedSignedState reservedState = latestImmutableState.getState("Dumping PCES recovery state")) {
+        try (final ReservedSignedState reservedState = latestImmutableState.getState("Get PCES recovery state")) {
             if (reservedState == null) {
-                logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
+                logger.warn(STATE_TO_DISK.getMarker(),
+                        "Trying to dump PCES recovery state to disk, but no state is available.");
             } else {
                 final SignedState signedState = reservedState.get();
                 signedState.markAsStateToSave(StateToDiskReason.PCES_RECOVERY_COMPLETE);
 
-                final StateDumpRequest request = StateDumpRequest.create(signedState.reserve("dumping to disk"));
+                final StateDumpRequest request = StateDumpRequest.create(signedState.reserve("dumping PCES recovery state"));
 
                 signedStateFileManager.dumpStateTask(request);
                 request.waitForFinished().run();
