@@ -102,7 +102,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
         final AtomicReference<AccountID> detachedAccountID = new AtomicReference();
         final AtomicReference<AccountID> civilianAccountID = new AtomicReference();
 
-        return onlyDefaultHapiSpec("ContractCallRestrictionsEnforced")
+        return defaultHapiSpec("ContractCallRestrictionsEnforced")
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).balance(ONE_HBAR),
