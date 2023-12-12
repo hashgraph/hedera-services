@@ -16,25 +16,18 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.platform.NodeId;
 import java.nio.file.Path;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Utility methods for dealing with signed states on disk.
  */
 public final class SignedStateFileUtils {
-
-    private static final Logger logger = LogManager.getLogger(SignedStateFileUtils.class);
-
     /**
-     * Fun trivia: the file extension ".swh" stands for "SWirlds Hashgraph", although
-     * this is a bit misleading... as this file doesn't actually contain a hashgraph.
+     * Fun trivia: the file extension ".swh" stands for "SWirlds Hashgraph", although this is a bit misleading... as
+     * this file doesn't actually contain a hashgraph.
      */
     public static final String SIGNED_STATE_FILE_NAME = "SignedState.swh";
 
@@ -60,133 +53,74 @@ public final class SignedStateFileUtils {
     private SignedStateFileUtils() {}
 
     /**
-     * <p>
-     * Get the base directory where all states will be stored.
-     * </p>
+     * Same as {@link SignedStateFilePath#getSignedStatesBaseDirectory()} but uses the config from
+     * {@link ConfigurationHolder}
      *
-     * <pre>
-     * e.g. data/saved/
-     *      |--------|
-     *          |
-     *       location where
-     *       states are saved
-     * </pre>
-     *
-     * @return the base directory for all signed state files
+     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
+     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
      */
+    @Deprecated(forRemoval = true)
     public static Path getSignedStatesBaseDirectory() {
-        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
-        return getAbsolutePath(stateConfig.savedStateDirectory());
+        // new instance on every call in case the config changes in the holder
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStatesBaseDirectory();
     }
 
     /**
-     * <p>
-     * Get the directory that contains saved states for a particular app.
-     * </p>
+     * Same as {@link SignedStateFilePath#getSignedStatesDirectoryForApp(String)} but uses the config from
+     * {@link ConfigurationHolder}
      *
-     * <pre>
-     * e.g. data/saved/com.swirlds.foobar
-     *      |--------| |----------------|
-     *          |             |
-     *          |         mainClassName
-     *          |
-     *       location where
-     *       states are saved
-     * </pre>
-     *
-     * @param mainClassName
-     * 		the name of the app
-     * @return the path of a directory, may not exist
+     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
+     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
      */
+    @Deprecated(forRemoval = true)
     public static Path getSignedStatesDirectoryForApp(final String mainClassName) {
-        return getSignedStatesBaseDirectory().resolve(mainClassName);
+        // new instance on every call in case the config changes in the holder
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStatesDirectoryForApp(mainClassName);
     }
 
     /**
-     * <p>
-     * Get the directory that contains contains saved states for a particular node.
-     * </p>
+     * Same as {@link SignedStateFilePath#getSignedStatesDirectoryForNode(String, NodeId)} but uses the config from
+     * {@link ConfigurationHolder}
      *
-     * <pre>
-     * e.g. data/saved/com.swirlds.foobar/1234
-     *      |--------| |----------------| |--|
-     *          |             |            |
-     *          |         mainClassName    |
-     *          |                          |
-     *       location where              selfId
-     *       states are saved
-     * </pre>
-     *
-     * @param mainClassName
-     * 		the name of the app
-     * @param selfId
-     * 		the ID of this node
-     * @return the path of a directory, may not exist
+     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
+     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
      */
+    @Deprecated(forRemoval = true)
     public static Path getSignedStatesDirectoryForNode(final String mainClassName, final NodeId selfId) {
-
-        return getSignedStatesDirectoryForApp(mainClassName).resolve(selfId.toString());
+        // new instance on every call in case the config changes in the holder
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStatesDirectoryForNode(mainClassName, selfId);
     }
 
     /**
-     * <p>
-     * Get the directory that contains saved states for a particular swirld (i.e. an instance of an app).
-     * </p>
+     * Same as {@link SignedStateFilePath#getSignedStatesDirectoryForSwirld(String, NodeId, String)} but uses the config
+     * from {@link ConfigurationHolder}
      *
-     * <pre>
-     * e.g. data/saved/com.swirlds.foobar/1234/mySwirld
-     *      |--------| |----------------| |--| |------|
-     *          |             |            |       |
-     *          |         mainClassName    |    swirldName
-     *          |                          |
-     *       location where              selfId
-     *       states are saved
-     * </pre>
-     *
-     * @param mainClassName
-     * 		the name of the app
-     * @param selfId
-     * 		the ID of this node
-     * @param swirldName
-     * 		the name of the swirld
-     * @return the path of a directory, may not exist
+     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
+     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
      */
+    @Deprecated(forRemoval = true)
     public static Path getSignedStatesDirectoryForSwirld(
             final String mainClassName, final NodeId selfId, final String swirldName) {
-
-        return getSignedStatesDirectoryForNode(mainClassName, selfId).resolve(swirldName);
+        // new instance on every call in case the config changes in the holder
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStatesDirectoryForSwirld(mainClassName, selfId, swirldName);
     }
 
     /**
-     * <p>
-     * Get the fully qualified path to the directory for a particular signed state. This directory might not exist.
-     * </p>
+     * Same as {@link SignedStateFilePath#getSignedStateDirectory(String, NodeId, String, long)} but uses the config
+     * from {@link ConfigurationHolder}
      *
-     * <pre>
-     * e.g. data/saved/com.swirlds.foobar/1234/mySwirld/1000
-     *      |--------| |----------------| |--| |------| |--|
-     *          |             |            |      |      |
-     *          |         mainClassName    |      |    round
-     *          |                          |  swirldName
-     *       location where              selfId
-     *       states are saved
-     *
-     * </pre>
-     *
-     * @param mainClassName
-     * 		the name of the app
-     * @param selfId
-     * 		the ID of this node
-     * @param swirldName
-     * 		the name of the swirld
-     * @param round
-     * 		the round number of the state
-     * @return the path of the signed state for the particular round
+     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
+     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
      */
+    @Deprecated(forRemoval = true)
     public static Path getSignedStateDirectory(
             final String mainClassName, final NodeId selfId, final String swirldName, final long round) {
-
-        return getSignedStatesDirectoryForSwirld(mainClassName, selfId, swirldName)
-                .resolve(Long.toString(round));
+        // new instance on every call in case the config changes in the holder
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, round);
     }
 }

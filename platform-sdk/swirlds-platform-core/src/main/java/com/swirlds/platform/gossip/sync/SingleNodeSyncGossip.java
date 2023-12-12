@@ -28,7 +28,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.AbstractGossip;
@@ -36,6 +35,7 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -71,7 +71,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param shadowGraph                   contains non-ancient events
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
-     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
@@ -88,7 +88,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateManagementComponent stateManagementComponent,
+            @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
@@ -104,7 +104,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 appVersion,
                 intakeQueue,
                 swirldStateManager,
-                stateManagementComponent,
+                latestCompleteState,
                 syncMetrics,
                 statusActionSubmitter,
                 loadReconnectState,

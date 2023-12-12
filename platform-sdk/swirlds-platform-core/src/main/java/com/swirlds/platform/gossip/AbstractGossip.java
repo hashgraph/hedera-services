@@ -33,7 +33,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
@@ -57,6 +56,7 @@ import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -124,7 +124,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param appVersion                    the version of the app
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
-     * @param stateManagementComponent      manages the lifecycle of the state queue
+     * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
@@ -140,7 +140,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateManagementComponent stateManagementComponent,
+            @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
@@ -214,7 +214,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 this::pause,
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
-                stateManagementComponent::getLastCompleteRound,
+                latestCompleteState::getRound,
                 new ReconnectLearnerThrottle(time, selfId, reconnectConfig),
                 loadReconnectState,
                 new ReconnectLearnerFactory(

@@ -17,14 +17,12 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesDirectoryForSwirld;
 import static java.nio.file.Files.exists;
-import static java.nio.file.Files.isDirectory;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
@@ -34,88 +32,31 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.TreeMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Utility methods for reading a signed state from disk.
  */
 public final class SignedStateFileReader {
-
-    private static final Logger logger = LogManager.getLogger(SignedStateFileReader.class);
-
     private SignedStateFileReader() {}
 
     /**
-     * Looks for saved state files locally and returns a list of them sorted from newest to oldest
+     * Same as {@link SignedStateFilePath#getSavedStateFiles(String, NodeId, String)} but uses the config from
+     * {@link ConfigurationHolder}
      *
-     * @param mainClassName
-     * 		the name of the main app class
-     * @param platformId
-     * 		the ID of the platform
-     * @param swirldName
-     * 		the swirld name
-     * @return Information about saved states on disk, or null if none are found
+     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
+     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
      */
-    @SuppressWarnings("resource")
+    @Deprecated(forRemoval = true)
     @NonNull
     public static List<SavedStateInfo> getSavedStateFiles(
             final String mainClassName, final NodeId platformId, final String swirldName) {
-
-        try {
-            final Path dir = getSignedStatesDirectoryForSwirld(mainClassName, platformId, swirldName);
-
-            if (!exists(dir) || !isDirectory(dir)) {
-                return List.of();
-            }
-
-            final List<Path> dirs = Files.list(dir).filter(Files::isDirectory).toList();
-
-            final TreeMap<Long, SavedStateInfo> savedStates = new TreeMap<>();
-            for (final Path subDir : dirs) {
-                try {
-                    final long round = Long.parseLong(subDir.getFileName().toString());
-                    final Path stateFile = subDir.resolve(SIGNED_STATE_FILE_NAME);
-                    if (!exists(stateFile)) {
-                        logger.warn(
-                                EXCEPTION.getMarker(),
-                                "Saved state file ({}) not found, but directory exists '{}'",
-                                stateFile.getFileName(),
-                                subDir.toAbsolutePath());
-                        continue;
-                    }
-
-                    final Path metdataPath = subDir.resolve(SavedStateMetadata.FILE_NAME);
-                    final SavedStateMetadata metadata;
-                    try {
-                        metadata = SavedStateMetadata.parse(metdataPath);
-                    } catch (final IOException e) {
-                        logger.error(
-                                EXCEPTION.getMarker(), "Unable to read saved state metadata file '{}'", metdataPath);
-                        continue;
-                    }
-
-                    savedStates.put(round, new SavedStateInfo(stateFile, metadata));
-
-                } catch (final NumberFormatException e) {
-                    logger.warn(
-                            EXCEPTION.getMarker(),
-                            "Unexpected directory '{}' in '{}'",
-                            subDir.getFileName(),
-                            dir.toAbsolutePath());
-                }
-            }
-            return new ArrayList<>(savedStates.descendingMap().values());
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        // new instance on every call in case the config changes in the holder
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSavedStateFiles(mainClassName, platformId, swirldName);
     }
 
     /**

@@ -18,7 +18,6 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.state.signed.StartupStateUtils.doRecoveryCleanup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,6 +81,8 @@ class StartupStateUtilsTests {
     @TempDir
     Path testDirectory;
 
+    private SignedStateFilePath signedStateFilePath;
+
     private final NodeId selfId = new NodeId(0);
     private final String mainClassName = "mainClassName";
     private final String swirldName = "swirldName";
@@ -89,6 +90,10 @@ class StartupStateUtilsTests {
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
+        signedStateFilePath = new SignedStateFilePath(new TestConfigBuilder()
+                .withValue("state.savedStateDirectory", testDirectory.toString())
+                .getOrCreateConfig()
+                .getConfigData(StateConfig.class));
     }
 
     @AfterEach
@@ -134,7 +139,8 @@ class StartupStateUtilsTests {
                 .setEpoch(epoch)
                 .build();
 
-        final Path savedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, round);
+        final Path savedStateDirectory =
+                signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
 
         writeSignedStateToDisk(
                 platformContext, selfId, savedStateDirectory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
@@ -280,7 +286,8 @@ class StartupStateUtilsTests {
             assertNull(loadedState);
         }
 
-        final Path savedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path savedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
@@ -704,7 +711,8 @@ class StartupStateUtilsTests {
             assertNull(loadedState);
         }
 
-        final Path savedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path savedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
@@ -754,7 +762,8 @@ class StartupStateUtilsTests {
 
         doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, null, latestRound);
 
-        final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path signedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(0, recycleCount.get());
@@ -811,7 +820,8 @@ class StartupStateUtilsTests {
 
         doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, latestRound);
 
-        final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path signedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(0, recycleCount.get());
@@ -881,7 +891,8 @@ class StartupStateUtilsTests {
 
         assertEquals(epoch, scratchpad.get(RecoveryScratchpad.EPOCH_HASH));
 
-        final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path signedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(statesToDelete, recycleCount.get());

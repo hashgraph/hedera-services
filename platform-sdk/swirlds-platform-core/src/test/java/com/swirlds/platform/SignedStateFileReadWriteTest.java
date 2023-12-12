@@ -67,10 +67,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("SignedState Read/Write Test")
 class SignedStateFileReadWriteTest {
-
-    private static final NodeId SELF_ID = new NodeId(1234);
-    private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
-    private static final String SWIRLD_NAME = "mySwirld";
     /**
      * Temporary directory provided by JUnit
      */

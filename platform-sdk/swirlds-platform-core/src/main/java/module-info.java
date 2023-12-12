@@ -22,7 +22,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.common.query;
     exports com.swirlds.platform.components.state;
     exports com.swirlds.platform.components.state.output;
-    exports com.swirlds.platform.components.state.query;
     exports com.swirlds.platform.config;
     exports com.swirlds.platform.config.legacy;
     exports com.swirlds.platform.event.report;

@@ -447,11 +447,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         }
 
         @Override
-        public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull String s) {
-            return null;
-        }
-
-        @Override
         public boolean createTransaction(@NonNull byte[] bytes) {
             return false;
         }

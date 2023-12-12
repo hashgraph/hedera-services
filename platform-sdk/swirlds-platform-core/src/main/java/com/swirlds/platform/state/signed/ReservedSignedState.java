@@ -47,7 +47,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
 
     private final SignedState signedState;
     private final String reason;
-    private final long reservationId = nextReservationId.getAndIncrement();
+    private final long reservationId;
     private boolean closed = false;
 
     /**
@@ -63,19 +63,23 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
     private ReservedSignedState() {
         this.signedState = null;
         this.reason = "";
+        this.reservationId = nextReservationId.getAndIncrement();
     }
 
     /**
      * Create a new reserved signed state.
      *
-     * @param signedState the signed state to reserve
-     * @param reason      a short description of why this SignedState is being reserved. Each location where a
-     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
-     *                    reservation bugs easier.
+     * @param signedState   the signed state to reserve
+     * @param reason        a short description of why this SignedState is being reserved. Each location where a
+     *                      SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                      reservation bugs easier.
+     * @param reservationId a unique id to track reserving and releasing of signed states
      */
-    ReservedSignedState(@NonNull final SignedState signedState, @NonNull final String reason) {
+    private ReservedSignedState(
+            @NonNull final SignedState signedState, @NonNull final String reason, final long reservationId) {
         this.signedState = Objects.requireNonNull(signedState);
         this.reason = Objects.requireNonNull(reason);
+        this.reservationId = reservationId;
     }
 
     /**
@@ -88,22 +92,10 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      */
     static @NonNull ReservedSignedState createAndReserve(
             @NonNull final SignedState signedState, @NonNull final String reason) {
-        final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, reason);
+        final ReservedSignedState reservedSignedState =
+                new ReservedSignedState(signedState, reason, nextReservationId.getAndIncrement());
         signedState.incrementReservationCount(reason, reservedSignedState.getReservationId());
         return reservedSignedState;
-    }
-
-    /**
-     * Create a new reserved signed state. This method assumes that the reservation count will be incremented by the
-     * caller.
-     *
-     * @param signedState the signed state to reserve
-     * @param reason      a short description of why this SignedState is being reserved. Each location where a
-     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
-     *                    reservation bugs easier.
-     */
-    static @NonNull ReservedSignedState create(@NonNull final SignedState signedState, @NonNull final String reason) {
-        return new ReservedSignedState(signedState, reason);
     }
 
     /**
@@ -154,10 +146,11 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         if (signedState == null) {
             return new ReservedSignedState();
         }
+        final long reservationId = nextReservationId.getAndIncrement();
         if (!signedState.tryIncrementReservationCount(reason, reservationId)) {
             return null;
         }
-        return create(signedState, reason);
+        return new ReservedSignedState(signedState, reason, reservationId);
     }
 
     /**
