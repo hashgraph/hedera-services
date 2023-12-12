@@ -210,8 +210,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         registryRecord.release();
     }
 
-    // TODO remove equals and hashcode and toString
-
     /**
      * {@inheritDoc}
      */
