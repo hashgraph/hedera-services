@@ -753,7 +753,7 @@ public class Create2OperationSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                         uploadInitCode(contract),
-                        contractCreate(contract).payingWith(GENESIS),
+                        contractCreate(contract).payingWith(GENESIS).gas(500_000L),
                         contractCallLocal(contract, "computeChildAddress", salt)
                                 .exposingTypedResultsTo(results -> childAddress.set((Address) results[0])),
                         sourcing(() -> ethereumCryptoTransferToAddress(childAddress.get(), ONE_HBAR)

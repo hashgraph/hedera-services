@@ -733,9 +733,11 @@ public class ContractCallSuite extends HapiSuite {
                                 .getContractAccountID())))),
                         uploadInitCode(addressBook, jurisdictions),
                         contractCreate(addressBook)
+                                .gas(1_000_000L)
                                 .exposingNumTo(num -> addressBookMirror.set(asHexedSolidityAddress(0, 0, num)))
                                 .payingWith(DEFAULT_CONTRACT_SENDER),
                         contractCreate(jurisdictions)
+                                .gas(1_000_000L)
                                 .exposingNumTo(num -> jurisdictionMirror.set(asHexedSolidityAddress(0, 0, num)))
                                 .withExplicitParams(() -> EXPLICIT_JURISDICTION_CONS_PARAMS)
                                 .payingWith(DEFAULT_CONTRACT_SENDER),
@@ -744,6 +746,7 @@ public class ContractCallSuite extends HapiSuite {
                                 minters,
                                 bookInterpolated(literalInitcodeFor(minters).toByteArray(), addressBookMirror.get()))),
                         contractCreate(minters)
+                                .gas(2_000_000L)
                                 .withExplicitParams(
                                         () -> String.format(EXPLICIT_MINTER_CONS_PARAMS_TPL, jurisdictionMirror.get()))
                                 .payingWith(DEFAULT_CONTRACT_SENDER))
@@ -1399,7 +1402,7 @@ public class ContractCallSuite extends HapiSuite {
     private HapiSpec multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
         return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
+                .given(uploadInitCode(contract), contractCreate(contract).gas(600_000))
                 .when(contractCall(contract, "light").via("lightTxn").scrambleTxnBody(tx -> tx))
                 .then(getTxnRecord("lightTxn").logged());
     }

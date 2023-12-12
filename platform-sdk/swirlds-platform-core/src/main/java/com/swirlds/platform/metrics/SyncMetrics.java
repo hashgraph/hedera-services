@@ -25,10 +25,10 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;

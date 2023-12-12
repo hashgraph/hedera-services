@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.units;
+package com.swirlds.base.units;
 
 /**
  * Contains a variety constants useful when converting between units.
