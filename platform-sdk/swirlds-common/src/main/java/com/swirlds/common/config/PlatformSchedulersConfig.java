@@ -68,4 +68,4 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity) { }
+        @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity) {}
