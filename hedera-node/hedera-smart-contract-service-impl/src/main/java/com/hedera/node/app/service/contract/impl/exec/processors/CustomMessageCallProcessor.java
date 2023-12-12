@@ -281,8 +281,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     protected void revert(final MessageFrame frame) {
         super.revert(frame);
-        // Clear the last child record if revert() is called. This is necessary because
-        // the child record is already dispatched and lives in the RecordListBuilder.
-        ((HederaWorldUpdater) frame.getWorldUpdater()).revertLastChildRecord();
+        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
+        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

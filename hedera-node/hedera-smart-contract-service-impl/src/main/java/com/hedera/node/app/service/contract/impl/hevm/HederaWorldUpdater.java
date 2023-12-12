@@ -283,5 +283,5 @@ public interface HederaWorldUpdater extends WorldUpdater {
     /**
      * Revert the last child record.
      */
-    void revertLastChildRecord();
+    void revertChildRecords();
 }

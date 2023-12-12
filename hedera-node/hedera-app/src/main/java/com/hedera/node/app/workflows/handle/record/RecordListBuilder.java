@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
@@ -396,20 +397,16 @@ public final class RecordListBuilder {
     }
 
     /**
-     * Reverts or removes the last child transaction on which the revert() method was called.
-     * <p> If the child record is REVERSIBLE, then the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}.
-     * If the child record is REMOVABLE, then the record is removed from the list.
+     *
      */
-    public void revertLastChildOnly() {
-        if (childRecordBuilders == null || childRecordBuilders.isEmpty()) return;
+    public void revertChildrenFrom(@NonNull RecordListCheckPoint checkPoint) {
+        if (checkPoint.lastFollowingRecord() != null) {
+            revertChildrenOf((SingleTransactionRecordBuilderImpl) checkPoint.lastFollowingRecord());
+        }
+        if (checkPoint.firstPrecedingRecord() != null) {
+            // revert preceding records
 
-        final var lastRecordIndex = childRecordBuilders.size() - 1;
-        final var child = childRecordBuilders.get(lastRecordIndex);
 
-        if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
-            child.status(ResponseCodeEnum.REVERTED_SUCCESS);
-        } else if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
-            childRecordBuilders.remove(lastRecordIndex);
         }
     }
 
