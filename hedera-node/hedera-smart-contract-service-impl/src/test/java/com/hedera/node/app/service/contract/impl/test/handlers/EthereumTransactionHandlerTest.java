@@ -17,16 +17,13 @@
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_NON_EXISTING_LONG_ZERO_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -45,7 +42,6 @@ import com.hedera.node.app.service.contract.impl.records.EthereumTransactionReco
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -66,9 +62,6 @@ class EthereumTransactionHandlerTest {
 
     @Mock
     private ReadableFileStore fileStore;
-
-    @Mock
-    private ReadableAccountStore accountStore;
 
     @Mock
     private TransactionComponent component;
@@ -117,15 +110,6 @@ class EthereumTransactionHandlerTest {
                 .willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
-    }
-
-    @Test
-    void failsForNonExistingLongZeroToAddress() {
-        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
-        given(component.hydratedEthTxData())
-                .willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_NON_EXISTING_LONG_ZERO_TO_ADDRESS));
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        assertFailsWith(INVALID_CONTRACT_ID, () -> subject.handle(handleContext));
     }
 
     @Test
