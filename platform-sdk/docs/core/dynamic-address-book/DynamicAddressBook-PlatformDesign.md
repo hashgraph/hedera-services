@@ -107,7 +107,7 @@ Use the effective roster for the round in question.
 
 ## Consensus Effects
 
-Uses the `currentEffectiveRoster` for the `pendingConsnensRound`.
+Uses the `currentEffectiveRoster` for the `pendingConsensusRound`.
 
 When a round comes to consensus:
 
