@@ -74,7 +74,6 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
     @NonNull
     ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
 
-
     ContractCallRecordBuilder transactionID(@NonNull final TransactionID transactionId);
 
     TransactionID transactionID();

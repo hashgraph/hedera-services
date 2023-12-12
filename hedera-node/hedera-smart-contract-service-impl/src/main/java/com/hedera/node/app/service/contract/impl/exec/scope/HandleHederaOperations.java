@@ -45,6 +45,7 @@ import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -339,24 +340,33 @@ public class HandleHederaOperations implements HederaOperations {
     }
 
     @Override
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
+    public void externalizeHollowAccountMerge(
+            @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
 
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var parentAccount = accountStore.getContractById(parentId);
 
-        final var impliedContractCreation = synthContractCreationFromParent(
-                ContractID.newBuilder().contractNum(contractId.contractNum()).build(),
-                parentAccount);
+        if (parentAccount != null && contractId.contractNum() != null) {
+            // build proper contract create body
+            final var bodyToExternalize = synthContractCreationFromParent(
+                    ContractID.newBuilder()
+                            .contractNum(contractId.contractNum())
+                            .build(),
+                    parentAccount);
 
-        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class, contractBodyCustomizerFor(impliedContractCreation));
-        recordBuilder
-                .contractID(contractId)
-                .status(SUCCESS)
-                .transaction(Transaction.DEFAULT)
-                .contractCreateResult(ContractFunctionResult.newBuilder()
-                        .contractID(contractId)
-                        .evmAddress(evmAddress)
-                        .build());
+            // add record builder
+            var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
+            recordBuilder
+                    .contractID(contractId)
+                    .status(SUCCESS)
+                    .transaction(SingleTransactionRecordBuilder.transactionWith(TransactionBody.newBuilder()
+                            .contractCreateInstance(bodyToExternalize)
+                            .build()))
+                    .contractCreateResult(ContractFunctionResult.newBuilder()
+                            .contractID(contractId)
+                            .evmAddress(evmAddress)
+                            .build());
+        }
     }
 
     @Override
@@ -409,10 +419,10 @@ public class HandleHederaOperations implements HederaOperations {
                             transaction.signedTransactionBytes().toReadableSequentialData());
                     final var body = TransactionBody.PROTOBUF.parseStrict(
                             signedTransaction.bodyBytes().toReadableSequentialData());
-                    //todo add check for hollow accounts
-//                    if (!body.hasCryptoCreateAccount()) {
-//                        throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
-//                    }
+                    // todo add check for hollow accounts
+                    if (!body.hasCryptoCreateAccount()) {
+                        throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
+                    }
                     final var finishedBody =
                             body.copyBuilder().contractCreateInstance(op).build();
                     final var finishedSignedTransaction = signedTransaction

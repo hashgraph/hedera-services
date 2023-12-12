@@ -30,8 +30,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_INFO;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
@@ -39,7 +39,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEnv;
@@ -749,7 +748,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
             return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
         } else if ("logInfo".equals(expectedName)) {
-            //skip logs checking (we have logs containing EVM addresses on contract create)
+            // skip logs checking (we have logs containing EVM addresses on contract create)
             return matchModes.contains(NONDETERMINISTIC_LOG_INFO);
         } else if ("constructorParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS);

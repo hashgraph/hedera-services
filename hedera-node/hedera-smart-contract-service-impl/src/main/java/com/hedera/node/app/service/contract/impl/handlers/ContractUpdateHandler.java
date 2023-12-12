@@ -39,7 +39,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.state.ReadableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.key.KeyUtils;
@@ -117,14 +116,15 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var changed = update(toBeUpdated, context, op);
 
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
-        //Target may have only evm address and this way can't pass fuzzy matching
-        if(target.contractNum() == null && toBeUpdated.accountId() != null) {
-            var contractId = target.copyBuilder().contractNum(toBeUpdated.accountId().accountNum()).build();
+        // Target may have only evm address and this way can't pass fuzzy matching
+        if (target.contractNum() == null && toBeUpdated.accountId() != null) {
+            var contractId = target.copyBuilder()
+                    .contractNum(toBeUpdated.accountId().accountNum())
+                    .build();
             context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(contractId);
         } else {
             context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(target);
         }
-
     }
 
     private void validateSemantics(

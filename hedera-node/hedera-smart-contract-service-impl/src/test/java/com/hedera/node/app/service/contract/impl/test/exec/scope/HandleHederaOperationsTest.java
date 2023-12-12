@@ -59,9 +59,6 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -458,11 +455,14 @@ class HandleHederaOperationsTest {
     @Test
     void externalizeHollowAccountMerge() {
         // given
-        var parentAccount = Account.newBuilder().accountId(AccountID.DEFAULT).key(Key.DEFAULT).build();
+        var parentAccount = Account.newBuilder()
+                .accountId(AccountID.DEFAULT)
+                .key(Key.DEFAULT)
+                .build();
         var contractId = ContractID.newBuilder().contractNum(1001).build();
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(ContractID.DEFAULT)).willReturn(parentAccount);
-        given(context.addRemovableChildRecordBuilder(eq(ContractCreateRecordBuilder.class), any(ExternalizedRecordCustomizer.class)))
+        given(context.addRemovableChildRecordBuilder(eq(ContractCreateRecordBuilder.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractID(eq(contractId))).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status(any())).willReturn(contractCreateRecordBuilder);

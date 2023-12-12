@@ -180,8 +180,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         contractId = enhancement.operations().shardAndRealmValidated(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
-            if(isLongZeroAddress(contractId.evmAddressOrThrow().toByteArray())) {
-                var contractNum = numberOfLongZero(contractId.evmAddressOrThrow().toByteArray());
+            if (isLongZeroAddress(contractId.evmAddressOrThrow().toByteArray())) {
+                var contractNum =
+                        numberOfLongZero(contractId.evmAddressOrThrow().toByteArray());
                 address = evmFrameState.getAddress(contractNum);
             } else {
                 address = pbjToBesuAddress(contractId.evmAddressOrThrow());
@@ -503,7 +504,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             @Nullable final ContractCreateTransactionBody body,
             @Nullable final Address alias) {
         long number;
-        if(alias != null && isHollowAccount(alias)) {
+        if (alias != null && isHollowAccount(alias)) {
             var contractID = getHederaContractId(alias);
             number = contractID.contractNum();
         } else {

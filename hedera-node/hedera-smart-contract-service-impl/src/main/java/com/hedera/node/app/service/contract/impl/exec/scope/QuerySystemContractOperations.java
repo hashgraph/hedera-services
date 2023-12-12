@@ -29,11 +29,10 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.time.Instant;
 import java.util.function.Predicate;
 import javax.inject.Inject;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Provides the "extended" scope a Hedera system contract needs to perform its operations.
@@ -79,16 +78,16 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     }
 
     @Override
-    public void externalizeResult(@NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {
-
-    }
+    public void externalizeResult(@NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {}
 
     /**
      * {@inheritDoc}
      */
     @Override
     public void externalizeResult(
-            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus, @Nullable Transaction transaction) {
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResponseCodeEnum responseStatus,
+            @Nullable Transaction transaction) {
         // no-op
     }
 

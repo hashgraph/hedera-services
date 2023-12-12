@@ -675,7 +675,7 @@ public class Create2OperationSuite extends HapiSuite {
         return defaultHapiSpec(
                         "CanMergeCreate2MultipleCreatesWithHollowAccount",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-//                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        //                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(adminKey),
@@ -823,10 +823,11 @@ public class Create2OperationSuite extends HapiSuite {
         final byte[] salt = unhex(SALT);
 
         return defaultHapiSpec(
-                        "Eip1014AliasIsPriorityInErcOwnerPrecompile", NONDETERMINISTIC_FUNCTION_PARAMETERS
+                        "Eip1014AliasIsPriorityInErcOwnerPrecompile",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS
                         // todo check precompile contract call result!
                         ,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS )
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(SWISS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1072,10 +1073,8 @@ public class Create2OperationSuite extends HapiSuite {
         final var salt = unhex(SALT);
         final var otherSalt = unhex("aabbccddee880011aabbccddee880011aabbccddee880011aabbccddee880011");
 
-        return defaultHapiSpec(
-                        "CannotSelfDestructToMirrorAddress",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
-//                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return defaultHapiSpec("CannotSelfDestructToMirrorAddress", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                //                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
@@ -1205,7 +1204,7 @@ public class Create2OperationSuite extends HapiSuite {
         return defaultHapiSpec(
                         "Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
-//                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                //                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
