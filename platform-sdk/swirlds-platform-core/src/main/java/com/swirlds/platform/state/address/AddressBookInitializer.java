@@ -136,7 +136,9 @@ public class AddressBookInitializer {
 
         final InitializedAddressBooks addressBooks = initialize();
         currentAddressBook = addressBooks.currentAddressBook();
-        if (!useConfigAddressBook) {
+        if (!useConfigAddressBook && !initialState.isGenesisState()) {
+            // validate the new address book against the previous address book when
+            // not forcing the use of config.txt and not starting from genesis
             AddressBookValidator.validateNewAddressBook(stateAddressBook, currentAddressBook);
         }
         previousAddressBook = addressBooks.previousAddressBook();
@@ -193,14 +195,11 @@ public class AddressBookInitializer {
             candidateAddressBook = configAddressBook;
             previousAddressBook = stateAddressBook;
         } else if (initialState.isGenesisState()) {
-            // Starting from Genesis, config and state address book should be the same.
-            if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
-                throw new IllegalStateException("Config and State Address Books do not match on Genesis Start.");
-            }
+            // Starting from Genesis, adopt config address book and move state address book to previous address book
             logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);
-            previousAddressBook = null;
+            previousAddressBook = initialState.getAddressBook();
         } else if (!softwareUpgrade) {
             // Loaded State From Disk, Non-Genesis, No Software Upgrade
             logger.info(STARTUP.getMarker(), "Using the loaded state's address book and weight values.");

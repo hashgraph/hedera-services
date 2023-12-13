@@ -23,7 +23,6 @@ import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_AD
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -95,8 +94,9 @@ class AddressBookInitializerTest {
     @DisplayName("Genesis. Config.txt Initializes Address Book.")
     void noStateLoadedFromDisk() throws IOException {
         clearTestDirectory();
+        final AddressBook stateAddressBook = getRandomAddressBook();
         final AddressBook configAddressBook = getRandomAddressBook();
-        final SignedState signedState = getMockSignedState(10, configAddressBook, true);
+        final SignedState signedState = getMockSignedState(10, stateAddressBook, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
                 getMockSoftwareVersion(2),
@@ -110,7 +110,10 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the expected address book.");
-        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
+        assertEquals(
+                stateAddressBook,
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -119,8 +122,9 @@ class AddressBookInitializerTest {
     @DisplayName("No state loaded from disk. Genesis State set 0 weight.")
     void noStateLoadedFromDiskGenesisStateSetZeroWeight() throws IOException {
         clearTestDirectory();
+        final AddressBook stateAddressBook = getRandomAddressBook();
         final AddressBook configAddressBook = getRandomAddressBook();
-        final SignedState signedState = getMockSignedState(10, configAddressBook, true);
+        final SignedState signedState = getMockSignedState(10, stateAddressBook, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
                 getMockSoftwareVersion(2),
@@ -134,7 +138,10 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
-        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
+        assertEquals(
+                stateAddressBook,
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -143,8 +150,9 @@ class AddressBookInitializerTest {
     @DisplayName("No state loaded from disk. Genesis State modifies address book entries.")
     void noStateLoadedFromDiskGenesisStateChangedAddressBook() throws IOException {
         clearTestDirectory();
+        final AddressBook stateAddressBook = getRandomAddressBook();
         final AddressBook configAddressBook = getRandomAddressBook();
-        final SignedState signedState = getMockSignedState(7, configAddressBook, true);
+        final SignedState signedState = getMockSignedState(7, stateAddressBook, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
                 getMockSoftwareVersion(2),
@@ -158,7 +166,10 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
-        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
+        assertEquals(
+                stateAddressBook,
+                initializer.getPreviousAddressBook(),
+                "The previous address book must equal the state address book.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
