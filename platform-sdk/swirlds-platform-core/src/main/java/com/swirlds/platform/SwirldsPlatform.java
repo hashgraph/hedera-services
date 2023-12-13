@@ -531,13 +531,6 @@ public class SwirldsPlatform implements Platform {
         components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
-        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent);
-
-        final EventHasher eventHasher = new EventHasher(platformContext);
-
-        final PcesReplayer pcesReplayer = new PcesReplayer(time, platformContext, platformStatusManager, eventHasher);
-
-        platformWiring.bind(eventHasher, signedStateFileManager);
 
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
@@ -562,6 +555,10 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 savedStateController,
                 platformWiring.getDumpStateToDiskInput()::put);
+
+        final EventHasher eventHasher = new EventHasher(platformContext);
+        final PcesReplayer pcesReplayer = new PcesReplayer(time, platformWiring.getPcesReplayerEventOutput(), platformWiring::flushIntakePipeline, stateManagementComponent);
+        platformWiring.bind(eventHasher, signedStateFileManager, pcesReplayer);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -806,6 +803,8 @@ public class SwirldsPlatform implements Platform {
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
+
+        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, intakeQueue);
 
         if (eventConfig.useLegacyIntake()) {
             eventCreator = buildLegacyEventCreationManager(

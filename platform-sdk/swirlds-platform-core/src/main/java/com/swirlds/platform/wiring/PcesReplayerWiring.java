@@ -14,10 +14,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param pcesIteratorInputWire       the input wire for the iterator of events to replay
  * @param doneStreamingPcesOutputWire the output wire which indicates that PCES replay is complete
+ * @param eventOutputWire             the secondary output wire, for events to be passed into the intake pipeline during
+ *                                    replay
  */
 public record PcesReplayerWiring(
         @NonNull InputWire<IOIterator<GossipEvent>> pcesIteratorInputWire,
-        @NonNull OutputWire<DoneStreamingPcesTrigger> doneStreamingPcesOutputWire) {
+        @NonNull OutputWire<DoneStreamingPcesTrigger> doneStreamingPcesOutputWire,
+        @NonNull OutputWire<GossipEvent> eventOutputWire) {
 
     /**
      * Create a new instance of this wiring.
@@ -26,7 +29,7 @@ public record PcesReplayerWiring(
      * @return the new wiring instance
      */
     public static PcesReplayerWiring create(@NonNull final TaskScheduler<DoneStreamingPcesTrigger> taskScheduler) {
-        return new PcesReplayerWiring(taskScheduler.buildInputWire("event files to replay"), taskScheduler.buildSecondaryOutputWire());
+        return new PcesReplayerWiring(taskScheduler.buildInputWire("event files to replay"), taskScheduler.getOutputWire(), taskScheduler.buildSecondaryOutputWire());
     }
 
     /**

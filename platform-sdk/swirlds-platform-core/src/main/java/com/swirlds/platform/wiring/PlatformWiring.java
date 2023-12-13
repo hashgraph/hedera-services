@@ -22,6 +22,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -152,7 +153,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
-        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+        final boolean useLegacyIntake = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyIntake();
+
+        if (!useLegacyIntake) {
+            eventHasherWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
             internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
             eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
             eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
@@ -163,8 +170,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
             solderMinimumGenerationNonAncient();
         }
-
-        eventHasherWiring.eventOutput().
     }
 
     /**
@@ -178,7 +183,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
-            @NonNull final AppCommunicationComponent appCommunicationComponent) {
+            @NonNull final AppCommunicationComponent appCommunicationComponent,
+            @NonNull final QueueThread<GossipEvent> intakeQueue) {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
@@ -186,6 +192,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
+
+        final boolean useLegacyIntake = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyIntake();
+
+        if (useLegacyIntake) {
+            // if the new intake pipeline is enabled, this output is soldered in the wiring
+            // in this case where legacy intake is active, we need to solder the hasher output into the intake queue
+            eventHasherWiring.eventOutput().solderTo("intake queue", intakeQueue::add);
+        }
     }
 
     /**
@@ -296,12 +313,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get the output wire which indicates that PCES replay is complete.
+     * Get the output wire that the replayer uses to pass events from file into the intake pipeline.
      *
-     * @return the output wire which indicates that PCES replay is complete
+     * @return the output wire that the replayer uses to pass events from file into the intake pipeline
      */
-    public OutputWire<DoneStreamingPcesTrigger> getPcesReplayerDoneStreamingOutput() {
-        return pcesReplayerWiring.doneStreamingPcesOutputWire();
+    public OutputWire<GossipEvent> getPcesReplayerEventOutput() {
+        return pcesReplayerWiring.eventOutputWire();
     }
 
     /**

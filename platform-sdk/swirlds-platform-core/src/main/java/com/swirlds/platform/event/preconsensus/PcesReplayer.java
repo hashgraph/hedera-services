@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -47,13 +48,13 @@ public final class PcesReplayer {
 
     private final Time time;
 
-    private final InputWire<GossipEvent> eventOutputWire;
+    private final OutputWire<GossipEvent> eventOutputWire;
 
     private final Runnable flushSystem;
 
     private final StateManagementComponent stateManagementComponent;
 
-    public PcesReplayer(final @NonNull Time time, final @NonNull InputWire<GossipEvent> eventOutputWire, final @NonNull Runnable flushSystem, @NonNull final StateManagementComponent stateManagementComponent) {
+    public PcesReplayer(final @NonNull Time time, final @NonNull OutputWire<GossipEvent> eventOutputWire, final @NonNull Runnable flushSystem, @NonNull final StateManagementComponent stateManagementComponent) {
         this.time = Objects.requireNonNull(time);
         this.eventOutputWire = Objects.requireNonNull(eventOutputWire);
         this.flushSystem = Objects.requireNonNull(flushSystem);
