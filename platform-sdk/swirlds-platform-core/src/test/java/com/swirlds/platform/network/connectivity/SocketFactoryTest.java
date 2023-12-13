@@ -110,9 +110,9 @@ class SocketFactoryTest {
 
         final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, PORT);
         clientSocket.getOutputStream().write(DATA);
-        clientSocket.close();
 
         server.join();
+        clientSocket.close();
 
         if (threadException.get() != null) {
             throw threadException.get();
