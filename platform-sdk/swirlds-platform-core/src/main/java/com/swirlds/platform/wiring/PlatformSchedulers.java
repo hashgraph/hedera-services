@@ -20,11 +20,13 @@ import com.swirlds.common.config.PlatformSchedulersConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 
 /**
@@ -49,7 +51,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
         @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
-        @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler) {
+        @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
+        @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -123,6 +126,10 @@ public record PlatformSchedulers(
                         .withType(config.getSignedStateFileManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("pcesReplayer")
+                        .withType(TaskSchedulerType.DIRECT)
                         .build()
                         .cast());
     }

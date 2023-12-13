@@ -79,10 +79,7 @@ public class PreconsensusEventFiles {
     }
 
     /**
-     * <p>
      * Get an iterator that walks over all events starting with a specified generation.
-     * </p>
-     *
      * <p>
      * Note: this method only works at system startup time, using this iterator after startup has undefined behavior. A
      * future task will be to enable event iteration after startup.
@@ -107,6 +104,7 @@ public class PreconsensusEventFiles {
      *                          contain events with a generation greater or equal to this value. A value of
      *                          {@link PreconsensusEventFileManager::NO_MINIMUM_GENERATION} will cause the returned
      *                          iterator to walk over all available event files.
+     * @param startingRound     the round to start streaming from
      * @return an unmodifiable iterator that walks over event files in order
      */
     public @NonNull Iterator<PreconsensusEventFile> getFileIterator(final long minimumGeneration, final long startingRound) {

@@ -21,6 +21,7 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -33,7 +34,7 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriterInterface;
+import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -64,6 +65,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
+    private final PcesReplayerWiring pcesReplayerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -115,6 +117,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
+        pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
 
         wire();
     }
@@ -160,6 +163,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
             solderMinimumGenerationNonAncient();
         }
+
+        eventHasherWiring.eventOutput().
     }
 
     /**
@@ -175,11 +180,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent) {
 
-        signedStateFileManagerWiring
-                .oldestMinimumGenerationOnDiskOutputWire()
-                .solderTo(
-                        "PCES minimum generation to store",
-                        preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
                 .solderTo("status manager", statusManager::submitStatusAction);
@@ -225,10 +225,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param eventHasher            the event hasher to bind
      * @param signedStateFileManager the signed state file manager to bind
+     * @param pcesReplayer           the PCES replayer to bind
      */
-    public void bind(@NonNull final EventHasher eventHasher, @NonNull final SignedStateFileManager signedStateFileManager) {
+    public void bind(@NonNull final EventHasher eventHasher, @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final PcesReplayer pcesReplayer) {
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
+        pcesReplayerWiring.bind(pcesReplayer);
 
         // FUTURE WORK: bind all the things!
     }
@@ -282,6 +284,24 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
         return signedStateFileManagerWiring.dumpStateToDisk();
+    }
+
+    /**
+     * Get the input wire for passing a PCES iterator to the replayer.
+     *
+     * @return the input wire for passing a PCES iterator to the replayer
+     */
+    public InputWire<IOIterator<GossipEvent>> getPcesReplayerIteratorInput() {
+        return pcesReplayerWiring.pcesIteratorInputWire();
+    }
+
+    /**
+     * Get the output wire which indicates that PCES replay is complete.
+     *
+     * @return the output wire which indicates that PCES replay is complete
+     */
+    public OutputWire<DoneStreamingPcesTrigger> getPcesReplayerDoneStreamingOutput() {
+        return pcesReplayerWiring.doneStreamingPcesOutputWire();
     }
 
     /**

@@ -48,8 +48,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
  * @param signedStateFileManagerUnhandledCapacity  number of unhandled tasks allowed in the signed state file manager
  *                                                 scheduler
- * @param preconsensusEventWriterSchedulerType     the preconsensus event writer scheduler type
- * @param preconsensusEventWriterUnhandledCapacity number of unhandled tasks allowed in the preconsensus event writer scheduler
+ * @param pcesWriterSchedulerType                  the preconsensus event writer scheduler type
+ * @param pcesWriterUnhandledCapacity              number of unhandled tasks allowed in the preconsensus event writer scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -71,8 +71,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String signedStateFileManagerSchedulerType,
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String preconsensusEventWriterSchedulerType,
-        @ConfigProperty(defaultValue = "500") int preconsensusEventWriterUnhandledCapacity) {
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String pcesWriterSchedulerType,
+        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity) {
 
     /**
      * Get the event hasher scheduler type
@@ -169,6 +169,6 @@ public record PlatformSchedulersConfig(
      * @return the preconsensus event writer scheduler type
      */
     public TaskSchedulerType getPreconsensusEventWriterSchedulerType() {
-        return TaskSchedulerType.valueOf(preconsensusEventWriterSchedulerType);
+        return TaskSchedulerType.valueOf(pcesWriterSchedulerType);
     }
 }
