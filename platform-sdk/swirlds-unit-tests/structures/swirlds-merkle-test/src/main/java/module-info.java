@@ -4,6 +4,7 @@ open module com.swirlds.merkle.test {
 
     requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.logging;
     requires transitive com.swirlds.merkle;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;

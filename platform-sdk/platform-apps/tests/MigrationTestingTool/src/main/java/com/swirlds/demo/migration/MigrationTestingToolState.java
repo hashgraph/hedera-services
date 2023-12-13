@@ -244,7 +244,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
             logger.error(EXCEPTION.getMarker(), "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
         }
 
-        if (!Objects.equals(previousSoftwareVersion, PREVIOUS_SOFTWARE_VERSION)) {
+        if (previousSoftwareVersion == null || previousSoftwareVersion.compareTo(PREVIOUS_SOFTWARE_VERSION) != 0) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "previousSoftwareVersion was {} when expecting it to be {}",

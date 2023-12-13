@@ -12,6 +12,7 @@ open module com.swirlds.common.test.fixtures {
     exports com.swirlds.common.test.fixtures.fcqueue;
 
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.logging;
     requires transitive com.swirlds.platform.core;
     requires lazysodium.java;
     requires org.apache.logging.log4j;
