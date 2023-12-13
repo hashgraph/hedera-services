@@ -1487,23 +1487,19 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             spec.registry().saveAccountId(ercUser, aliasedAccountId.get());
                             spec.registry().saveKey(ercUser, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
                         }),
-                        cryptoDelete(ercUser).via("deleteTx"),
-                        getTxnRecord("deleteTx").logged())
+                        // delete the account currently holding the alias
+                        cryptoDelete(ercUser).via("deleteTx"))
                 .then(
-                        // todo recreate a new account with the same alias
+                        // try to create a new account with the same alias
                         withOpContext((spec, opLog) -> {
                             var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
                                             .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
                                             .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                                     .signedBy(DEFAULT_PAYER, PARTY)
-                                    .via(HBAR_XFER);
+                                    .hasKnownStatus(ACCOUNT_DELETED);
 
                             allRunFor(spec, op1);
-                        })
-                        // todo assert that the account nonce is now 0 instead of 1
-                        // todo resend the eth transaction with nonce 0
-                        //  that was signed by the ecdsa key and verify it executes successfully
-                        );
+                        }));
     }
 
     @HapiTest
