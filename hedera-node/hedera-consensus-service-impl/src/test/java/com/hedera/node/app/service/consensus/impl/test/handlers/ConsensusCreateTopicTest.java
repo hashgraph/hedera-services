@@ -255,6 +255,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var op = txnBody.consensusCreateTopic();
         given(handleContext.body()).willReturn(txnBody);
 
+        given(handleContext.readableStore(any())).willReturn(accountStore);
+
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -287,9 +289,11 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
-        final var txnBody = newCreateTxn(null, null, true);
+        final var txnBody = newCreateTxn(SIMPLE_KEY_A, null, true);
         final var op = txnBody.consensusCreateTopic();
         given(handleContext.body()).willReturn(txnBody);
+
+        given(handleContext.readableStore(any())).willReturn(accountStore);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -310,7 +314,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var actualTopic = createdTopic.get();
         assertEquals(0L, actualTopic.sequenceNumber());
         assertEquals(memo, actualTopic.memo());
-        assertNull(actualTopic.adminKey());
+        assertEquals(SIMPLE_KEY_A, actualTopic.adminKey());
         assertNull(actualTopic.submitKey());
         assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
@@ -323,10 +327,13 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
     void translatesInvalidExpiryException() {
-        final var txnBody = newCreateTxn(null, null, true);
+        final var txnBody = newCreateTxn(SIMPLE_KEY_A, null, true);
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.readableStore(any())).willReturn(accountStore);
+        //        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
+
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
@@ -339,10 +346,12 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Doesnt translate INVALID_AUTORENEW_ACCOUNT")
     void doesntTranslateInvalidAutoRenewNum() {
-        final var txnBody = newCreateTxn(null, null, true);
+        final var txnBody = newCreateTxn(SIMPLE_KEY_A, null, true);
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.readableStore(any())).willReturn(accountStore);
+
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
@@ -360,6 +369,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var txnBody = newCreateTxn(adminKey, submitKey, true);
         given(handleContext.body()).willReturn(txnBody);
 
+        given(handleContext.readableStore(any())).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
@@ -401,6 +411,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(1, topicStore.sizeOfState());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
 
+        given(handleContext.readableStore(any())).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 1L)
@@ -428,6 +439,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
 
+        given(handleContext.readableStore(any())).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any(), any());

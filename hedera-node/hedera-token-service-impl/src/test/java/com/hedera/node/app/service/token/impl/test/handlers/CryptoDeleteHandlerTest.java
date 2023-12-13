@@ -41,6 +41,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -270,6 +271,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void happyPathWorks() {
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         updateWritableStore(
                 Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
 

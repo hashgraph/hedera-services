@@ -16,8 +16,6 @@
 
 package com.swirlds.demo.merkle.map.internal;
 
-import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.platform.PAYLOAD_CATEGORY;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
@@ -30,6 +28,8 @@ import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.platform.listeners.ReconnectCompleteNotification;
+import com.swirlds.platform.system.Platform;
 import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

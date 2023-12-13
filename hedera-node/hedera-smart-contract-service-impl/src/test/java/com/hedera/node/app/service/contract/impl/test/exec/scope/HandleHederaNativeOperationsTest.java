@@ -35,12 +35,11 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PARANOI
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -151,8 +150,8 @@ class HandleHederaNativeOperationsTest {
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
-        given(context.dispatchChildTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID), eq(CHILD)))
+        given(context.dispatchRemovablePrecedingTransaction(
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
@@ -162,17 +161,18 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void createsHollowAccountByDispatchingDoesNotCatchErrors() {
+    void createsHollowAccountByDispatchingDoesNotThrowErrors() {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
-        given(context.dispatchChildTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID), eq(CHILD)))
+        given(context.dispatchRemovablePrecedingTransaction(
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
-        assertThrows(AssertionError.class, () -> subject.createHollowAccount(CANONICAL_ALIAS));
+        final var status = assertDoesNotThrow(() -> subject.createHollowAccount(CANONICAL_ALIAS));
+        assertThat(status).isEqualTo(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
 
     @Test

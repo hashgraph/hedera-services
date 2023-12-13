@@ -100,11 +100,11 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -292,12 +292,11 @@ public class HandleWorkflow {
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
-            stakingPeriodTimeHook.process(tokenServiceContext);
+            stakingPeriodTimeHook.process(stack, tokenServiceContext);
         } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
         }
-        // @future('7836'): update the exchange rate and call from here
 
         // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
         // the user transaction

@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.FallenBehindManager;

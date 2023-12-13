@@ -31,7 +31,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaExtCodeHashOperationTest {
 
     @Mock
-    private AbstractLedgerEvmWorldUpdater worldUpdater;
+    private AbstractLedgerEvmWorldUpdater<?, ?> worldUpdater;
 
     @Mock
     private Account account;
@@ -132,7 +132,7 @@ class HederaExtCodeHashOperationTest {
 
     @Test
     void executeThrowsInsufficientStackItems() {
-        given(mf.popStackItem()).willThrow(FixedStack.UnderflowException.class);
+        given(mf.popStackItem()).willThrow(UnderflowException.class);
 
         var opResult = subject.execute(mf, evm);
 

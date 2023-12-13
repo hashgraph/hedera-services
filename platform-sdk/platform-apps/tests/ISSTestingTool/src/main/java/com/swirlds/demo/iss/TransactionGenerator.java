@@ -20,9 +20,9 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import com.swirlds.platform.system.Platform;
 import java.util.Random;
 
 /**

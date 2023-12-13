@@ -23,7 +23,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 
@@ -55,7 +55,7 @@ public interface HederaEvmOperationsUtil {
             }
 
             return supplierExecution.get();
-        } catch (final FixedStack.UnderflowException ufe) {
+        } catch (final UnderflowException ufe) {
             return new Operation.OperationResult(
                     supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         }

@@ -16,16 +16,17 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.gui.GuiUtils.wrap;
+import static com.swirlds.platform.gui.GuiUtils.wrap;
 
-import com.swirlds.common.system.Platform;
-import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.components.PrePaintableJPanel;
-import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.GuiUtils;
+import com.swirlds.platform.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.system.Platform;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.List;
@@ -65,7 +66,9 @@ class WinTab2Consensus extends PrePaintableJPanel {
             long r3 = consensus.getMaxRound();
             final StateManagementComponent stateManagementComponent =
                     GuiPlatformAccessor.getInstance().getStateManagementComponent(platform.getSelfId());
-            long r0 = stateManagementComponent.getLastCompleteRound();
+            final SignedStateNexus latestCompleteStateComponent =
+                    GuiPlatformAccessor.getInstance().getLatestCompleteStateComponent(platform.getSelfId());
+            long r0 = latestCompleteStateComponent.getRound();
 
             if (r1 == -1) {
                 s += "\n           = latest deleted round-created";
