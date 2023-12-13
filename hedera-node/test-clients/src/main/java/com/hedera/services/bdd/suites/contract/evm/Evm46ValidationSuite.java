@@ -104,7 +104,8 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String SELFDESTRUCT = "selfdestruct";
     private static final String INNER_TXN = "innerTx";
     private static final Long INTRINSIC_GAS_COST = 21000L;
-    private static final Long GAS_LIMIT_FOR_CALL = 25000L;
+    private static final Long GAS_LIMIT_FOR_CALL = 26000L;
+    private static final Long EXTRA_GAS_FOR_FUNCTION_SELECTOR = 64L;
     private static final Long NOT_ENOUGH_GAS_LIMIT_FOR_CREATION = 500_000L;
     private static final Long ENOUGH_GAS_LIMIT_FOR_CREATION = 900_000L;
     private static final String RECEIVER = "receiver";
@@ -389,11 +390,13 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getTxnRecord("directCallToNonExistingMirrorAddress")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
                         getTxnRecord("directCallToNonExistingMirrorAddress2")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
                         getContractInfo("nonExistingMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
@@ -421,11 +424,13 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getTxnRecord("directCallToNonExistingNonMirrorAddress")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
                         getTxnRecord("directCallToNonExistingNonMirrorAddress2")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
                         getContractInfo("nonExistingNonMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
@@ -444,7 +449,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .status(CONTRACT_REVERT_EXECUTED)
                                 .contractCallResult(resultWith()
-                                        .gasUsed(21408)
+                                        .gasUsed(21472)
                                         .error(errorMessageResult("RevertReason")
                                                 .getBytes()
                                                 .toString()))));
@@ -489,11 +494,13 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getTxnRecord("callToMirrorAddress")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
                         getTxnRecord("callToNonMirrorAddress")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))));
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))));
     }
 
     @HapiTest
@@ -551,11 +558,13 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getTxnRecord("callToMirrorAddress")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
                         getTxnRecord("callToNonMirrorAddress")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                                        .contractCallResult(resultWith()
+                                                .gasUsed(INTRINSIC_GAS_COST + EXTRA_GAS_FOR_FUNCTION_SELECTOR))),
                         getAccountBalance("MirrorAccount").hasTinyBars(changeFromSnapshot("mirrorSnapshot", ONE_HBAR)),
                         getAccountBalance("NonMirrorAccount")
                                 .hasTinyBars(changeFromSnapshot("nonMirrorSnapshot", ONE_HBAR)));
@@ -578,7 +587,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(
-                                        resultWith().createdContractIdsCount(0).gasUsed(24684))));
+                                        resultWith().createdContractIdsCount(0).gasUsed(24972))));
     }
 
     @HapiTest
@@ -602,7 +611,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .createdContractIdsCount(0)
                                         .contractCallResult(bigIntResult(1))
-                                        .gasUsed(47891))));
+                                        .gasUsed(48107))));
     }
 
     @HapiTest
@@ -622,7 +631,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(
-                                        resultWith().createdContractIdsCount(0).gasUsed(24684))));
+                                        resultWith().createdContractIdsCount(0).gasUsed(25020))));
     }
 
     @HapiTest
