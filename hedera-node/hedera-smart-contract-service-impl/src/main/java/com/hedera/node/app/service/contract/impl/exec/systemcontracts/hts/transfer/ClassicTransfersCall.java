@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
@@ -65,6 +66,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class ClassicTransfersCall extends AbstractHtsCall {
     private final byte[] selector;
     private final AccountID spenderId;
+    private final AccountID senderId;
     private final TransactionBody syntheticTransfer;
     private final Configuration configuration;
 
@@ -83,6 +85,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final byte[] selector,
             @NonNull final AccountID spenderId,
+            @Nullable final AccountID senderId,
             @NonNull final TransactionBody syntheticTransfer,
             @NonNull final Configuration configuration,
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
@@ -92,6 +95,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
         this.spenderId = requireNonNull(spenderId);
+        this.senderId = requireNonNull(senderId);
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
         this.configuration = requireNonNull(configuration);
         this.approvalSwitchHelper = approvalSwitchHelper;
@@ -106,6 +110,19 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
+        if (senderId != null) {
+            final var tokenTransferList =
+                    syntheticTransfer.cryptoTransfer().tokenTransfers().get(0).transfers();
+            final var senderAmounts = tokenTransferList.stream()
+                    .filter(accountAmount -> accountAmount.accountID().equals(senderId))
+                    .toList();
+            if (senderAmounts.get(0).amount() < 0) {
+                reversionWith(
+                        gasRequirement,
+                        systemContractOperations()
+                                .externalizePreemptedDispatch(syntheticTransfer, INVALID_TRANSACTION_BODY));
+            }
+        }
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             return reversionWith(
                     gasRequirement,

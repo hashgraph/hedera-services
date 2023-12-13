@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -80,6 +81,7 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.enhancement(),
                 selector,
                 attempt.senderId(),
+                decodeSenderForTokenTransfer(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
                 isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
@@ -114,5 +116,13 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());
+    }
+
+    private AccountID decodeSenderForTokenTransfer(@NonNull HtsCallAttempt attempt) {
+        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
+            final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
+            return call.get(1);
+        }
+        return null;
     }
 }
