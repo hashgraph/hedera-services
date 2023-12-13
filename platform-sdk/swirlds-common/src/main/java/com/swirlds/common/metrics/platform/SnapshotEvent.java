@@ -16,8 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
-
 import com.swirlds.common.platform.NodeId;
 import java.util.Collection;
 import java.util.Objects;
@@ -28,6 +26,6 @@ public record SnapshotEvent(NodeId nodeId, Collection<Snapshot> snapshots) {
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
     public SnapshotEvent {
-        Objects.requireNonNull(snapshots, String.format(ERROR_ARGUMENT_NULL, "snapshots"));
+        Objects.requireNonNull(snapshots, "snapshots must not be null");
     }
 }

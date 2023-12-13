@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.Metric;
@@ -37,7 +36,7 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
     public static Snapshot of(final DefaultMetric metric) {
-        Objects.requireNonNull(metric, String.format(ERROR_ARGUMENT_NULL, "metric"));
+        Objects.requireNonNull(metric, "metric must not be null");
         return new Snapshot(metric, metric.takeSnapshot());
     }
 

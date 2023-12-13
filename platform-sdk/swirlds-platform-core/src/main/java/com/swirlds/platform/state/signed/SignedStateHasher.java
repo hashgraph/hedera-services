@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 
@@ -70,10 +69,8 @@ public class SignedStateHasher {
             SignedStateMetrics signedStateMetrics,
             StateHashedTrigger stateHashedTrigger,
             FatalErrorConsumer fatalErrorConsumer) {
-        Objects.requireNonNull(stateHashedTrigger, String.format(ERROR_ARGUMENT_NULL, "stateHashedTrigger"));
-        Objects.requireNonNull(fatalErrorConsumer, String.format(ERROR_ARGUMENT_NULL, "fatalErrorConsumer"));
-        this.stateHashedTrigger = stateHashedTrigger;
-        this.fatalErrorConsumer = fatalErrorConsumer;
+        this.stateHashedTrigger = Objects.requireNonNull(stateHashedTrigger, "stateHashedTrigger must not be null");
+        this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.signedStateMetrics = signedStateMetrics;
     }
 

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
@@ -53,8 +52,8 @@ public class NumberAdapter extends AbstractMetricAdapter {
      */
     public NumberAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
-        Objects.requireNonNull(registry, String.format(ERROR_ARGUMENT_NULL, "registry"));
-        Objects.requireNonNull(metric, String.format(ERROR_ARGUMENT_NULL, "metric"));
+        Objects.requireNonNull(registry, "registry must not be null");
+        Objects.requireNonNull(metric, "metric must not be null");
         final Gauge.Builder builder = new Gauge.Builder()
                 .subsystem(fix(metric.getCategory()))
                 .name(fix(metric.getName()))
@@ -71,12 +70,12 @@ public class NumberAdapter extends AbstractMetricAdapter {
      */
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
-        Objects.requireNonNull(snapshot, String.format(ERROR_ARGUMENT_NULL, "snapshot"));
+        Objects.requireNonNull(snapshot, "snapshot must not be null");
         final double newValue = ((Number) snapshot.getValue()).doubleValue();
         if (adapterType == GLOBAL) {
             gauge.set(newValue);
         } else {
-            Objects.requireNonNull(nodeId, String.format(ERROR_ARGUMENT_NULL, "nodeId"));
+            Objects.requireNonNull(nodeId, "nodeId must not be null");
             final Gauge.Child child = gauge.labels(nodeId.toString());
             child.set(newValue);
         }

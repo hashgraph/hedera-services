@@ -16,8 +16,6 @@
 
 package com.swirlds.common.config.singleton;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
-
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
@@ -66,8 +64,7 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * @throws NullPointerException in case {@code configuration} parameter is {@code null}
      */
     public void setConfiguration(final Configuration configuration) {
-        Objects.requireNonNull(configuration, String.format(ERROR_ARGUMENT_NULL, "configuration"));
-        this.configuration = configuration;
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
     /**

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_0;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
@@ -132,9 +131,8 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public ConsensusMetricsImpl(final NodeId selfId, final Metrics metrics) {
-        Objects.requireNonNull(selfId, String.format(ERROR_ARGUMENT_NULL, "selfId"));
-        Objects.requireNonNull(metrics, String.format(ERROR_ARGUMENT_NULL, "metrics"));
-        this.selfId = selfId;
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(metrics, "metrics must not be null");
 
         avgFirstEventInRoundReceivedTime = metrics.getOrCreate(AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG);
         numCoinRounds = metrics.getOrCreate(NUM_COIN_ROUNDS_CONFIG);

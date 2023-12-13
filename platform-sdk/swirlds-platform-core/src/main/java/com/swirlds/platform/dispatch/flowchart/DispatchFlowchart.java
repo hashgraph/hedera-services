@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.dispatch.flowchart;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
-
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -144,7 +142,7 @@ public class DispatchFlowchart {
             final String comment,
             final Map<Class<?>, Set<CommentedTrigger>> map) {
 
-        Objects.requireNonNull(owner, String.format(ERROR_ARGUMENT_NULL, "owner"));
+        Objects.requireNonNull(owner, "owner must not be null");
 
         final Class<?> ownerClass;
         if (owner instanceof final Class<?> cls) {

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_THRESHOLD;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
@@ -94,9 +93,8 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      */
     @Deprecated(forRemoval = true)
     public PrometheusEndpoint(final HttpServer httpServer, final CollectorRegistry registry) throws IOException {
-        Objects.requireNonNull(httpServer, String.format(ERROR_ARGUMENT_NULL, "httpServer"));
-        Objects.requireNonNull(registry, String.format(ERROR_ARGUMENT_NULL, "registry"));
-        this.registry = registry;
+        Objects.requireNonNull(httpServer, "httpServer must not be null");
+        this.registry = Objects.requireNonNull(registry, "registry must not be null");
 
         logger.info(
                 STARTUP.getMarker(),
@@ -118,7 +116,7 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      * @throws NullPointerException in case {@code notification} parameter is {@code null}
      */
     public void handleMetricsChange(final MetricsEvent notification) {
-        Objects.requireNonNull(notification, String.format(ERROR_ARGUMENT_NULL, "notification"));
+        Objects.requireNonNull(notification, "notification must not be null");
 
         final Metric metric = notification.metric();
         final String metricKey = calculateMetricKey(metric);
@@ -148,7 +146,7 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      * 		the {@link SnapshotEvent}
      */
     public void handleSnapshots(final SnapshotEvent notification) {
-        Objects.requireNonNull(notification, String.format(ERROR_ARGUMENT_NULL, "notification"));
+        Objects.requireNonNull(notification, "notification must not be null");
 
         for (final Snapshot snapshot : notification.snapshots()) {
             final String metricKey = calculateMetricKey(snapshot.metric());

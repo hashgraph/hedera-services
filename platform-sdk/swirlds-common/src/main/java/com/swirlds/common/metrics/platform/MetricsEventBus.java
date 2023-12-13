@@ -16,8 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
-
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -46,8 +44,7 @@ public class MetricsEventBus<T> {
      * @throws NullPointerException in case {@code executor} parameter is {@code null}
      */
     public MetricsEventBus(final Executor executor) {
-        Objects.requireNonNull(executor, String.format(ERROR_ARGUMENT_NULL, "executor"));
-        this.executor = executor;
+        this.executor = Objects.requireNonNull(executor, "executor must not be null");
     }
 
     /**
@@ -65,8 +62,8 @@ public class MetricsEventBus<T> {
      * @throws NullPointerException in case {@code previousEvents} parameter is {@code null}
      */
     public Runnable subscribe(final Consumer<? super T> subscriber, final Supplier<Stream<T>> previousEvents) {
-        Objects.requireNonNull(subscriber, String.format(ERROR_ARGUMENT_NULL, "subscriber"));
-        Objects.requireNonNull(previousEvents, String.format(ERROR_ARGUMENT_NULL, "previousEvents"));
+        Objects.requireNonNull(subscriber, "subscriber must not be null");
+        Objects.requireNonNull(previousEvents, "previousEvents must not be null");
         subscribers.add(subscriber);
         executor.execute(() -> previousEvents.get().forEach(subscriber));
         return () -> subscribers.remove(subscriber);
@@ -82,7 +79,7 @@ public class MetricsEventBus<T> {
      * @throws NullPointerException in case {@code event} parameter is {@code null}
      */
     public void submit(final T event) {
-        Objects.requireNonNull(event, String.format(ERROR_ARGUMENT_NULL, "event"));
+        Objects.requireNonNull(event, "event must not be null");
         executor.execute(() -> subscribers.forEach(subscriber -> subscriber.accept(event)));
     }
 }
