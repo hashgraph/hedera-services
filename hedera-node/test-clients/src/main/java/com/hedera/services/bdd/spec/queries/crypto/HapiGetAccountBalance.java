@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -233,7 +234,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         // we are using getAccountDetails query to get token balances.
         if (!expectedTokenBalances.isEmpty() || !tokenBalanceObservers.isEmpty()) {
             final var detailsLookup = QueryVerbs.getAccountDetails(
-                    "0.0." + balanceResponse.getAccountID().getAccountNum());
+                            "0.0." + balanceResponse.getAccountID().getAccountNum())
+                    .payingWith(GENESIS);
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
