@@ -21,9 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.context.PlatformContext;
@@ -35,15 +33,13 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -55,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -357,11 +354,14 @@ class StateManagementComponentTests {
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
-        final PlatformSigner signer = mock(PlatformSigner.class);
-        when(signer.sign(any(Hash.class))).thenReturn(mock(Signature.class));
-
-        final PlatformStatusGetter platformStatusGetter = mock(PlatformStatusGetter.class);
-        when(platformStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
+        final Consumer<ReservedSignedState> signer = rs -> {
+            try (rs) {
+                systemTransactionConsumer.consume(new StateSignatureTransaction(
+                        rs.get().getRound(),
+                        mock(Signature.class),
+                        rs.get().getState().getHash()));
+            }
+        };
 
         final DispatchConfiguration dispatchConfiguration =
                 platformContext.getConfiguration().getConfigData(DispatchConfiguration.class);
@@ -372,13 +372,11 @@ class StateManagementComponentTests {
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
                 dispatchBuilder,
-                signer,
-                systemTransactionConsumer::consume,
                 newLatestCompleteStateConsumer::consume,
                 (msg, t, code) -> {},
-                platformStatusGetter,
                 controller,
-                r -> {});
+                r -> {},
+                signer);
 
         dispatchBuilder.start();
 

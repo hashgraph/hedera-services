@@ -52,7 +52,6 @@ import java.util.Map;
 import java.util.Objects;
 
 class ConverterService implements ConfigLifecycle {
-
     private final Map<Class<?>, ConfigConverter<?>> converters;
 
     private boolean initialized = false;
@@ -116,7 +115,7 @@ class ConverterService implements ConfigLifecycle {
                 .orElseGet(() -> getConverterType((Class<C>) converterClass.getSuperclass()));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Nullable
     <T> T convert(@Nullable final String value, @NonNull final Class<T> targetClass) {
         throwIfNotInitialized();
@@ -128,6 +127,20 @@ class ConverterService implements ConfigLifecycle {
             return (T) value;
         }
         final ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(targetClass);
+
+        if (converter == null && targetClass.isEnum()) {
+            // FUTURE WORK: once logging is added to this module, log a warning here
+            // ("No converter defined for type '" + targetClass + "'. Converting using backup enum converter.");
+            try {
+                return (T) Enum.valueOf((Class<Enum>) targetClass, value);
+            } catch (final IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        "Can not convert value '%s' of Enum '%s' by default. Please add a custom config converter."
+                                .formatted(value, targetClass),
+                        e);
+            }
+        }
+
         if (converter == null) {
             throw new IllegalArgumentException("No converter defined for type '" + targetClass + "'");
         }
