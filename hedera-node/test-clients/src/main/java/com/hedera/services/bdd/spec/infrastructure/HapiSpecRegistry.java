@@ -421,6 +421,58 @@ public class HapiSpecRegistry {
         return hasVia(this::getKey, name);
     }
 
+
+    public void saveLockKey(String name, Key key) {
+        put(name + "Lock", key, Key.class);
+    }
+
+    public boolean hasLockKey(String name) {
+        return has(name + "Lock", Key.class);
+    }
+
+    public Key getLockKey(String name) {
+        return get(name + "Lock", Key.class);
+    }
+
+    public void forgetLockKey(String name) {
+        remove(name + "Lock", Key.class);
+    }
+
+
+    public void savePartitionKey(String name, Key key) {
+        put(name + "Partition", key, Key.class);
+    }
+
+    public boolean hasPartitionKey(String name) {
+        return has(name + "Partition", Key.class);
+    }
+
+    public Key getPartitionKey(String name) {
+        return get(name + "Partition", Key.class);
+    }
+
+    public void forgetPartitionKey(String name) {
+        remove(name + "Partition", Key.class);
+    }
+
+
+    public void savePartitionMoveKey(String name, Key key) {
+        put(name + "PartitionMove", key, Key.class);
+    }
+
+    public boolean hasPartitionMoveKey(String name) {
+        return has(name + "PartitionMove", Key.class);
+    }
+
+    public Key getPartitionMoveKey(String name) {
+        return get(name + "PartitionMove", Key.class);
+    }
+
+    public void forgetPartitionMoveKey(String name) {
+        remove(name + "PartitionMove", Key.class);
+    }
+
+
     public void removeKey(String name) {
         try {
             remove(name, Key.class);
