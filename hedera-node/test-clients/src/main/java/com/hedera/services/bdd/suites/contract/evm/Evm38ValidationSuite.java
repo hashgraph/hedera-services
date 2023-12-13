@@ -631,10 +631,10 @@ public class Evm38ValidationSuite extends HapiSuite {
     HapiSpec callingDestructedContractReturnsStatusDeleted() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return propertyPreservingHapiSpec("callingDestructedContractReturnsStatusDeleted")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
@@ -658,10 +658,10 @@ public class Evm38ValidationSuite extends HapiSuite {
 
         final var sender = "sender";
         return propertyPreservingHapiSpec("factoryAndSelfDestructInConstructorContract")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
