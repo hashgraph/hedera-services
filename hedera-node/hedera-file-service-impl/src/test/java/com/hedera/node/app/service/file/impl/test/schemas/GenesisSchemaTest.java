@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
@@ -36,6 +37,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,8 +50,11 @@ final class GenesisSchemaTest {
     private final NetworkInfo networkInfo = new FakeNetworkInfo();
     private final HandleThrottleParser handleThrottleParser = new FakeHandleThrottleParser();
 
+    private ConfigProvider configProvider;
+
     @BeforeEach
     void setUp() {
+        configProvider = new BootstrapConfigProviderImpl();
         newStates = MapWritableStates.builder()
                 .state(MapWritableKVState.builder(FileServiceImpl.BLOBS_KEY).build())
                 .build();
@@ -60,7 +65,7 @@ final class GenesisSchemaTest {
     void emptyFilesCreatedForUpdateFiles() {
         // Given a file GenesisSchema, and a configuration setting for the range that is unique, so we can make
         // sure to verify that the code in question is using the config values, (and same for key and expiry)
-        final var schema = new FileGenesisSchema();
+        final var schema = new FileGenesisSchema(configProvider);
         final var expiry = 1000;
         final var keyString = "0123456789012345678901234567890123456789012345678901234567890123";
         final var key = Key.newBuilder().ed25519(Bytes.wrap(unhex(keyString))).build();

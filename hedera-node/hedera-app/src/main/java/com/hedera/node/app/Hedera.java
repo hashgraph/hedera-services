@@ -258,7 +258,7 @@ public final class Hedera implements SwirldMain {
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
                         CONTRACT_SERVICE,
-                        new FileServiceImpl(),
+                        new FileServiceImpl(bootstrapConfigProvider),
                         new FreezeServiceImpl(),
                         new NetworkServiceImpl(),
                         new ScheduleServiceImpl(),

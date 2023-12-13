@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.Schema;
@@ -23,7 +24,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -52,19 +52,12 @@ public interface ReadableUpgradeFileStore {
      * @return The element at the head of the queue, or null if the queue is empty.
      */
     @Nullable
-    File peek();
-
-    /**
-     * An iterator over all elements in the queue without removing any elements from the queue.
-     * @return An iterator over all elements in the queue.
-     */
-    @NonNull
-    Iterator<File> iterator();
+    File peek(final FileID fileID);
 
     /**
      * Gets the full contents of the file from state.
      * @return The full contents of the file.
      * @throws IOException
      */
-    Bytes getFull() throws IOException;
+    Bytes getFull(final FileID fileID) throws IOException;
 }
