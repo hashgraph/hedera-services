@@ -212,7 +212,7 @@ public final class RecordListBuilder {
             @NonNull final Configuration configuration,
             @NonNull final HandleContext.TransactionCategory childCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(
+        return doAddFollowingChild(
                 configuration, ReversingBehavior.REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, childCategory);
     }
 
@@ -230,7 +230,7 @@ public final class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(
+        return doAddFollowingChild(
                 configuration,
                 ReversingBehavior.REMOVABLE,
                 NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
@@ -254,11 +254,11 @@ public final class RecordListBuilder {
             @NonNull final Configuration configuration, @NonNull final ExternalizedRecordCustomizer customizer) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         requireNonNull(customizer, "customizer must not be null");
-        return doAddChild(
+        return doAddFollowingChild(
                 configuration, ReversingBehavior.REMOVABLE, customizer, HandleContext.TransactionCategory.CHILD);
     }
 
-    private SingleTransactionRecordBuilderImpl doAddChild(
+    private SingleTransactionRecordBuilderImpl doAddFollowingChild(
             @NonNull final Configuration configuration,
             final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
@@ -408,6 +408,8 @@ public final class RecordListBuilder {
         // Add all preceding transactions. The last item in the list has the earliest consensus time, so it needs to
         // be added to "records" first. However, the first item should have a nonce of 1, and the last item should have
         // a nonce of N, where N is the number of preceding transactions.
+        // precedingTxnRecordBuilders is not null. It will be 0 in case of null.
+        @SuppressWarnings("java:S2259")
         int count = precedingTxnRecordBuilders == null ? 0 : precedingTxnRecordBuilders.size();
         for (int i = count - 1; i >= 0; i--) {
             final SingleTransactionRecordBuilderImpl recordBuilder = precedingTxnRecordBuilders.get(i);

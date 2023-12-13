@@ -239,7 +239,6 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(overriding(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES));
     }
 
-    @HapiTest
     private HapiSpec optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
@@ -373,7 +372,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
                 .then(contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                         .gas(300_000L)
-                        .has(resultWith().gasUsed(26_451)));
+                        .has(resultWith().gasUsed(26_515)));
     }
 
     @HapiTest

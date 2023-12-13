@@ -19,8 +19,11 @@ package com.swirlds.platform.components.state;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
-import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
-import com.swirlds.platform.state.signed.*;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateFinder;
+import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -41,8 +44,7 @@ public interface StateManagementComponent
         extends PlatformComponent,
                 SignedStateFinder,
                 SignedStateToLoadConsumer,
-                NewSignedStateFromTransactionsConsumer,
-                LatestSignedStateProvider {
+                NewSignedStateFromTransactionsConsumer {
 
     /**
      * Get a reserved instance of the latest immutable signed state. May be unhashed, may or may not have all required
@@ -53,13 +55,6 @@ public interface StateManagementComponent
      * @return a reserved signed state, may contain null if none currently in memory are complete
      */
     ReservedSignedState getLatestImmutableState(@NonNull final String reason);
-
-    /**
-     * Returns the latest round for which there is a complete signed state.
-     *
-     * @return the latest round number
-     */
-    long getLastCompleteRound();
 
     /**
      * Get the latest signed states stored by this component. This method creates a copy, so no changes to the array

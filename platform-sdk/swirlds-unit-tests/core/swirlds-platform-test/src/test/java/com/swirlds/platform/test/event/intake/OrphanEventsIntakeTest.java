@@ -24,7 +24,7 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
@@ -125,7 +125,10 @@ class OrphanEventsIntakeTest {
                     .limit(numEvents)
                     .collect(Collectors.toList());
             Collections.shuffle(generatedList, r);
-            generatedList.forEach(intake::addUnlinkedEvent);
+            generatedList.forEach(event -> {
+                event.buildDescriptor();
+                intake.addUnlinkedEvent(event);
+            });
         }
 
         public List<EventImpl> getConsensusEvents() {

@@ -18,9 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -35,6 +33,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -103,13 +102,17 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                 .build();
         // Note the use of the null "verification assistant" callback; we don't want any
         // signing requirements enforced for this synthetic transaction
-        final var childRecordBuilder = context.dispatchChildTransaction(
-                synthTxn, CryptoCreateRecordBuilder.class, null, context.payer(), CHILD);
-        // FUTURE - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
-            throw new AssertionError("Not implemented");
+        try {
+            return context.dispatchRemovablePrecedingTransaction(
+                            synthTxn, CryptoCreateRecordBuilder.class, null, context.payer())
+                    .status();
+        } catch (final HandleException e) {
+            // It is critically important we don't let HandleExceptions propagate to the workflow because
+            // it doesn't rollback for contract operations so we can commit gas charges; that is, the
+            // EVM transaction should always either run to completion or (if it must) throw an internal
+            // failure like an IllegalArgumentException---but not a HandleException!
+            return e.getStatus();
         }
-        return OK;
     }
 
     /**
