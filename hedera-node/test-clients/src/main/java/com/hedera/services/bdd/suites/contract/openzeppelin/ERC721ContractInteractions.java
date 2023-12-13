@@ -65,7 +65,7 @@ public class ERC721ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callsERC721ContractInteractions() {
+    final HapiSpec callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
         final var nftId = BigInteger.ONE;
         final var CREATE_TX = "create";

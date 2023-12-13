@@ -96,7 +96,7 @@ public class FileExpansionLoadProvider extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec runFileExpansions() {
+    final HapiSpec runFileExpansions() {
         return HapiSpec.defaultHapiSpec("RunFileExpansions")
                 .given(
                         overriding(MAX_FILE_SIZE_KB_PROP, OVERRIDE_MAX_FILE_SIZE_KB),
