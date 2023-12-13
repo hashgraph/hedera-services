@@ -66,7 +66,7 @@ public class Issue305Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createDeleteInSameRoundWorks() {
+    final HapiSpec createDeleteInSameRoundWorks() {
         AtomicReference<String> nextFileId = new AtomicReference<>();
         return defaultHapiSpec("CreateDeleteInSameRoundWorks")
                 .given(
@@ -88,7 +88,7 @@ public class Issue305Spec extends HapiSuite {
                         getFileInfo(nextFileId::get).hasDeleted(true));
     }
 
-    private HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
+    final HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";
         final var postCongestionTxn = "postCongestionTxn";

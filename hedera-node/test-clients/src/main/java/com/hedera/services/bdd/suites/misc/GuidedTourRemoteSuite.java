@@ -95,7 +95,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
      *
      * @return the example spec
      */
-    private HapiSpec rekeyAccountWith2Of3Choice() {
+    final HapiSpec rekeyAccountWith2Of3Choice() {
         // The account to re-key
         final var target = "0.0.1234";
         // The PEM files with the involved keys
@@ -133,7 +133,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, extantKey));
     }
 
-    private HapiSpec balanceLookupContractWorks() {
+    final HapiSpec balanceLookupContractWorks() {
         final long ACTUAL_BALANCE = 1_234L;
         final var contract = "BalanceLookup";
 
@@ -156,7 +156,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                                                 isLiteralResult(new Object[] {BigInteger.valueOf(ACTUAL_BALANCE)}))));
     }
 
-    private HapiSpec topLevelHederaKeyMustBeActive() {
+    final HapiSpec topLevelHederaKeyMustBeActive() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl updateSigControl = waclShape.signedWith(sigs(ON, sigs(ON, OFF, OFF)));
 
@@ -177,7 +177,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
       NOTE: KeyLists lower in the key hierarchy still require all child keys
       to have active signatures.
     */
-    private HapiSpec topLevelListBehavesAsRevocationService() {
+    final HapiSpec topLevelListBehavesAsRevocationService() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl deleteSigControl = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
 
@@ -188,7 +188,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                 .then(fileDelete(TARGET).sigControl(ControlForKey.forKey(TARGET, deleteSigControl)));
     }
 
-    private HapiSpec updateWithInvalidatedKeyFailsInHandle() {
+    final HapiSpec updateWithInvalidatedKeyFailsInHandle() {
         return customHapiSpec("UpdateWithInvalidatedKeyFailsIHandle")
                 .withProperties(Map.of("host", HOST))
                 .given(
@@ -203,7 +203,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiSpec updateWithInvalidKeyFailsInPrecheck() {
+    final HapiSpec updateWithInvalidKeyFailsInPrecheck() {
         KeyShape keyShape = listOf(3);
 
         return HapiSpec.customHapiSpec("UpdateWithInvalidKeyFailsInPrecheck")
@@ -216,7 +216,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                         .hasPrecheck(INVALID_SIGNATURE));
     }
 
-    private HapiSpec transferChangesBalance() {
+    final HapiSpec transferChangesBalance() {
         final long AMOUNT = 1_000L;
 
         return HapiSpec.customHapiSpec("TransferChangesBalance")

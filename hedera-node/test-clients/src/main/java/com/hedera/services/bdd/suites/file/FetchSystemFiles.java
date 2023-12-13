@@ -51,7 +51,7 @@ public class FetchSystemFiles extends HapiSuite {
 
     /** Fetches the system files from a running network and saves them to the local file system. */
     @HapiTest
-    private HapiSpec fetchFiles() {
+    final HapiSpec fetchFiles() {
         return customHapiSpec("FetchFiles")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

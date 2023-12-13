@@ -172,7 +172,7 @@ public class SStoreSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec benchmarkSingleSetter() {
+    final HapiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")

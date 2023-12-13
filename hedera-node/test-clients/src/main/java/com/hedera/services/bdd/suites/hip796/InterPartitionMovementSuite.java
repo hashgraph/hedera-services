@@ -69,7 +69,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec partitionMoveWithoutUserSignature() {
+    final HapiSpec partitionMoveWithoutUserSignature() {
         return defaultHapiSpec("PartitionMoveWithoutUserSignature")
                 .given(fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
@@ -95,7 +95,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec partitionMoveWithUserSignature() {
+    final HapiSpec partitionMoveWithUserSignature() {
         return defaultHapiSpec("PartitionMoveWithUserSignature")
                 .given(fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)

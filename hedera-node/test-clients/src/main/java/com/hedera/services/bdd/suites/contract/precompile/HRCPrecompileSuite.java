@@ -102,7 +102,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hrcNftAndFungibleTokenAssociateFromEOA() {
+    final HapiSpec hrcNftAndFungibleTokenAssociateFromEOA() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
@@ -214,7 +214,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
+    final HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
         return defaultHapiSpec("hrcNFTAndFungibleTokenAssociateFromContract")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -321,7 +321,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
+    final HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenAssociateFromSameEOATwiceShouldFail")
@@ -387,7 +387,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
+    final HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenDissociateWhenNotAssociatedShouldFail")
@@ -435,7 +435,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
+    final HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenDissociateWhenBalanceNotZeroShouldFail")
@@ -503,7 +503,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hrcTooManyTokenAssociateShouldFail() {
+    final HapiSpec hrcTooManyTokenAssociateShouldFail() {
         final AtomicReference<String> fungibleTokenNum1 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum2 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum3 = new AtomicReference<>();

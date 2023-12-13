@@ -67,7 +67,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiSuite {
         return List.of(runTransfersBeforeReconnect(), updateAllProtectedFilesDuringReconnect());
     }
 
-    private HapiSpec updateAllProtectedFilesDuringReconnect() {
+    final HapiSpec updateAllProtectedFilesDuringReconnect() {
         final String fileInfoRegistry = "apiPermissionsReconnect";
         final String nonUpdatableFile = "nonUpdatableFile";
 

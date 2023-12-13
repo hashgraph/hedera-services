@@ -227,7 +227,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnWithKeyAsPartOf1OfXThreshold() {
+    final HapiSpec burnWithKeyAsPartOf1OfXThreshold() {
         final var delegateContractKeyShape = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
         final var contractKeyShape = KeyShape.threshOf(1, SIMPLE, KeyShape.CONTRACT);
 
@@ -293,7 +293,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForBurnWithContractKey() {
+    final HapiSpec delegateCallForBurnWithContractKey() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -345,7 +345,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForMintWithContractKey() {
+    final HapiSpec delegateCallForMintWithContractKey() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -395,7 +395,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForDissociatePrecompileFails() {
+    final HapiSpec staticCallForDissociatePrecompileFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -435,7 +435,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForTransferWithContractKey() {
+    final HapiSpec staticCallForTransferWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -487,7 +487,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForBurnWithContractKey() {
+    final HapiSpec staticCallForBurnWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -530,7 +530,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForMintWithContractKey() {
+    final HapiSpec staticCallForMintWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -570,7 +570,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForTransferWithDelegateContractKey() {
+    final HapiSpec staticCallForTransferWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -623,7 +623,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForBurnWithDelegateContractKey() {
+    final HapiSpec staticCallForBurnWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -669,7 +669,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForMintWithDelegateContractKey() {
+    final HapiSpec staticCallForMintWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -711,7 +711,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForAssociatePrecompileFails() {
+    final HapiSpec staticCallForAssociatePrecompileFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -753,7 +753,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForMintWithContractKey() {
+    final HapiSpec callForMintWithContractKey() {
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
 
@@ -807,7 +807,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForMintWithDelegateContractKey() {
+    final HapiSpec callForMintWithDelegateContractKey() {
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
 
@@ -864,7 +864,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForTransferWithContractKey() {
+    final HapiSpec callForTransferWithContractKey() {
         return defaultHapiSpec(
                         "callForTransferWithContractKey",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -926,7 +926,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForTransferWithDelegateContractKey() {
+    final HapiSpec callForTransferWithDelegateContractKey() {
         return defaultHapiSpec(
                         "callForTransferWithDelegateContractKey",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -988,7 +988,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForAssociateWithDelegateContractKey() {
+    final HapiSpec callForAssociateWithDelegateContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -1032,7 +1032,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForAssociateWithContractKey() {
+    final HapiSpec callForAssociateWithContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -1215,7 +1215,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForBurnWithDelegateContractKey() {
+    final HapiSpec callForBurnWithDelegateContractKey() {
         return defaultHapiSpec(
                         "callForBurnWithDelegateContractKey",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
@@ -1261,7 +1261,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
+    final HapiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -1310,7 +1310,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks() {
+    final HapiSpec delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -1360,7 +1360,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
@@ -1919,7 +1919,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
@@ -2004,7 +2004,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -2085,7 +2085,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
@@ -2167,7 +2167,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
@@ -2250,7 +2250,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -2328,7 +2328,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
+    final HapiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -2376,7 +2376,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
+    final HapiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -2425,7 +2425,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForBurnWithContractKey() {
+    final HapiSpec callForBurnWithContractKey() {
         return defaultHapiSpec(
                         "callForBurnWithContractKey",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,

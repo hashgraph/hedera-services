@@ -66,7 +66,7 @@ public class ZeroStakeNodeTest extends HapiSuite {
      * node ids of the network with zero stake nodes. Assumes that node 0.0.7 and node 0.0.8 are
      * started with zero stake in a 6 node network.
      */
-    private HapiSpec zeroStakeBehavesAsExpectedJRS() {
+    final HapiSpec zeroStakeBehavesAsExpectedJRS() {
         return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
                 .given(
                         cryptoCreate("sponsor"),

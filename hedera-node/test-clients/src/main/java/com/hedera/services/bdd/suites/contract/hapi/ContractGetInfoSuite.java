@@ -60,7 +60,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoWorks() {
+    final HapiSpec getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";
         return defaultHapiSpec("GetInfoWorks")
@@ -79,7 +79,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromCostAnswer() {
+    final HapiSpec invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -88,7 +88,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromAnswerOnly() {
+    final HapiSpec invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

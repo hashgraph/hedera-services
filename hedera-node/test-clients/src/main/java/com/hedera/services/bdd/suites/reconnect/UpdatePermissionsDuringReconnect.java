@@ -46,7 +46,7 @@ public class UpdatePermissionsDuringReconnect extends HapiSuite {
         return List.of(updateApiPermissionsDuringReconnect());
     }
 
-    private HapiSpec updateApiPermissionsDuringReconnect() {
+    final HapiSpec updateApiPermissionsDuringReconnect() {
         final String fileInfoRegistry = "apiPermissionsReconnect";
         return defaultHapiSpec("updateApiPermissionsDuringReconnect")
                 .given(

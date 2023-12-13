@@ -74,7 +74,7 @@ public class QueryPaymentSuite extends HapiSuite {
      * 3. Transaction payer is not involved in transfers for query payment to node and one or more have less balance
      */
     @HapiTest
-    private HapiSpec queryPaymentsFailsWithInsufficientFunds() {
+    final HapiSpec queryPaymentsFailsWithInsufficientFunds() {
         return defaultHapiSpec("queryPaymentsFailsWithInsufficientFunds")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),
@@ -110,7 +110,7 @@ public class QueryPaymentSuite extends HapiSuite {
      * 3. Transaction payer is not involved in transfers for query payment to node and all payers have enough balance
      */
     @HapiTest
-    private HapiSpec queryPaymentsMultiBeneficiarySucceeds() {
+    final HapiSpec queryPaymentsMultiBeneficiarySucceeds() {
         return defaultHapiSpec("queryPaymentsMultiBeneficiarySucceeds")
                 .given(
                         cryptoCreate("a").balance(1_234L),
@@ -140,7 +140,7 @@ public class QueryPaymentSuite extends HapiSuite {
 
     // Check if multiple payers or single payer pay amount to node
     @HapiTest
-    private HapiSpec queryPaymentsSingleBeneficiaryChecked() {
+    final HapiSpec queryPaymentsSingleBeneficiaryChecked() {
         return defaultHapiSpec("queryPaymentsSingleBeneficiaryChecked")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),
@@ -162,7 +162,7 @@ public class QueryPaymentSuite extends HapiSuite {
 
     // Check if payment is not done to node
     @HapiTest
-    private HapiSpec queryPaymentsNotToNodeFails() {
+    final HapiSpec queryPaymentsNotToNodeFails() {
         return defaultHapiSpec("queryPaymentsNotToNodeFails")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),

@@ -94,7 +94,7 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonZeroTransfersFail() {
+    final HapiSpec nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
         return defaultHapiSpec("NonZeroTransfersFail")
                 .given(

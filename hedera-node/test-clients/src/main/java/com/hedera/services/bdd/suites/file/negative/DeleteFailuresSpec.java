@@ -43,7 +43,7 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec handleRejectsMissingFile() {
+    final HapiSpec handleRejectsMissingFile() {
         return defaultHapiSpec("handleRejectsMissingFile")
                 .given()
                 .when()
@@ -51,7 +51,7 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec handleRejectsDeletedFile() {
+    final HapiSpec handleRejectsDeletedFile() {
         return defaultHapiSpec("handleRejectsDeletedFile")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))

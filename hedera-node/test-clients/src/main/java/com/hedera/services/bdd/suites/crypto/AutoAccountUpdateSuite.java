@@ -82,7 +82,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec modifySigRequiredAfterAutoAccountCreation() {
+    final HapiSpec modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -125,7 +125,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateKeyOnAutoCreatedAccount() {
+    final HapiSpec updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
         SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(

@@ -67,7 +67,7 @@ public class DuplicateManagementTest extends HapiSuite {
         });
     }
 
-    private HapiSpec hasExpectedDuplicates() {
+    final HapiSpec hasExpectedDuplicates() {
         return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
@@ -127,7 +127,7 @@ public class DuplicateManagementTest extends HapiSuite {
                         }));
     }
 
-    private HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
+    final HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
@@ -149,7 +149,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                         .transfers(includingDeduction("node payment", TO))));
     }
 
-    private HapiSpec classifiableTakesPriorityOverUnclassifiable() {
+    final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
         return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
                         cryptoCreate(CIVILIAN).balance(100 * 100_000_000L),

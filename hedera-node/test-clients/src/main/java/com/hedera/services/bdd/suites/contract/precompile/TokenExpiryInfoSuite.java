@@ -85,7 +85,7 @@ public class TokenExpiryInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getExpiryInfoForToken() {
+    final HapiSpec getExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 

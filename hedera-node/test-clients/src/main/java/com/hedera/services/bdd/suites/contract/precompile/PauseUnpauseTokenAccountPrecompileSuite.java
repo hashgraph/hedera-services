@@ -90,7 +90,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noTokenIdReverts() {
+    final HapiSpec noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
@@ -134,7 +134,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noAccountKeyReverts() {
+    final HapiSpec noAccountKeyReverts() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noAccountKeyReverts")

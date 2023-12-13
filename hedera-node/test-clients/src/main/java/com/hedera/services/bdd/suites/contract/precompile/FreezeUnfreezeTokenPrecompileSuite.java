@@ -90,7 +90,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noTokenIdReverts() {
+    final HapiSpec noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
@@ -141,7 +141,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec isFrozenHappyPathWithAliasLocalCall() {
+    final HapiSpec isFrozenHappyPathWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";

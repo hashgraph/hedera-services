@@ -56,7 +56,7 @@ public class FreezeSuite extends HapiSuite {
         return List.of(uploadNewFile());
     }
 
-    private HapiSpec uploadNewFile() {
+    final HapiSpec uploadNewFile() {
         String uploadFile = UPDATE_NEW_FILE;
         if (uploadPath != null) {
             log.info("Creating zip file from {}", uploadPath);

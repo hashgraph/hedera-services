@@ -76,7 +76,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
+    final HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
         return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
@@ -101,7 +101,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructWhenCalling() {
+    final HapiSpec hscsEvm008SelfDestructWhenCalling() {
         return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
                 .given(
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
@@ -118,7 +118,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
                 .given(

@@ -69,7 +69,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getByteCodeWorks() {
+    final HapiSpec getByteCodeWorks() {
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("GetByteCodeWorks")
                 .given(uploadInitCode(contract), contractCreate(contract))
@@ -89,7 +89,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromCostAnswer() {
+    final HapiSpec invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -98,7 +98,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromAnswerOnly() {
+    final HapiSpec invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

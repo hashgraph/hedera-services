@@ -46,7 +46,7 @@ public class CreateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec precheckRejectsBadEffectiveAutoRenewPeriod() {
+    final HapiSpec precheckRejectsBadEffectiveAutoRenewPeriod() {
         var now = Instant.now();
         System.out.println(now.getEpochSecond());
 

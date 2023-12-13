@@ -75,7 +75,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec chainIdWorks() {
+    final HapiSpec chainIdWorks() {
         final var defaultChainId = BigInteger.valueOf(295L);
         final var devChainId = BigInteger.valueOf(298L);
         final Set<Object> acceptableChainIds = Set.of(devChainId, defaultChainId);
@@ -99,7 +99,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseFeeWorks() {
+    final HapiSpec baseFeeWorks() {
         final var expectedBaseFee = BigInteger.valueOf(0);
         return defaultHapiSpec("baseFeeWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -123,7 +123,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    private HapiSpec coinbaseWorks() {
+    final HapiSpec coinbaseWorks() {
         return defaultHapiSpec("coinbaseWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "getCoinbase").via("coinbase"))
@@ -146,7 +146,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec gasLimitWorks() {
+    final HapiSpec gasLimitWorks() {
         final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
         return defaultHapiSpec("gasLimitWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))

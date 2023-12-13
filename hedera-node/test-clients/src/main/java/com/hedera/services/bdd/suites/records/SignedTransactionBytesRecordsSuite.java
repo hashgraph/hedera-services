@@ -62,7 +62,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transactionsWithOnlySigMap() {
+    final HapiSpec transactionsWithOnlySigMap() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("TransactionsWithOnlySigMap")
                 .given(
@@ -87,7 +87,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
+    final HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
                 .given()
                 .when(createTopic("testTopic")
@@ -98,7 +98,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
+    final HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
                 .when(cryptoCreate("testAccount")

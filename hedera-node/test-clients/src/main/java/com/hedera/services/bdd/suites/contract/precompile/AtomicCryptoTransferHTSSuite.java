@@ -134,7 +134,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferForHbarOnly() {
+    final HapiSpec cryptoTransferForHbarOnly() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
         final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
         final var cryptoTransferRevertTxn = "cryptoTransferRevertTxn";
@@ -328,7 +328,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferForFungibleTokenOnly() {
+    final HapiSpec cryptoTransferForFungibleTokenOnly() {
         final var cryptoTransferTxnForFungible = "cryptoTransferTxnForFungible";
 
         return propertyPreservingHapiSpec("cryptoTransferForFungibleTokenOnly")
@@ -403,7 +403,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferForNonFungibleTokenOnly() {
+    final HapiSpec cryptoTransferForNonFungibleTokenOnly() {
         final var cryptoTransferTxnForNft = "cryptoTransferTxnForNft";
 
         return propertyPreservingHapiSpec("cryptoTransferForNonFungibleTokenOnly")
@@ -477,7 +477,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferHBarFungibleNft() {
+    final HapiSpec cryptoTransferHBarFungibleNft() {
         final var cryptoTransferTxnForAll = "cryptoTransferTxnForAll";
 
         return propertyPreservingHapiSpec("cryptoTransferHBarFungibleNft")
@@ -605,7 +605,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferAllowanceHbarToken() {
+    final HapiSpec cryptoTransferAllowanceHbarToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -768,7 +768,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferAllowanceFungibleToken() {
+    final HapiSpec cryptoTransferAllowanceFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -956,7 +956,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferAllowanceNft() {
+    final HapiSpec cryptoTransferAllowanceNft() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
         return propertyPreservingHapiSpec("cryptoTransferAllowanceNft")
@@ -1040,7 +1040,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferSpecialAccounts() {
+    final HapiSpec cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return propertyPreservingHapiSpec("cryptoTransferEmptyKeyList")

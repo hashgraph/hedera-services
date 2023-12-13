@@ -71,7 +71,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionBody() {
+    final HapiSpec invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
@@ -93,7 +93,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidNodeAccount() {
+    final HapiSpec invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
@@ -108,7 +108,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionDuration() {
+    final HapiSpec invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -124,7 +124,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionMemoTooLong() {
+    final HapiSpec invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
@@ -144,7 +144,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionPayerAccountNotFound() {
+    final HapiSpec invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -160,7 +160,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionStartTime() {
+    final HapiSpec invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()

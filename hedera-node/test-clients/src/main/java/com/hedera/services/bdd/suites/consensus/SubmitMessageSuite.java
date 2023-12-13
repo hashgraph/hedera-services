@@ -84,7 +84,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec topicIdIsValidated() {
+    final HapiSpec topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -99,7 +99,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageIsValidated() {
+    final HapiSpec messageIsValidated() {
         return defaultHapiSpec("messageIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -115,7 +115,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageSubmissionSimple() {
+    final HapiSpec messageSubmissionSimple() {
         return defaultHapiSpec("messageSubmissionSimple")
                 .given(
                         newKeyNamed("submitKey"),
@@ -129,7 +129,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageSubmissionIncreasesSeqNo() {
+    final HapiSpec messageSubmissionIncreasesSeqNo() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         return defaultHapiSpec("messageSubmissionIncreasesSeqNo")
@@ -141,7 +141,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageSubmissionWithSubmitKey() {
+    final HapiSpec messageSubmissionWithSubmitKey() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         SigControl validSig = submitKeyShape.signedWith(sigs(ON, OFF, sigs(ON, ON)));
@@ -164,7 +164,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageSubmissionMultiple() {
+    final HapiSpec messageSubmissionMultiple() {
         final int numMessages = 10;
 
         return defaultHapiSpec("messageSubmissionMultiple")
@@ -176,7 +176,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageSubmissionOverSize() {
+    final HapiSpec messageSubmissionOverSize() {
         final byte[] messageBytes = new byte[4096]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
 
@@ -193,7 +193,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec feeAsExpected() {
+    final HapiSpec feeAsExpected() {
         final byte[] messageBytes = new byte[100]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
         return defaultHapiSpec("feeAsExpected")
@@ -210,7 +210,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
+    final HapiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
         String topic = "testTopic";
         String message1 = "Hello world!";
         String message2 = "Hello world again!";

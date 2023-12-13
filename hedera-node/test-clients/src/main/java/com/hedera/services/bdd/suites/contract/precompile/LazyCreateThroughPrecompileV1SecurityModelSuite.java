@@ -380,7 +380,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                 .then(getTxnRecord(creationAttempt).andAllChildRecords().logged());
     }
 
-    private HapiSpec cryptoTransferV1LazyCreate() {
+    final HapiSpec cryptoTransferV1LazyCreate() {
         final var NESTED_LAZY_PRECOMPILE_CONTRACT = "LazyPrecompileTransfers";
         final var FUNGIBLE_TOKEN_2 = "ftnt";
         return propertyPreservingHapiSpec("cryptoTransferV1LazyCreate")
@@ -565,7 +565,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec cryptoTransferV2LazyCreate() {
+    final HapiSpec cryptoTransferV2LazyCreate() {
         final var NESTED_LAZY_PRECOMPILE_CONTRACT = "LazyPrecompileTransfersAtomic";
         final var FUNGIBLE_TOKEN_2 = "ftnt";
         final var INIT_BALANCE = 10 * ONE_HUNDRED_HBARS;
@@ -739,7 +739,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec transferTokenLazyCreate() {
+    final HapiSpec transferTokenLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferTokenLazyCreate")
@@ -802,7 +802,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully() {
+    final HapiSpec transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully")
@@ -868,7 +868,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec transferNftLazyCreate() {
+    final HapiSpec transferNftLazyCreate() {
         return propertyPreservingHapiSpec("transferNftLazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -931,7 +931,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec transferNftsLazyCreate() {
+    final HapiSpec transferNftsLazyCreate() {
         return propertyPreservingHapiSpec("transferNftsLazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -996,7 +996,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec htsTransferFromFungibleTokenLazyCreate() {
+    final HapiSpec htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         return propertyPreservingHapiSpec("htsTransferFromFungibleTokenLazyCreate")

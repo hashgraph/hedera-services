@@ -56,7 +56,7 @@ public class SimpleFreezeOnly extends HapiSuite {
         return true;
     }
 
-    private HapiSpec simpleFreezeWithTimestamp() {
+    final HapiSpec simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(11000))

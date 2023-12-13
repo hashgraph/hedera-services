@@ -78,7 +78,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec succeedsNormally() {
+    final HapiSpec succeedsNormally() {
         String memo = "Dim galleries, dusky corridors got past...";
 
         return defaultHapiSpec("SucceedsNormally")
@@ -97,7 +97,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForMissingAccount() {
+    final HapiSpec failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
                 .when()
@@ -107,7 +107,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForMalformedPayment() {
+    final HapiSpec failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
@@ -115,7 +115,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForUnfundablePayment() {
+    final HapiSpec failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
@@ -127,7 +127,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForInsufficientPayment() {
+    final HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given(cryptoCreate(PAYER))
                 .when()
@@ -138,7 +138,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForInvalidTrxBody() {
+    final HapiSpec failsForInvalidTrxBody() {
         return defaultHapiSpec("failsForInvalidTrxBody")
                 .given()
                 .when()
@@ -148,7 +148,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForDeletedAccount() {
+    final HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
                 .when(cryptoDelete(ACCOUNT_TO_BE_DELETED).transfer(GENESIS))
@@ -160,7 +160,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountRecords_testForDuplicates() {
+    final HapiSpec getAccountRecords_testForDuplicates() {
         return defaultHapiSpec("testForDuplicateAccountRecords")
                 .given(
                         cryptoCreate(ACCOUNT_1).balance(5000000000000L).sendThreshold(1L),

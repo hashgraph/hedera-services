@@ -66,7 +66,7 @@ public class ContractMusicalChairsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec playGame() {
+    final HapiSpec playGame() {
         final var dj = "dj";
         final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
         final var contract = "MusicalChairs";

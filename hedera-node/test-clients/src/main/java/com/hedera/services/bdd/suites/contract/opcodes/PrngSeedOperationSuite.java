@@ -88,7 +88,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec multipleCallsHaveIndependentResults() {
+    final HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -137,7 +137,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prngPrecompileHappyPathWorks() {
+    final HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
@@ -161,7 +161,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prngPrecompileDisabledInV030() {
+    final HapiSpec prngPrecompileDisabledInV030() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileDisabledInV_0_30")

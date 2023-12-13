@@ -45,7 +45,7 @@ public class CryptoAllowancePerfSuite extends LoadTest {
         return List.of(runCryptoCreatesAndTokenCreates(), runCryptoAllowances());
     }
 
-    private HapiSpec runCryptoCreatesAndTokenCreates() {
+    final HapiSpec runCryptoCreatesAndTokenCreates() {
         final int NUM_CREATES = 5000;
         return defaultHapiSpec("runCryptoCreatesAndTokenCreates")
                 .given()
@@ -96,7 +96,7 @@ public class CryptoAllowancePerfSuite extends LoadTest {
                                         .deferStatusResolution())));
     }
 
-    private HapiSpec runCryptoAllowances() {
+    final HapiSpec runCryptoAllowances() {
         final int NUM_ALLOWANCES = 5000;
         return defaultHapiSpec("runCryptoAllowances")
                 .given()

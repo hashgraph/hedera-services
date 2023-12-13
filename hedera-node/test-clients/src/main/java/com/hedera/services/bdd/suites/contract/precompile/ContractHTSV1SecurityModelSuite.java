@@ -136,7 +136,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                 hbarTransferFromFeeCollector());
     }
 
-    private HapiSpec hscsPrec017RollbackAfterInsufficientBalance() {
+    final HapiSpec hscsPrec017RollbackAfterInsufficientBalance() {
         final var alice = "alice";
         final var bob = "bob";
         final var treasuryForToken = "treasuryForToken";
@@ -217,7 +217,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                 .has(AccountInfoAsserts.accountWith().balance(0L)));
     }
 
-    private HapiSpec depositAndWithdrawFungibleTokens() {
+    final HapiSpec depositAndWithdrawFungibleTokens() {
         final var theContract = "ZenosBank";
 
         return propertyPreservingHapiSpec("depositAndWithdrawFungibleTokens")
@@ -296,7 +296,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(A_TOKEN, RECEIVER, 25L))));
     }
 
-    private HapiSpec distributeMultipleTokens() {
+    final HapiSpec distributeMultipleTokens() {
         final var theSecondReceiver = "somebody2";
 
         return propertyPreservingHapiSpec("distributeMultipleTokens")
@@ -366,7 +366,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                         .including(A_TOKEN, theSecondReceiver, 5L))));
     }
 
-    private HapiSpec tokenTransferFromFeeCollector() {
+    final HapiSpec tokenTransferFromFeeCollector() {
         return propertyPreservingHapiSpec("tokenTransferFromFeeCollector")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -521,7 +521,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
     }
 
-    private HapiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
+    final HapiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
         return propertyPreservingHapiSpec("tokenTransferFromFeeCollectorStaticNestedCall")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -681,7 +681,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
      * Contract that otherwise wouldn't have enough balance for a transfer of hbars can perform the transfer after
      * collecting the custom hbar fees from a nested token transfer through the HTS precompile
      * */
-    private HapiSpec hbarTransferFromFeeCollector() {
+    final HapiSpec hbarTransferFromFeeCollector() {
         final var outerContract = "HbarFeeCollector";
         final var innerContract = "NestedHTSTransferrer";
 
@@ -761,7 +761,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(SECOND_RECEIVER).hasTinyBars(CUSTOM_HBAR_FEE_AMOUNT));
     }
 
-    private HapiSpec transferNft() {
+    final HapiSpec transferNft() {
         return propertyPreservingHapiSpec("transferNft")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -832,7 +832,7 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(NFT, ACCOUNT, RECEIVER, 1L))));
     }
 
-    private HapiSpec transferMultipleNfts() {
+    final HapiSpec transferMultipleNfts() {
         return propertyPreservingHapiSpec("transferMultipleNfts")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(

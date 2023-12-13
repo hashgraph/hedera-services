@@ -74,7 +74,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec precompileNftMintsAreLimitedByConsThrottle() {
+    final HapiSpec precompileNftMintsAreLimitedByConsThrottle() {
         var mainnetLimits = protoDefsFromResource("testSystemFiles/mainnet-throttles.json");
         return propertyPreservingHapiSpec("PrecompileNftMintsAreLimitedByConsThrottle")
                 .preserving("contracts.throttle.throttleByGas")

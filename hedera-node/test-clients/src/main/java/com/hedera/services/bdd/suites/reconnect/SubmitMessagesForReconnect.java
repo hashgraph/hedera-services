@@ -56,7 +56,7 @@ public class SubmitMessagesForReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    private HapiSpec runSubmitMessages() {
+    final HapiSpec runSubmitMessages() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
         Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {submitToTestTopic(settings)};

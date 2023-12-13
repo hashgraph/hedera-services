@@ -217,7 +217,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 customFeesHaveExpectedAutoCreateInteractions());
     }
 
-    private HapiSpec autoAssociationPropertiesWorkAsExpected() {
+    final HapiSpec autoAssociationPropertiesWorkAsExpected() {
         final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
         final var maxAssociationsPropertyName = "ledger.maxAutoAssociations";
         final var shortLivedAutoAssocUser = "shortLivedAutoAssocUser";
@@ -252,7 +252,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         validateChargedUsd(updateWithExpiredAccount, plusTenSlotsFee));
     }
 
-    private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
+    final HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
         final var civilian = "civilian";
         final var creation = "creation";
         final var gasToOffer = 128_000L;
@@ -310,7 +310,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)));
     }
 
-    private HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
+    final HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -388,7 +388,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(SPENDER));
     }
 
-    private HapiSpec txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled() {
+    final HapiSpec txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled() {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled")
                 .given(
@@ -437,7 +437,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then(overridingAllOfDeferred(() -> startingProps));
     }
 
-    private HapiSpec maxAutoAssociationSpec() {
+    final HapiSpec maxAutoAssociationSpec() {
         final int MONOGAMOUS_NETWORK = 1;
         final int maxAutoAssociations = 100;
         final int ADVENTUROUS_NETWORK = 1_000;
@@ -496,7 +496,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
-    private HapiSpec cannotExceedAccountAllowanceLimit() {
+    final HapiSpec cannotExceedAccountAllowanceLimit() {
         return defaultHapiSpec("CannotExceedAccountAllowanceLimit")
                 .given(
                         overridingTwo(
@@ -563,7 +563,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100"));
     }
 
-    private HapiSpec createAnAccountWithEVMAddressAliasAndECKey() {
+    final HapiSpec createAnAccountWithEVMAddressAliasAndECKey() {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
                 .given(
@@ -622,7 +622,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then(overridingAllOfDeferred(() -> startingProps));
     }
 
-    private HapiSpec createAnAccountWithEVMAddress() {
+    final HapiSpec createAnAccountWithEVMAddress() {
         return propertyPreservingHapiSpec("CreateAnAccountWithEVMAddress")
                 .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
@@ -643,7 +643,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec cannotExceedAllowancesTransactionLimit() {
+    final HapiSpec cannotExceedAllowancesTransactionLimit() {
         return defaultHapiSpec("CannotExceedAllowancesTransactionLimit")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -719,7 +719,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100"));
     }
 
-    private HapiSpec hollowAccountCompletionNotAcceptedWhenFlagIsDisabled() {
+    final HapiSpec hollowAccountCompletionNotAcceptedWhenFlagIsDisabled() {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("HollowAccountCompletionNotAcceptedWhenFlagIsDisabled")
                 .given(
@@ -765,7 +765,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec hollowAccountCreationChargesExpectedFees() {
+    final HapiSpec hollowAccountCreationChargesExpectedFees() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
         final long REDUCED_SERVICE_FEE = 3L;
@@ -832,7 +832,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then(uploadDefaultFeeSchedules(GENESIS));
     }
 
-    private HapiSpec hollowAccountCompletionWithEthereumTransaction() {
+    final HapiSpec hollowAccountCompletionWithEthereumTransaction() {
         final Map<String, String> startingProps = new HashMap<>();
         final String CONTRACT = "Fuse";
         return defaultHapiSpec("HollowAccountCompletionWithEthereumTransaction")
@@ -881,7 +881,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec contractDeployAfterEthereumTransferLazyCreate() {
+    final HapiSpec contractDeployAfterEthereumTransferLazyCreate() {
         final var RECIPIENT_KEY = LAZY_ACCOUNT_RECIPIENT;
         final var lazyCreateTxn = PAY_TXN;
         return propertyPreservingHapiSpec("contractDeployAfterEthereumTransferLazyCreate")
@@ -930,7 +930,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec contractCallAfterEthereumTransferLazyCreate() {
+    final HapiSpec contractCallAfterEthereumTransferLazyCreate() {
         final var RECIPIENT_KEY = LAZY_ACCOUNT_RECIPIENT;
         final var lazyCreateTxn = PAY_TXN;
         return propertyPreservingHapiSpec("contractCallAfterEthereumTransferLazyCreate")
@@ -979,7 +979,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec lazyCreateViaEthereumCryptoTransfer() {
+    final HapiSpec lazyCreateViaEthereumCryptoTransfer() {
         final var RECIPIENT_KEY = LAZY_ACCOUNT_RECIPIENT;
         final var lazyCreateTxn = PAY_TXN;
         final var failedLazyCreateTxn = "failedLazyCreateTxn";
@@ -1062,7 +1062,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec hollowAccountCompletionWithSimultaniousPropertiesUpdate() {
+    final HapiSpec hollowAccountCompletionWithSimultaniousPropertiesUpdate() {
         return propertyPreservingHapiSpec("hollowAccountCompletionWithSimultaniousPropertiesUpdate")
                 .preserving(LAZY_CREATION_ENABLED)
                 .given(
@@ -1175,7 +1175,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
+    final HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
         final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
         final var nftWithRoyaltyPlusHtsFallback = "nftWithRoyaltyPlusFallback";
         final var nftWithRoyaltyPlusHbarFallback = "nftWithRoyaltyPlusHbarFallback";

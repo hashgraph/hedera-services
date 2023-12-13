@@ -66,7 +66,7 @@ public class CreateTopicsBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    private HapiSpec runCreateTopics() {
+    final HapiSpec runCreateTopics() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 TOPIC_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

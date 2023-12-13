@@ -75,7 +75,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
-    private HapiSpec recordAvailableInPayerState() {
+    final HapiSpec recordAvailableInPayerState() {
         return defaultHapiSpec("RecordAvailableInPayerState")
                 .given(
                         cryptoCreate("stingyPayer").sendThreshold(1L),
@@ -89,7 +89,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
-    private HapiSpec deletedAccountRecordsUnavailableAfterTtl() {
+    final HapiSpec deletedAccountRecordsUnavailableAfterTtl() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
                         cryptoCreate("lowThreshPayer").sendThreshold(1L),
@@ -103,7 +103,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec returnsInvalidForUnspecifiedTxnId() {
+    final HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
@@ -111,7 +111,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec recordNotFoundIfNotInPayerState() {
+    final HapiSpec recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(
                         cryptoCreate("misc").via("success"),
@@ -121,7 +121,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec recordUnavailableBeforeConsensus() {
+    final HapiSpec recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
@@ -131,7 +131,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
-    private HapiSpec recordUnavailableIfRejectedInPrecheck() {
+    final HapiSpec recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))
                 .when(cryptoCreate("nope")

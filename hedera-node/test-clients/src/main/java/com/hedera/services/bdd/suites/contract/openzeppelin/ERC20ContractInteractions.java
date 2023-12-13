@@ -80,7 +80,7 @@ public class ERC20ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callsERC20ContractInteractions() {
+    final HapiSpec callsERC20ContractInteractions() {
         final var CONTRACT = "GLDToken";
         final var CREATE_TX = "create";
         final var APPROVE_TX = "approve";

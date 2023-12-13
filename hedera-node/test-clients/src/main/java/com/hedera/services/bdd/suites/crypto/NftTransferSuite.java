@@ -183,7 +183,7 @@ public class NftTransferSuite extends HapiSuite {
         return blockingOrder(createBasicAccounts(), createAccountsAndNfts());
     }
 
-    private HapiSpec transferNfts() {
+    final HapiSpec transferNfts() {
         return defaultHapiSpec("TransferNfts")
                 .given(setupNftTest(), transferInitial())
                 .when(seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound))

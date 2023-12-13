@@ -90,7 +90,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-    private HapiSpec selfDenominatedFixedCollectorMustSign() {
+    final HapiSpec selfDenominatedFixedCollectorMustSign() {
         final var fcKey = "fcKey";
         final var arKey = AR_KEY;
         final var feeCollector = "feeCollector";
@@ -163,7 +163,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-    private HapiSpec fractionalFeeCollectorMustSign() {
+    final HapiSpec fractionalFeeCollectorMustSign() {
         final var fcKey = "fcKey";
         final var arKey = AR_KEY;
         final var feeCollector = "feeCollector";
@@ -232,7 +232,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                                 })));
     }
 
-    private HapiSpec autoRenewAccountMustSignCreation() {
+    final HapiSpec autoRenewAccountMustSignCreation() {
         final var arKey = AR_KEY;
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewAlias = new AtomicReference<>();
@@ -292,7 +292,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                                 getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
     }
 
-    private HapiSpec newTreasuryAccountMustSignUpdate() {
+    final HapiSpec newTreasuryAccountMustSignUpdate() {
         final var ft = "fungibleToken";
         final var ntKey = "ntKey";
         final var updateTxn = "updateTxn";
@@ -346,7 +346,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                         getTokenInfo(ft).hasTreasury(TOKEN_TREASURY));
     }
 
-    private HapiSpec newAutoRenewAccountMustSignUpdate() {
+    final HapiSpec newAutoRenewAccountMustSignUpdate() {
         final var ft = "fungibleToken";
         final var narKey = "narKey";
         final var adminKey = "adminKey";

@@ -56,7 +56,7 @@ public class FileUpdateLoadTest extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec runFileUpdates() {
+    final HapiSpec runFileUpdates() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         final byte[] NEW_CONTENTS = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);

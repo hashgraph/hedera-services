@@ -111,7 +111,7 @@ public final class DiverseStateCreation extends HapiSuite {
         return List.of(createDiverseState());
     }
 
-    private HapiSpec createDiverseState() {
+    final HapiSpec createDiverseState() {
         final KeyShape SMALL_SHAPE = listOf(threshOf(1, 3));
         final KeyShape MEDIUM_SHAPE = listOf(SIMPLE, threshOf(2, 3));
         final KeyShape LARGE_SHAPE = listOf(

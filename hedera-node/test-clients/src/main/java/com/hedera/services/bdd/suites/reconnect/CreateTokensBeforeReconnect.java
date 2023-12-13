@@ -69,7 +69,7 @@ public class CreateTokensBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    private HapiSpec runCreateTopics() {
+    final HapiSpec runCreateTopics() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 TOKEN_CREATION_RECONNECT_TPS,
                 DEFAULT_MINS_FOR_RECONNECT_TESTS,

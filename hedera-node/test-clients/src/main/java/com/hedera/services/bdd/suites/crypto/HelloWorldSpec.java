@@ -51,7 +51,7 @@ public class HelloWorldSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec balancesChangeOnTransfer() {
+    final HapiSpec balancesChangeOnTransfer() {
         return defaultHapiSpec("BalancesChangeOnTransfer")
                 .given(
                         cryptoCreate("sponsor"),

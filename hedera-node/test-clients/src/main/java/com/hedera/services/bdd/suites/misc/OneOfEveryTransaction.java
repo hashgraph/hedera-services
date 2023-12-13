@@ -67,7 +67,7 @@ public class OneOfEveryTransaction extends HapiSuite {
         });
     }
 
-    private HapiSpec doThings() {
+    final HapiSpec doThings() {
         /* Crypto signing */
         var complex = KeyShape.threshOf(1, KeyShape.listOf(3), KeyShape.threshOf(1, 3));
         /* File signing */

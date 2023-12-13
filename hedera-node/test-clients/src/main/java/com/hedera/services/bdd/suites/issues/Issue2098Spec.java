@@ -55,7 +55,7 @@ public class Issue2098Spec extends HapiSuite {
         });
     }
 
-    private HapiSpec txnApiPermissionsChangeImmediately() {
+    final HapiSpec txnApiPermissionsChangeImmediately() {
         return defaultHapiSpec("TxnApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -71,7 +71,7 @@ public class Issue2098Spec extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1L)).payingWith(CIVILIAN));
     }
 
-    private HapiSpec queryApiPermissionsChangeImmediately() {
+    final HapiSpec queryApiPermissionsChangeImmediately() {
         return defaultHapiSpec("QueryApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -85,7 +85,7 @@ public class Issue2098Spec extends HapiSuite {
                         getTopicInfo("misc").payingWith(CIVILIAN));
     }
 
-    private HapiSpec adminsCanQueryNoMatterPermissions() {
+    final HapiSpec adminsCanQueryNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanQueryNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -99,7 +99,7 @@ public class Issue2098Spec extends HapiSuite {
                                 .overridingProps(Map.of(GET_TOPIC_INFO, "0-*")));
     }
 
-    private HapiSpec adminsCanTransactNoMatterPermissions() {
+    final HapiSpec adminsCanTransactNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanTransactNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)

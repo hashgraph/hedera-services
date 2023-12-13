@@ -68,7 +68,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec log0Works() {
+    final HapiSpec log0Works() {
         return defaultHapiSpec("log0Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
@@ -82,7 +82,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec log1Works() {
+    final HapiSpec log1Works() {
         return defaultHapiSpec("log1Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
@@ -99,7 +99,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec log2Works() {
+    final HapiSpec log2Works() {
         return defaultHapiSpec("log2Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
@@ -118,7 +118,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec log3Works() {
+    final HapiSpec log3Works() {
         return defaultHapiSpec("log3Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
@@ -138,7 +138,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec log4Works() {
+    final HapiSpec log4Works() {
         return defaultHapiSpec("log4Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(

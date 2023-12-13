@@ -71,7 +71,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec associateWithPartitionedTokenAutomatically() {
+    final HapiSpec associateWithPartitionedTokenAutomatically() {
         return defaultHapiSpec("AssociateWithPartitionedTokenAutomatically")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING)
                         .withPartition(BLUE_PARTITION, p -> p.assignedSerialNos(2L)))
@@ -94,7 +94,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec associateWithPartitionAndToken() {
+    final HapiSpec associateWithPartitionAndToken() {
         return defaultHapiSpec("AssociateWithPartitionAndToken")
                 .given(
                         cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
@@ -123,7 +123,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec autoAssociateSiblingPartitions() {
+    final HapiSpec autoAssociateSiblingPartitions() {
         return defaultHapiSpec("AutoAssociateSiblingPartitions")
                 .given(fungibleTokenWithFeatures(PARTITIONING)
                         .withPartitions(RED_PARTITION)
@@ -153,7 +153,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec autoAssociateChildPartitions() {
+    final HapiSpec autoAssociateChildPartitions() {
         return defaultHapiSpec("AutoAssociateChildPartitions")
                 .given(
                         cryptoCreate(CIVILIAN_PAYER).balance(ONE_HUNDRED_HBARS),
@@ -184,7 +184,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec disassociateEmptyPartition() {
+    final HapiSpec disassociateEmptyPartition() {
         return defaultHapiSpec("DisassociateEmptyPartition")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING)
@@ -212,7 +212,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec doNotAllowDisassociateWithNonEmptyPartition() {
+    final HapiSpec doNotAllowDisassociateWithNonEmptyPartition() {
         return defaultHapiSpec("DoNotAllowDisassociateWithNonEmptyPartition")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING)
@@ -248,7 +248,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec ensurePartitionsRemovedBeforeTokenDisassociation() {
+    final HapiSpec ensurePartitionsRemovedBeforeTokenDisassociation() {
         return defaultHapiSpec("EnsurePartitionsRemovedBeforeTokenDisassociation")
                 .given(fungibleTokenWithFeatures(PARTITIONING)
                         .withPartitions(RED_PARTITION)

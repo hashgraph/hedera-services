@@ -81,7 +81,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
+    final HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
         return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
                 .given(
                         newKeyNamed(TOKEN_ADMIN),
@@ -99,7 +99,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletionValidatesAlreadyDeletedToken() {
+    final HapiSpec deletionValidatesAlreadyDeletedToken() {
         return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -111,7 +111,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletionValidatesMissingAdminKey() {
+    final HapiSpec deletionValidatesMissingAdminKey() {
         return defaultHapiSpec("DeletionValidatesMissingAdminKey")
                 .given(
                         newKeyNamed(MULTI_KEY),

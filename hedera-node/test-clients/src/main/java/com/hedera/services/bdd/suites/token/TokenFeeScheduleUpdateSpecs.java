@@ -72,7 +72,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseOperationIsChargedExpectedFee() {
+    final HapiSpec baseOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
         final var targetToken = "immutableToken";
         final var feeDenom = "denom";
@@ -99,7 +99,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
+    final HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
         final var hbarAmount = 1_234L;
         final var htsAmount = 2_345L;
         final var numerator = 1;

@@ -75,7 +75,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec ownershipChangeShowsInRecord() {
+    final HapiSpec ownershipChangeShowsInRecord() {
         final var firstOwner = "A";
         final var secondOwner = "B";
         final var uniqueToken = "DoubleVision";
@@ -108,7 +108,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoCreateRecordSanityChecks() {
+    final HapiSpec cryptoCreateRecordSanityChecks() {
         return defaultHapiSpec("CryptoCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
                 .when(cryptoCreate("test").via("txn"))
@@ -119,7 +119,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoDeleteRecordSanityChecks() {
+    final HapiSpec cryptoDeleteRecordSanityChecks() {
         return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
                 .given(flattened(
                         cryptoCreate("test"),
@@ -134,7 +134,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoTransferRecordSanityChecks() {
+    final HapiSpec cryptoTransferRecordSanityChecks() {
         return defaultHapiSpec("CryptoTransferRecordSanityChecks")
                 .given(flattened(
                         cryptoCreate("a").balance(100_000L),
@@ -147,7 +147,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoUpdateRecordSanityChecks() {
+    final HapiSpec cryptoUpdateRecordSanityChecks() {
         return defaultHapiSpec("CryptoUpdateRecordSanityChecks")
                 .given(flattened(
                         cryptoCreate("test"),
@@ -161,7 +161,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec insufficientAccountBalanceRecordSanityChecks() {
+    final HapiSpec insufficientAccountBalanceRecordSanityChecks() {
         final long BALANCE = 500_000_000L;
         return defaultHapiSpec("InsufficientAccountBalanceRecordSanityChecks")
                 .given(flattened(
@@ -185,7 +185,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidPayerSigCryptoTransferRecordSanityChecks() {
+    final HapiSpec invalidPayerSigCryptoTransferRecordSanityChecks() {
         final long BALANCE = 10_000_000L;
 
         return defaultHapiSpec("InvalidPayerSigCryptoTransferSanityChecks")

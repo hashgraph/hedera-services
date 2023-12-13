@@ -62,7 +62,7 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getFileContentsStress() {
+    final HapiSpec getFileContentsStress() {
         return defaultHapiSpec("getFileContentsStress")
                 .given()
                 .when()
@@ -74,7 +74,7 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getFileInfoStress() {
+    final HapiSpec getFileInfoStress() {
         return defaultHapiSpec("getFileInfoStress")
                 .given()
                 .when()

@@ -71,7 +71,7 @@ public class UmbrellaRedux extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec umbrellaRedux() {
+    final HapiSpec umbrellaRedux() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("UmbrellaRedux")
                 .given(

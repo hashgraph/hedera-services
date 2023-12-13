@@ -75,7 +75,7 @@ public class TargetNetworkPrep extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
+    final HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
         final var snapshot800 = "800startBalance";

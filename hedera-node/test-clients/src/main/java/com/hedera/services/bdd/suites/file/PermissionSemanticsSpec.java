@@ -76,7 +76,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
+    final HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
         long amount = 100 * 100_000_000L;
         AtomicReference<byte[]> origContents = new AtomicReference<>();
         return defaultHapiSpec("AddressBookAdminExemptFromFeesGivenAuthorizedOps")
@@ -100,7 +100,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec supportsImmutableFiles() {
+    final HapiSpec supportsImmutableFiles() {
         long extensionSecs = 666L;
         AtomicLong approxExpiry = new AtomicLong();
 
@@ -142,7 +142,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec allowsDeleteWithOneTopLevelSig() {
+    final HapiSpec allowsDeleteWithOneTopLevelSig() {
         KeyShape wacl = KeyShape.listOf(KeyShape.SIMPLE, KeyShape.listOf(2));
 
         var deleteSig = wacl.signedWith(sigs(ON, sigs(OFF, OFF)));

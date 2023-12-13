@@ -124,7 +124,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nftAutoCreationIncludeAllowanceCheck() {
+    final HapiSpec nftAutoCreationIncludeAllowanceCheck() {
         final var ownerAccount = "owningAlias";
         final var receivingAlias = "receivingAlias";
         return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck")
@@ -178,7 +178,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTokenApproveToInnerContract() {
+    final HapiSpec htsTokenApproveToInnerContract() {
         final var approveTxn = "NestedChildren";
         final var nestedContract = DIRECT_ERC_CALLEE;
         final var theSpender = SPENDER;
@@ -245,7 +245,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTokenAllowance() {
+    final HapiSpec htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
 
@@ -302,7 +302,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTokenApprove() {
+    final HapiSpec htsTokenApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
 
@@ -363,7 +363,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiNftIsApprovedForAll() {
+    final HapiSpec hapiNftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
 
@@ -451,7 +451,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiNftGetApproved() {
+    final HapiSpec hapiNftGetApproved() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -511,7 +511,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiNftSetApprovalForAll() {
+    final HapiSpec hapiNftSetApprovalForAll() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -578,27 +578,27 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDelegatePrecompileCallee() {
+    final HapiSpec testIndirectApprovalWithDelegatePrecompileCallee() {
         return testIndirectApprovalWith("DelegatePrecompileCallee", DELEGATE_PRECOMPILE_CALLEE, false);
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDirectPrecompileCallee() {
+    final HapiSpec testIndirectApprovalWithDirectPrecompileCallee() {
         return testIndirectApprovalWith("DirectPrecompileCallee", DIRECT_PRECOMPILE_CALLEE, true);
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDelegateErc20Callee() {
+    final HapiSpec testIndirectApprovalWithDelegateErc20Callee() {
         return testIndirectApprovalWith("DelegateErc20Callee", DELEGATE_ERC_CALLEE, false);
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDirectErc20Callee() {
+    final HapiSpec testIndirectApprovalWithDirectErc20Callee() {
         return testIndirectApprovalWith("DirectErc20Callee", DIRECT_ERC_CALLEE, true);
     }
 
     @BddMethodIsNotATest
-    private HapiSpec testIndirectApprovalWith(
+    final HapiSpec testIndirectApprovalWith(
             @NonNull final String testName, @NonNull final String callee, final boolean expectGrantedApproval) {
 
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();

@@ -115,7 +115,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 ScheduleLongTermExecutionSpecs.setLongTermScheduledTransactionsToDefault());
     }
 
-    private HapiSpec suiteCleanup() {
+    final HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()
@@ -124,7 +124,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         .overridingProps(Map.of(SCHEDULING_WHITELIST, defaultWhitelist)));
     }
 
-    private HapiSpec suiteSetup() {
+    final HapiSpec suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
@@ -133,7 +133,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         .overridingProps(Map.of(SCHEDULING_WHITELIST, suiteWhitelist)));
     }
 
-    private HapiSpec changeInNestedSigningReqsRespected() {
+    final HapiSpec changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
@@ -192,7 +192,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
         return mutation;
     }
 
-    private HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
+    final HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -242,7 +242,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiSpec reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
+    final HapiSpec reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -300,7 +300,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
         return mutation;
     }
 
-    private HapiSpec nestedSigningReqsWorkAsExpected() {
+    final HapiSpec nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, ON, OFF), sigs(OFF, OFF, OFF)));
@@ -339,7 +339,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiSpec receiverSigRequiredNotConfusedByOrder() {
+    final HapiSpec receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         String sender = "X";
@@ -376,7 +376,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiSpec extraSigsDontMatterAtExpiry() {
+    final HapiSpec extraSigsDontMatterAtExpiry() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -469,7 +469,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
+    final HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -510,7 +510,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiSpec receiverSigRequiredUpdateIsRecognized() {
+    final HapiSpec receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -556,7 +556,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1));
     }
 
-    private HapiSpec basicSignatureCollectionWorks() {
+    final HapiSpec basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("BasicSignatureCollectionWorksWithExpiryAndWait")
@@ -568,7 +568,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 .then(getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER));
     }
 
-    private HapiSpec signalsIrrelevantSig() {
+    final HapiSpec signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("SignalsIrrelevantSigWithExpiryAndWait")
@@ -583,7 +583,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
     }
 
-    private HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
+    final HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
         return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdateWithExpiryAndWait")

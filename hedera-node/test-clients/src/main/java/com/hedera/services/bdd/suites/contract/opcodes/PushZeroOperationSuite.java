@@ -75,7 +75,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec pushZeroHappyPathWorks() {
+    final HapiSpec pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
@@ -101,7 +101,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec pushZeroDisabledInV034() {
+    final HapiSpec pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return defaultHapiSpec("pushZeroDisabledInV034")

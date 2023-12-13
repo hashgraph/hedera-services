@@ -39,11 +39,11 @@ public class TopicAutoRenewalSuite extends HapiSuite {
         return List.of(topicAutoRemoval(), topicAutoRenewal());
     }
 
-    private HapiSpec topicAutoRemoval() {
+    final HapiSpec topicAutoRemoval() {
         return defaultHapiSpec("").given().when().then();
     }
 
-    private HapiSpec topicAutoRenewal() {
+    final HapiSpec topicAutoRenewal() {
         return defaultHapiSpec("").given().when().then();
     }
 

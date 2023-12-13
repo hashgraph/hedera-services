@@ -63,7 +63,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec ignoresExpiredDeletedContracts() {
+    final HapiSpec ignoresExpiredDeletedContracts() {
         final var adminKey = "tac";
         final var tbd = "dead";
 
@@ -79,7 +79,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                 .then(getContractInfo(tbd).hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
-    private HapiSpec immediatelyRemovesDeletedAccountOnExpiry() {
+    final HapiSpec immediatelyRemovesDeletedAccountOnExpiry() {
         final var tbd = "dead";
         final var onlyDetached = "gone";
 
@@ -95,7 +95,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                 .then(getAccountInfo(onlyDetached), getAccountInfo(tbd).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiSpec displacesTokenUnitsAsExpected() {
+    final HapiSpec displacesTokenUnitsAsExpected() {
         final long startSupply = 10;
         final long displacedSupply = 1;
         final var adminKey = "tak";
@@ -137,7 +137,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                                 .hasTokenBalance(anotherLiveToken, startSupply));
     }
 
-    private HapiSpec autoRemovalCasesSuiteCleanup() {
+    final HapiSpec autoRemovalCasesSuiteCleanup() {
         return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
                 .given()
                 .when()

@@ -126,7 +126,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-007 & TEST-016
     // Should fail on insufficient value sent
     @HapiTest
-    private HapiSpec tokenCreateWithEmptyKeysReverts() {
+    final HapiSpec tokenCreateWithEmptyKeysReverts() {
         return defaultHapiSpec("tokenCreateWithEmptyKeysReverts")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -172,7 +172,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-008
     @HapiTest
-    private HapiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
+    final HapiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
         return defaultHapiSpec("tokenCreateWithKeyWithMultipleKeyValuesReverts")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -201,7 +201,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-009
     @HapiTest
-    private HapiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
+    final HapiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
         return defaultHapiSpec("tokenCreateWithFixedFeeWithMultiplePaymentsReverts")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -238,7 +238,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-010 & TEST-017
     // Should fail on insufficient value sent
     @HapiTest
-    private HapiSpec createTokenWithEmptyTokenStruct() {
+    final HapiSpec createTokenWithEmptyTokenStruct() {
         return defaultHapiSpec("createTokenWithEmptyTokenStruct")
                 .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
                 .when(withOpContext((spec, opLog) ->
@@ -286,7 +286,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-011
     @HapiTest
-    private HapiSpec createTokenWithInvalidExpiry() {
+    final HapiSpec createTokenWithInvalidExpiry() {
         return defaultHapiSpec("createTokenWithInvalidExpiry")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -322,7 +322,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-013
     @HapiTest
-    private HapiSpec createTokenWithInvalidTreasury() {
+    final HapiSpec createTokenWithInvalidTreasury() {
         return defaultHapiSpec("createTokenWithInvalidTreasury")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
@@ -365,7 +365,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-018
     // Should fail on insufficient value sent
     @HapiTest
-    private HapiSpec createTokenWithInsufficientValueSent() {
+    final HapiSpec createTokenWithInsufficientValueSent() {
         return defaultHapiSpec("createTokenWithInsufficientValueSent")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
@@ -424,7 +424,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-020
     @HapiTest
-    private HapiSpec delegateCallTokenCreateFails() {
+    final HapiSpec delegateCallTokenCreateFails() {
         return defaultHapiSpec("delegateCallTokenCreateFails")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
