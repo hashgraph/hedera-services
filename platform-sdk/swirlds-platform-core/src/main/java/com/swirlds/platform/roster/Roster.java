@@ -28,12 +28,13 @@ import java.util.Collection;
 public interface Roster extends Iterable<RosterEntry>, SelfSerializable {
 
     /**
-     * @return the a collection of unique nodeIds in the roster.
+     * @return a collection of all unique nodeIds in the roster.
      */
     @NonNull
     Collection<NodeId> getNodeIds();
 
     /**
+     * @param nodeId the nodeId of the {@link RosterEntry} to get
      * @return the RosterEntry with the given nodeId
      * @throws java.util.NoSuchElementException if the nodeId is not in the roster
      */
@@ -45,7 +46,7 @@ public interface Roster extends Iterable<RosterEntry>, SelfSerializable {
      */
     default long getTotalWeight() {
         long totalWeight = 0;
-        for (RosterEntry entry : this) {
+        for (final RosterEntry entry : this) {
             totalWeight += entry.getWeight();
         }
         return totalWeight;
