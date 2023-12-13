@@ -330,7 +330,7 @@ public class HandleWorkflow {
                     preHandleResult.status(),
                     preHandleResult.responseCode());
             logStartUserTransactionPreHandleResultP3(
-                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.verificationResults());
+                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.getVerificationResults());
 
             // Initialize record builder list
             recordBuilder
@@ -345,7 +345,7 @@ public class HandleWorkflow {
             final var legacyFeeCalcNetworkVpt =
                     transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
             final var verifier = new DefaultKeyVerifier(
-                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.verificationResults());
+                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.getVerificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
