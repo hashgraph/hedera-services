@@ -51,7 +51,7 @@ public class SubmitMessagePerfSuite extends HapiSuite {
         return false;
     }
 
-    private HapiSpec submitMessagePerf() {
+    final HapiSpec submitMessagePerf() {
         final int NUM_SUBMISSIONS = 100_000;
 
         return defaultHapiSpec("submitMessagePerf")

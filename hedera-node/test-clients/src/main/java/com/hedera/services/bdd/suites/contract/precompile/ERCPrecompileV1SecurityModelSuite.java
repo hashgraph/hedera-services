@@ -85,7 +85,7 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
         return List.of();
     }
 
-    private HapiSpec transferErc20TokenAliasedSender() {
+    final HapiSpec transferErc20TokenAliasedSender() {
         final var aliasedTransferTxn = "aliasedTransferTxn";
         final var addLiquidityTxn = "addLiquidityTxn";
         final var create2Txn = "create2Txn";

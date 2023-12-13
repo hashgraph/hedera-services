@@ -42,7 +42,7 @@ public class TokenAssociationLoadTest extends HapiSuite {
         });
     }
 
-    private HapiSpec runTokenAssociationLoadTest() {
+    final HapiSpec runTokenAssociationLoadTest() {
         return HapiSpec.defaultHapiSpec("RunTokenAssociationLoadTest")
                 .given(overridingTwo(
                         "tokens.maxPerAccount", "10",
