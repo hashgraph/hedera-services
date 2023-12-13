@@ -76,6 +76,7 @@ public class ERC721ContractInteractions extends HapiSuite {
                         contractCreate(CONTRACT)
                                 .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
+                                .gas(500_000L)
                                 .via(CREATE_TX))
                 .then(
                         QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
