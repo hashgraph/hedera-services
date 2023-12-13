@@ -308,8 +308,6 @@ public class HandleHederaOperations implements HederaOperations {
 
         tokenServiceApi.deleteContract(contractId);
         addContractDeleteChildRecord(contractId);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().evmAddress(evmAddress).build());
     }
 
     /**
@@ -323,8 +321,6 @@ public class HandleHederaOperations implements HederaOperations {
 
         tokenServiceApi.deleteContract(contractId);
         addContractDeleteChildRecord(contractId);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().contractNum(number).build());
     }
 
     /**
