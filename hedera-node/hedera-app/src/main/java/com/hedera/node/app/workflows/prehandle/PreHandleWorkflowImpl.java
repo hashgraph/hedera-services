@@ -188,7 +188,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
             logger.debug("Transaction failed pre-check", preCheck);
-            return nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
+            return nodeDueDiligenceFailure(
+                    creator,
+                    preCheck.responseCode(),
+                    null,
+                    configProvider.getConfiguration().getVersion());
         }
 
         // No reason to do this twice, since every transaction passed to handle is first given to pre-handle
@@ -208,11 +212,19 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return nodeDueDiligenceFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo);
+            return nodeDueDiligenceFailure(
+                    creator,
+                    PAYER_ACCOUNT_NOT_FOUND,
+                    txInfo,
+                    configProvider.getConfiguration().getVersion());
         } else if (payerAccount.deleted()) {
             // this check is not guaranteed, it should be checked again in handle phase. If the payer account is
             // deleted, we skip the signature verification.
-            return nodeDueDiligenceFailure(creator, PAYER_ACCOUNT_DELETED, txInfo);
+            return nodeDueDiligenceFailure(
+                    creator,
+                    PAYER_ACCOUNT_DELETED,
+                    txInfo,
+                    configProvider.getConfiguration().getVersion());
         }
 
         // 3. Expand and verify signatures
@@ -279,13 +291,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature
             // verifications that we have determined so far.
             logger.debug("Transaction failed pre-check", preCheck);
-            final var results = verifySignatures(txInfo, context, OnlyPayerKey.YES, payerIsHollow, previousResult);
+            final var results =
+                    verifySignatures(txInfo, context, VerifyOnlyPayerKey.YES, payerIsHollow, previousResult);
             return preHandleFailure(
                     payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), Set.of(), Set.of(), results);
         }
 
         // 3. Get the verification results
-        final var results = verifySignatures(txInfo, context, OnlyPayerKey.NO, payerIsHollow, previousResult);
+        final var results = verifySignatures(txInfo, context, VerifyOnlyPayerKey.NO, payerIsHollow, previousResult);
 
         // 4. Create and return TransactionMetadata
         return new PreHandleResult(
@@ -307,7 +320,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * reason to do non-payer signatures if the transaction has already failed some other
      * preliminary verification).
      */
-    private enum OnlyPayerKey {
+    private enum VerifyOnlyPayerKey {
         YES,
         NO
     }
@@ -324,7 +337,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private Map<Key, SignatureVerificationFuture> verifySignatures(
             @NonNull final TransactionInfo txInfo,
             @NonNull final PreHandleContext context,
-            @NonNull final OnlyPayerKey onlyPayerKey,
+            @NonNull final VerifyOnlyPayerKey onlyPayerKey,
             @NonNull final PayerIsHollow payerIsHollow,
             @Nullable final PreHandleResult previousResult) {
         // Maybe we can reuse the previous result's verification results
@@ -341,7 +354,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
         // If needed, expand additional SignaturePairs based on gathered keys (we can safely ignore
         // hollow accounts because we already grabbed them when expanding the "full prefix" keys above)
-        if (onlyPayerKey == OnlyPayerKey.NO) {
+        if (onlyPayerKey == VerifyOnlyPayerKey.NO) {
             signatureExpander.expand(context.requiredNonPayerKeys(), originals, expanded);
             signatureExpander.expand(context.optionalNonPayerKeys(), originals, expanded);
         }
@@ -351,8 +364,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private boolean wasComputedWithCurrentNodeConfiguration(@Nullable PreHandleResult previousResult) {
         // (FUTURE) IMPORTANT: Given a completely dynamic address book, we will also need to check
         // whether this node's account id has changed since we computed the previous result
-        return previousResult != null
-                && previousResult.configVersion()
-                        != configProvider.getConfiguration().getVersion();
+        return previousResult == null
+                || previousResult.configVersion()
+                        == configProvider.getConfiguration().getVersion();
     }
 }

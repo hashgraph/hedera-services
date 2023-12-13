@@ -87,19 +87,24 @@ public record PreHandleResult(
                 && getHollowAccounts().equals(context.requiredHollowAccounts());
     }
 
-    public Map<Key, SignatureVerificationFuture> getVerificationResults() {
+    /**
+     * Returns the key verifications for this result; or an empty map if none could be computed.
+     *
+     * @return the key verifications for this result; or an empty map if none could be computed.
+     */
+    public @NonNull Map<Key, SignatureVerificationFuture> getVerificationResults() {
         return verificationResults == null ? Collections.emptyMap() : verificationResults;
     }
 
-    public Set<Key> getRequiredKeys() {
+    public @NonNull Set<Key> getRequiredKeys() {
         return requiredKeys == null ? Collections.emptySet() : requiredKeys;
     }
 
-    public Set<Key> getOptionalKeys() {
+    public @NonNull Set<Key> getOptionalKeys() {
         return optionalKeys == null ? Collections.emptySet() : optionalKeys;
     }
 
-    public Key getPayerKey() {
+    public @NonNull Key getPayerKey() {
         return payerKey == null ? IMMUTABILITY_SENTINEL_KEY : payerKey;
     }
 
@@ -163,13 +168,15 @@ public record PreHandleResult(
      * @param node The node that is responsible for paying for this due diligence failure.
      * @param responseCode The response code of the failure.
      * @param txInfo The transaction info, if available.
+     * @param configVersion The version of the configuration that was used to compute the result
      * @return A new {@link PreHandleResult} with the given parameters.
      */
     @NonNull
     public static PreHandleResult nodeDueDiligenceFailure(
             @NonNull final AccountID node,
             @NonNull final ResponseCodeEnum responseCode,
-            @Nullable final TransactionInfo txInfo) {
+            @Nullable final TransactionInfo txInfo,
+            final long configVersion) {
         return new PreHandleResult(
                 node,
                 null,
@@ -181,7 +188,7 @@ public record PreHandleResult(
                 null,
                 null,
                 null,
-                UNKNOWN_VERSION);
+                configVersion);
     }
 
     /**

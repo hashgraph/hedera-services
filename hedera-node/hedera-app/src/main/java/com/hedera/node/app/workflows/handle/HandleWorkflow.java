@@ -88,7 +88,6 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -725,11 +724,11 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
         final var metadata = platformTxn.getMetadata();
-        final PreHandleResult originalPreHandleResult;
+        final PreHandleResult previousResult;
         if (metadata instanceof PreHandleResult result) {
-            originalPreHandleResult = result;
+            previousResult = result;
         } else {
-            originalPreHandleResult = null;
+            previousResult = null;
         }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
@@ -738,37 +737,6 @@ public class HandleWorkflow {
                 storeFactory,
                 storeFactory.getStore(ReadableAccountStore.class),
                 platformTxn,
-                originalPreHandleResult);
-    }
-
-    /**
-     * Checks if any of the keys changed from previous result to current result.
-     * Only if keys changed we need to re-expand and re-verify the signatures.
-     *
-     * @param previousResult previous pre-handle result
-     * @param context current context
-     * @return true if any of the keys changed
-     */
-    private boolean haveKeyChanges(final PreHandleResult previousResult, final PreHandleContextImpl context) {
-        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
-        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
-        final var currentPayerKey = context.payerKey();
-
-        // keys from previous pre-handle result
-        final var previousResultRequiredKeys = previousResult.getRequiredKeys();
-        final var previousResultOptionalKeys = previousResult.getOptionalKeys();
-        final var previousResultPayerKey = previousResult.getPayerKey();
-
-        for (final var key : currentRequiredNonPayerKeys) {
-            if (!previousResultRequiredKeys.contains(key)) {
-                return true;
-            }
-        }
-        for (final var key : currentOptionalNonPayerKeys) {
-            if (!previousResultOptionalKeys.contains(key)) {
-                return true;
-            }
-        }
-        return !previousResultPayerKey.equals(currentPayerKey);
+                previousResult);
     }
 }

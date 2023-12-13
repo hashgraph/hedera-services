@@ -116,7 +116,10 @@ class HandleWorkflowTest extends AppTestBase {
             createPreHandleResult(Status.PRE_HANDLE_FAILURE, ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID);
 
     private static final PreHandleResult DUE_DILIGENCE_RESULT = PreHandleResult.nodeDueDiligenceFailure(
-            NODE_1.nodeAccountID(), ResponseCodeEnum.INVALID_TRANSACTION, new TransactionScenarioBuilder().txInfo());
+            NODE_1.nodeAccountID(),
+            ResponseCodeEnum.INVALID_TRANSACTION,
+            new TransactionScenarioBuilder().txInfo(),
+            1L);
 
     private static final ExchangeRateSet EXCHANGE_RATE_SET =
             ExchangeRateSet.newBuilder().build();
