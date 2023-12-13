@@ -259,7 +259,7 @@ public final class Hedera implements SwirldMain {
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
                         CONTRACT_SERVICE,
-                        new FileServiceImpl(),
+                        new FileServiceImpl(bootstrapConfigProvider),
                         new FreezeServiceImpl(),
                         new NetworkServiceImpl(),
                         new ScheduleServiceImpl(),
@@ -826,55 +826,12 @@ public final class Hedera implements SwirldMain {
     * Restart Initialization
     *
     =================================================================================================================*/
-
     /**
      * Initialize flow for when a node has been restarted. This means it was started from a saved state.
      */
     private void restart(
             @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
-        logger.debug("Restart Initialization");
-
-        // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
-        if (deserializedVersion == null) {
-            logger.fatal("Fatal error, previous software version not found in saved state!");
-            System.exit(1);
-        }
-
-        // Initialize the configuration from disk (restart case). We must do this BEFORE we run migration, because
-        // the various migration methods may depend on configuration to do their work
-        logger.info("Initializing restart configuration");
-        this.configProvider = new ConfigProviderImpl(false);
-        logConfiguration();
-
-        logger.info("Initializing ThrottleManager");
-        this.throttleManager = new ThrottleManager();
-
-        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
-        this.frontendThrottle =
-                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
-        this.congestionMultipliers = createCongestionMultipliers(state);
-
-        logger.info("Initializing ExchangeRateManager");
-        exchangeRateManager = new ExchangeRateManager(configProvider);
-
-        logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
-
-        // Create all the nodes in the merkle tree for all the services
-        // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
-        //       the config provider to the migration code and let it get the right version of config as it goes.
-        onMigrate(state, deserializedVersion, RESTART);
-
-        // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state, RESTART);
-
-        // And now that the entire dependency graph has been initialized, and we have config, and all migration has
-        // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
-        // from information held in state (especially those in special files).
-        initializeExchangeRateManager(state);
-        initializeFeeManager(state);
-        initializeThrottles(state);
-        // TODO We may need to update the config with the latest version in file 121
+        initializeForTrigger(state, deserializedVersion, RESTART);
     }
 
     /*==================================================================================================================
@@ -891,7 +848,14 @@ public final class Hedera implements SwirldMain {
      */
     private void reconnect(
             @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
-        logger.debug("Reconnect Initialization");
+        initializeForTrigger(state, deserializedVersion, RECONNECT);
+    }
+
+    private void initializeForTrigger(
+            @NonNull final MerkleHederaState state,
+            @Nullable final HederaSoftwareVersion deserializedVersion,
+            @NonNull final InitTrigger trigger) {
+        logger.debug(trigger + " Initialization");
 
         // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
         if (deserializedVersion == null) {
@@ -922,10 +886,10 @@ public final class Hedera implements SwirldMain {
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
-        onMigrate(state, deserializedVersion, RECONNECT);
+        onMigrate(state, deserializedVersion, trigger);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state, RECONNECT);
+        initializeDagger(state, trigger);
 
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
