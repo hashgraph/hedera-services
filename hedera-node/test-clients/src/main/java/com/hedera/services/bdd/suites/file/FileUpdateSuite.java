@@ -362,7 +362,8 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     // C.f. https://github.com/hashgraph/hedera-services/pull/8908
-    private HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
+    @HapiTest
+    public HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .preserving(MAX_REFUND_GAS_PROP)
                 .given(
