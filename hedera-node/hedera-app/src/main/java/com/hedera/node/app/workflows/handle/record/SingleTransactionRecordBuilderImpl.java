@@ -310,6 +310,35 @@ public class SingleTransactionRecordBuilderImpl
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
 
+    public void nullOutSideEffectFields() {
+        serialNumbers.clear();
+        tokenTransferLists.clear();
+        automaticTokenAssociations.clear();
+        if (transferList.hasAccountAmounts()) {
+            transferList.accountAmounts().clear();
+        }
+        paidStakingRewards.clear();
+        assessedCustomFees.clear();
+
+        contractFunctionResult = null;
+
+        transactionReceiptBuilder.accountID((AccountID) null);
+        transactionReceiptBuilder.contractID((ContractID) null);
+        transactionReceiptBuilder.fileID((FileID) null);
+        transactionReceiptBuilder.tokenID((TokenID) null);
+        transactionReceiptBuilder.scheduleID((ScheduleID) null);
+        transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
+        transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
+        transactionReceiptBuilder.newTotalSupply(-1L);
+        transactionReceiptBuilder.topicRunningHashVersion(0L);
+        transactionReceiptBuilder.topicSequenceNumber(0L);
+        transactionRecordBuilder.contractCreateResult((ContractFunctionResult) null);
+        transactionRecordBuilder.scheduleRef((ScheduleID) null);
+        transactionRecordBuilder.alias(Bytes.EMPTY);
+        transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
+        transactionRecordBuilder.evmAddress(Bytes.EMPTY);
+    }
+
     public ReversingBehavior reversingBehavior() {
         return reversingBehavior;
     }
@@ -555,16 +584,6 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Gets the assessedCustomFees.
-     *
-     * @return assessedCustomFees
-     */
-    @NonNull
-    public List<AssessedCustomFee> assessedCustomFees() {
-        return this.assessedCustomFees;
-    }
-
-    /**
      * Sets the assessedCustomFees.
      *
      * @param assessedCustomFees the assessedCustomFees
@@ -590,16 +609,6 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(assessedCustomFee, "assessedCustomFee must not be null");
         assessedCustomFees.add(assessedCustomFee);
         return this;
-    }
-
-    /**
-     * Gets the automaticTokenAssociations.
-     *
-     * @return automaticTokenAssociations
-     */
-    @NonNull
-    public List<TokenAssociation> automaticTokenAssociations() {
-        return this.automaticTokenAssociations;
     }
 
     /**
@@ -654,16 +663,6 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(ethereumHash, "ethereumHash must not be null");
         transactionRecordBuilder.ethereumHash(ethereumHash);
         return this;
-    }
-
-    /**
-     * Gets the paidStakingRewards.
-     *
-     * @return paidStakingRewards
-     */
-    @NonNull
-    public final List<AccountAmount> paidStakingRewards() {
-        return this.paidStakingRewards;
     }
 
     /**
