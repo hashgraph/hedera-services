@@ -66,14 +66,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newFeeScheduleKey = Optional.empty();
     private Optional<String> newPauseKey = Optional.empty();
 
-    @Nullable
-    private String newLockKey;
+    private Optional<String> newLockKey = Optional.empty();
 
-    @Nullable
-    private String newPartitionKey;
+    private Optional<String> newPartitionKey = Optional.empty();
 
-    @Nullable
-    private String newPartitionMoveKey;
+    private Optional<String> newPartitionMoveKey = Optional.empty();
 
     private Set<TokenFeature> rolesToRemove = EnumSet.noneOf(TokenFeature.class);
     private Optional<String> newSymbol = Optional.empty();
@@ -140,18 +137,18 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
-    public HapiTokenUpdate lockKey(@NonNull final String name) {
-        newLockKey = Objects.requireNonNull(name);
+    public HapiTokenUpdate lockKey(String name) {
+        newLockKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenUpdate partitionKey(@NonNull final String name) {
-        newPartitionKey = Objects.requireNonNull(name);
+    public HapiTokenUpdate partitionKey(String name) {
+        newPartitionKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenUpdate partitionMoveKey(@NonNull final String name) {
-        newPartitionMoveKey = Objects.requireNonNull(name);
+    public HapiTokenUpdate partitionMoveKey(String name) {
+        newPartitionMoveKey = Optional.of(name);
         return this;
     }
 
@@ -325,6 +322,12 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                     Timestamp.newBuilder().setSeconds(t).build()));
                             autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(
                                     Duration.newBuilder().setSeconds(secs).build()));
+                            newLockKey.ifPresent(
+                                    k -> b.setLockKey(spec.registry().getKey(k)));
+                            newPartitionKey.ifPresent(
+                                    k -> b.setPartitionKey(spec.registry().getKey(k)));
+                            newPartitionMoveKey.ifPresent(
+                                    k -> b.setPartitionMoveKey(spec.registry().getKey(k)));
                             // We often want to use an existing contract to control the keys of various types (supply,
                             // freeze etc.)
                             // of a token, and in this case we need to use a Key{contractID=0.0.X} as the key; so for
@@ -393,6 +396,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         newKycKey.ifPresent(n -> registry.saveKycKey(token, registry.getKey(n)));
         newFeeScheduleKey.ifPresent(n -> registry.saveFeeScheduleKey(token, registry.getKey(n)));
         newPauseKey.ifPresent(n -> registry.savePauseKey(token, registry.getKey(n)));
+        newLockKey.ifPresent(n -> registry.saveLockKey(token, registry.getKey(n)));
+        newPartitionKey.ifPresent(n -> registry.savePartitionKey(token, registry.getKey(n)));
+        newPartitionMoveKey.ifPresent(n -> registry.savePartitionMoveKey(token, registry.getKey(n)));
     }
 
     @Override
