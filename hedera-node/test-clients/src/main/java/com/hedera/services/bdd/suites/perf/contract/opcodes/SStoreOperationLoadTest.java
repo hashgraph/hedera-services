@@ -62,7 +62,7 @@ public class SStoreOperationLoadTest extends LoadTest {
         return List.of(runContractCalls());
     }
 
-    private HapiSpec runContractCalls() {
+    final HapiSpec runContractCalls() {
         final var contract = "BigArray";
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);

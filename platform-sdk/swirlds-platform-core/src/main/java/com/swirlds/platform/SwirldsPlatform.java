@@ -182,7 +182,6 @@ import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -503,15 +502,19 @@ public class SwirldsPlatform implements Platform {
                 actualMainClassName,
                 selfId,
                 swirldName);
+
+        transactionPool = new TransactionPool(platformContext);
+
         // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
         platformWiring.wireExternalComponents(
-                preconsensusEventWriter, platformStatusManager, appCommunicationComponent);
+                preconsensusEventWriter, platformStatusManager, appCommunicationComponent, transactionPool);
 
-        platformWiring.bind(signedStateFileManager);
+        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
+        platformWiring.bind(signedStateFileManager, stateSigner);
 
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
@@ -529,13 +532,11 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 threadManager,
                 dispatchBuilder,
-                new PlatformSigner(keysAndCerts),
-                txn -> this.createSystemTransaction(txn, true),
                 newLatestCompleteStateConsumer,
                 this::handleFatalError,
-                platformStatusManager,
                 savedStateController,
-                platformWiring.getDumpStateToDiskInput()::put);
+                platformWiring.getDumpStateToDiskInput()::put,
+                platformWiring.getSignStateInput()::put);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -595,8 +596,6 @@ public class SwirldsPlatform implements Platform {
 
         final TransactionConfig transactionConfig =
                 platformContext.getConfiguration().getConfigData(TransactionConfig.class);
-
-        transactionPool = new TransactionPool(platformContext);
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = new SwirldStateManager(
@@ -923,18 +922,6 @@ public class SwirldsPlatform implements Platform {
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * Stores a new system transaction that will be added to an event in the future.
-     *
-     * @param systemTransaction the new system transaction to be included in a future event
-     * @return {@code true} if successful, {@code false} otherwise
-     */
-    private boolean createSystemTransaction(
-            @NonNull final SystemTransaction systemTransaction, final boolean priority) {
-        Objects.requireNonNull(systemTransaction);
-        return transactionPool.submitTransaction(systemTransaction, priority);
     }
 
     /**

@@ -99,7 +99,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                 lpFarmSimulation());
     }
 
-    private HapiSpec workingHoursDemo() {
+    final HapiSpec workingHoursDemo() {
         final var gasToOffer = 4_000_000;
         final var contract = "WorkingHours";
         final var ticketToken = "ticketToken";
@@ -184,7 +184,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                         getTxnRecord(ticketWorking).andAllChildRecords().logged());
     }
 
-    private HapiSpec canMintAndTransferInSameContractOperation() {
+    final HapiSpec canMintAndTransferInSameContractOperation() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final var nfToken = "nfToken";
@@ -251,7 +251,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                                 .alsoSigningWithFullPrefix(multiKey, aCivilian)));
     }
 
-    private HapiSpec contractTransferToSigReqAccountWithKeySucceeds() {
+    final HapiSpec contractTransferToSigReqAccountWithKeySucceeds() {
         return propertyPreservingHapiSpec("ContractTransferToSigReqAccountWithKeySucceeds")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -301,7 +301,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec lpFarmSimulation() {
+    final HapiSpec lpFarmSimulation() {
         final var adminKey = "adminKey";
         final var gasToOffer = 4_000_000;
         final var farmInitcodeLoc = "src/main/resource/contract/bytecodes/farmInitcode.bin";

@@ -110,7 +110,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nftMintingCapIsEnforced() {
+    final HapiSpec nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(
                         newKeyNamed("supplyKey"),

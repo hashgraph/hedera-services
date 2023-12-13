@@ -108,7 +108,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                 isFrozenHappyPathWithLocalCall());
     }
 
-    private HapiSpec freezeUnfreezeFungibleWithNegativeCases() {
+    final HapiSpec freezeUnfreezeFungibleWithNegativeCases() {
         final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -222,7 +222,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                                                         htsPrecompileResult().withStatus(TOKEN_HAS_NO_FREEZE_KEY)))));
     }
 
-    private HapiSpec freezeUnfreezeNftsWithNegativeCases() {
+    final HapiSpec freezeUnfreezeNftsWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return propertyPreservingHapiSpec("freezeUnfreezeNftsWithNegativeCases")
@@ -312,7 +312,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                                                         .withIsFrozen(false)))));
     }
 
-    private HapiSpec isFrozenHappyPathWithLocalCall() {
+    final HapiSpec isFrozenHappyPathWithLocalCall() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("isFrozenHappyPathWithLocalCall")
