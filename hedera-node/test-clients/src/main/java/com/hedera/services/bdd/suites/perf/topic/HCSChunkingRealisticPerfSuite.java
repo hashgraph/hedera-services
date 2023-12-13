@@ -45,7 +45,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 
     private static final Logger log = LogManager.getLogger(HCSChunkingRealisticPerfSuite.class);
     private static final int CHUNK_SIZE = 150;
-    private static final String LARGE_FILE = "src/main/resource/contract/contracts/EmitEvent/EmitEvent.bin";
+    private static final String LARGE_FILE = "src/main/resources/contract/contracts/EmitEvent/EmitEvent.bin";
     private static final String PAYER = "payer";
     private static final String TOPIC = "topic";
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;

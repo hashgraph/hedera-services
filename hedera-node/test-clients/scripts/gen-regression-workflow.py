@@ -6,9 +6,9 @@ import itertools
 
 CONFIG_YML_JOBS_PATH_TPL = '../.circleci/config-{}-jobs.yml-excerpt'
 CONFIG_YML_WORKFLOW_PATH_TPL = '../.circleci/config-{}-workflow.yml-excerpt'
-PROPS_BASE_DIR = './src/main/resource/eet-config'
+PROPS_BASE_DIR = './src/main/resources/eet-config'
 PROFILE_MATCH = 'regression-(.*)[.]properties'
-PROPS_TPL = './src/main/resource/eet-config/regression-{}.properties'
+PROPS_TPL = './src/main/resources/eet-config/regression-{}.properties'
 
 DURATION_UNIT = 'MINUTES'
 DURATIONS = {

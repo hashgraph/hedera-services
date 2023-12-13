@@ -106,7 +106,7 @@ directory is the _test-clients/_ directory of your clone of this repo:
     <img src="./assets/spec-configuration.png" height="300" width="450" />
 </p>
 
-Because [`node=localhost`](../test-clients/src/main/resource/spec-default.properties)
+Because [`node=localhost`](../test-clients/src/main/resources/spec-default.properties)
 in the _spec-default.properties_ controlling the `HelloWorldSpec` test, this
 will run against your local network, culminating in logs similar to:
 
@@ -122,7 +122,7 @@ will run against your local network, culminating in logs similar to:
 ``` 
 
 (This client uses account `0.0.2` as the default payer, and is aware of the above
-keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties)
+keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resources/spec-default.properties)
 under the `startupAccounts.path` key).
 
 ## Stopping/restarting the network

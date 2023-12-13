@@ -32,7 +32,7 @@ public class FeesJsonToGrpcBytes implements SysFileSerde<String> {
     public static void main(String... args) {
         var subject = new FeesJsonToGrpcBytes();
         try {
-            var grpcBytes = subject.toRawFile(Files.readString(Paths.get("src/main/resource/FeeSchedule.json")));
+            var grpcBytes = subject.toRawFile(Files.readString(Paths.get("src/main/resources/FeeSchedule.json")));
             var grpc = CurrentAndNextFeeSchedule.parseFrom(grpcBytes);
             System.out.println(grpc.toString());
             var json = subject.fromRawFile(grpcBytes);

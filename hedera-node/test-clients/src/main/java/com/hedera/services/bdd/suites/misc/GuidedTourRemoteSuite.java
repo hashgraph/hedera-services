@@ -145,7 +145,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                         contractCreate(contract))
                 .when()
                 .then(
-                        /* This contract (c.f. src/main/resource/contract/contracts/BalanceLookup/BalanceLookup.sol) assumes
+                        /* This contract (c.f. src/main/resources/contract/contracts/BalanceLookup/BalanceLookup.sol) assumes
                         a shard and realm of 0; accepts just the sequence number of an account. */
                         contractCallLocal(contract, "lookup", spec -> new Object[] {
                                     spec.registry().getAccountID(TARGET_ACCOUNT).getAccountNum()

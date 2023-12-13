@@ -51,7 +51,7 @@ import org.apache.logging.log4j.Logger;
 public class ContractPerformanceSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(ContractPerformanceSuite.class);
 
-    private static final String PERF_RESOURCES = "src/main/resource/contract/performance/";
+    private static final String PERF_RESOURCES = "src/main/resources/contract/performance/";
     private static final String LOADER_TEMPLATE = "608060405234801561001057600080fd5b5061%04x806100206000396000f3fe%s";
     private static final String RETURN_PROGRAM = "3360005260206000F3";
     private static final String REVERT_PROGRAM = "6055605555604360A052600160A0FD";

@@ -96,7 +96,7 @@ class ClientProfileShell(cmd.Cmd):
             max_total_ops = sum(self.targets.values())
             min_tgt = min([v for (_, v) in self.targets.items()])
             biases = dict((k, int(v / min_tgt)) for (k, v) in self.targets.items())
-            with open('src/main/resource/eet-config/regression-{}.properties'.format(profile), 'w') as f:
+            with open('src/main/resources/eet-config/regression-{}.properties'.format(profile), 'w') as f:
                 f.write('#### AUTOMATION ####\n')
                 optional_args = ','.join(
                         '{}={}'.format(k, v) for (k, v) in

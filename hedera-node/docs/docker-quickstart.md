@@ -102,7 +102,7 @@ cd test-clients
 ```
 
 (This client uses account `0.0.2` as the default payer, and is aware of the above
-keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties)
+keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resources/spec-default.properties)
 under the `startupAccounts.path` key).
 
 ## Stopping or reinitializing the Compose network

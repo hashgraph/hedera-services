@@ -56,7 +56,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This restart test uses the named entities under
- * src/main/resource/jrs/entities/JrsRestartTestTemplate
+ * src/main/resources/jrs/entities/JrsRestartTestTemplate
  *
  * <p>FILES - bytecode (EVM constructor bytecode for multipurpose contract)
  *
@@ -75,7 +75,7 @@ import org.apache.logging.log4j.Logger;
 public class JrsRestartTestTemplate extends HapiSuite {
     private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
 
-    private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/JrsRestartTestTemplate";
+    private static final String ENTITIES_DIR = "src/main/resources/jrs/entities/JrsRestartTestTemplate";
 
     private static final String SENDER = "sender";
     private static final String MULTIPURPOSE = "Multipurpose";

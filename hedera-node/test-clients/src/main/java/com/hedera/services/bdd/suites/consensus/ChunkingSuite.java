@@ -120,7 +120,7 @@ public class ChunkingSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec longMessageIsFragmentedIntoChunks() {
-        String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
+        String fileForLongMessage = "src/main/resources/RandomLargeBinary.bin";
         return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
                 .given(cryptoCreate("payer"), createTopic("testTopic"))
                 .when()

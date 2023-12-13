@@ -48,7 +48,7 @@ public class AddWellKnownEntities extends HapiSuite {
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",
                         "fees.fixedOffer", "" + ONE_HUNDRED_HBARS,
-                        "persistentEntities.dir.path", "src/main/resource/jrs-creations"))
+                        "persistentEntities.dir.path", "src/main/resources/jrs-creations"))
                 .given(expectedEntitiesExist())
                 .when()
                 .then(sleepFor(10_000L), freezeOnly().startingIn(60).seconds().payingWith(GENESIS));

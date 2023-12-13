@@ -15,23 +15,23 @@ port = 50211
 #host=localhost
 #
 #Enable below  Hedera Public Test-Net
-host=0.testnet.hedera.com
+#host=0.testnet.hedera.com
 #
 #Enable below  Hedera Main-Net Node=3
-#host=35.237.200.180
+host=35.237.200.180
 #
 #Start up Account file
 #
 ##Enable below for localhost Account Startup File for Genesis Account
-#startUpFile=src/main/resource/StartUpAccount.txt
+#startUpFile=src/main/resources/StartUpAccount.txt
 #
 ##Enable below for Test Net Account Startup File  for AccountNum=
-startUpFile=src/main/resource/TestNet_AccountForTestsStartUp.txt
+#startUpFile=src/main/resources/TestNet_AccountForTestsStartUp.txt
 #
 ##Enable below for Main Net Account Startup File for AccountNum=
-#startUpFile=src/main/resource/MainNet_AccountForTestsStartUp.txt
+startUpFile=src/main/resources/MainNet_AccountForTestsStartUp.txt
 #
-#startUpFile=src/main/resource/OpenCrowd_8013_AccountForTestsStartUp.txt
+#startUpFile=src/main/resources/OpenCrowd_8013_AccountForTestsStartUp.txt
 #
 # default REALM/SHARD properties
 NODE_REALM_NUMBER = 0
