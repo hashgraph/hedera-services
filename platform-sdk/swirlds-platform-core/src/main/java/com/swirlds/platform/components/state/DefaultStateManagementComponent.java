@@ -34,8 +34,6 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
-import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
