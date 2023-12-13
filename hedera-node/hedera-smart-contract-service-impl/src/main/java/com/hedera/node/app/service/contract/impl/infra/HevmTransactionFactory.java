@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -295,6 +296,7 @@ public class HevmTransactionFactory {
 
     private Bytes initcodeFor(@NonNull final ContractCreateTransactionBody body) {
         if (body.hasInitcode()) {
+            validateTrue(body.initcode().length() > 0, CONTRACT_BYTECODE_EMPTY);
             return body.initcode();
         } else {
             final var initcode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));

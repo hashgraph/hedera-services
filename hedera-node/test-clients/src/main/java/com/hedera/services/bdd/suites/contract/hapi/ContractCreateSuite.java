@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -114,6 +115,8 @@ public class ContractCreateSuite extends HapiSuite {
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
+    private static final String PATTERN = "0.0.%d";
+
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
     public static void main(String... args) {
@@ -142,7 +145,8 @@ public class ContractCreateSuite extends HapiSuite {
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
                 newAccountsCanUsePureContractIdKey(),
-                createContractWithStakingFields());
+                createContractWithStakingFields(),
+                disallowCreationsOfEmptyInitCode());
     }
 
     @Override
@@ -219,6 +223,21 @@ public class ContractCreateSuite extends HapiSuite {
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .payingWith("bankrupt")
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+    }
+
+    @HapiTest
+    private HapiSpec disallowCreationsOfEmptyInitCode() {
+        final var contract = "EmptyContract";
+        return defaultHapiSpec("allowCreationsOfEmptyContract")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        contractCreate(contract)
+                                .adminKey(ADMIN_KEY)
+                                .entityMemo("Empty Contract")
+                                .inlineInitCode(ByteString.EMPTY)
+                                .hasKnownStatus(CONTRACT_BYTECODE_EMPTY))
+                .when()
+                .then();
     }
 
     @HapiTest
