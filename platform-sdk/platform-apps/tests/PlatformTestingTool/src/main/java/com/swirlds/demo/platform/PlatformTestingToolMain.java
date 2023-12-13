@@ -129,7 +129,6 @@ public class PlatformTestingToolMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolMain.class);
 
     private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
-    private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
     private static final Marker LOGM_STARTUP = MarkerManager.getMarker("STARTUP");
     private static final Marker LOGM_SUBMIT_DETAIL = MarkerManager.getMarker("SUBMIT_DETAIL");
     private static final Marker LOGM_DEMO_QUORUM = MarkerManager.getMarker("DEMO_QUORUM");
@@ -309,7 +308,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             logger.error(EXCEPTION.getMarker(), "No JVM ARGS!");
         }
         for (String arg : jvmArgs) {
-            logger.info(EXCEPTION.getMarker(), "JVM arg: {}", arg);
+            logger.info(LOGM_STARTUP, "JVM arg: {}", arg);
         }
     }
 
