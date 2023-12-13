@@ -1,4 +1,4 @@
-package com.swirlds.platform.wiring;
+package com.swirlds.platform.wiring.components;
 
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;

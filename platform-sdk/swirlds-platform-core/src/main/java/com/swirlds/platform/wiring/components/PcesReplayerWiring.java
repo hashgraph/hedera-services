@@ -1,4 +1,4 @@
-package com.swirlds.platform.wiring;
+package com.swirlds.platform.wiring.components;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -7,6 +7,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
+import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
