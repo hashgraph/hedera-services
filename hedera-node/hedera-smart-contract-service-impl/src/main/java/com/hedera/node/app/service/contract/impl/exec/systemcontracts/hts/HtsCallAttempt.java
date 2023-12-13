@@ -130,16 +130,6 @@ public class HtsCallAttempt {
     }
 
     /**
-     * Returns the default verification strategy for this call which also uses top level signatures.
-     * (i.e., the strategy that treats contract id and delegatable contract id keys as active when they match the call's sender address as well as top level signatures)
-     * @return the default verification strategy for this call
-     */
-    public @NonNull VerificationStrategy contractVerificationStrategy() {
-        return verificationStrategies.activatingContractAndTopLevelKeys(
-                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
-    }
-
-    /**
      * Returns the updater enhancement this call was attempted within.
      *
      * @return the updater enhancement this call was attempted within

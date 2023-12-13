@@ -898,7 +898,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .error(INVALID_CUSTOM_FEE_COLLECTOR.name()))));
     }
 
-    @HapiTest
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     private HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
@@ -954,7 +954,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .error(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON.name()))));
     }
 
-    @HapiTest
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     private HapiSpec createTokenWithInvalidRoyaltyFee() {
         final String feeCollector = ACCOUNT_2;
         AtomicReference<String> existingToken = new AtomicReference<>();

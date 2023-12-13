@@ -60,25 +60,4 @@ public class VerificationStrategies {
         return new ActiveContractVerificationStrategy(
                 contractNum, tuweniToPbjBytes(sender), requiresDelegatePermission, UseTopLevelSigs.NO);
     }
-
-    /**
-     * Returns a {@link VerificationStrategy} that will activate delegatable contract id,
-     * contract id keys and top level keys.
-     *
-     * @param sender the contract whose keys are to be activated
-     * @param requiresDelegatePermission whether the strategy should require a delegatable contract id key
-     * @param nativeOperations the operations to use for looking up the contract's number
-     * @return a {@link VerificationStrategy} that will activate only delegatable contract id and contract id keys
-     */
-    public VerificationStrategy activatingContractAndTopLevelKeys(
-            @NonNull final Address sender,
-            final boolean requiresDelegatePermission,
-            @NonNull final HederaNativeOperations nativeOperations) {
-        final var contractNum = maybeMissingNumberOf(sender, nativeOperations);
-        if (contractNum == MISSING_ENTITY_NUMBER) {
-            throw new IllegalArgumentException("Cannot verify against missing contract " + sender);
-        }
-        return new ActiveContractVerificationStrategy(
-                contractNum, tuweniToPbjBytes(sender), requiresDelegatePermission, UseTopLevelSigs.YES);
-    }
 }
