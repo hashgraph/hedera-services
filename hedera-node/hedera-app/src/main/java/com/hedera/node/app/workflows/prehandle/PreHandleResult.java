@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -68,6 +69,23 @@ public record PreHandleResult(
         @Nullable Map<Key, SignatureVerificationFuture> verificationResults,
         @Nullable PreHandleResult innerResult,
         long configVersion) {
+
+    /**
+     * Returns whether this result's verification results are valid for the given context. This is <b>only</b>
+     * true if all keys linked to the transaction are exactly the same as those determined to be necessary
+     * in the given context.
+     *
+     * <p>Any change at all in a linked key means we must re-compute the verification results.
+     *
+     * @param context the context that might be able to reuse our verification results
+     * @return whether our verification results are reusable in the given context
+     */
+    public boolean hasReusableVerificationResultsFor(@NonNull final PreHandleContext context) {
+        return getPayerKey().equals(context.payerKey())
+                && getRequiredKeys().equals(context.requiredNonPayerKeys())
+                && getOptionalKeys().equals(context.optionalNonPayerKeys())
+                && getHollowAccounts().equals(context.requiredHollowAccounts());
+    }
 
     public Set<Key> getRequiredKeys() {
         return requiredKeys == null ? Collections.emptySet() : requiredKeys;

@@ -733,7 +733,6 @@ public class HandleWorkflow {
         }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
-
         return preHandleWorkflow.preHandleTransaction(
                 creator.accountId(),
                 storeFactory,

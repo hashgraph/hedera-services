@@ -64,6 +64,7 @@ import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +80,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
     private static final long DEFAULT_CONFIG_VERSION = 1L;
+    private static final long CONFIG_VERSION = 11L;
 
     /**
      * We use a mocked dispatcher, so it is easy to fake out interaction between the workflow and some "hypothetical"
@@ -571,6 +573,52 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var payerKey = ALICE.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(payerAccount).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
+            final Transaction platformTx = new SwirldTransaction(txBytes);
+            when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
+            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
+            when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(payerKey, sigFuture));
+
+            // When we pre-handle the transaction
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+
+            // Then the transaction pre-handle succeeds!
+            final PreHandleResult result = platformTx.getMetadata();
+            assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
+            assertThat(result.responseCode()).isEqualTo(OK);
+            assertThat(result.payer()).isEqualTo(ALICE.accountID());
+            final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+            final KeyVerifier verifier = new DefaultKeyVerifier(1, config, result.verificationResults());
+            final var payerFutureResult = verifier.verificationFor(payerKey);
+            assertThat(payerFutureResult.passed()).isTrue();
+            assertThat(result.txInfo()).isNotNull();
+            assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
+        }
+
+        @Test
+        @DisplayName("Happy path with reusable pre-handle result")
+        void fullyReusableHappyPath(@Mock SignatureVerificationFuture sigFuture) throws Exception {
+            // Given a transaction that is perfectly good
+            final var payerAccount = ALICE.accountID();
+            final var payerKey = ALICE.keyInfo().publicKey();
+            final var txInfo = scenario().withPayer(payerAccount).txInfo();
+            final var txBytes = asByteArray(txInfo.transaction());
+            // And a pre-handle result that is fully reusable
+            final var hederaPayerKey = ALICE.account().keyOrThrow();
+            final var fullyReusablePrehandleResult = new PreHandleResult(
+                    ALICE.accountID(),
+                    hederaPayerKey,
+                    SO_FAR_SO_GOOD,
+                    OK,
+                    txInfo,
+                    Set.of(),
+                    Set.of(),
+                    Set.of(),
+                    Map.of(hederaPayerKey, FakeSignatureVerificationFuture.goodFuture(hederaPayerKey)),
+                    null,
+                    DEFAULT_CONFIG_VERSION);
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
