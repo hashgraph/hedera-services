@@ -15,6 +15,9 @@ import java.util.stream.Stream;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.compactPreconsensusEventFile;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.fileSanityChecks;
 
+/**
+ * This class is responsible for reading event files from disk and adding them to the collection of tracked files.
+ */
 public class PreconsensusEventFileReader {
     /**
      * Hidden constructor.

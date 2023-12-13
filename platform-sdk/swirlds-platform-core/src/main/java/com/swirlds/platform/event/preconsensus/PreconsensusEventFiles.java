@@ -15,6 +15,9 @@ import java.util.Objects;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager.NO_MINIMUM_GENERATION;
 
+/**
+ * Tracks preconsensus event files currently on disk.
+ */
 public class PreconsensusEventFiles {
     private static final Logger logger = LogManager.getLogger(PreconsensusEventFiles.class);
 
@@ -28,26 +31,57 @@ public class PreconsensusEventFiles {
      */
     private final RandomAccessDeque<PreconsensusEventFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
 
+    /**
+     * Get the first file in the file list.
+     *
+     * @return the first file in the file list
+     */
     public PreconsensusEventFile getFirstFile() {
         return files.getFirst();
     }
 
+    /**
+     * Get the last file in the file list.
+     *
+     * @return the last file in the file list
+     */
     public PreconsensusEventFile getLastFile() {
         return files.getLast();
     }
 
+    /**
+     * Remove the first file in the file list.
+     *
+     * @return the file that was removed
+     */
     public PreconsensusEventFile removeFirstFile() {
         return files.removeFirst();
     }
 
+    /**
+     * Remove the last file in the file list.
+     *
+     * @return the file that was removed
+     */
     public PreconsensusEventFile removeLastFile() {
         return files.removeLast();
     }
 
+    /**
+     * Get the number of files currently being tracked.
+     *
+     * @return the number of files currently being tracked
+     */
     public int getFileCount() {
         return files.size();
     }
 
+    /**
+     * Get the number of bytes in all files currently being tracked.
+     *
+     * @return the number of bytes in all files currently being tracked
+     * @throws IOException if there is an error reading the files
+     */
     public long getTotalFileByteCount() throws IOException {
         long totalFileByteCount = 0;
 
@@ -69,10 +103,22 @@ public class PreconsensusEventFiles {
         files.addLast(file);
     }
 
+    /**
+     * Get the file at a specified index.
+     *
+     * @param index the index of the file to get
+     * @return the file at the specified index
+     */
     public PreconsensusEventFile getFile(final int index) {
         return files.get(index);
     }
 
+    /**
+     * Set the file at a specified index.
+     *
+     * @param index the index of the file to set
+     * @param file  the file to set
+     */
     public void setFile(final int index, @NonNull final PreconsensusEventFile file) {
         Objects.requireNonNull(file);
         files.set(index, file);
@@ -88,6 +134,7 @@ public class PreconsensusEventFiles {
      *                          with a generation greater or equal to this value. No events with a smaller generation
      *                          will be returned. A value of {@link PreconsensusEventFileManager::NO_MINIMUM_GENERATION}
      *                          will cause the returned iterator to walk over all available events.
+     * @param startingRound     the round to start iterating from
      * @return an iterator that walks over events
      */
     public @NonNull PreconsensusEventMultiFileIterator getEventIterator(final long minimumGeneration, final long startingRound) {
@@ -104,7 +151,7 @@ public class PreconsensusEventFiles {
      *                          contain events with a generation greater or equal to this value. A value of
      *                          {@link PreconsensusEventFileManager::NO_MINIMUM_GENERATION} will cause the returned
      *                          iterator to walk over all available event files.
-     * @param startingRound     the round to start streaming from
+     * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
     public @NonNull Iterator<PreconsensusEventFile> getFileIterator(final long minimumGeneration, final long startingRound) {
