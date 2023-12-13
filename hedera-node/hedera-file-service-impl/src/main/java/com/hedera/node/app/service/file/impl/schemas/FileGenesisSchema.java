@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NodeAddress;
 import com.hedera.hapi.node.base.NodeAddressBook;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
@@ -80,7 +81,8 @@ public class FileGenesisSchema extends Schema {
 
     /** Create a new instance */
     public FileGenesisSchema() {
-        super(RELEASE_045_VERSION);
+        // BBM: reducing version just for testing
+        super(SemanticVersion.newBuilder().minor(43).build());
     }
 
     @NonNull

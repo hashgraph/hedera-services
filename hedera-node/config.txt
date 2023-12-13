@@ -24,14 +24,13 @@ app,		HederaNode.jar
 # ** END REMOVE FROM SDK RELEASES **
 
 # We're going to load this node's address with 'node1' to work with a mainnet state
-address, 0,  0,  node1,  19, 127.0.0.1,    50211, 127.0.0.1,    50211, 0.0.3
+address, 0,  0,  node1,  19, 127.0.0.1,    50204, 127.0.0.1,    50204, 0.0.3
 
 # Other example addresses:
 # address,   0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
 # address,  1, B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
 # address,  2, C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5
 # address,  3,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
-
 # address,   4, E, Eric,     1, 127.0.0.1, 50208, 127.0.0.1, 50208
 # address,   5,  F, Fred,     1, 127.0.0.1, 50209, 127.0.0.1, 50209
 # address,   6, G, Gina,     1, 127.0.0.1, 50210, 127.0.0.1, 50210
