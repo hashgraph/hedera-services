@@ -141,7 +141,6 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nft.ownerId()).willReturn(OWNER_ID);
-        given(nativeOperations.getAccount(OWNER_ID.accountNum())).willReturn(account);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
