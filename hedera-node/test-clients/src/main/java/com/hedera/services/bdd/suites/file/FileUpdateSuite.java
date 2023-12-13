@@ -239,7 +239,6 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(overriding(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES));
     }
 
-    @HapiTest
     private HapiSpec optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";

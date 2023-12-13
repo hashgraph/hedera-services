@@ -19,16 +19,24 @@ package com.hedera.node.app.service.file.impl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
 public final class FileServiceImpl implements FileService {
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
-    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA";
+    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
+    private ConfigProvider configProvider;
+
+    @Inject
+    public FileServiceImpl(ConfigProvider configProvider) {
+        this.configProvider = configProvider;
+    }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new FileGenesisSchema());
+        registry.register(new FileGenesisSchema(configProvider));
     }
 }
