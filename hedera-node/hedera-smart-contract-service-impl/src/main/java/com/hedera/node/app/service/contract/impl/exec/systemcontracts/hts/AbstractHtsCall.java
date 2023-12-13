@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.completionResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
@@ -75,7 +74,7 @@ public abstract class AbstractHtsCall implements HtsCall {
             @NonNull final ByteBuffer output) {
         requireNonNull(output);
         requireNonNull(recordBuilder);
-        return gasOnly(completionResult(output, gasRequirement, recordBuilder), recordBuilder.status(), isViewCall);
+        return gasOnly(successResult(output, gasRequirement, recordBuilder), recordBuilder.status(), isViewCall);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {

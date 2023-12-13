@@ -381,20 +381,10 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
-        try {
-            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                    transaction.signedTransactionBytes().toReadableSequentialData());
-            final var existingTransactionBody =
-                    TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
-            final var body = existingTransactionBody
-                    .copyBuilder()
-                    .transactionID(newTransactionID)
-                    .build();
-            this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
-            return this;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        final var body =
+                inProgressBody().copyBuilder().transactionID(newTransactionID).build();
+        this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
+        return this;
     }
 
     /**
@@ -1087,5 +1077,20 @@ public class SingleTransactionRecordBuilderImpl
      */
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
+    }
+
+    /**
+     * Returns the in-progress {@link TransactionBody}.
+     *
+     * @return the in-progress {@link TransactionBody}
+     */
+    private TransactionBody inProgressBody() {
+        try {
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                    transaction.signedTransactionBytes().toReadableSequentialData());
+            return TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+        } catch (Exception e) {
+            throw new IllegalStateException("Record being built for unparseable transaction", e);
+        }
     }
 }

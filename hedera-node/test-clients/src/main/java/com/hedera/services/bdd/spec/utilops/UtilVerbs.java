@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.TargetNetworkType.HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
@@ -167,6 +168,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -237,6 +239,14 @@ public class UtilVerbs {
     public static <T> RecordSystemProperty<T> recordSystemProperty(
             String property, Function<String, T> converter, Consumer<T> historian) {
         return new RecordSystemProperty<>(property, converter, historian);
+    }
+
+    public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.of(HAPI_TEST_NETWORK), ops);
+    }
+
+    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(HAPI_TEST_NETWORK)), ops);
     }
 
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {

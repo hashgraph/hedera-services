@@ -44,6 +44,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -158,6 +160,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 autoCreationFailsWithMirrorAddress());
     }
 
+    @HapiTest
     HapiSpec resourceLimitExceededRevertsAllRecords() {
         final var n = 4; // preceding child record limit is 3
         final var nft = "nft";
@@ -196,16 +199,27 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         .via(creationAttempt)
                         .gas(GAS_TO_OFFER)
                         .alsoSigningWithFullPrefix(CIVILIAN)
-                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)))
+                        .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
                 .then(
-                        emptyChildRecordsCheck(creationAttempt, MAX_CHILD_RECORDS_EXCEEDED),
-                        inParallel(IntStream.range(0, n)
-                                .mapToObj(i -> sourcing(() -> getLiteralAliasAccountInfo(hex(Bytes.fromHexString(
-                                                        nonMirrorAddrWith(civilianId.get() + 3_050_000 + n)
-                                                                .toString())
-                                                .toArray()))
-                                        .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)))
-                                .toArray(HapiSpecOperation[]::new)));
+                        // mono-service did not do an "orderly shutdown" of the EVM transaction when it hit
+                        // a resource limit exception like MAX_CHILD_RECORDS_EXCEEDED, instead throwing an
+                        // exception to the top-level HAPI transaction and eradicating traceability exports
+                        // in the process; we don't want to replicate that behavior in mod-service, hence
+                        // the ifHapiTest() / ifNotHapiTest() split below
+                        ifHapiTest(childRecordsCheck(
+                                creationAttempt,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(MAX_CHILD_RECORDS_EXCEEDED))),
+                        ifNotHapiTest(
+                                emptyChildRecordsCheck(creationAttempt, MAX_CHILD_RECORDS_EXCEEDED),
+                                inParallel(IntStream.range(0, n)
+                                        .mapToObj(i -> sourcing(() -> getLiteralAliasAccountInfo(
+                                                        hex(Bytes.fromHexString(nonMirrorAddrWith(
+                                                                                civilianId.get() + 3_050_000 + n)
+                                                                        .toString())
+                                                                .toArray()))
+                                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)))
+                                        .toArray(HapiSpecOperation[]::new))));
     }
 
     @HapiTest
@@ -318,7 +332,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
-    private HapiSpec erc20TransferFromLazyCreate() {
+    @HapiTest
+    public HapiSpec erc20TransferFromLazyCreate() {
         return defaultHapiSpec("erc20TransferFromLazyCreate")
                 .given(
                         newKeyNamed(MULTI_KEY),
