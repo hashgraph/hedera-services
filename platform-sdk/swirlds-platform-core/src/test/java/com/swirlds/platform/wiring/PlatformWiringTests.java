@@ -30,6 +30,7 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -76,7 +77,8 @@ class PlatformWiringTests {
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
-                mock(EventCreationManager.class));
+                mock(EventCreationManager.class),
+                mock(PreConsensusEventHandler.class));
         wiring.bind(mock(SignedStateFileManager.class), mock(StateSigner.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());

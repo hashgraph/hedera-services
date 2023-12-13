@@ -39,12 +39,14 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.TransactionPrehandlerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -64,6 +66,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
+    private final TransactionPrehandlerWiring transactionPrehandlerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -101,6 +104,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     inOrderLinkerWiring,
                     linkedEventIntakeWiring,
                     eventCreationManagerWiring);
+
+            // TODO handle case where disabled
+            transactionPrehandlerWiring = TransactionPrehandlerWiring.create(schedulers.eventPrehandlerScheduler());
         } else {
             internalEventValidatorWiring = null;
             eventDeduplicatorWiring = null;
@@ -110,6 +116,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             linkedEventIntakeWiring = null;
             eventCreationManagerWiring = null;
             platformCoordinator = null;
+            transactionPrehandlerWiring = null;
         }
 
         signedStateFileManagerWiring =
@@ -157,6 +164,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
             eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
+            orphanBufferWiring.eventOutput().solderTo(transactionPrehandlerWiring.eventsToPrehandleInput());
 
             solderMinimumGenerationNonAncient();
         }
@@ -206,6 +214,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
      * @param eventCreationManager    the event creation manager to bind
+     * @param preConsensusEventHandler the preconsensus event handler to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -214,7 +223,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake,
-            @NonNull final EventCreationManager eventCreationManager) {
+            @NonNull final EventCreationManager eventCreationManager,
+            @NonNull final PreConsensusEventHandler preConsensusEventHandler) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -223,6 +233,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
         eventCreationManagerWiring.bind(eventCreationManager);
+        transactionPrehandlerWiring.bind(preConsensusEventHandler);
     }
 
     /**

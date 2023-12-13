@@ -82,6 +82,12 @@ public class LinkedEventIntake {
     private boolean paused;
 
     /**
+     * Whether or not to use the legacy prehandle strategy (i.e. prehandle on a thread pool in this class).
+     * If false then prehandle will be handled by the wiring framework.
+     */
+    private final boolean useLegacyPrehandle;
+
+    /**
      * Constructor
      *
      * @param platformContext    the platform context
@@ -110,19 +116,27 @@ public class LinkedEventIntake {
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
+        useLegacyPrehandle = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyPrehandle();
         this.paused = false;
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
 
-        prehandlePool = new ThreadPoolExecutor(
-                eventConfig.prehandlePoolSize(),
-                eventConfig.prehandlePoolSize(),
-                0L,
-                TimeUnit.MILLISECONDS,
-                prehandlePoolQueue,
-                threadManager.createThreadFactory("platform", "txn-prehandle"));
+        if (useLegacyPrehandle) {
+            prehandlePool = new ThreadPoolExecutor(
+                    eventConfig.prehandlePoolSize(),
+                    eventConfig.prehandlePoolSize(),
+                    0L,
+                    TimeUnit.MILLISECONDS,
+                    prehandlePoolQueue,
+                    threadManager.createThreadFactory("platform", "txn-prehandle"));
+        } else {
+            prehandlePool = null;
+        }
 
         metrics = new EventIntakeMetrics(platformContext, prehandlePoolQueue::size);
     }
@@ -154,8 +168,10 @@ public class LinkedEventIntake {
 
             final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
 
-            // Prehandle transactions on the thread pool.
-            prehandlePool.submit(buildPrehandleTask(event));
+            if (useLegacyPrehandle) {
+                // Prehandle transactions on the thread pool.
+                prehandlePool.submit(buildPrehandleTask(event));
+            }
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
@@ -196,7 +212,7 @@ public class LinkedEventIntake {
     private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
         return () -> {
             prehandleEvent.accept(event);
-            event.signalPrehandleCompletion();
+            event.getBaseEvent().signalPrehandleCompletion();
         };
     }
 
@@ -238,7 +254,7 @@ public class LinkedEventIntake {
         // It is critically important that prehandle is always called prior to handleConsensusRound().
 
         final long start = time.nanoTime();
-        consensusRound.forEach(event -> ((EventImpl) event).awaitPrehandleCompletion());
+        consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
         final long end = time.nanoTime();
         metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 

@@ -50,7 +50,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
         @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
-        @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler) {
+        @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
+        @NonNull TaskScheduler<Void> eventPrehandlerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -122,6 +123,11 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("stateSigner")
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("transactionPrehandler")
+                        .withType(config.transactionPrehandlerSchedulerType())
+                        .withUnhandledTaskCapacity(config.transactionPrehandlerUnhandledCapacity())
                         .build()
                         .cast());
     }

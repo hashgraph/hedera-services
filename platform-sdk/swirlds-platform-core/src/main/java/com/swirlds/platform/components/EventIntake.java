@@ -217,7 +217,7 @@ public class EventIntake {
     private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
         return () -> {
             prehandleEvent.accept(event);
-            event.signalPrehandleCompletion();
+            event.getBaseEvent().signalPrehandleCompletion();
         };
     }
 
@@ -251,7 +251,7 @@ public class EventIntake {
             // It is critically important that prehandle is always called prior to handleConsensusRound().
 
             final long start = time.nanoTime();
-            consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+            consensusRound.forEach(e -> ((EventImpl) e).getBaseEvent().awaitPrehandleCompletion());
             final long end = time.nanoTime();
             metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 

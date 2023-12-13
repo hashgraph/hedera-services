@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.internal;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
-
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -58,7 +56,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -127,11 +124,6 @@ public class EventImpl extends EventMetadata
      * signal when events have been made durable.
      */
     private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
-
-    /**
-     * This latch counts down when prehandle has been called on all application transactions contained in this event.
-     */
-    private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
 
     public EventImpl() {}
 
@@ -211,20 +203,6 @@ public class EventImpl extends EventMetadata
             throw new IllegalStateException("sequence number not set");
         }
         return streamSequenceNumber;
-    }
-
-    /**
-     * Signal that all transactions have been prehandled for this event.
-     */
-    public void signalPrehandleCompletion() {
-        prehandleCompleted.countDown();
-    }
-
-    /**
-     * Wait until all transactions have been prehandled for this event.
-     */
-    public void awaitPrehandleCompletion() {
-        abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
     }
 
     /**
