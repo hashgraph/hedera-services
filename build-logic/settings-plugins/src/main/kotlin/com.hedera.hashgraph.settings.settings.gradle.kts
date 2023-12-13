@@ -22,7 +22,7 @@ pluginManagement {
     }
 }
 
-plugins { id("com.gradle.enterprise") }
+plugins { id("com.gradle.enterprise").version("3.13.1") }
 
 // Enable Gradle Build Scan
 gradleEnterprise {
