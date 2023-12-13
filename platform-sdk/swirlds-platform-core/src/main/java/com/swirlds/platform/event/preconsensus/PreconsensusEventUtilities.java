@@ -19,17 +19,23 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -96,6 +102,23 @@ public final class PreconsensusEventUtilities {
     }
 
     /**
+     * Parse a file into a PreConsensusEventFile wrapper object.
+     *
+     * @param path the path to the file
+     * @return the wrapper object, or null if the file can't be parsed
+     */
+    @Nullable
+    public static PreconsensusEventFile parseFile(@NonNull final Path path) {
+        try {
+            return PreconsensusEventFile.of(path);
+        } catch (final IOException exception) {
+            // ignore any file that can't be parsed
+            logger.warn(EXCEPTION.getMarker(), "Failed to parse file: {}", path, exception);
+            return null;
+        }
+    }
+
+    /**
      * Compact all PCES files within a directory tree.
      *
      * @param rootPath the root of the directory tree
@@ -106,7 +129,7 @@ public final class PreconsensusEventUtilities {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
                     .filter(f -> f.toString().endsWith(PreconsensusEventFile.EVENT_FILE_EXTENSION))
-                    .map(PreconsensusEventFileManager::parseFile)
+                    .map(PreconsensusEventUtilities::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
                     .forEachOrdered(files::add);
@@ -119,5 +142,91 @@ public final class PreconsensusEventUtilities {
             final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
             previousMaximumGeneration = compactedFile.getMaximumGeneration();
         }
+    }
+
+    /**
+     * Perform sanity checks on the properties of the next file in the sequence, to ensure that we maintain various
+     * invariants.
+     *
+     * @param permitGaps                if gaps are permitted in sequence number
+     * @param previousSequenceNumber    the sequence number of the previous file
+     * @param previousMinimumGeneration the minimum generation of the previous file
+     * @param previousMaximumGeneration the maximum generation of the previous file
+     * @param previousOrigin            the origin round of the previous file
+     * @param previousTimestamp         the timestamp of the previous file
+     * @param descriptor                the descriptor of the next file
+     * @throws IllegalStateException if any of the required invariants are violated by the next file
+     */
+    public static void fileSanityChecks(
+            final boolean permitGaps,
+            final long previousSequenceNumber,
+            final long previousMinimumGeneration,
+            final long previousMaximumGeneration,
+            final long previousOrigin,
+            @NonNull final Instant previousTimestamp,
+            @NonNull final PreconsensusEventFile descriptor) {
+
+        // Sequence number should always monotonically increase
+        if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {
+            throw new IllegalStateException("Gap in preconsensus event files detected! Previous sequence number was "
+                    + previousSequenceNumber + ", next sequence number is "
+                    + descriptor.getSequenceNumber());
+        }
+
+        // Minimum generation may never decrease
+        if (descriptor.getMinimumGeneration() < previousMinimumGeneration) {
+            throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.getPath()
+                    + " has a minimum generation that is less than the previous minimum generation of "
+                    + previousMinimumGeneration);
+        }
+
+        // Maximum generation may never decrease
+        if (descriptor.getMaximumGeneration() < previousMaximumGeneration) {
+            throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.getPath()
+                    + " has a maximum generation that is less than the previous maximum generation of "
+                    + previousMaximumGeneration);
+        }
+
+        // Timestamp must never decrease
+        if (descriptor.getTimestamp().isBefore(previousTimestamp)) {
+            throw new IllegalStateException("Timestamp must never decrease, file " + descriptor.getPath()
+                    + " has a timestamp that is less than the previous timestamp of "
+                    + previousTimestamp);
+        }
+
+        // Origin round must never decrease
+        if (descriptor.getOrigin() < previousOrigin) {
+            throw new IllegalStateException("Origin round must never decrease, file " + descriptor.getPath()
+                    + " has an origin round that is less than the previous origin round of "
+                    + previousOrigin);
+        }
+    }
+
+    /**
+     * Get the directory where event files are stored. If that directory doesn't exist, create it.
+     *
+     * @param platformContext the platform context for this node
+     * @param selfId          the ID of this node
+     * @return the directory where event files are stored
+     * @throws IOException if an error occurs while creating the directory
+     */
+    @NonNull
+    public static Path getDatabaseDirectory(
+            @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) throws IOException {
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+
+        final Path savedStateDirectory = stateConfig.savedStateDirectory();
+        final Path databaseDirectory = savedStateDirectory
+                .resolve(preconsensusEventStreamConfig.databaseDirectory())
+                .resolve(Long.toString(selfId.id()));
+
+        if (!Files.exists(databaseDirectory)) {
+            Files.createDirectories(databaseDirectory);
+        }
+
+        return databaseDirectory;
     }
 }

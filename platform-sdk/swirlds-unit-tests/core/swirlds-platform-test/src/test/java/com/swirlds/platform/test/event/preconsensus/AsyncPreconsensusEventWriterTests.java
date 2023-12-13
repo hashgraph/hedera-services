@@ -51,8 +51,8 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriterInterface;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -158,7 +158,7 @@ class AsyncPreconsensusEventWriterTests {
     }
 
     /**
-     * Perform verification on a stream written by a {@link SyncPreconsensusEventWriter}.
+     * Perform verification on a stream written by a {@link PreconsensusEventWriter}.
      *
      * @param events             the events that were written to the stream
      * @param platformContext    the platform context
@@ -279,10 +279,10 @@ class AsyncPreconsensusEventWriterTests {
                 buildContext(), Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreconsensusEventWriter writer = new AsyncPreconsensusEventWriter(
+        final PreconsensusEventWriterInterface writer = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreconsensusEventWriter(platformContext, fileManager));
+                new PreconsensusEventWriter(platformContext, fileManager));
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -368,7 +368,7 @@ class AsyncPreconsensusEventWriterTests {
         final AsyncPreconsensusEventWriter writer = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreconsensusEventWriter(platformContext, fileManager));
+                new PreconsensusEventWriter(platformContext, fileManager));
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -479,10 +479,10 @@ class AsyncPreconsensusEventWriterTests {
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
-        final PreconsensusEventWriter writer1 = new AsyncPreconsensusEventWriter(
+        final PreconsensusEventWriterInterface writer1 = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreconsensusEventWriter(platformContext, fileManager1));
+                new PreconsensusEventWriter(platformContext, fileManager1));
 
         writer1.start();
         writer1.beginStreamingNewEvents();
@@ -528,10 +528,10 @@ class AsyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager2 = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
         final PreconsensusEventStreamSequencer sequencer2 = new PreconsensusEventStreamSequencer();
-        final PreconsensusEventWriter writer2 = new AsyncPreconsensusEventWriter(
+        final PreconsensusEventWriterInterface writer2 = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreconsensusEventWriter(platformContext, fileManager2));
+                new PreconsensusEventWriter(platformContext, fileManager2));
         writer2.start();
 
         // Write all events currently in the stream, we expect these to be ignored and not written to the stream twice.

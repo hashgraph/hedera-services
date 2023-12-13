@@ -16,118 +16,107 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
-import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.function.Consumer;
+
+import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.
  */
-public final class PreconsensusEventReplayWorkflow {
+public final class PreconsensusReplayIterator {
 
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventReplayWorkflow.class);
+    private static final Logger logger = LogManager.getLogger(PreconsensusReplayIterator.class);
 
-    private PreconsensusEventReplayWorkflow() {}
+    private int eventCount = 0;
+    private int transactionCount = 0;
+
+    private PreconsensusReplayIterator() {}
 
     /**
      * Replays preconsensus events from disk.
      *
-     * @param platformContext                    the platform context for this node
-     * @param threadManager                      the thread manager for this node
-     * @param preconsensusEventFileManager       manages the preconsensus event files on disk
-     * @param preconsensusEventWriter            writes preconsensus events to disk
-     * @param intakeHandler                      validates events and passes valid events further down the pipeline
-     * @param intakeQueue                        the queue thread for the event intake component
-     * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
-     * @param stateHashSignQueue                 the queue thread for hashing and signing states
-     * @param stateManagementComponent           manages various copies of the state
-     * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
-     * @param flushIntakePipeline                flushes the intake pipeline. only used if the new intake pipeline is
-     *                                           enabled
+     * @param platformContext          the platform context for this node
+     * @param time                     a source of time
+     * @param eventIterator            an iterator over the events in the preconsensus stream
+     * @param eventConsumer            a consumer that accepts events as they are read
+     * @param intakeQueue              the event intake queue
+     * @param consensusRoundHandler    the object responsible for applying transactions to consensus rounds
+     * @param stateHashSignQueue       the queue thread for hashing and signing states
+     * @param stateManagementComponent manages various copies of the state
+     * @param flushIntakePipeline      flushes the intake pipeline. only used if the new intake pipeline is
+     *                                 enabled
+     *
+     * @throws InterruptedException if the thread is interrupted while waiting for the replay to complete
      */
-    public static void replayPreconsensusEvents(
+    public void replayPreconsensusEvents(
             @NonNull final PlatformContext platformContext,
-            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
-            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
-            @NonNull final InterruptableConsumer<GossipEvent> intakeHandler,
+            @NonNull final IOIterator<GossipEvent> eventIterator,
+            @NonNull final Consumer<GossipEvent> eventConsumer,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
-            final long initialMinimumGenerationNonAncient,
-            @NonNull Runnable flushIntakePipeline) {
+            @NonNull final Runnable flushIntakePipeline) throws InterruptedException {
 
         Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(threadManager);
         Objects.requireNonNull(time);
-        Objects.requireNonNull(preconsensusEventFileManager);
-        Objects.requireNonNull(preconsensusEventWriter);
-        Objects.requireNonNull(intakeHandler);
-        Objects.requireNonNull(intakeQueue);
-        Objects.requireNonNull(consensusRoundHandler);
-        Objects.requireNonNull(stateHashSignQueue);
+        Objects.requireNonNull(eventIterator);
         Objects.requireNonNull(stateManagementComponent);
 
-        logger.info(
-                STARTUP.getMarker(),
-                "replaying preconsensus event stream starting at generation {}",
-                initialMinimumGenerationNonAncient);
+        // todo measure this in a better way
+        final Instant start = time.now();
 
         try {
-            final Instant start = time.now();
+            while (eventIterator.hasNext()) {
+                final GossipEvent event = eventIterator.next();
 
-            final IOIterator<GossipEvent> iterator =
-                    preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
+                eventCount++;
+                transactionCount += event.getHashedData().getTransactions().length;
 
-            final PreconsensusEventReplayPipeline eventReplayPipeline =
-                    new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, intakeHandler);
-            eventReplayPipeline.replayEvents();
-
-            final boolean useLegacyIntake = platformContext
-                    .getConfiguration()
-                    .getConfigData(EventConfig.class)
-                    .useLegacyIntake();
-
-            waitForReplayToComplete(
-                    intakeQueue, consensusRoundHandler, stateHashSignQueue, useLegacyIntake, flushIntakePipeline);
-
-            final Instant finish = time.now();
-            final Duration elapsed = Duration.between(start, finish);
-
-            logReplayInfo(
-                    stateManagementComponent,
-                    eventReplayPipeline.getEventCount(),
-                    eventReplayPipeline.getTransactionCount(),
-                    elapsed);
-
-            preconsensusEventWriter.beginStreamingNewEvents();
-
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("interrupted while replaying preconsensus event stream", e);
+                eventConsumer.accept(event);
+            }
+        } catch (final IOException e) {
+            throw new UncheckedIOException("error encountered while reading from the PCES", e);
         }
+
+        final boolean useLegacyIntake = platformContext.getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyIntake();
+
+        waitForReplayToComplete(
+                intakeQueue,
+                consensusRoundHandler,
+                stateHashSignQueue,
+                useLegacyIntake,
+                flushIntakePipeline);
+
+        final Instant finish = time.now();
+        final Duration elapsed = Duration.between(start, finish);
+
+        logReplayInfo(stateManagementComponent, eventCount, transactionCount, elapsed);
     }
 
     /**
@@ -169,7 +158,7 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final Duration elapsedTime) {
 
         try (final ReservedSignedState latestConsensusRound =
-                stateManagementComponent.getLatestImmutableState("SwirldsPlatform.replayPreconsensusEventStream()")) {
+                     stateManagementComponent.getLatestImmutableState("SwirldsPlatform.replayPreconsensusEventStream()")) {
 
             if (latestConsensusRound.isNull()) {
                 logger.info(

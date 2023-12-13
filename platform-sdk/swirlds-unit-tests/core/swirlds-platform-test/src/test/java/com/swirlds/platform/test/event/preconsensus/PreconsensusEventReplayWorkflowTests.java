@@ -18,7 +18,6 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-import static com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow.replayPreconsensusEvents;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.buildGraphGenerator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -38,7 +37,7 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriterInterface;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
@@ -143,7 +142,7 @@ class PreconsensusEventReplayWorkflowTests {
                 .when(stateHashSignQueue)
                 .waitUntilNotBusy();
 
-        final PreconsensusEventWriter preconsensusEventWriter = mock(PreconsensusEventWriter.class);
+        final PreconsensusEventWriterInterface preconsensusEventWriter = mock(PreconsensusEventWriterInterface.class);
         doAnswer(invocation -> {
                     assertEquals(TestPhase.BEGIN_STREAMING_NEW_EVENTS, phase.get());
                     phase.set(TestPhase.TEST_FINISHED);

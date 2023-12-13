@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.wires.SolderType.INJECT;
-
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
@@ -32,9 +30,10 @@ import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriterInterface;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -44,7 +43,10 @@ import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
+
+import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
@@ -53,6 +55,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PlatformContext platformContext;
     private final WiringModel model;
 
+    private final EventHasherWiring eventHasherWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final EventDeduplicatorWiring eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
@@ -109,6 +112,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             platformCoordinator = null;
         }
 
+        eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
 
@@ -164,12 +168,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Future work: as more components are moved to the framework, this method should shrink, and eventually be
      * removed.
      *
-     * @param preconsensusEventWriter   the preconsensus event writer to wire
      * @param statusManager             the status manager to wire
      * @param appCommunicationComponent the app communication component to wire
      */
     public void wireExternalComponents(
-            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent) {
 
@@ -221,9 +223,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Bind components to the wiring.
      *
+     * @param eventHasher            the event hasher to bind
      * @param signedStateFileManager the signed state file manager to bind
      */
-    public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
+    public void bind(@NonNull final EventHasher eventHasher, @NonNull final SignedStateFileManager signedStateFileManager) {
+        eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
 
         // FUTURE WORK: bind all the things!

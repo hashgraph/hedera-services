@@ -30,6 +30,7 @@ import java.util.List;
 /**
  * The {@link TaskScheduler}s used by the platform.
  *
+ * @param eventHasherScheduler             the scheduler for the event hasher
  * @param internalEventValidatorScheduler  the scheduler for the internal event validator
  * @param eventDeduplicatorScheduler       the scheduler for the event deduplicator
  * @param eventSignatureValidatorScheduler the scheduler for the event signature validator
@@ -40,6 +41,7 @@ import java.util.List;
  * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
  */
 public record PlatformSchedulers(
+        @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventDeduplicatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
@@ -61,6 +63,13 @@ public record PlatformSchedulers(
                 context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
         return new PlatformSchedulers(
+                model.schedulerBuilder("eventHasher")
+                        .withType(config.getEventHasherSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventHasherUnhandledCapacity())
+                        .withFlushingEnabled(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
                 model.schedulerBuilder("internalEventValidator")
                         .withType(config.getInternalEventValidatorSchedulerType())
                         .withUnhandledTaskCapacity(config.internalEventValidatorUnhandledCapacity())

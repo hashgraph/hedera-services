@@ -23,6 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildLegacyEventCreationManager;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
@@ -41,6 +42,7 @@ import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.SerializableLong;
@@ -87,19 +89,19 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.AsyncEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.NoOpPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileReader;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFiles;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusReplayIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -190,6 +192,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -295,11 +298,6 @@ public class SwirldsPlatform implements Platform {
      * The platform context for this platform. Should be used to access basic services
      */
     private final PlatformContext platformContext;
-
-    /**
-     * Can be used to read preconsensus event files from disk.
-     */
-    private final PreconsensusEventFileManager preconsensusEventFileManager;
 
     /**
      * Writes preconsensus events to disk.
@@ -454,9 +452,27 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 initialState.getRound());
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager(initialState.getRound());
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
-        preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
+        final PreconsensusEventFileManager preconsensusEventFileManager;
+        try {
+            final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
+
+            final PreconsensusEventFiles preconsensusEventFiles = PreconsensusEventFileReader.readFilesFromDisk(platformContext, databaseDirectory, preconsensusEventStreamConfig.permitGaps());
+
+            preconsensusEventFileManager = new PreconsensusEventFileManager(
+                    platformContext,
+                    Time.getCurrent(),
+                    preconsensusEventFiles,
+                    recycleBin,
+                    selfId,
+                    initialState.getRound());
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        preconsensusEventWriter = new PreconsensusEventWriter(platformContext, preconsensusEventFileManager);
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
         // ISS round == null means we haven't observed an ISS yet.
@@ -508,10 +524,11 @@ public class SwirldsPlatform implements Platform {
         components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
-        platformWiring.wireExternalComponents(
-                preconsensusEventWriter, platformStatusManager, appCommunicationComponent);
+        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent);
 
-        platformWiring.bind(signedStateFileManager);
+        final EventHasher eventHasher = new EventHasher(platformContext);
+
+        platformWiring.bind(eventHasher, signedStateFileManager);
 
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
@@ -1148,6 +1165,7 @@ public class SwirldsPlatform implements Platform {
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             try {
+                // todo this must use wires
                 preconsensusEventWriter.registerDiscontinuity(signedState.getRound());
                 preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
                         .getState()
@@ -1227,30 +1245,12 @@ public class SwirldsPlatform implements Platform {
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(final long startingRound) {
         try {
+
             return new PreconsensusEventFileManager(
                     platformContext, Time.getCurrent(), recycleBin, selfId, startingRound);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
-    }
-
-    /**
-     * Build the preconsensus event writer.
-     */
-    @NonNull
-    private PreconsensusEventWriter buildPreconsensusEventWriter(
-            @NonNull final PreconsensusEventFileManager fileManager) {
-
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
-
-        if (!preconsensusEventStreamConfig.enableStorage()) {
-            return new NoOpPreconsensusEventWriter();
-        }
-
-        final PreconsensusEventWriter syncWriter = new SyncPreconsensusEventWriter(platformContext, fileManager);
-
-        return new AsyncPreconsensusEventWriter(platformContext, threadManager, syncWriter);
     }
 
     /**
@@ -1294,32 +1294,30 @@ public class SwirldsPlatform implements Platform {
     }
 
     /**
-     * If configured to do so, replay preconsensus events.
+     * Replay preconsensus events.
      */
     private void replayPreconsensusEvents() {
         platformStatusManager.submitStatusAction(new StartedReplayingEventsAction());
 
-        final boolean enableReplay = platformContext
-                .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
-                .enableReplay();
         final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
 
         // if we need to do an emergency recovery, replaying the PCES could cause issues if the
         // minimum generation non-ancient is reversed to a smaller value, so we skip it
-        if (enableReplay && !emergencyRecoveryNeeded) {
-            PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
+        if (!emergencyRecoveryNeeded) {
+            final IOIterator<GossipEvent> iterator =
+                    preconsensusEventFiles.getEventIterator(initialMinimumGenerationNonAncient, startingRound);
+
+            logger.info(
+                    STARTUP.getMarker(),
+                    "replaying preconsensus event stream starting at generation {}",
+                    initialMinimumGenerationNonAncient);
+
+            PreconsensusReplayIterator.replayPreconsensusEvents(
                     platformContext,
-                    threadManager,
                     Time.getCurrent(),
-                    preconsensusEventFileManager,
-                    preconsensusEventWriter,
+                    iterator,
                     intakeHandler,
-                    intakeQueue,
-                    consensusRoundHandler,
-                    stateHashSignQueue,
                     stateManagementComponent,
-                    initialMinimumGenerationNonAncient,
                     platformWiring::flushIntakePipeline);
         }
 
@@ -1327,6 +1325,8 @@ public class SwirldsPlatform implements Platform {
 
         platformStatusManager.submitStatusAction(
                 new DoneReplayingEventsAction(Time.getCurrent().now()));
+
+        // TODO tell that we are streaming new events now
     }
 
     /**

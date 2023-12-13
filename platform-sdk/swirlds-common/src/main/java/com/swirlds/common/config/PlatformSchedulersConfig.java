@@ -24,6 +24,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Contains configuration values for the platform schedulers.
  *
+ * @param eventHasherSchedulerType                 the event hasher scheduler type
+ * @param eventHasherUnhandledCapacity             number of unhandled tasks allowed in the event hasher scheduler
  * @param internalEventValidatorSchedulerType      the internal event validator scheduler type
  * @param internalEventValidatorUnhandledCapacity  number of unhandled events allowed in the internal event validator
  *                                                 scheduler
@@ -46,9 +48,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
  * @param signedStateFileManagerUnhandledCapacity  number of unhandled tasks allowed in the signed state file manager
  *                                                 scheduler
+ * @param preconsensusEventWriterSchedulerType     the preconsensus event writer scheduler type
+ * @param preconsensusEventWriterUnhandledCapacity number of unhandled tasks allowed in the preconsensus event writer scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
+        @ConfigProperty(defaultValue = "CONCURRENT") String eventHasherSchedulerType,
+        @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") String internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") String eventDeduplicatorSchedulerType,
@@ -64,7 +70,18 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") String eventCreationManagerSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String signedStateFileManagerSchedulerType,
-        @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity) {
+        @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String preconsensusEventWriterSchedulerType,
+        @ConfigProperty(defaultValue = "500") int preconsensusEventWriterUnhandledCapacity) {
+
+    /**
+     * Get the event hasher scheduler type
+     *
+     * @return the event hasher scheduler type
+     */
+    public TaskSchedulerType getEventHasherSchedulerType() {
+        return TaskSchedulerType.valueOf(eventHasherSchedulerType);
+    }
 
     /**
      * Get the internal event validator scheduler type
@@ -144,5 +161,14 @@ public record PlatformSchedulersConfig(
     @NonNull
     public TaskSchedulerType getSignedStateFileManagerSchedulerType() {
         return TaskSchedulerType.valueOf(signedStateFileManagerSchedulerType);
+    }
+
+    /**
+     * Get the preconsensus event writer scheduler type
+     *
+     * @return the preconsensus event writer scheduler type
+     */
+    public TaskSchedulerType getPreconsensusEventWriterSchedulerType() {
+        return TaskSchedulerType.valueOf(preconsensusEventWriterSchedulerType);
     }
 }

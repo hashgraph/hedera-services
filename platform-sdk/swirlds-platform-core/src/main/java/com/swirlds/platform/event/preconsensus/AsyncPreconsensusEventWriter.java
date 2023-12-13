@@ -34,14 +34,14 @@ import org.apache.logging.log4j.Logger;
 /**
  * An object capable of writing preconsensus events to disk. Work is done asynchronously on a background thread.
  */
-public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
+public class AsyncPreconsensusEventWriter implements PreconsensusEventWriterInterface {
 
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The wrapped writer.
      */
-    private final PreconsensusEventWriter writer;
+    private final PreconsensusEventWriterInterface writer;
 
     /**
      * Background work is performed on this thread.
@@ -116,7 +116,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
     public AsyncPreconsensusEventWriter(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final PreconsensusEventWriter writer) {
+            @NonNull final PreconsensusEventWriterInterface writer) {
 
         Objects.requireNonNull(platformContext, "platformContext must not be null");
         Objects.requireNonNull(threadManager, "threadManager must not be null");

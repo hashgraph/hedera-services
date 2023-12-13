@@ -36,7 +36,7 @@ import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayPipeline;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayer;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -196,7 +196,7 @@ class PreconsensusEventReplayPipelineTests {
                 .when(eventValidator)
                 .validateEvent(any());
 
-        final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
+        final PreconsensusEventReplayer pipeline = new PreconsensusEventReplayer(
                 platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         pipeline.replayEvents();
@@ -264,7 +264,7 @@ class PreconsensusEventReplayPipelineTests {
                 .when(eventValidator)
                 .validateEvent(any());
 
-        final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
+        final PreconsensusEventReplayer pipeline = new PreconsensusEventReplayer(
                 platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
@@ -332,7 +332,7 @@ class PreconsensusEventReplayPipelineTests {
                 .when(eventValidator)
                 .validateEvent(any());
 
-        final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
+        final PreconsensusEventReplayer pipeline = new PreconsensusEventReplayer(
                 platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
@@ -394,7 +394,7 @@ class PreconsensusEventReplayPipelineTests {
                 .when(eventValidator)
                 .validateEvent(any());
 
-        final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
+        final PreconsensusEventReplayer pipeline = new PreconsensusEventReplayer(
                 platformContext,
                 threadManager,
                 buildThrowingIOIterator(events, eventCount / 2),
