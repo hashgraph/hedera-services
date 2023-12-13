@@ -145,6 +145,7 @@ import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
+import com.swirlds.platform.observers.EventObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
@@ -533,11 +534,6 @@ public class SwirldsPlatform implements Platform {
         components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
-        platformWiring.wireExternalComponents(
-                preconsensusEventWriter, platformStatusManager, appCommunicationComponent, transactionPool);
-
-        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
-        platformWiring.bind(signedStateFileManager, stateSigner);
 
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
@@ -562,8 +558,9 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getSignStateInput()::put);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
+        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
         final PcesReplayer pcesReplayer = new PcesReplayer(time, platformWiring.getPcesReplayerEventOutput(), platformWiring::flushIntakePipeline, stateManagementComponent);
-        platformWiring.bind(eventHasher, signedStateFileManager, pcesReplayer);
+        platformWiring.bind(eventHasher, signedStateFileManager, stateSigner, pcesReplayer);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -571,6 +568,7 @@ public class SwirldsPlatform implements Platform {
             // The minimum generation of non-ancient events for the oldest state snapshot on disk.
             final long minimumGenerationNonAncientForOldestState =
                     savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            // todo use wire
             preconsensusEventWriter.setMinimumGenerationToStoreUninterruptably(
                     minimumGenerationNonAncientForOldestState);
         }
@@ -670,18 +668,10 @@ public class SwirldsPlatform implements Platform {
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
-        final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
-                new ShadowGraphEventObserver(shadowGraph),
+        final List<EventObserver> eventObservers = List.of(new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
                 addedEventMetrics,
                 eventIntakeMetrics,
-                (PreConsensusEventObserver) event -> {
-                    sequencer.assignStreamSequenceNumber(event);
-                    abortAndThrowIfInterrupted(
-                            preconsensusEventWriter::writeEvent,
-                            event,
-                            "Interrupted while attempting to enqueue preconsensus event for writing");
-                },
                 (ConsensusRoundObserver) round -> {
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::setMinimumGenerationNonAncient,
@@ -692,6 +682,19 @@ public class SwirldsPlatform implements Platform {
                             preconsensusEventWriter::requestFlush,
                             "Interrupted while requesting preconsensus event flush");
                 });
+
+        if (eventConfig.useLegacyIntake()) {
+            eventObservers.add((PreConsensusEventObserver) event -> {
+                sequencer.assignStreamSequenceNumber(event);
+                abortAndThrowIfInterrupted(
+                        // todo use wire
+                        preconsensusEventWriter::writeEvent,
+                        event.getBaseEvent(),
+                        "Interrupted while attempting to enqueue preconsensus event for writing");
+            });
+        }
+
+        final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(eventObservers);
 
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
@@ -807,7 +810,7 @@ public class SwirldsPlatform implements Platform {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
-        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, intakeQueue);
+        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, transactionPool, intakeQueue);
 
         if (eventConfig.useLegacyIntake()) {
             eventCreator = buildLegacyEventCreationManager(

@@ -16,28 +16,29 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
-import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
-import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 /**
  * This object is responsible for writing events to the database.
  */
-public class PreconsensusEventWriter implements Startable, Stoppable {
+public class PreconsensusEventWriter implements Stoppable {
 
     private static final Logger logger = LogManager.getLogger(PreconsensusEventWriter.class);
 
@@ -155,15 +156,16 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
         this.fileManager = fileManager;
     }
 
-
     /**
      * Prior to this method being called, all events added to the preconsensus event stream are assumed to be events
      * read from the preconsensus event stream on disk. The events from the stream on disk are not re-written to the
      * disk, and are considered to be durable immediately upon ingest.
+     *
+     * @param ignored empty trigger object, to indicate that events are done being streamed
      */
-    public void beginStreamingNewEvents() {
+    public void beginStreamingNewEvents(final @NonNull DoneStreamingPcesTrigger ignored) {
         if (streamingNewEvents) {
-            logger.warn(EXCEPTION.getMarker(), "beginStreamingNewEvents() called while already streaming new events");
+            logger.error(EXCEPTION.getMarker(), "beginStreamingNewEvents() called while already streaming new events");
         }
         streamingNewEvents = true;
     }
@@ -172,9 +174,8 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
      * Write an event to the stream.
      *
      * @param event the event to be written
-     * @throws InterruptedException if interrupted while waiting on queue to drain
      */
-    public void writeEvent(@NonNull final EventImpl event) throws InterruptedException {
+    public void writeEvent(@NonNull final GossipEvent event) {
         validateSequenceNumber(event);
 
         if (!streamingNewEvents) {
@@ -183,13 +184,13 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
         }
 
         if (event.getGeneration() < minimumGenerationNonAncient) {
-            event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+            event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
             return;
         }
 
         try {
             prepareOutputStream(event);
-            currentMutableFile.writeEvent(event.getBaseEvent());
+            currentMutableFile.writeEvent(event);
             lastWrittenEvent = event.getStreamSequenceNumber();
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
@@ -212,9 +213,9 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
     /**
      * Make sure that the event has a valid stream sequence number.
      */
-    private static void validateSequenceNumber(@NonNull final EventImpl event) {
-        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
-                || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+    private static void validateSequenceNumber(@NonNull final GossipEvent event) {
+        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER
+                || event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
     }
@@ -250,9 +251,9 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
      * @param event the event in question
      * @return true if the event can is guaranteed to be durable
      */
-    public boolean isEventDurable(@NonNull final EventImpl event) {
+    public boolean isEventDurable(@NonNull final GossipEvent event) {
         Objects.requireNonNull(event, "event must not be null");
-        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             // Stale events are not written to disk.
             return false;
         }
@@ -261,38 +262,18 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
 
     /**
      * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method, the
-     * event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()} should
+     * event in question should have been passed to {@link #writeEvent} and {@link #requestFlush()} should
      * have been called. Otherwise, this method may block indefinitely.
      *
      * @param event the event in question
      * @throws InterruptedException if interrupted while waiting
      */
-    public void waitUntilDurable(@NonNull final EventImpl event) throws InterruptedException {
+    public void waitUntilDurable(@NonNull final GossipEvent event) throws InterruptedException {
         Objects.requireNonNull(event);
-        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
         lastFlushedEvent.await(event.getStreamSequenceNumber());
-    }
-
-    /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method, the
-     * event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()} should
-     * have been called. Otherwise, this method may block until the end of its timeout and return false.
-     *
-     * @param event      the event in question
-     * @param timeToWait the maximum time to wait
-     * @return true if the event is durable, false if the time to wait has elapsed
-     * @throws InterruptedException if interrupted while waiting
-     */
-    public boolean waitUntilDurable(@NonNull final EventImpl event, @NonNull final Duration timeToWait)
-            throws InterruptedException {
-        Objects.requireNonNull(event);
-        Objects.requireNonNull(timeToWait);
-        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event is stale and will never be durable");
-        }
-        return lastFlushedEvent.await(event.getStreamSequenceNumber(), timeToWait);
     }
 
     /**
@@ -321,9 +302,8 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
     }
 
     /**
-     * {@inheritDoc}
+     * Request that the event writer perform a flush as soon as all events currently added have been written.
      */
-    @Override
     public void requestFlush() {
         if (!streamingNewEvents) {
             markEventsAsFlushed();
@@ -389,7 +369,7 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
      *
      * @param eventToWrite the event that is about to be written
      */
-    private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
+    private void prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
             final boolean fileIsFull =
@@ -414,19 +394,7 @@ public class PreconsensusEventWriter implements Startable, Stoppable {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start() {
-        // no work needed
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void stop() {
+    public void stop() {
         if (currentMutableFile != null) {
             try {
                 currentMutableFile.close();
