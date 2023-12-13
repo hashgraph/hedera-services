@@ -67,7 +67,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
         if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE) {
             var ownerId = getOwnerId();
 
-            if (ownerId != null) {
+            if (ownerId != null && !isNftApprovalRevocation()) {
                 List<AccountApprovalForAllAllowance> accountApprovalForAllAllowances = enhancement
                         .nativeOperations()
                         .getAccount(ownerId.accountNum())
