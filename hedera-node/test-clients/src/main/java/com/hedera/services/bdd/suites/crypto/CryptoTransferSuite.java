@@ -483,7 +483,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    // @HapiTest This test is failing due to child records not being correct. Will be enabled once fixed.
+    @HapiTest
     private HapiSpec canUseEip1014AliasesForXfers() {
         final var partyCreation2 = "partyCreation2";
         final var counterCreation2 = "counterCreation2";
