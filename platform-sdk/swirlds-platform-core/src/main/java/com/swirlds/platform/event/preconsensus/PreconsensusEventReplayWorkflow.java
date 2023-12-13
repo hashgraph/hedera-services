@@ -62,6 +62,7 @@ public final class PreconsensusEventReplayWorkflow {
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
+     * @param latestImmutableState               provides the latest immutable state if available
      * @param flushIntakePipeline                flushes the intake pipeline. only used if the new intake pipeline is
      *                                           enabled
      */
