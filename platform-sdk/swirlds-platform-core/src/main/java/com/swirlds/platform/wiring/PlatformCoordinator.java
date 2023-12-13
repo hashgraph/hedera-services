@@ -16,8 +16,11 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.SystemTransactionPrehandlerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -31,17 +34,23 @@ public class PlatformCoordinator {
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
+    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring;
 
     /**
      * Constructor
      *
-     * @param internalEventValidatorWiring  the internal event validator wiring
-     * @param eventDeduplicatorWiring       the event deduplicator wiring
-     * @param eventSignatureValidatorWiring the event signature validator wiring
-     * @param orphanBufferWiring            the orphan buffer wiring
-     * @param inOrderLinkerWiring           the in order linker wiring
-     * @param linkedEventIntakeWiring       the linked event intake wiring
-     * @param eventCreationManagerWiring    the event creation manager wiring
+     * @param internalEventValidatorWiring           the internal event validator wiring
+     * @param eventDeduplicatorWiring                the event deduplicator wiring
+     * @param eventSignatureValidatorWiring          the event signature validator wiring
+     * @param orphanBufferWiring                     the orphan buffer wiring
+     * @param inOrderLinkerWiring                    the in order linker wiring
+     * @param linkedEventIntakeWiring                the linked event intake wiring
+     * @param eventCreationManagerWiring             the event creation manager wiring
+     * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring, null if legacy
+     *                                               prehandle is enabled
+     * @param systemTransactionPrehandlerWiring      the system transaction prehandler wiring, null if legacy prehandle
+     *                                               is enabled
      */
     public PlatformCoordinator(
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
@@ -50,7 +59,9 @@ public class PlatformCoordinator {
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
-            @NonNull final EventCreationManagerWiring eventCreationManagerWiring) {
+            @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
+            @Nullable final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
+            @Nullable final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring) {
 
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
@@ -59,6 +70,8 @@ public class PlatformCoordinator {
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
+        this.applicationTransactionPrehandlerWiring = applicationTransactionPrehandlerWiring;
+        this.systemTransactionPrehandlerWiring = systemTransactionPrehandlerWiring;
     }
 
     /**
@@ -72,6 +85,12 @@ public class PlatformCoordinator {
         eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
+        if (applicationTransactionPrehandlerWiring != null) {
+            applicationTransactionPrehandlerWiring.flushRunnable().run();
+        }
+        if (systemTransactionPrehandlerWiring != null) {
+            systemTransactionPrehandlerWiring.flushRunnable().run();
+        }
     }
 
     /**

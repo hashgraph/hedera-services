@@ -624,8 +624,18 @@ public class SwirldsPlatform implements Platform {
                 .build());
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-        final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+
+        final Consumer<EventImpl> preconsensusEventHandlerConsumer;
+        final Clearable preconsensusEventHandlerClear;
+        if (eventConfig.useLegacyIntake() || eventConfig.useLegacyPrehandle()) {
+            final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
+                    metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+            preconsensusEventHandlerConsumer = preConsensusEventHandler::preconsensusEvent;
+            preconsensusEventHandlerClear = preConsensusEventHandler;
+        } else {
+            preconsensusEventHandlerConsumer = event -> {};
+            preconsensusEventHandlerClear = () -> {};
+        }
 
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
@@ -696,7 +706,7 @@ public class SwirldsPlatform implements Platform {
                 eventObserverDispatcher,
                 eventIntakePhaseTimer,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent,
+                preconsensusEventHandlerConsumer,
                 intakeEventCounter);
 
         final List<GossipEventValidator> validators = new ArrayList<>();
@@ -744,7 +754,7 @@ public class SwirldsPlatform implements Platform {
                     consensusRef::get,
                     eventObserverDispatcher,
                     shadowGraph,
-                    preConsensusEventHandler::preconsensusEvent,
+                    preconsensusEventHandlerConsumer,
                     intakeEventCounter);
 
             final EventCreationManager eventCreationManager = buildEventCreationManager(
@@ -766,7 +776,7 @@ public class SwirldsPlatform implements Platform {
                     inOrderLinker,
                     linkedEventIntake,
                     eventCreationManager,
-                    preConsensusEventHandler);
+                    swirldStateManager);
 
             intakeHandler = platformWiring.getEventInput()::put;
         }
@@ -884,7 +894,7 @@ public class SwirldsPlatform implements Platform {
                     List.of(
                             Pair.of(pauseEventCreation, "eventCreator"),
                             Pair.of(gossip, "gossip"),
-                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                            Pair.of(preconsensusEventHandlerClear, "preConsensusEventHandler"),
                             Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                             Pair.of(transactionPool, "transactionPool")));
         } else {
@@ -894,7 +904,7 @@ public class SwirldsPlatform implements Platform {
                             Pair.of(intakeQueue, "intakeQueue"),
                             Pair.of(platformWiring, "platformWiring"),
                             Pair.of(shadowGraph, "shadowGraph"),
-                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                            Pair.of(preconsensusEventHandlerClear, "preConsensusEventHandler"),
                             Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                             Pair.of(transactionPool, "transactionPool")));
         }

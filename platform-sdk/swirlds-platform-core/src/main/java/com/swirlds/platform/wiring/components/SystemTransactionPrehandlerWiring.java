@@ -20,16 +20,19 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.SwirldStateManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for transaction prehandling.
+ * Wiring for system transaction prehandling.
  *
- * @param eventsToPrehandleInput the input wire for events to be prehandled
+ * @param systemTransactionsToPrehandleInput the input wire containing events where application transactions should be
+ *                                           prehandled
+ * @param flushRunnable                      the runnable that will flush the system transaction prehandler
  */
-public record TransactionPrehandlerWiring(@NonNull InputWire<GossipEvent> eventsToPrehandleInput) {
+public record SystemTransactionPrehandlerWiring(
+        @NonNull InputWire<GossipEvent> systemTransactionsToPrehandleInput, @NonNull Runnable flushRunnable) {
 
     /**
      * Create a new instance of this wiring.
@@ -38,24 +41,23 @@ public record TransactionPrehandlerWiring(@NonNull InputWire<GossipEvent> events
      * @return the new wiring instance
      */
     @NonNull
-    public static TransactionPrehandlerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
-        return new TransactionPrehandlerWiring(taskScheduler.buildInputWire("events to prehandle"));
+    public static SystemTransactionPrehandlerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
+        return new SystemTransactionPrehandlerWiring(
+                taskScheduler.buildInputWire("system transactions to prehandle"), taskScheduler::flush);
     }
 
     /**
      * Bind the preconsensus event handler to the input wire.
      *
-     * @param preConsensusEventHandler the preconsensus event handler
+     * @param swirldStateManager manages operations on the current state, and also transaction prehandling on recent
+     *                           immutable states why not
      */
-    public void bind(@NonNull final PreConsensusEventHandler preConsensusEventHandler) {
-        ((BindableInputWire<GossipEvent, Void>) eventsToPrehandleInput).bind(event -> {
-
+    public void bind(@NonNull final SwirldStateManager swirldStateManager) {
+        ((BindableInputWire<GossipEvent, Void>) systemTransactionsToPrehandleInput).bind(event -> {
             // As a temporary work around, convert to EventImpl.
             // Once we remove the legacy pathway, we can remove this.
-
             final EventImpl eventImpl = new EventImpl(event, null, null);
-            preConsensusEventHandler.preconsensusEvent(eventImpl);
-            event.signalPrehandleCompletion();
+            swirldStateManager.prehandleSystemTransactions(eventImpl);
         });
     }
 }

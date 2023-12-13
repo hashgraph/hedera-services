@@ -39,14 +39,15 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
-import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
-import com.swirlds.platform.wiring.components.TransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.SystemTransactionPrehandlerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -66,9 +67,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
-    private final TransactionPrehandlerWiring transactionPrehandlerWiring;
+    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring;
 
     private final PlatformCoordinator platformCoordinator;
+
+    private final boolean useLegacyPrehandle;
 
     /**
      * Constructor.
@@ -83,6 +87,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
+        useLegacyPrehandle = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyPrehandle();
+
         // the new intake pipeline components must only be constructed if they are enabled
         // this ensures that no exception will arise for unbound wires
         if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
@@ -96,6 +105,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
             eventCreationManagerWiring =
                     EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
+
+            if (useLegacyPrehandle) {
+                applicationTransactionPrehandlerWiring = null;
+                systemTransactionPrehandlerWiring = null;
+            } else {
+                applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
+                        schedulers.applicationTransactionPrehandlerScheduler());
+                systemTransactionPrehandlerWiring =
+                        SystemTransactionPrehandlerWiring.create(schedulers.systemTransactionPrehandlerScheduler());
+            }
+
             platformCoordinator = new PlatformCoordinator(
                     internalEventValidatorWiring,
                     eventDeduplicatorWiring,
@@ -103,10 +123,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     orphanBufferWiring,
                     inOrderLinkerWiring,
                     linkedEventIntakeWiring,
-                    eventCreationManagerWiring);
-
-            // TODO handle case where disabled
-            transactionPrehandlerWiring = TransactionPrehandlerWiring.create(schedulers.eventPrehandlerScheduler());
+                    eventCreationManagerWiring,
+                    applicationTransactionPrehandlerWiring,
+                    systemTransactionPrehandlerWiring);
         } else {
             internalEventValidatorWiring = null;
             eventDeduplicatorWiring = null;
@@ -116,7 +135,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             linkedEventIntakeWiring = null;
             eventCreationManagerWiring = null;
             platformCoordinator = null;
-            transactionPrehandlerWiring = null;
+            applicationTransactionPrehandlerWiring = null;
+            systemTransactionPrehandlerWiring = null;
         }
 
         signedStateFileManagerWiring =
@@ -164,7 +184,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
             eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
-            orphanBufferWiring.eventOutput().solderTo(transactionPrehandlerWiring.eventsToPrehandleInput());
+
+            if (!useLegacyPrehandle) {
+                orphanBufferWiring
+                        .eventOutput()
+                        .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
+                orphanBufferWiring
+                        .eventOutput()
+                        .solderTo(systemTransactionPrehandlerWiring.systemTransactionsToPrehandleInput());
+            }
 
             solderMinimumGenerationNonAncient();
         }
@@ -214,7 +242,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
      * @param eventCreationManager    the event creation manager to bind
-     * @param preConsensusEventHandler the preconsensus event handler to bind
+     * @param swirldStateManager      the swirld state manager to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -224,7 +252,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake,
             @NonNull final EventCreationManager eventCreationManager,
-            @NonNull final PreConsensusEventHandler preConsensusEventHandler) {
+            @NonNull final SwirldStateManager swirldStateManager) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -233,7 +261,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
         eventCreationManagerWiring.bind(eventCreationManager);
-        transactionPrehandlerWiring.bind(preConsensusEventHandler);
+
+        if (!useLegacyPrehandle) {
+            applicationTransactionPrehandlerWiring.bind(swirldStateManager);
+            systemTransactionPrehandlerWiring.bind(swirldStateManager);
+        }
     }
 
     /**
@@ -304,8 +336,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Get the input wire for signing a state
      * <p>
-     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole
-     * system being migrated to the new framework.
+     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole system being
+     * migrated to the new framework.
      *
      * @return the input wire for signing a state
      */

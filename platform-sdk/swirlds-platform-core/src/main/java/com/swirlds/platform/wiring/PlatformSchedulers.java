@@ -31,15 +31,16 @@ import java.util.List;
 /**
  * The {@link TaskScheduler}s used by the platform.
  *
- * @param internalEventValidatorScheduler  the scheduler for the internal event validator
- * @param eventDeduplicatorScheduler       the scheduler for the event deduplicator
- * @param eventSignatureValidatorScheduler the scheduler for the event signature validator
- * @param orphanBufferScheduler            the scheduler for the orphan buffer
- * @param inOrderLinkerScheduler           the scheduler for the in-order linker
- * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
- * @param eventCreationManagerScheduler    the scheduler for the event creation manager
- * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
- * @param stateSignerScheduler             the scheduler for the state signer
+ * @param internalEventValidatorScheduler           the scheduler for the internal event validator
+ * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
+ * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
+ * @param orphanBufferScheduler                     the scheduler for the orphan buffer
+ * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
+ * @param linkedEventIntakeScheduler                the scheduler for the linked event intake
+ * @param eventCreationManagerScheduler             the scheduler for the event creation manager
+ * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
+ * @param stateSignerScheduler                      the scheduler for the state signer
+ * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
@@ -51,7 +52,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
-        @NonNull TaskScheduler<Void> eventPrehandlerScheduler) {
+        @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
+        @NonNull TaskScheduler<Void> systemTransactionPrehandlerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -123,11 +125,21 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("stateSigner")
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
-                model.schedulerBuilder("transactionPrehandler")
-                        .withType(config.transactionPrehandlerSchedulerType())
-                        .withUnhandledTaskCapacity(config.transactionPrehandlerUnhandledCapacity())
+                model.schedulerBuilder("applicationTransactionPrehandler")
+                        .withType(config.applicationTransactionPrehandlerSchedulerType())
+                        .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("systemTransactionPrehandler")
+                        .withType(config.systemTransactionPrehandlerSchedulerType())
+                        .withUnhandledTaskCapacity(config.systemTransactionPrehandlerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
                         .build()
                         .cast());
     }
