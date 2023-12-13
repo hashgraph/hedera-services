@@ -36,6 +36,7 @@ import java.util.List;
  * @param orphanBufferScheduler            the scheduler for the orphan buffer
  * @param inOrderLinkerScheduler           the scheduler for the in-order linker
  * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
+ * @param eventCreationManagerScheduler    the scheduler for the event creation manager
  * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
  */
 public record PlatformSchedulers(
@@ -45,6 +46,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
+        @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler) {
 
     /**
@@ -97,6 +99,13 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("linkedEventIntake")
                         .withType(config.getLinkedEventIntakeSchedulerType())
                         .withUnhandledTaskCapacity(config.linkedEventIntakeUnhandledCapacity())
+                        .withFlushingEnabled(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("eventCreationManager")
+                        .withType(config.getEventCreationManagerSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()

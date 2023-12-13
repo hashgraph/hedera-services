@@ -29,7 +29,7 @@ import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
-import com.swirlds.common.system.DualState;
+import com.swirlds.platform.system.DualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;

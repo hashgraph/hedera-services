@@ -20,7 +20,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 
 /**
  * Statistics for operations on {@link NftLedger}.

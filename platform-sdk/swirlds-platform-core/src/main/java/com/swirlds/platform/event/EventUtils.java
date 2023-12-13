@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

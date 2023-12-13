@@ -47,11 +47,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -498,7 +498,7 @@ class EntityMapWarmerTest {
     }
 
     private Round mockRoundWithTxns(SwirldTransaction... txns) {
-        final List<com.swirlds.common.system.transaction.Transaction> roundTxns = List.of(txns);
+        final List<com.swirlds.platform.system.transaction.Transaction> roundTxns = List.of(txns);
 
         var event = mock(EventImpl.class);
         Mockito.lenient().when(event.transactionIterator()).thenReturn(roundTxns.iterator());
