@@ -50,6 +50,7 @@ import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -666,7 +667,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         final Key syntheticPayerKey;
         try {
             syntheticPayerKey = validate(
-                    callback == null ? null : childVerifier,
+                    childVerifier,
+                    callback,
                     function,
                     txBody,
                     syntheticPayer,
@@ -719,6 +721,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     private @Nullable Key validate(
             @Nullable final KeyVerifier keyVerifier,
+            @Nullable final Predicate<Key> callback,
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody transactionBody,
             @NonNull final AccountID syntheticPayerId,
@@ -753,7 +756,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
             syntheticPayerKey = payerAccount.keyOrThrow();
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
-            final var payerKeyVerification = keyVerifier.verificationFor(syntheticPayerKey);
+            final var payerKeyVerification =
+                               (callback != null && callback.test(syntheticPayerKey)) ?
+                                                SignatureVerificationImpl.passedVerification(syntheticPayerKey) :
+                                                keyVerifier.verificationFor(syntheticPayerKey);
             if (payerKeyVerification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }

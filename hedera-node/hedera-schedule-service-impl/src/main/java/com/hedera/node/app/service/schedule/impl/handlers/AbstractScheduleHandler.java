@@ -281,7 +281,11 @@ abstract class AbstractScheduleHandler {
             @NonNull final ResponseCodeEnum validationResult,
             final boolean isLongTermEnabled) {
         if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
-            final Predicate<Key> assistant = new DispatchPredicate(validSignatories);
+            final AccountID originalPayer = scheduleToExecute.originalCreateTransaction().transactionID().accountID();
+            final Set<Key> acceptedSignatories = new HashSet<>();
+            acceptedSignatories.addAll(validSignatories);
+            acceptedSignatories.add(getKeyForAccount(context, originalPayer));
+            final Predicate<Key> assistant = new DispatchPredicate(acceptedSignatories);
             // This sets the child transaction ID to scheduled.
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
             final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(
