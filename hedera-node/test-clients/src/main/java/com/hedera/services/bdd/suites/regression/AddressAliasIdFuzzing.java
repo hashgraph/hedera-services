@@ -64,7 +64,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
         return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
     }
 
-    // FileUpdate resolves to UNKNOWN
+    @HapiTest
     private HapiSpec addressAliasIdFuzzing() {
         final Map<String, String> existingProps = new LinkedHashMap<>();
         return propertyPreservingHapiSpec("AddressAliasIdFuzzing")

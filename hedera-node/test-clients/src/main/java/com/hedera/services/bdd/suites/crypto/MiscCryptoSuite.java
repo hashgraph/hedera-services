@@ -105,6 +105,7 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     private HapiSpec reduceTransferFee() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;

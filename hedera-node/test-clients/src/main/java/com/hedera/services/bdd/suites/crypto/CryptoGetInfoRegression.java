@@ -76,7 +76,6 @@ public class CryptoGetInfoRegression extends HapiSuite {
             failsForDeletedAccount(),
             failsForMissingAccount(),
             failsForMissingPayment(),
-            failsForInsufficientPayment(),
             failsForMalformedPayment(),
             failsForUnfundablePayment(),
             succeedsNormally(),

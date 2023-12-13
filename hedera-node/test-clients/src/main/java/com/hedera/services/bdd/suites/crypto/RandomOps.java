@@ -150,7 +150,7 @@ public class RandomOps extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
-    // @todo('8687') Revisit once isolated tests are enabled
+    @HapiTest
     private HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
