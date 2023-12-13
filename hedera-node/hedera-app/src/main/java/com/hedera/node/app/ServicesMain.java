@@ -115,6 +115,8 @@ public class ServicesMain implements SwirldMain {
         // hard exit if there is not exactly one matching node to run
         BootstrapUtils.checkNodesToRun(nodesToRun, false);
 
+        final NodeId selfId = nodesToRun.get(0);
+
         final var config = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());
@@ -124,7 +126,7 @@ public class ServicesMain implements SwirldMain {
                 .withConfigurationBuilder(config);
 
         final Platform platform = builder.build();
-        hedera.init(platform, nodesToRun.get(0));
+        hedera.init(platform, selfId);
         platform.start();
         hedera.run();
     }
