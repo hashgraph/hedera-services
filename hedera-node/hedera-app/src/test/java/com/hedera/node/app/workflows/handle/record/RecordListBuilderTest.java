@@ -496,23 +496,23 @@ class RecordListBuilderTest extends AppTestBase {
                 .nanosBefore(2, result.userTransactionRecord())
                 .hasNonce(2)
                 .hasNoParent()
-                .hasTransaction(first);
+                .hasSignedTransaction(first);
         assertCreatedRecord(records.get(1))
                 .nanosBefore(1, result.userTransactionRecord())
                 .hasNonce(1)
                 .hasNoParent()
-                .hasTransaction(second);
+                .hasSignedTransaction(second);
         assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(3))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(3)
                 .hasParent(result.userTransactionRecord())
-                .hasTransaction(fourth);
+                .hasSignedTransaction(fourth);
         assertCreatedRecord(records.get(4))
                 .nanosAfter(2, result.userTransactionRecord())
                 .hasNonce(4)
                 .hasParent(result.userTransactionRecord())
-                .hasTransaction(fifth);
+                .hasSignedTransaction(fifth);
     }
 
     @Test
@@ -726,7 +726,7 @@ class RecordListBuilderTest extends AppTestBase {
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
                 .hasResponseCode(OK)
-                .hasTransaction(remainingTx)
+                .hasSignedTransaction(remainingTx)
                 .hasParent(result.userTransactionRecord());
     }
 
@@ -765,13 +765,13 @@ class RecordListBuilderTest extends AppTestBase {
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
                 .hasResponseCode(OK)
-                .hasTransaction(child1Tx)
+                .hasSignedTransaction(child1Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(2))
                 .nanosAfter(2, result.userTransactionRecord())
                 .hasNonce(2)
                 .hasResponseCode(OK)
-                .hasTransaction(remainingTx)
+                .hasSignedTransaction(remainingTx)
                 .hasParent(result.userTransactionRecord());
     }
 
@@ -816,45 +816,45 @@ class RecordListBuilderTest extends AppTestBase {
                 .nanosAfter(1, result.userTransactionRecord()) // first child gets next consensus time
                 .hasNonce(1) // first child
                 .hasResponseCode(OK) // child3's children were reverted, first child comes before, so it is not affected
-                .hasTransaction(child1Tx)
+                .hasSignedTransaction(child1Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(2))
                 .nanosAfter(2, result.userTransactionRecord())
                 .hasNonce(2) // second child
                 .hasResponseCode(
                         OK) // child3's children were reverted, second child comes before, so it is not affected
-                .hasTransaction(child2Tx)
+                .hasSignedTransaction(child2Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(3))
                 .nanosAfter(3, result.userTransactionRecord())
                 .hasNonce(3) // third child. The children of this was were reverted
                 .hasResponseCode(OK) // child3's children were reverted, third child is not affected
-                .hasTransaction(child3Tx)
+                .hasSignedTransaction(child3Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(4))
                 // child4 was removed, but for mono-service fidelity we "smooth" the gap in consensus times
                 .nanosAfter(4, result.userTransactionRecord())
                 .hasNonce(4) // child5 gets the 4th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
-                .hasTransaction(child5Tx)
+                .hasSignedTransaction(child5Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(5))
                 .nanosAfter(5, result.userTransactionRecord()) // immediately after child5
                 .hasNonce(5) // child6 gets the 5th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
-                .hasTransaction(child6Tx)
+                .hasSignedTransaction(child6Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(6))
                 .nanosAfter(6, result.userTransactionRecord())
                 .hasNonce(6)
                 .hasResponseCode(OK)
-                .hasTransaction(child8Tx)
+                .hasSignedTransaction(child8Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(7))
                 .nanosAfter(7, result.userTransactionRecord())
                 .hasNonce(7)
                 .hasResponseCode(OK)
-                .hasTransaction(child9Tx)
+                .hasSignedTransaction(child9Tx)
                 .hasParent(result.userTransactionRecord());
     }
 
@@ -925,6 +925,11 @@ class RecordListBuilderTest extends AppTestBase {
 
         public TransactionRecordAssertions hasTransaction(@NonNull final Transaction tx) {
             assertThat(record.transaction()).isEqualTo(tx);
+            return this;
+        }
+
+        public TransactionRecordAssertions hasSignedTransaction(@NonNull final Transaction tx) {
+            assertThat(record.transaction().signedTransactionBytes()).isEqualTo(tx.signedTransactionBytes());
             return this;
         }
     }

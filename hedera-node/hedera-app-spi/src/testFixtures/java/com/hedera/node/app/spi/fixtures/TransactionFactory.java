@@ -64,7 +64,6 @@ public interface TransactionFactory {
                 .build();
 
         return Transaction.newBuilder()
-                .body(txBody)
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
     }
