@@ -27,6 +27,7 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.event.GossipEvent;
@@ -39,6 +40,7 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
@@ -66,6 +68,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
+    private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
 
     private final PlatformCoordinator platformCoordinator;
@@ -118,6 +121,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
+        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
 
         wire();
@@ -180,10 +184,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param statusManager             the status manager to wire
      * @param appCommunicationComponent the app communication component to wire
+     * @param transactionPool           the transaction pool to wire
      */
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
+            @NonNull final TransactionPool transactionPool,
             @NonNull final QueueThread<GossipEvent> intakeQueue) {
 
         signedStateFileManagerWiring
@@ -192,6 +198,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
+        stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
 
         final boolean useLegacyIntake = platformContext
                 .getConfiguration()
@@ -242,11 +249,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param eventHasher            the event hasher to bind
      * @param signedStateFileManager the signed state file manager to bind
+     * @param stateSigner            the state signer to bind
      * @param pcesReplayer           the PCES replayer to bind
      */
-    public void bind(@NonNull final EventHasher eventHasher, @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final PcesReplayer pcesReplayer) {
+    public void bind(
+            @NonNull final EventHasher eventHasher, @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner, @NonNull final PcesReplayer pcesReplayer) {
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
+        stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
 
         // FUTURE WORK: bind all the things!
@@ -301,6 +311,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
         return signedStateFileManagerWiring.dumpStateToDisk();
+    }
+
+    /**
+     * Get the input wire for signing a state
+     * <p>
+     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole
+     * system being migrated to the new framework.
+     *
+     * @return the input wire for signing a state
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getSignStateInput() {
+        return stateSignerWiring.signState();
     }
 
     /**

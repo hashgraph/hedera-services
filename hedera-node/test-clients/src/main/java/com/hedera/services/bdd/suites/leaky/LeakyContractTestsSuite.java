@@ -605,6 +605,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 500L));
     }
 
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     private HapiSpec transferWorksWithTopLevelSignatures() {
         final var transferTokenTxn = "transferTokenTxn";
         final var transferTokensTxn = "transferTokensTxn";
@@ -1009,6 +1010,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .error(CUSTOM_FEE_MUST_BE_POSITIVE.name()))));
     }
 
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     private HapiSpec nonFungibleTokenCreateWithFeesHappyPath() {
         final var createTokenNum = new AtomicLong();
         final var feeCollector = ACCOUNT_2;
@@ -1095,6 +1097,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }));
     }
 
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     private HapiSpec fungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
@@ -1781,6 +1784,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 }));
     }
 
+    // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
     private HapiSpec requiresTopLevelSignatureOrApprovalDependingOnControllingProperty() {
         final var ignoredTopLevelSigTransfer = "ignoredTopLevelSigTransfer";
         final var ignoredApprovalTransfer = "ignoredApprovalTransfer";

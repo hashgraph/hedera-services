@@ -19,7 +19,6 @@ package com.swirlds.common.config;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Contains configuration values for the platform schedulers.
@@ -48,6 +47,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
  * @param signedStateFileManagerUnhandledCapacity  number of unhandled tasks allowed in the signed state file manager
  *                                                 scheduler
+ * @param stateSignerSchedulerType                 the state signer scheduler type
+ * @param stateSignerUnhandledCapacity             number of unhandled tasks allowed in the state signer scheduler,
+ *                                                 default is -1 (unlimited)
  * @param pcesWriterSchedulerType                  the preconsensus event writer scheduler type
  * @param pcesWriterUnhandledCapacity              number of unhandled tasks allowed in the preconsensus event writer scheduler
  */
@@ -55,19 +57,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "CONCURRENT") String eventHasherSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String internalEventValidatorSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String eventDeduplicatorSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventDeduplicatorUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String eventSignatureValidatorSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventSignatureValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventSignatureValidatorUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String orphanBufferSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType orphanBufferSchedulerType,
         @ConfigProperty(defaultValue = "500") int orphanBufferUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String inOrderLinkerSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType inOrderLinkerSchedulerType,
         @ConfigProperty(defaultValue = "500") int inOrderLinkerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String linkedEventIntakeSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType linkedEventIntakeSchedulerType,
         @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String eventCreationManagerSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventCreationManagerSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String signedStateFileManagerSchedulerType,
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
