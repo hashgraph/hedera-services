@@ -232,9 +232,6 @@ public class EventImpl extends EventMetadata
      */
     private void setDefaultValues() {
         runningHash = new RunningHash();
-        if (baseEvent.getHashedData().getHash() != null) {
-            baseEvent.buildDescriptor();
-        }
     }
 
     /**
