@@ -1923,6 +1923,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withAllowance(0L)))));
     }
 
+    @HapiTest
     private HapiSpec someErc20NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
