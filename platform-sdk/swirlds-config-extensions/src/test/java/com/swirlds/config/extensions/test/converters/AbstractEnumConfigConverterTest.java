@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.converter;
+package com.swirlds.config.extensions.test.converters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
+import com.swirlds.config.extensions.converters.AbstractEnumConfigConverter;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.RetentionPolicy;

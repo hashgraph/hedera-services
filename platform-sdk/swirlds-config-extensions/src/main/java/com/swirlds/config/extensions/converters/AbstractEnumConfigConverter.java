@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.converter;
+package com.swirlds.config.extensions.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
