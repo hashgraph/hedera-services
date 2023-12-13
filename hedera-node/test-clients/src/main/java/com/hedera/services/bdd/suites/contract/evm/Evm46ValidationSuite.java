@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -44,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -374,17 +372,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
-        return propertyPreservingHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
-                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "true"),
-                        withOpContext((spec, ctxLog) -> spec.registry()
-                                .saveContractId(
-                                        "nonExistingMirrorAddress",
-                                        asContractIdWithEvmAddress(
-                                                ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
+        return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
+                .given(withOpContext((spec, ctxLog) -> spec.registry()
+                        .saveContractId(
+                                "nonExistingMirrorAddress",
+                                asContractIdWithEvmAddress(ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
                 .when(withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi("nonExistingMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
@@ -859,7 +851,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
+    private HapiSpec internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
