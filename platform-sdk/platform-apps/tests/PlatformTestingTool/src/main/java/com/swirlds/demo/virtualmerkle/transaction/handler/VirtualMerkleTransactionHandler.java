@@ -389,9 +389,6 @@ public class VirtualMerkleTransactionHandler {
 
                 if (!mapValueData.calculateHash().equals(expectedValue.getHash())) {
                     notMismatching.set(false);
-                    logger.error(
-                            EXCEPTION.getMarker(),
-                            "The hash of an account from the expected map is not equal to the same account in state.");
                 }
             } else if (lastTransactionType == CreateExistingAccount) {
                 if (!virtualMap.containsKey(accountVirtualMapKey)) {
