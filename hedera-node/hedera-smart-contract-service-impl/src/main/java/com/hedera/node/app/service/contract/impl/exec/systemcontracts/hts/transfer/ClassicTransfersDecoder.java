@@ -124,12 +124,11 @@ public class ClassicTransfersDecoder {
     public TransactionBody decodeTransferToken(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(encoded);
-        final long amount = call.get(3);
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
                 ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
-                amount,
+                call.get(3),
                 IsApproval.FALSE)));
     }
 
