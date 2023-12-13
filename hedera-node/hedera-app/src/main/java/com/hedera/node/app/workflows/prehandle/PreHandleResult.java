@@ -87,7 +87,7 @@ public record PreHandleResult(
                 && getHollowAccounts().equals(context.requiredHollowAccounts());
     }
 
-    public Map<Key, SignatureVerificationFuture>  getVerificationResults() {
+    public Map<Key, SignatureVerificationFuture> getVerificationResults() {
         return verificationResults == null ? Collections.emptyMap() : verificationResults;
     }
 

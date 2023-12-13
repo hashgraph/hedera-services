@@ -208,11 +208,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null, null, null);
+            return nodeDueDiligenceFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo);
         } else if (payerAccount.deleted()) {
             // this check is not guaranteed, it should be checked again in handle phase. If the payer account is
             // deleted, we skip the signature verification.
-            return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null, null, null);
+            return nodeDueDiligenceFailure(creator, PAYER_ACCOUNT_DELETED, txInfo);
         }
 
         // 3. Expand and verify signatures
