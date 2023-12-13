@@ -208,12 +208,6 @@ jobs:
           MANIFEST_PATH: ${{ env.GRADLE_MANIFEST_PATH }}/regenerated
         run: ${{ env.GRADLE_MANIFEST_GENERATOR }}
 
-      - name: Fix Windows Manifests
-        if: ${{ runner.os == 'Windows' && steps.regen-manifest.conclusion == 'success' && !cancelled() && !failure() }}
-        run: |
-          cat "${{ steps.regen-manifest.outputs.libraries }}" | tr '*' ' ' | tee "${{ steps.regen-manifest.outputs.libraries }}" >/dev/null
-          cat "${{ steps.regen-manifest.outputs.applications }}" | tr '*' ' ' | tee "${{ steps.regen-manifest.outputs.applications }}" >/dev/null
-
       - name: Validate Libraries
         working-directory: ${{ github.workspace }}/hedera-node/data/lib
         run: sha256sum -c "${GRADLE_MANIFEST_PATH}/libraries.sha256"
