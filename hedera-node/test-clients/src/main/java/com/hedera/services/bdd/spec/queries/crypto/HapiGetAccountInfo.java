@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -239,7 +240,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                 || expectations.isPresent()
                 || registryEntry.isPresent()) {
             final var detailsLookup = QueryVerbs.getAccountDetails(
-                    "0.0." + actualInfo.getAccountID().getAccountNum());
+                            "0.0." + actualInfo.getAccountID().getAccountNum())
+                    .payingWith(GENESIS);
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             var actualTokenRels =
