@@ -1406,7 +1406,8 @@ public class SwirldsPlatform implements Platform {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public @NonNull <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
+    public @NonNull <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
+            @NonNull final String reason) {
         final ReservedSignedState wrapper = latestImmutableState.getState(reason);
         return wrapper == null
                 ? AutoCloseableWrapper.empty()
