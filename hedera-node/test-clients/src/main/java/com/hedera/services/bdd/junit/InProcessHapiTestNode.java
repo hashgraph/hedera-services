@@ -25,10 +25,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -170,9 +170,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
     @Override
     public void shutdown() {
         if (th != null && (th.hedera.isFrozen() || th.hedera.isActive())) {
-            if (th.hedera != null) {
-                th.hedera.shutdown();
-            }
+            th.hedera.shutdown();
             th.interrupt();
 
             // This is a hack, but it's the best I can do without classloader isolation and without a systematic

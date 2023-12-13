@@ -17,11 +17,11 @@
 package com.swirlds.platform.gossip;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.FallenBehindAction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;

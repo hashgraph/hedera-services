@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PROCESS_ALICE;
+
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -36,10 +38,9 @@ public class HapiTestEnv {
     private final List<HapiTestNode> nodes = new ArrayList<>();
     private final List<String> nodeHosts = new ArrayList<>();
     private boolean started = false;
-    public static final int CLUSTER_SIZE = 4;
 
-    public HapiTestEnv(@NonNull final String testName, final boolean cluster, final boolean useInProcessAlice) {
-        final var numNodes = cluster ? CLUSTER_SIZE : 1;
+    public HapiTestEnv(
+            @NonNull final String testName, final int nodeCount, @NonNull final HapiTestNodesType nodesType) {
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")
@@ -47,7 +48,7 @@ public class HapiTestEnv {
                     .append("\n")
                     .append("\n# This next line is, hopefully, ignored.\n")
                     .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
-            for (int nodeId = 0; nodeId < numNodes; nodeId++) {
+            for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
                 final var nodeName = NODE_NAMES[nodeId];
                 final var firstChar = nodeName.charAt(0);
                 final var account = "0.0." + (3 + nodeId);
@@ -66,17 +67,18 @@ public class HapiTestEnv {
                         .append("\n");
                 nodeHosts.add("127.0.0.1:" + (FIRST_GRPC_PORT + (nodeId * 2)) + ":" + account);
             }
-            sb.append("\nnextNodeId, ").append(numNodes).append("\n");
+            sb.append("\nnextNodeId, ").append(nodeCount).append("\n");
             final String configText = sb.toString();
 
-            for (int nodeId = 0; nodeId < numNodes; nodeId++) {
+            for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
                 final Path workingDir =
                         Path.of("./build/hapi-test/node" + nodeId).normalize();
                 setupWorkingDirectory(workingDir, configText);
                 final String nodeName = NODE_NAMES[nodeId];
                 final AccountID acct =
                         AccountID.newBuilder().accountNum(3L + nodeId).build();
-                if (useInProcessAlice && nodeId == 0) {
+                boolean currentNodeAlice = nodeId == 0;
+                if (IN_PROCESS_ALICE == nodesType && currentNodeAlice) {
                     nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
                 } else {
                     nodes.add(new SubProcessHapiTestNode(
@@ -86,6 +88,13 @@ public class HapiTestEnv {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // Defines the types of nodes(InProcessHapiTestNode or SubProcessHapiTestNode) for the test executing nodes.
+    enum HapiTestNodesType {
+        // Makes the fist starting node(Alice, id=0) to use InProcessHapiTestNode. This gives us the ability to debug
+        IN_PROCESS_ALICE,
+        OUT_OF_PROCESS_ALICE
     }
 
     /**

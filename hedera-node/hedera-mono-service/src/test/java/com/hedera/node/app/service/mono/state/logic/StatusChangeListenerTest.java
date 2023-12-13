@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
-import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -28,8 +28,8 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

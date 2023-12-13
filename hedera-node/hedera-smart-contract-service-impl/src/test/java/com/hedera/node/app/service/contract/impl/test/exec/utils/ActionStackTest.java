@@ -23,8 +23,6 @@ import static com.hedera.hapi.streams.ContractActionType.CREATE;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.POPPED_FROM_STACK;
-import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.READ_FROM_LIST_END;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_EOA_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_ACTION;
@@ -199,7 +197,7 @@ class ActionStackTest {
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -282,14 +280,12 @@ class ActionStackTest {
         final var wrappedAction = new ActionWrapper(CALL_ACTION);
         allActions.add(wrappedAction);
 
-        assertDoesNotThrow(
-                () -> subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF));
+        assertDoesNotThrow(() -> subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF));
     }
 
     @Test
     void worksAroundEmptyList() {
-        assertDoesNotThrow(
-                () -> subject.finalizeLastAction(READ_FROM_LIST_END, parentFrame, ActionStack.Validation.OFF));
+        assertDoesNotThrow(() -> subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF));
     }
 
     @Test
@@ -301,7 +297,7 @@ class ActionStackTest {
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(ILLEGAL_STATE_CHANGE));
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -321,7 +317,7 @@ class ActionStackTest {
         given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SOLIDITY_ADDRESS));
         given(helper.createSynthActionForMissingAddressIn(parentFrame)).willReturn(MISSING_ADDRESS_CALL_ACTION);
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(2, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -341,7 +337,7 @@ class ActionStackTest {
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
         given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SOLIDITY_ADDRESS));
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -350,18 +346,14 @@ class ActionStackTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"NOT_STARTED,true", "CODE_EXECUTING,false", "CODE_SUSPENDED,true"})
-    void finalizationDoesNothingButMaybePopStackForUnexpectedStates(
-            @NonNull final MessageFrame.State state, final boolean actionIsOnStack) {
+    @CsvSource({"NOT_STARTED", "CODE_EXECUTING", "CODE_SUSPENDED"})
+    void finalizationDoesNothingButMaybePopStackForUnexpectedStates(@NonNull final MessageFrame.State state) {
         given(parentFrame.getState()).willReturn(state);
         final var wrappedAction = new ActionWrapper(CALL_ACTION);
         allActions.add(wrappedAction);
-        if (actionIsOnStack) {
-            actionsStack.push(wrappedAction);
-        }
+        actionsStack.push(wrappedAction);
 
-        final var source = actionIsOnStack ? POPPED_FROM_STACK : READ_FROM_LIST_END;
-        subject.finalizeLastAction(source, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -397,7 +389,7 @@ class ActionStackTest {
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -449,7 +441,7 @@ class ActionStackTest {
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -470,7 +462,7 @@ class ActionStackTest {
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));

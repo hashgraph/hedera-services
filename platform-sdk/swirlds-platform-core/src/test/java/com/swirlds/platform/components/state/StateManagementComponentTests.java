@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.StateConfig_;
@@ -32,11 +31,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusGetter;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -44,9 +39,12 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -125,76 +123,6 @@ class StateManagementComponentTests {
         component.stop();
     }
 
-    /**
-     * Verify that when the component is provided a complete signed state to load, it is returned when asked for the
-     * latest complete signed state.
-     */
-    @Test
-    @DisplayName("Signed state to load becomes the latest complete signed state")
-    void signedStateToLoadIsLatestComplete() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final DefaultStateManagementComponent component = newStateManagementComponent();
-
-        component.start();
-
-        final int firstRound = 1;
-        final int lastRound = 100;
-
-        // Send a bunch of signed states for the component to load, in order
-        for (int roundNum = firstRound; roundNum <= lastRound; roundNum++) {
-            final SignedState signedState =
-                    new RandomSignedStateGenerator(random).setRound(roundNum).build();
-
-            final SignedState signedStateSpy = spy(signedState);
-            when(signedStateSpy.isComplete()).thenReturn(true);
-
-            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
-
-            // Some basic assertions on the signed state provided to the new latest complete state consumer
-            verifyNewLatestCompleteStateConsumer(roundNum, signedStateSpy);
-
-            verifyLatestCompleteState(signedStateSpy, component);
-        }
-
-        // Send a bunch of signed states that are older than the latest complete signed state
-        for (int roundNum = firstRound; roundNum < lastRound; roundNum++) {
-            final SignedState signedState =
-                    new RandomSignedStateGenerator(random).setRound(roundNum).build();
-
-            final SignedState signedStateSpy = spy(signedState);
-            when(signedStateSpy.isComplete()).thenReturn(true);
-
-            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
-
-            // The signed state provided is old, so the consumer should not be invoked again
-            assertEquals(
-                    lastRound,
-                    newLatestCompleteStateConsumer.getNumInvocations(),
-                    "The new latest complete state consumer should not be invoked for states that are older than the "
-                            + "current latest complete state");
-
-            // The latest complete signed state should still be the same as before and not the one just provided
-            verifyLatestCompleteState(newLatestCompleteStateConsumer.getLastSignedState(), component);
-        }
-
-        component.stop();
-    }
-
-    private void verifyLatestCompleteState(
-            final SignedState expectedSignedState, final StateManagementComponent component) {
-        // Check that the correct signed state is provided when the latest complete state is requested
-        try (final ReservedSignedState wrapper = component.getLatestSignedState("test")) {
-            assertEquals(expectedSignedState, wrapper.get(), "Incorrect latest signed state provided");
-
-            // 1 for being the latest complete signed state
-            // 1 for being the latest signed state
-            // 1 for the AutoCloseableWrapper
-            assertEquals(3, wrapper.get().getReservationCount(), "Incorrect number of reservations");
-        }
-        assertEquals(
-                expectedSignedState.getRound(), component.getLastCompleteRound(), "Incorrect latest complete round");
-    }
-
     private void verifyNewLatestCompleteStateConsumer(final int roundNum, final SignedState signedState) {
         final SignedState lastCompleteSignedState = newLatestCompleteStateConsumer.getLastSignedState();
         assertEquals(
@@ -240,10 +168,7 @@ class StateManagementComponentTests {
                 // This state should be sent out as the latest complete state
                 final int finalRoundNum = roundNum;
                 AssertionUtils.assertEventuallyDoesNotThrow(
-                        () -> {
-                            verifyNewLatestCompleteStateConsumer(finalRoundNum / 2, signedState);
-                            verifyLatestCompleteState(signedState, component);
-                        },
+                        () -> verifyNewLatestCompleteStateConsumer(finalRoundNum / 2, signedState),
                         Duration.ofSeconds(2),
                         "The unit test failed.");
             }
