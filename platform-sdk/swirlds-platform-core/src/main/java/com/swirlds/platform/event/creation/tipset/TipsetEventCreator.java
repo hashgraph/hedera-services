@@ -156,6 +156,9 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Override
     public void registerEvent(@NonNull final GossipEvent event) {
+        if (event.getGeneration() < minimumGenerationNonAncient) {
+            return;
+        }
 
         final NodeId eventCreator = event.getHashedData().getCreatorId();
         if (!addressBook.contains(eventCreator)) {
