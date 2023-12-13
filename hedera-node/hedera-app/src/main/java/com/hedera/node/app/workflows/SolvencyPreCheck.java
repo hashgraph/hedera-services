@@ -177,7 +177,7 @@ public class SolvencyPreCheck {
         if (availableBalance < totalFee + additionalCosts) {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);
-            throw new InsufficientNonFeeDebitsException(insufficientFeeResponseCode, totalFee);
+            throw new InsufficientNonFeeDebitsException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
     }
 
