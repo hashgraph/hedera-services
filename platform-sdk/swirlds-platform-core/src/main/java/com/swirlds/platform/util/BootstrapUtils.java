@@ -392,7 +392,7 @@ public final class BootstrapUtils {
         try (final OutputStream outputStream = new FileOutputStream(settingsUsedPath.toFile())) {
             outputStream.write(settingsUsedBuilder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final IOException | RuntimeException e) {
-            logger.error(STARTUP.getMarker(), "Failed to write settingsUsed to file {}", settingsUsedPath, e);
+            logger.error(EXCEPTION.getMarker(), "Failed to write settingsUsed to file {}", settingsUsedPath, e);
         }
     }
 

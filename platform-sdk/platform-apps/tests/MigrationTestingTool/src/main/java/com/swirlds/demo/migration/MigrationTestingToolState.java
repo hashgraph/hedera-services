@@ -18,6 +18,7 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -240,12 +241,12 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         selfId = platform.getSelfId();
 
         if (trigger == InitTrigger.GENESIS) {
-            logger.error(MARKER, "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
+            logger.error(EXCEPTION.getMarker(), "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
         }
 
         if (!Objects.equals(previousSoftwareVersion, PREVIOUS_SOFTWARE_VERSION)) {
             logger.error(
-                    MARKER,
+                    EXCEPTION.getMarker(),
                     "previousSoftwareVersion was {} when expecting it to be {}",
                     previousSoftwareVersion,
                     PREVIOUS_SOFTWARE_VERSION);
