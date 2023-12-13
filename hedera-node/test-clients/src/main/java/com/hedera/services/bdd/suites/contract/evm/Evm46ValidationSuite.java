@@ -859,7 +859,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
+    HapiSpec internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -1305,6 +1305,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallWithValueToEthereumPrecompile0x2ResultsInRevert() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
@@ -1336,6 +1337,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallToNonExistingSystemAccount852ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(852L).build());

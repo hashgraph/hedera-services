@@ -419,7 +419,7 @@ class ActionStackTest {
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
-        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
