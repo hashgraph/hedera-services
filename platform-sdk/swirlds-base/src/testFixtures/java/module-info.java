@@ -9,5 +9,5 @@ open module com.swirlds.base.test.fixtures {
     requires transitive org.junit.jupiter.api;
     requires static com.github.spotbugs.annotations;
     requires com.swirlds.common; // Should be removed in future
-    requires jakarta.inject;
+    requires transitive jakarta.inject;
 }

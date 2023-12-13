@@ -16,4 +16,11 @@
 
 package com.swirlds.sample;
 
-public record BigDataObject(String name, int age, byte[] bigData) {}
+public record BigDataObject(String name, int age, byte[] bigData) {
+
+    public BigDataObject {
+        if (name == null || name.isBlank()) {
+            System.err.println("Name is empty, please change to real name!");
+        }
+    }
+}

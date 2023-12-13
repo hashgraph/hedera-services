@@ -16,16 +16,38 @@
 
 package com.swirlds.sample.test;
 
+import com.swirlds.base.test.fixtures.io.SystemErrProvider;
+import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.sample.BigDataObject;
 import com.swirlds.sample.test.fixtures.BigDataObjectTestUtilities;
+import jakarta.inject.Inject;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+@WithSystemError
 public class BigDataObjectTest {
+
+    @Inject
+    SystemErrProvider systemErrProvider;
 
     @Test
     void testObject() {
         final BigDataObject dummy = BigDataObjectTestUtilities.createDummy();
         Assertions.assertNotNull(dummy);
+    }
+
+    @Test
+    void testWarningForEmptyName() {
+        // given
+        final String name = "";
+
+        // when
+        final BigDataObject dummy = new BigDataObject("", 12, new byte[0]);
+
+        // then
+        final List<String> lines = systemErrProvider.getLines().toList();
+        Assertions.assertEquals(1, lines.size());
+        Assertions.assertEquals("Name is empty, please change to real name!", lines.get(0));
     }
 }
