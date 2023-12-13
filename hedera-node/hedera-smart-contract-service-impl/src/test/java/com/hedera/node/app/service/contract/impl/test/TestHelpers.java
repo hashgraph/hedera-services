@@ -597,6 +597,10 @@ public class TestHelpers {
         assertEquals(expected.getGasCost(), actual.getGasCost());
     }
 
+    public static org.apache.tuweni.bytes.Bytes readableRevertReason(@NonNull final ResponseCodeEnum status) {
+        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes());
+    }
+
     public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {
         assertEquals(expected.gasRequirement(), actual.gasRequirement());
         final var expectedResult = expected.result();
