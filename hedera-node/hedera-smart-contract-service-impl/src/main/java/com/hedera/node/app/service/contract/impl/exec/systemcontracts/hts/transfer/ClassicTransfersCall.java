@@ -95,7 +95,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
         this.spenderId = requireNonNull(spenderId);
-        this.senderId = requireNonNull(senderId);
+        this.senderId = senderId;
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
         this.configuration = requireNonNull(configuration);
         this.approvalSwitchHelper = approvalSwitchHelper;
