@@ -63,7 +63,7 @@ public class BlockSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    private HapiSpec blck003ReturnsTimestampOfTheBlock() {
+    final HapiSpec blck003ReturnsTimestampOfTheBlock() {
         final var contract = "EmitBlockTimestamp";
         final var firstCall = "firstCall";
         final var secondCall = "secondCall";
@@ -126,7 +126,7 @@ public class BlockSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec blck001And002And003And004ReturnsCorrectBlockProperties() {
+    final HapiSpec blck001And002And003And004ReturnsCorrectBlockProperties() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";
         final var secondBlock = "secondBlock";

@@ -54,7 +54,7 @@ public final class UpdateFileForUpgrade extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateFileForUpgrade() {
+    final HapiSpec updateFileForUpgrade() {
         return defaultHapiSpec("UpdateFileForUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> {

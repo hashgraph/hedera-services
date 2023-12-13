@@ -55,7 +55,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec chunkNumberIsValidated() {
+    final HapiSpec chunkNumberIsValidated() {
         return defaultHapiSpec("chunkNumberIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -78,7 +78,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec chunkTransactionIDIsValidated() {
+    final HapiSpec chunkTransactionIDIsValidated() {
         return defaultHapiSpec("chunkTransactionIDIsValidated")
                 .given(cryptoCreate("initialTransactionPayer"), createTopic("testTopic"))
                 .when()
@@ -119,7 +119,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec longMessageIsFragmentedIntoChunks() {
+    final HapiSpec longMessageIsFragmentedIntoChunks() {
         String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
         return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
                 .given(cryptoCreate("payer"), createTopic("testTopic"))

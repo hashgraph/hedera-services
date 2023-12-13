@@ -63,7 +63,7 @@ public class PerpetualLocalCalls extends HapiSuite {
         });
     }
 
-    private HapiSpec localCallsForever() {
+    final HapiSpec localCallsForever() {
         return defaultHapiSpec("LocalCallsForever")
                 .given()
                 .when()
