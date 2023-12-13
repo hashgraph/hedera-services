@@ -19,26 +19,28 @@ package com.hedera.node.app.service.consensus.impl.test.codecs;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.merkle.map.MerkleMap;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
+    @Mock
+    protected WritableStates writableStates;
 
     @BeforeEach
     void setUp() {}
@@ -103,21 +105,9 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
                         com.hedera.node.app.service.mono.utils.EntityNum,
                         com.hedera.node.app.service.mono.state.merkle.MerkleTopic>
                 monoTopics = new MerkleMap<>();
-        WritableKVState<TopicID, Topic> appTopics = new MapWritableKVState<>(TOPICS_KEY) {
-            private final List<TopicID> keys = new ArrayList<>();
-
-            @Override
-            protected void putIntoDataSource(@NonNull TopicID key, @NonNull Topic value) {
-                keys.add(key);
-                super.putIntoDataSource(key, value);
-            }
-
-            @Override
-            protected void removeFromDataSource(@NonNull TopicID key) {
-                keys.add(key);
-                super.removeFromDataSource(key);
-            }
-        };
+        writableTopicState = emptyWritableTopicState();
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        WritableTopicStore appTopics = new WritableTopicStore(writableStates);
 
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic = getMerkleTopic(
                 (com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
@@ -130,9 +120,9 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
         refreshStoresWithCurrentTopicOnlyInReadable();
         ConsensusServiceStateTranslator.migrateFromMerkleToPbj(monoTopics, appTopics);
 
-        final Topic convertedTopic = appTopics.get(topicId);
+        final Optional<Topic> convertedTopic = appTopics.get(topicId);
 
-        assertEquals(createTopic(), convertedTopic);
+        assertEquals(createTopic(), convertedTopic.get());
     }
 
     private void assertMatch(MerkleTopic expected, MerkleTopic actual) {

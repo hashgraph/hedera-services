@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -121,5 +122,10 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
     @Override
     public long size() {
         return getCurrent().size();
+    }
+
+    @Override
+    public void updateComparator(@NonNull final Comparator<K> comparator) {
+        getCurrent().updateComparator(comparator);
     }
 }

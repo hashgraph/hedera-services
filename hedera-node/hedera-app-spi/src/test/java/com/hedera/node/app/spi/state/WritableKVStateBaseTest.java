@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -911,6 +912,19 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         assertThat(state.getOriginalValue(D_KEY)).isNull();
         assertThat(state.getOriginalValue(E_KEY)).isNull();
         assertThat(state.getOriginalValue(F_KEY)).isNull();
+    }
+
+    @Test
+    @DisplayName("test updateComparator works as expected ")
+    void testUpdateComparator() {
+        state.put(C_KEY, CHERRY);
+        state.put(E_KEY, EGGPLANT);
+        state.put(D_KEY, DATE);
+        state.put(F_KEY, FIG);
+        state.updateComparator(Comparator.reverseOrder());
+
+        final var keys = state.modifiedKeys();
+        assertThat(keys).containsSequence(F_KEY, E_KEY, D_KEY, C_KEY);
     }
 
     /**

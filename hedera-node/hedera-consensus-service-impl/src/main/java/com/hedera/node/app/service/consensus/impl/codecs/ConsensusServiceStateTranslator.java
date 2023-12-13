@@ -22,10 +22,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -49,7 +49,7 @@ public class ConsensusServiceStateTranslator {
                             com.hedera.node.app.service.mono.utils.EntityNum,
                             com.hedera.node.app.service.mono.state.merkle.MerkleTopic>
                     monoTopics,
-            WritableKVState<TopicID, Topic> appTopics) {
+            WritableTopicStore appTopics) {
         com.hedera.node.app.service.mono.state.adapters.MerkleMapLike.from(monoTopics)
                 .forEachNode(new PutConvertedTopic(appTopics));
     }
@@ -117,16 +117,16 @@ public class ConsensusServiceStateTranslator {
 
     private static class PutConvertedTopic
             implements BiConsumer<EntityNum, com.hedera.node.app.service.mono.state.merkle.MerkleTopic> {
-        private final WritableKVState<TopicID, Topic> appTopics;
+        private final WritableTopicStore appTopics;
 
-        public PutConvertedTopic(WritableKVState<TopicID, Topic> appTopics) {
+        public PutConvertedTopic(WritableTopicStore appTopics) {
             this.appTopics = appTopics;
         }
 
         @Override
         public void accept(EntityNum entityNum, com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic) {
             final var pbjTopic = stateToPbj(merkleTopic);
-            appTopics.put(pbjTopic.topicId(), pbjTopic);
+            appTopics.put(pbjTopic);
         }
     }
 }

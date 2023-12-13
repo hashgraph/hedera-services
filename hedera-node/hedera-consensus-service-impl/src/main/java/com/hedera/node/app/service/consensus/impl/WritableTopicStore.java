@@ -47,8 +47,8 @@ public class WritableTopicStore {
      */
     public WritableTopicStore(@NonNull final WritableStates states) {
         requireNonNull(states);
-
         this.topicState = states.get(TOPICS_KEY);
+        topicState.updateComparator(new TopicIdComparator());
     }
 
     /**

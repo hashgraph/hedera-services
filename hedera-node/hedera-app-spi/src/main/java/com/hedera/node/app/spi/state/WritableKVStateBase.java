@@ -27,8 +27,12 @@ import java.util.*;
  * @param <V> The value type
  */
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
-    /** A map of all modified values buffered in this mutable state */
-    private final Map<K, V> modifications = new LinkedHashMap<>();
+    /** A sorted map of all modified values buffered in this mutable state. This imposes a deterministic ordering.
+     * Change to TreeMap when all other types of Key Comparator are implemented.
+     *
+     * private SortedMap<K, V> modifications = new TreeMap<>();
+     */
+    private Map<K, V> modifications = new LinkedHashMap<>();
 
     /**
      * Create a new StateBase.
@@ -170,6 +174,17 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         return modifications.keySet();
     }
 
+    /** {@inheritDoc}
+     * To add the comparator to the underlying data source, we create a new TreeMap with the Comparator
+     * This should be called on each writable store constructor until all other types of Key Comparator are implemented.
+     * */
+    @Override
+    public final void updateComparator(@NonNull final Comparator<K> comparator) {
+        final var tmp = new TreeMap<K, V>(comparator);
+        tmp.putAll(modifications);
+        this.modifications = tmp;
+    }
+
     /**
      * {@inheritDoc}
      * For the size of a {@link WritableKVState}, we need to take into account the size of the
@@ -184,7 +199,6 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * </ol>
      * @return The size of the state.
      */
-    @NonNull
     public long size() {
         final var sizeOfBackingMap = sizeOfDataSource();
         int numAdditions = 0;
