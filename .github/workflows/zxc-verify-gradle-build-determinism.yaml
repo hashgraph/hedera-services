@@ -211,8 +211,8 @@ jobs:
       - name: Fix Windows Manifests
         if: ${{ runner.os == 'Windows' && steps.regen-manifest.conclusion == 'success' && !cancelled() && !failure() }}
         run: |
-          cat "${{ steps.regen-manifest.outputs.libraries }}" | tr '*' ' ' > >(tee "${{ steps.regen-manifest.outputs.libraries }}" >/dev/null)
-          cat "${{ steps.regen-manifest.outputs.applications }}" | tr '*' ' ' > >(tee "${{ steps.regen-manifest.outputs.applications }}" >/dev/null)
+          cat "${{ steps.regen-manifest.outputs.libraries }}" | tr '*' ' ' | tee "${{ steps.regen-manifest.outputs.libraries }}" >/dev/null
+          cat "${{ steps.regen-manifest.outputs.applications }}" | tr '*' ' ' | tee "${{ steps.regen-manifest.outputs.applications }}" >/dev/null
 
       - name: Validate Libraries
         working-directory: ${{ github.workspace }}/hedera-node/data/lib
