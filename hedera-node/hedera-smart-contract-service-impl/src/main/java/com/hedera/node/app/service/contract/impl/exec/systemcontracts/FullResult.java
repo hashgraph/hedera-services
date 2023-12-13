@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -80,7 +79,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        ReturnTypes.tuweniEncodedRc(recordBuilder.status())),
+                        Bytes.wrap(recordBuilder.status().protoName().getBytes())),
                 gasRequirement,
                 recordBuilder);
     }
@@ -105,7 +104,7 @@ public record FullResult(
                 null);
     }
 
-    public static FullResult completionResult(
+    public static FullResult successResult(
             @NonNull final ByteBuffer encoded,
             final long gasRequirement,
             @NonNull final ContractCallRecordBuilder recordBuilder) {

@@ -178,13 +178,16 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                                             continue;
                                         }
                                         var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
+                                                .payingWith(GENESIS)
                                                 .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
                                                 .persists(true)
                                                 .noLogging();
                                         ops.add(op);
                                         lastGoodAcct = acctName;
                                     }
-                                    ops.add(getAccountInfo(lastGoodAcct).fee(ONE_HBAR));
+                                    ops.add(getAccountInfo(lastGoodAcct)
+                                            .payingWith(GENESIS)
+                                            .fee(ONE_HBAR));
                                     allRunFor(spec, ops);
                                     acctProcessed += batchSize;
                                 }
