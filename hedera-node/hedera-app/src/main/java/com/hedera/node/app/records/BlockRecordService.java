@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -46,6 +47,8 @@ public final class BlockRecordService implements Service {
     /** The original hash, only used at genesis */
     private static final Bytes GENESIS_HASH = Bytes.wrap(new byte[48]);
 
+    public static final Timestamp EPOCH = new Timestamp(0, 0);
+
     @NonNull
     @Override
     public String getServiceName() {
@@ -71,7 +74,7 @@ public final class BlockRecordService implements Service {
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
                 final var isGenesis = ctx.previousStates().isEmpty();
                 if (isGenesis) {
-                    final var blocks = new BlockInfo(0, null, Bytes.EMPTY, null, false);
+                    final var blocks = new BlockInfo(-1, EPOCH, Bytes.EMPTY, EPOCH, false, EPOCH);
                     blocksState.put(blocks);
                     final var runningHashes =
                             RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();

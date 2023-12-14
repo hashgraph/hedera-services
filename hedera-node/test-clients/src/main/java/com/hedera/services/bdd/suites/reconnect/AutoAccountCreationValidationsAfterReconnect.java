@@ -48,7 +48,7 @@ public class AutoAccountCreationValidationsAfterReconnect extends HapiSuite {
     /* These validations are assuming the state is from a 6N-1C test in which a client generates 10 autoAccounts in the
      * beginning of the test */
     @HapiTest
-    private HapiSpec getAccountInfoOfAutomaticallyCreatedAccounts() {
+    final HapiSpec getAccountInfoOfAutomaticallyCreatedAccounts() {
         return defaultHapiSpec("GetAccountInfoOfAutomaticallyCreatedAccounts")
                 .given()
                 .when()

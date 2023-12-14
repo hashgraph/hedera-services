@@ -74,7 +74,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec confusedUpdateCantExtendExpiry() {
+    final HapiSpec confusedUpdateCantExtendExpiry() {
         // this test verify that the exchange rate file parsed correctly on update, it doesn't check expiry
         var initialExpiry = new AtomicLong();
         var extension = 1_000L;
@@ -94,7 +94,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec precheckRejectsUnauthorized() {
+    final HapiSpec precheckRejectsUnauthorized() {
         // this test is to verify that the system files cannot be updated without privileged account
         return defaultHapiSpec("precheckRejectsUnauthorized")
                 .given(cryptoCreate(CIVILIAN))
@@ -109,7 +109,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec precheckAllowsMissing() {
+    final HapiSpec precheckAllowsMissing() {
         return defaultHapiSpec("PrecheckAllowsMissing")
                 .given()
                 .when()
@@ -122,7 +122,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec precheckAllowsDeleted() {
+    final HapiSpec precheckAllowsDeleted() {
         return defaultHapiSpec("PrecheckAllowsDeleted")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))
@@ -130,7 +130,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec precheckRejectsPrematureExpiry() {
+    final HapiSpec precheckRejectsPrematureExpiry() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("PrecheckRejectsPrematureExpiry")
                 .given(fileCreate("file"))
@@ -142,7 +142,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec precheckAllowsBadEncoding() {
+    final HapiSpec precheckAllowsBadEncoding() {
         return defaultHapiSpec("PrecheckAllowsBadEncoding")
                 .given(fileCreate("file"))
                 .when()
@@ -156,7 +156,7 @@ public class UpdateFailuresSpec extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    private HapiSpec handleIgnoresEarlierExpiry() {
+    final HapiSpec handleIgnoresEarlierExpiry() {
         var initialExpiry = new AtomicLong();
 
         return defaultHapiSpec("HandleIgnoresEarlierExpiry")

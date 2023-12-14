@@ -53,7 +53,7 @@ public class CreateTopicPerfSuite extends HapiSuite {
         return false;
     }
 
-    private HapiSpec createTopicPerf() {
+    final HapiSpec createTopicPerf() {
         final int NUM_TOPICS = 100000;
 
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
