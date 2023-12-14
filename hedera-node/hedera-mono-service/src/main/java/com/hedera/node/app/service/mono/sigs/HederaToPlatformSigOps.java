@@ -26,13 +26,13 @@ import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
 
 /**
  * Provides an "expand" operation that acts in-place on the {@link
  * com.swirlds.common.crypto.TransactionSignature} list of a {@link
- * com.swirlds.common.system.transaction.Transaction} whose contents are known to be a valid Hedera
+ * com.swirlds.platform.system.transaction.Transaction} whose contents are known to be a valid Hedera
  * gRPC {@link Transaction}.
  *
  * <p>This operation allows Hedera Services to use the Platform to efficiently verify <i>many</i> of

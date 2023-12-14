@@ -274,11 +274,14 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             throw new IllegalArgumentException(
                     "Overflow on transfer of " + amount + " tinybars from " + fromId + " to " + toId);
         }
-        accountStore.put(from.copyBuilder()
-                .tinybarBalance(from.tinybarBalance() - amount)
-                .build());
-        accountStore.put(
-                to.copyBuilder().tinybarBalance(to.tinybarBalance() + amount).build());
+        if (!from.accountIdOrThrow().equals(to.accountIdOrThrow())) {
+            accountStore.put(from.copyBuilder()
+                    .tinybarBalance(from.tinybarBalance() - amount)
+                    .build());
+            accountStore.put(to.copyBuilder()
+                    .tinybarBalance(to.tinybarBalance() + amount)
+                    .build());
+        }
     }
 
     @Override
@@ -489,7 +492,12 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // get the account from account store that has all balance changes
         // commit the account with deleted flag set to true
         final var updatedDeleteAccount = requireNonNull(accountStore.getForModify(deletedId));
-        accountStore.put(updatedDeleteAccount.copyBuilder().deleted(true).build());
+        accountStore.removeAlias(updatedDeleteAccount.alias());
+        accountStore.put(updatedDeleteAccount
+                .copyBuilder()
+                .alias(Bytes.EMPTY)
+                .deleted(true)
+                .build());
 
         // add the transfer account for this deleted account to record builder.
         // This is needed while computing staking rewards. In the future it will also be added

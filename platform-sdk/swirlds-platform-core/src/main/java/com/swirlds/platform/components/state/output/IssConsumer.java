@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.components.state.output;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

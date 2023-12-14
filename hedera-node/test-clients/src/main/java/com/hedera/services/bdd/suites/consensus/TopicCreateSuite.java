@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -33,7 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -71,7 +71,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec adminKeyIsValidated() {
+    final HapiSpec adminKeyIsValidated() {
         return defaultHapiSpec("AdminKeyIsValidated")
                 .given()
                 .when()
@@ -83,7 +83,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec submitKeyIsValidated() {
+    final HapiSpec submitKeyIsValidated() {
         return defaultHapiSpec("SubmitKeyIsValidated")
                 .given()
                 .when()
@@ -94,7 +94,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec autoRenewAccountIsValidated() {
+    final HapiSpec autoRenewAccountIsValidated() {
         return defaultHapiSpec("AutoRenewAccountIsValidated")
                 .given()
                 .when()
@@ -105,7 +105,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec autoRenewAccountIdNeedsAdminKeyToo() {
+    final HapiSpec autoRenewAccountIdNeedsAdminKeyToo() {
         return defaultHapiSpec("autoRenewAccountIdNeedsAdminKeyToo")
                 .given(cryptoCreate("payer"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -114,11 +114,11 @@ public class TopicCreateSuite extends HapiSuite {
                         .autoRenewAccountId("autoRenewAccount")
                         .signedBy("payer", "autoRenewAccount")
                         // In hedera-app, we will allow an immutable topic to have an auto-renew account
-                        .hasKnownStatusFrom(SUCCESS, AUTORENEW_ACCOUNT_NOT_ALLOWED));
+                        .hasKnownStatusFrom(AUTORENEW_ACCOUNT_NOT_ALLOWED));
     }
 
     @HapiTest
-    private HapiSpec autoRenewPeriodIsValidated() {
+    final HapiSpec autoRenewPeriodIsValidated() {
         final var tooShortAutoRenewPeriod = "tooShortAutoRenewPeriod";
         final var tooLongAutoRenewPeriod = "tooLongAutoRenewPeriod";
         return defaultHapiSpec("autoRenewPeriodIsValidated")
@@ -134,7 +134,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noAutoRenewPeriod() {
+    final HapiSpec noAutoRenewPeriod() {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
                 .when()
@@ -145,7 +145,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec signingRequirementsEnforced() {
+    final HapiSpec signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";
 
@@ -169,7 +169,7 @@ public class TopicCreateSuite extends HapiSuite {
                         // In hedera-app, we'll allow contracts with admin keys to be auto-renew accounts
                         createTopic("nonExistentAutoRenewAccount")
                                 .autoRenewAccountId(contractWithAdminKey)
-                                .hasKnownStatusFrom(SUCCESS, INVALID_AUTORENEW_ACCOUNT),
+                                .hasKnownStatusFrom(INVALID_AUTORENEW_ACCOUNT),
                         // But contracts without admin keys will get INVALID_SIGNATURE (can't sign!)
                         createTopic("NotToBe")
                                 .autoRenewAccountId(PAY_RECEIVABLE_CONTRACT)
@@ -219,8 +219,8 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec allFieldsSetHappyCase() {
-        return defaultHapiSpec("AllFieldsSetHappyCase")
+    final HapiSpec allFieldsSetHappyCase() {
+        return defaultHapiSpec("AllFieldsSetHappyCase", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
                 .when()
                 .then(createTopic("testTopic")
@@ -231,7 +231,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec feeAsExpected() {
+    final HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         newKeyNamed("adminKey"),

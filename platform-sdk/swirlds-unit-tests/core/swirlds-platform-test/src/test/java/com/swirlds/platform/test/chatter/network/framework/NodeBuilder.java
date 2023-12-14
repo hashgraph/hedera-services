@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig_;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;

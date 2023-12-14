@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
