@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;

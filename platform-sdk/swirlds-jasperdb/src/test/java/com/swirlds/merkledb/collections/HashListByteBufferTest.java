@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.units.UnitConstants;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

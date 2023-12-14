@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.test.logging.MockAppender;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;

@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_LONG;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;

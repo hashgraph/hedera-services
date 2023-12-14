@@ -17,6 +17,7 @@
 package com.hedera.node.app.records;
 
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +79,7 @@ final class BlockRecordServiceTest {
             assertEquals(
                     new RunningHashes(GENESIS_HASH, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY),
                     runningHashesCapture.getValue());
-            assertEquals(new BlockInfo(0, null, Bytes.EMPTY, null, false), blockInfoCapture.getValue());
+            assertEquals(new BlockInfo(-1, EPOCH, Bytes.EMPTY, EPOCH, false, EPOCH), blockInfoCapture.getValue());
             return null;
         });
         BlockRecordService blockRecordService = new BlockRecordService();

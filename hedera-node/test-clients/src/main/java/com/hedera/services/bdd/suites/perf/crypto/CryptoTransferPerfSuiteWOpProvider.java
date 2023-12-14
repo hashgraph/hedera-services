@@ -61,7 +61,7 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
         return List.of(runMixedTransferAndSubmits());
     }
 
-    private HapiSpec runMixedTransferAndSubmits() {
+    final HapiSpec runMixedTransferAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("CryptoTransferPerfSuiteWOpProvider")
                 .given(

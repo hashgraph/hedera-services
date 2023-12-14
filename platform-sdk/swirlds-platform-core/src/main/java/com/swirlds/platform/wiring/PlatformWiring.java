@@ -27,9 +27,11 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -37,10 +39,12 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -57,7 +61,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
+    private final StateSignerWiring stateSignerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -68,6 +74,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+
         this.platformContext = Objects.requireNonNull(platformContext);
         model = WiringModel.create(platformContext, time);
 
@@ -84,14 +91,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
             inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
             linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
-
+            eventCreationManagerWiring =
+                    EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
             platformCoordinator = new PlatformCoordinator(
                     internalEventValidatorWiring,
                     eventDeduplicatorWiring,
                     eventSignatureValidatorWiring,
                     orphanBufferWiring,
                     inOrderLinkerWiring,
-                    linkedEventIntakeWiring);
+                    linkedEventIntakeWiring,
+                    eventCreationManagerWiring);
         } else {
             internalEventValidatorWiring = null;
             eventDeduplicatorWiring = null;
@@ -99,12 +108,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring = null;
             inOrderLinkerWiring = null;
             linkedEventIntakeWiring = null;
-
+            eventCreationManagerWiring = null;
             platformCoordinator = null;
         }
 
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
+        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
 
         wire();
     }
@@ -131,6 +141,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(
+                eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
     }
 
     /**
@@ -143,11 +155,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+            orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
+            eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
 
             solderMinimumGenerationNonAncient();
         }
-
-        // FUTURE WORK: solder all the things!
     }
 
     /**
@@ -159,11 +171,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param preconsensusEventWriter   the preconsensus event writer to wire
      * @param statusManager             the status manager to wire
      * @param appCommunicationComponent the app communication component to wire
+     * @param transactionPool           the transaction pool to wire
      */
     public void wireExternalComponents(
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusManager statusManager,
-            @NonNull final AppCommunicationComponent appCommunicationComponent) {
+            @NonNull final AppCommunicationComponent appCommunicationComponent,
+            @NonNull final TransactionPool transactionPool) {
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
@@ -176,12 +190,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
+        stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
     }
 
     /**
      * Bind the intake components to the wiring.
      * <p>
-     * Future work: this method should be merged with {@link #bind} once the feature flag for the new intake pipeline has been removed
+     * Future work: this method should be merged with {@link #bind} once the feature flag for the new intake pipeline
+     * has been removed
      *
      * @param internalEventValidator  the internal event validator to bind
      * @param eventDeduplicator       the event deduplicator to bind
@@ -189,6 +205,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param orphanBuffer            the orphan buffer to bind
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
+     * @param eventCreationManager    the event creation manager to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -196,7 +213,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventSignatureValidator eventSignatureValidator,
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
-            @NonNull final LinkedEventIntake linkedEventIntake) {
+            @NonNull final LinkedEventIntake linkedEventIntake,
+            @NonNull final EventCreationManager eventCreationManager) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -204,15 +222,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
+        eventCreationManagerWiring.bind(eventCreationManager);
     }
 
     /**
      * Bind components to the wiring.
      *
      * @param signedStateFileManager the signed state file manager to bind
+     * @param stateSigner            the state signer to bind
      */
-    public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
+    public void bind(
+            @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner) {
         signedStateFileManagerWiring.bind(signedStateFileManager);
+        stateSignerWiring.bind(stateSigner);
 
         // FUTURE WORK: bind all the things!
     }
@@ -258,8 +280,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Get the input wire for dumping a state to disk
      * <p>
-     * Future work: this is a temporary hook to allow the components to dump a state to disk, prior to the whole
-     * system being migrated to the new framework.
+     * Future work: this is a temporary hook to allow the components to dump a state to disk, prior to the whole system
+     * being migrated to the new framework.
      *
      * @return the input wire for dumping a state to disk
      */
@@ -269,10 +291,23 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * Get the input wire for signing a state
+     * <p>
+     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole
+     * system being migrated to the new framework.
+     *
+     * @return the input wire for signing a state
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getSignStateInput() {
+        return stateSignerWiring.signState();
+    }
+
+    /**
      * Inject a new minimum generation non-ancient on all components that need it.
      * <p>
-     * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient
-     * during startup. This method will be removed once the components are wired together.
+     * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient during
+     * startup. This method will be removed once the components are wired together.
      *
      * @param minimumGenerationNonAncient the new minimum generation non-ancient
      */
@@ -281,6 +316,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventSignatureValidatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
         orphanBufferWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
         inOrderLinkerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        eventCreationManagerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+    }
+
+    /**
+     * Flush the intake pipeline.
+     */
+    public void flushIntakePipeline() {
+        platformCoordinator.flushIntakePipeline();
     }
 
     /**

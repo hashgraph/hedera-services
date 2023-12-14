@@ -83,7 +83,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
+    final HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -117,7 +117,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
+    final HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -154,7 +154,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
+    final HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -191,7 +191,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
+    final HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),

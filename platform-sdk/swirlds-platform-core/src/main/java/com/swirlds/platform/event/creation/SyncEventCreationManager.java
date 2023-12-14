@@ -28,7 +28,6 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Function;
@@ -175,7 +174,7 @@ public class SyncEventCreationManager {
      *
      * @param event the event to add
      */
-    public void registerEvent(@NonNull final EventImpl event) {
+    public void registerEvent(@NonNull final GossipEvent event) {
         creator.registerEvent(event);
     }
 

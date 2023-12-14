@@ -65,7 +65,7 @@ public class ERC721ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callsERC721ContractInteractions() {
+    final HapiSpec callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
         final var nftId = BigInteger.ONE;
         final var CREATE_TX = "create";
@@ -80,6 +80,7 @@ public class ERC721ContractInteractions extends HapiSuite {
                         contractCreate(CONTRACT)
                                 .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
+                                .gas(500_000L)
                                 .via(CREATE_TX),
                         cryptoTransfer(tinyBarsFromTo(
                                         DEFAULT_CONTRACT_SENDER, DEFAULT_CONTRACT_RECEIVER, 10 * ONE_HBAR))

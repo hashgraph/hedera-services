@@ -89,7 +89,7 @@ public class MixedOpsRestartTest extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec restartMixedOps() {
+    final HapiSpec restartMixedOps() {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         Random r = new Random(38582L);
