@@ -22,6 +22,7 @@ import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
@@ -166,7 +167,10 @@ public class ServicesMain implements SwirldMain {
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.
      */
-    private static NodeId ensureSingleNode(final List<NodeId> nodesToRun, final Set<NodeId> localNodesToStart) {
+    private static NodeId ensureSingleNode(
+            @NonNull final List<NodeId> nodesToRun, @NonNull final Set<NodeId> localNodesToStart) {
+        requireNonNull(nodesToRun);
+        requireNonNull(localNodesToStart);
         // If no node is specified on the command line and detection by AB IP address is ambiguous, exit.
         if (nodesToRun.size() > 1 && localNodesToStart.isEmpty()) {
             logger.error(
@@ -202,7 +206,8 @@ public class ServicesMain implements SwirldMain {
      * @param addressBookPath the relative path and file name of the address book.
      * @return the address book.
      */
-    private static AddressBook loadAddressBook(final String addressBookPath) {
+    private static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
+        requireNonNull(addressBookPath);
         try {
             final LegacyConfigProperties props =
                     LegacyConfigPropertiesLoader.loadConfigFile(FileUtils.getAbsolutePath(addressBookPath));
