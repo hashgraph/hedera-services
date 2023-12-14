@@ -16,6 +16,8 @@
 
 package com.swirlds.common.test.fixtures.crypto;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.interfaces.Sign;
@@ -260,7 +262,7 @@ public class SignaturePool {
 
             System.arraycopy(sig, 0, buffer, offset, sig.length);
         } catch (Exception ex) {
-            logger.error(LOGM_EXCEPTION, "Adv Crypto Subsystem: Failed to sign transaction", ex);
+            logger.error(EXCEPTION.getMarker(), "Adv Crypto Subsystem: Failed to sign transaction", ex);
         }
     }
 

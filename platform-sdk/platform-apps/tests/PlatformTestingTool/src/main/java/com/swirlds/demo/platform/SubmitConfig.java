@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.utility.throttle.Throttle;
 import java.util.HashMap;
 import java.util.Map;
@@ -184,7 +186,7 @@ public class SubmitConfig {
                 throttleForTxCategory.put(txCategory, throttle);
             } catch (IllegalArgumentException ex) {
                 logger.error(
-                        ERROR,
+                        EXCEPTION.getMarker(),
                         "Name {} is not a valid transaction category or {} is not a valid value.",
                         txCategoryName,
                         tps);
@@ -201,7 +203,10 @@ public class SubmitConfig {
                 throttleForTxTypes.put(txType, throttle);
             } catch (IllegalArgumentException ex) {
                 logger.error(
-                        ERROR, "Name {} is not a valid transaction type or {} is not a valid value.", txTypeName, tps);
+                        EXCEPTION.getMarker(),
+                        "Name {} is not a valid transaction type or {} is not a valid value.",
+                        txTypeName,
+                        tps);
             }
         });
     }

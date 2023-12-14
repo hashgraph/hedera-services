@@ -39,9 +39,9 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
     private VerificationStrategy verificationStrategy;
 
     @Mock
-    private CryptoTransferRecordBuilder recordBuilder;
+    private ContractCallRecordBuilder recordBuilder;
 
     @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
@@ -93,7 +93,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(CryptoTransferRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
 
@@ -112,7 +112,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(CryptoTransferRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
 
@@ -131,7 +131,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(CryptoTransferRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 

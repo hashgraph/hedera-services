@@ -53,7 +53,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec fileAppendRecordSanityChecks() {
+    final HapiSpec fileAppendRecordSanityChecks() {
         return defaultHapiSpec("FileAppendRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -66,7 +66,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec fileCreateRecordSanityChecks() {
+    final HapiSpec fileCreateRecordSanityChecks() {
         return defaultHapiSpec("FileCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
                 .when(fileCreate("test").via("txn"))
@@ -77,7 +77,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec fileDeleteRecordSanityChecks() {
+    final HapiSpec fileDeleteRecordSanityChecks() {
         return defaultHapiSpec("FileDeleteRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -90,7 +90,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec fileUpdateRecordSanityChecks() {
+    final HapiSpec fileUpdateRecordSanityChecks() {
         return defaultHapiSpec("FileUpdateRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
