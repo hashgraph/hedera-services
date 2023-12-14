@@ -29,14 +29,15 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,8 +61,8 @@ public final class PreconsensusEventReplayWorkflow {
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
-     * @param stateManagementComponent           manages various copies of the state
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
+     * @param latestImmutableState               provides the latest immutable state if available
      * @param flushIntakePipeline                flushes the intake pipeline. only used if the new intake pipeline is
      *                                           enabled
      */
@@ -75,8 +76,8 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
-            @NonNull final StateManagementComponent stateManagementComponent,
             final long initialMinimumGenerationNonAncient,
+            @NonNull final Supplier<ReservedSignedState> latestImmutableState,
             @NonNull Runnable flushIntakePipeline) {
 
         Objects.requireNonNull(platformContext);
@@ -88,7 +89,7 @@ public final class PreconsensusEventReplayWorkflow {
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(consensusRoundHandler);
         Objects.requireNonNull(stateHashSignQueue);
-        Objects.requireNonNull(stateManagementComponent);
+        Objects.requireNonNull(latestImmutableState);
 
         logger.info(
                 STARTUP.getMarker(),
@@ -97,6 +98,17 @@ public final class PreconsensusEventReplayWorkflow {
 
         try {
             final Instant start = time.now();
+            final Instant firstStateTimestamp;
+            final long firstStateRound;
+            try (final ReservedSignedState startState = latestImmutableState.get()) {
+                if (startState == null || startState.isNull()) {
+                    firstStateTimestamp = null;
+                    firstStateRound = -1;
+                } else {
+                    firstStateTimestamp = startState.get().getConsensusTimestamp();
+                    firstStateRound = startState.get().getRound();
+                }
+            }
 
             final IOIterator<GossipEvent> iterator =
                     preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
@@ -117,7 +129,9 @@ public final class PreconsensusEventReplayWorkflow {
             final Duration elapsed = Duration.between(start, finish);
 
             logReplayInfo(
-                    stateManagementComponent,
+                    firstStateTimestamp,
+                    firstStateRound,
+                    latestImmutableState,
                     eventReplayPipeline.getEventCount(),
                     eventReplayPipeline.getTransactionCount(),
                     elapsed);
@@ -163,24 +177,22 @@ public final class PreconsensusEventReplayWorkflow {
      * Write information about the replay to disk.
      */
     private static void logReplayInfo(
-            @NonNull final StateManagementComponent stateManagementComponent,
+            @Nullable final Instant firstTimestamp,
+            final long firstRound,
+            @NonNull final Supplier<ReservedSignedState> latestImmutableState,
             final long eventCount,
             final long transactionCount,
             @NonNull final Duration elapsedTime) {
 
-        try (final ReservedSignedState latestConsensusRound =
-                stateManagementComponent.getLatestImmutableState("SwirldsPlatform.replayPreconsensusEventStream()")) {
+        try (final ReservedSignedState latestConsensusRound = latestImmutableState.get()) {
 
-            if (latestConsensusRound.isNull()) {
+            if (latestConsensusRound == null || latestConsensusRound.isNull()) {
                 logger.info(
                         STARTUP.getMarker(),
                         "Replayed {} preconsensus events. No rounds reached consensus.",
                         commaSeparatedNumber(eventCount));
                 return;
             }
-
-            final Instant firstTimestamp = stateManagementComponent.getFirstStateTimestamp();
-            final long firstRound = stateManagementComponent.getFirstStateRound();
 
             if (firstTimestamp == null) {
                 // This should be impossible. If we have a state, we should have a timestamp.
