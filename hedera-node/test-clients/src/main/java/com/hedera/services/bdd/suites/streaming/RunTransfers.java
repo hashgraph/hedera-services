@@ -60,7 +60,7 @@ public class RunTransfers extends HapiSuite {
         });
     }
 
-    private HapiSpec runTransfers() {
+    final HapiSpec runTransfers() {
         return defaultHapiSpec("RunTransfers")
                 .given()
                 .when()

@@ -61,7 +61,7 @@ public class ConsensusQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getTopicInfoStress() {
+    final HapiSpec getTopicInfoStress() {
         return defaultHapiSpec("GetTopicInfoStress")
                 .given()
                 .when()
