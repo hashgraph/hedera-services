@@ -19,6 +19,7 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 class TestTransactionKeys implements TransactionKeys {
@@ -33,11 +34,13 @@ class TestTransactionKeys implements TransactionKeys {
     }
 
     @Override
+    @NonNull
     public Key payerKey() {
         return payerKey;
     }
 
     @Override
+    @NonNull
     public Set<Key> requiredNonPayerKeys() {
         return requiredKeys;
     }
