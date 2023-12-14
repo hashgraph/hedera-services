@@ -266,7 +266,7 @@ jobs:
   artifact-determinism:
     name: Artifact Determinism
     uses: ./.github/workflows/zxc-verify-gradle-build-determinism.yaml
-    needs: 
+    needs:
       - build
     if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
     with:
