@@ -217,7 +217,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(
             @NonNull final Address recipient, @NonNull final MessageFrame frame) {
-        final var gasCost = enhancement.operations().lazyCreationCostInGas();
+        final var gasCost = enhancement.operations().lazyCreationCostInGas(recipient);
         if (gasCost > frame.getRemainingGas()) {
             return Optional.of(INSUFFICIENT_GAS);
         }

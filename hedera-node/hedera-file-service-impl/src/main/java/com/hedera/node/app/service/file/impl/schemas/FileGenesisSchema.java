@@ -49,9 +49,11 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,6 +63,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -78,18 +81,38 @@ public class FileGenesisSchema extends Schema {
      */
     private static final int MAX_FILES_HINT = 50_000_000;
 
+    private final ConfigProvider configProvider;
+
     /** Create a new instance */
-    public FileGenesisSchema() {
+    public FileGenesisSchema(@NonNull final ConfigProvider configProvider) {
         super(RELEASE_045_VERSION);
+        this.configProvider = requireNonNull(configProvider);
     }
 
     @NonNull
     @Override
     @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(
-                StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT),
-                StateDefinition.queue(UPGRADE_DATA_KEY, ProtoBytes.PROTOBUF));
+        Set<StateDefinition> definitions = new LinkedHashSet<>();
+        definitions.add(StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
+
+        final FilesConfig filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final HederaConfig hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final LongPair fileNums = filesConfig.softwareUpdateRange();
+        final long firstUpdateNum = fileNums.left();
+        final long lastUpdateNum = fileNums.right();
+
+        // initializing the files 150 -159
+        for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
+            final var fileId = FileID.newBuilder()
+                    .shardNum(hederaConfig.shard())
+                    .realmNum(hederaConfig.realm())
+                    .fileNum(updateNum)
+                    .build();
+            definitions.add(StateDefinition.queue(UPGRADE_DATA_KEY.formatted(fileId), ProtoBytes.PROTOBUF));
+        }
+
+        return definitions;
     }
 
     @Override
@@ -533,14 +556,15 @@ public class FileGenesisSchema extends Schema {
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
 
-        // These files all start off as an empty byte array. Only file 150 is actually used, the others are not, but
-        // may be used in the future.
+        // These files all start off as an empty byte array for all upgrade files from 150-159.
+        // But only file 150 is actually used, the others are not, but may be used in the future.
         logger.debug("Creating genesis software update files");
         final var fileNums = filesConfig.softwareUpdateRange();
         final var firstUpdateNum = fileNums.left();
         final var lastUpdateNum = fileNums.right();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        // initializing the files 150 -159
         for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
             final var fileId = FileID.newBuilder()
                     .shardNum(hederaConfig.shard())

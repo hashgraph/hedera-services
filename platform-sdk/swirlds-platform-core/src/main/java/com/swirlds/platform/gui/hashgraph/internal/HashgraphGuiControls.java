@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import static com.swirlds.gui.GuiUtils.wrap;
-import static com.swirlds.gui.hashgraph.HashgraphGuiConstants.DEFAULT_GENERATIONS_TO_DISPLAY;
+import static com.swirlds.platform.gui.GuiUtils.wrap;
+import static com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants.DEFAULT_GENERATIONS_TO_DISPLAY;
 
-import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.hashgraph.HashgraphPictureOptions;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.gui.GuiUtils;
+import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
+import com.swirlds.platform.system.events.EventConstants;
 import java.awt.Checkbox;
 import java.awt.Color;
 import java.awt.Component;

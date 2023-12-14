@@ -76,7 +76,7 @@ public class UpdateServerFiles extends HapiSuite {
 
     // Zip all files under target directory and add an unzip and launch script to it
     // then send to server to update server
-    private HapiSpec uploadGivenDirectory() {
+    final HapiSpec uploadGivenDirectory() {
 
         log.info("Creating zip file from {}", uploadPath);
         // create directory if uploadPath doesn't exist

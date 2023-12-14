@@ -33,9 +33,18 @@ public enum SnapshotMatchMode {
      */
     NONDETERMINISTIC_FUNCTION_PARAMETERS,
     /**
+     * Allows for non-deterministic constructor parameters.
+     */
+    NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+    /**
      * Allows for non-deterministic amounts.
      */
     NONDETERMINISTIC_TRANSACTION_FEES,
+    /**
+     * Allows for non-deterministic nonce. This can happen when there is a NodeStakeUpdate transaction in the
+     * mix.
+     */
+    NONDETERMINISTIC_NONCE,
     /**
      * Lets a spec advertise itself as being non-deterministic.
      *

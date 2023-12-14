@@ -189,7 +189,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
         };
     }
 
-    private HapiSpec runTokenTransferBasicLoadTest() {
+    final HapiSpec runTokenTransferBasicLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         Supplier<HapiSpecOperation[]> tokenTransferBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};

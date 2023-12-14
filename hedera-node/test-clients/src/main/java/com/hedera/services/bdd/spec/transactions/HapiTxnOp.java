@@ -115,6 +115,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return submitTime;
     }
 
+    public Optional<EnumSet<ResponseCodeEnum>> getPermissibleStatuses() {
+        return permissibleStatuses;
+    }
+
     public ResponseCodeEnum getExpectedStatus() {
         return expectedStatus.orElse(SUCCESS);
     }

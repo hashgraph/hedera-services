@@ -112,7 +112,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotUseMoreThanChildContractLimit() {
+    final HapiSpec cannotUseMoreThanChildContractLimit() {
         final var illegalNumChildren =
                 HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
         final var fungible = "fungible";
@@ -161,7 +161,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotSendValueToTokenAccount() {
+    final HapiSpec cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";
         final var contract = "ManyChildren";
@@ -279,7 +279,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec systemCannotDeleteOrUndeleteContracts() {
+    final HapiSpec systemCannotDeleteOrUndeleteContracts() {
         return defaultHapiSpec("SystemCannotDeleteOrUndeleteContracts")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
@@ -294,7 +294,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deleteWorksWithMutableContract() {
+    final HapiSpec deleteWorksWithMutableContract() {
         final var tbdFile = "FTBD";
         final var tbdContract = "CTBD";
         return defaultHapiSpec("DeleteWorksWithMutableContract")
@@ -312,7 +312,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deleteFailsWithImmutableContract() {
+    final HapiSpec deleteFailsWithImmutableContract() {
         return defaultHapiSpec("DeleteFailsWithImmutableContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).omitAdminKey())
                 .when()
@@ -320,7 +320,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deleteTransfersToAccount() {
+    final HapiSpec deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
                         cryptoCreate(RECEIVER_CONTRACT_NAME).balance(0L),
@@ -331,7 +331,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deleteTransfersToContract() {
+    final HapiSpec deleteTransfersToContract() {
         final var suffix = "Receiver";
 
         return defaultHapiSpec("DeleteTransfersToContract")
