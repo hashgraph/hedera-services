@@ -28,12 +28,9 @@ import java.time.Duration;
  *                                      directory, unless the provided path begins with "/", in which case it will be
  *                                      interpreted as an absolute path.
  * @param mainClassNameOverride         Typically, the fully qualified name of the application class implementing
- *                                      {@link com.swirlds.common.system.SwirldMain SwirldMain} is used as a directory
+ *                                      SwirldMain is used as a directory
  *                                      name when saving signed states. If this property is not the empty string then it
  *                                      overrides the main class name for signed states.
- * @param stateSavingQueueSize          The number of states permitted to sit in the signed state file manager's queue
- *                                      of states being written. If this queue backs up then some states may not be
- *                                      written to disk.
  * @param saveStatePeriod               The frequency of writes of a state to disk every this many seconds (0 to never
  *                                      write).
  * @param signedStateDisk               Keep at least this many of the old complete signed states on disk. This should
@@ -92,7 +89,6 @@ import java.time.Duration;
 public record StateConfig(
         @ConfigProperty(defaultValue = "data/saved") Path savedStateDirectory,
         @ConfigProperty(defaultValue = "") String mainClassNameOverride,
-        @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
         @ConfigProperty(defaultValue = "900") int saveStatePeriod,
         @ConfigProperty(defaultValue = "5") int signedStateDisk,
         @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
@@ -115,8 +111,7 @@ public record StateConfig(
     /**
      * Get the main class name that should be used for signed states.
      *
-     * @param defaultMainClassName the default main class name derived from the
-     *                             {@link com.swirlds.common.system.SwirldMain SwirldMain} name.
+     * @param defaultMainClassName the default main class name derived from the SwirldMain name.
      * @return the main class name that should be used for signed states
      */
     public String getMainClassName(final String defaultMainClassName) {

@@ -17,18 +17,17 @@
 package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.BaseEvent;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
@@ -94,7 +93,7 @@ public class SignatureValidator implements GossipEventValidator {
 
         if (!valid) {
             logger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     """
 							failed the signature check {}
 							with sig {}

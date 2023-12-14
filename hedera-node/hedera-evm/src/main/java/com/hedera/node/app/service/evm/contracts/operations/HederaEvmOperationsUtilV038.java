@@ -26,12 +26,13 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 
 public interface HederaEvmOperationsUtilV038 {
-    public static String EVM_VERSION_0_45 = "v0.45";
+    public static String EVM_VERSION_0_46 = "v0.46";
 
     /**
      * An extracted address check and execution of extended Hedera Operations. Halts the execution
@@ -61,7 +62,9 @@ public interface HederaEvmOperationsUtilV038 {
             if (systemAccountDetector.test(address)) {
                 return systemAccountExecutionSupplier.get();
             }
-            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_45)
+            // skip target entity existing check when
+            // evm >= 0.46 or FF is enabled or the target is grandfather contract
+            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_46)
                     || !evmProperties.allowCallsToNonContractAccounts()
                     || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {
                 if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
@@ -71,10 +74,10 @@ public interface HederaEvmOperationsUtilV038 {
             }
 
             return supplierExecution.get();
-        } catch (final FixedStack.UnderflowException ufe) {
+        } catch (final UnderflowException ufe) {
             return new Operation.OperationResult(
                     supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
-        } catch (final FixedStack.OverflowException ofe) {
+        } catch (final OverflowException ofe) {
             return new Operation.OperationResult(
                     supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }

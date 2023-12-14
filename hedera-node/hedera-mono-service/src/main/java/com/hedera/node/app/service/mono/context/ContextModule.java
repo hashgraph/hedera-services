@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.context;
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

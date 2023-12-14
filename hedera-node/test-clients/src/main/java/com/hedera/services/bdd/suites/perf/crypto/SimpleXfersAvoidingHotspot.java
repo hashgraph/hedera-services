@@ -69,7 +69,7 @@ public class SimpleXfersAvoidingHotspot extends HapiSuite {
         });
     }
 
-    private HapiSpec runSimpleXfers() {
+    final HapiSpec runSimpleXfers() {
         return HapiSpec.customHapiSpec("RunTokenTransfers")
                 .withProperties(Map.of(
                         //				"default.keyAlgorithm", "SECP256K1"

@@ -8,9 +8,23 @@ contract InternalCaller {
         _addr.call(abi.encodeWithSignature("nonExisting()"));
     }
 
+    function staticCallNonExisting(address _addr) external {
+        _addr.staticcall(abi.encodeWithSignature("nonExisting()"));
+    }
+
+    function staticCallExternalFunction(address _addr) external returns (uint) {
+        (bool success, bytes memory result) = _addr.staticcall(abi.encodeWithSignature("externalFunction()"));
+        return success && result.length > 0 ? abi.decode(result, (uint)) : 0;
+    }
+
+    function delegateCallExternalFunction(address _addr) external returns (uint) {
+        (bool success, bytes memory result) = _addr.delegatecall(abi.encodeWithSignature("externalFunction()"));
+        return success && result.length > 0 ? abi.decode(result, (uint)) : 0;
+    }
+
     function callExternalFunction(address _addr) external returns (uint) {
         (bool success, bytes memory result) = _addr.call(abi.encodeWithSignature("externalFunction()"));
-        return abi.decode(result, (uint));
+        return success && result.length > 0 ? abi.decode(result, (uint)) : 0;
     }
 
     function callRevertWithRevertReason(address _addr) external {
@@ -31,5 +45,9 @@ contract InternalCaller {
 
     function callWithValueTo(address _addr) external {
         _addr.call{value: 1}("");
+    }
+
+    function selfdestruct(address payable _addr) external {
+        selfdestruct(_addr);
     }
 }

@@ -86,7 +86,7 @@ public class RecordCreationSuite extends HapiSuite {
                 submittingNodeStillPaidIfServiceFeesOmitted());
     }
 
-    private HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
+    final HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -139,7 +139,7 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
-    private HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
+    final HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final String disquietingMemo = "\u0000his is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
@@ -190,7 +190,7 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
-    private HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
+    final HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -242,7 +242,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec payerRecordCreationSanityChecks() {
+    final HapiSpec payerRecordCreationSanityChecks() {
         return defaultHapiSpec("PayerRecordCreationSanityChecks")
                 .given(cryptoCreate(PAYER))
                 .when(
@@ -270,7 +270,7 @@ public class RecordCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec accountsGetPayerRecordsIfSoConfigured() {
+    final HapiSpec accountsGetPayerRecordsIfSoConfigured() {
         final var txn = "ofRecord";
 
         return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")

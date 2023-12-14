@@ -33,6 +33,7 @@ abstract class RemoveAnnotationLibrariesMetadataRule : ComponentMetadataRule {
             withDependencies {
                 removeAll { it.name == "animal-sniffer-annotations" }
                 removeAll { it.name == "checker-qual" }
+                removeAll { it.name == "checker-compat-qual" }
                 removeAll { it.name == "error_prone_annotations" }
                 removeAll { it.name == "j2objc-annotations" }
                 removeAll { it.name == "listenablefuture" }

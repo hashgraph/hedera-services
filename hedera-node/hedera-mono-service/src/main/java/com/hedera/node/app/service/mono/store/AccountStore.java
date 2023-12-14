@@ -99,13 +99,12 @@ public class AccountStore {
         return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
     }
 
-    public boolean isContractUsable(final Id id) {
+    public ResponseCodeEnum isContractUsable(final Id id) {
         try {
             loadContract(id);
-            return true;
+            return OK;
         } catch (InvalidTransactionException e) {
-            validateFalse(e.getResponseCode() == CONTRACT_DELETED, CONTRACT_DELETED);
-            return false;
+            return e.getResponseCode();
         }
     }
 

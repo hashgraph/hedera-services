@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +37,8 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,7 @@ class HederaExtCodeHashOperationV038Test {
     private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
-    private AbstractLedgerEvmWorldUpdater worldUpdater;
+    private AbstractLedgerEvmWorldUpdater<?, ?> worldUpdater;
 
     @Mock
     private Account account;
@@ -100,7 +101,7 @@ class HederaExtCodeHashOperationV038Test {
     void executeResolvesToInvalidSolidityAddressAndAllowCallsToNonContractAccountsDisabled() {
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
         given(evmProperties.allowCallsToNonContractAccounts()).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
@@ -172,7 +173,7 @@ class HederaExtCodeHashOperationV038Test {
 
     @Test
     void executeThrowsInsufficientStackItems() {
-        given(mf.popStackItem()).willThrow(FixedStack.UnderflowException.class);
+        given(mf.popStackItem()).willThrow(UnderflowException.class);
 
         var opResult = subject.execute(mf, evm);
 
@@ -185,7 +186,7 @@ class HederaExtCodeHashOperationV038Test {
         // given
         subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
-        doThrow(FixedStack.OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
+        doThrow(OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
         // when
         var opResult = subject.execute(mf, evm);
         // then

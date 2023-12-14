@@ -126,6 +126,7 @@ class UpdateTrackingAccountTest {
     @Test
     void getsWrappedCodeHashIfConstructedWithAccount() {
         final var mockCode = Bytes.minimalBytes(4321L);
+        given(entityAccess.isUsable(targetAddress)).willReturn(true);
         given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(mockCode);
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
@@ -152,6 +153,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void hasCodeDelegatesToWrappedIfNotUpdated() {
+        given(entityAccess.isUsable(targetAddress)).willReturn(true);
         given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(Bytes.EMPTY);
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);

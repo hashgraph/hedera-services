@@ -54,11 +54,24 @@ public interface HapiTestNode {
      */
     void waitForActive(long seconds) throws TimeoutException;
 
+    void waitForBehind(long seconds) throws TimeoutException;
+
+    void waitForReconnectComplete(long seconds) throws TimeoutException;
+
     /**
      * Stops the node software gracefully
      */
     void shutdown();
 
+    /**
+     * Blocks the network port on the node so that it cannot communicate with other nodes.
+     */
+    void blockNetworkPort();
+
+    /**
+     * Unblocks the network port on the node so that it can communicate with other nodes.
+     */
+    void unblockNetworkPort();
     /**
      * Waits for the node to shut down.
      *

@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.state.Lifecycle;
@@ -28,7 +29,7 @@ import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -89,7 +90,7 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
                 globalMetrics.subscribe(endpoint::handleMetricsChange);
                 snapshotService.subscribe(endpoint::handleSnapshots);
             } catch (final IOException e) {
-                logger.error("Exception while setting up Prometheus endpoint", e);
+                logger.error(EXCEPTION.getMarker(), "Exception while setting up Prometheus endpoint", e);
             }
         }
         prometheusEndpoint = endpoint;

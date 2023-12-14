@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
@@ -161,7 +160,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotPayForAnyTransactionWithContractAccount() {
+    final HapiSpec cannotPayForAnyTransactionWithContractAccount() {
         final var cryptoAdminKey = "cryptoAdminKey";
         final var contractNum = new AtomicLong();
         final var contract = "PayableConstructor";
@@ -182,7 +181,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferringMissingNftViaApprovalFailsWithInvalidNftId() {
+    final HapiSpec transferringMissingNftViaApprovalFailsWithInvalidNftId() {
         return defaultHapiSpec("TransferringMissingNftViaApprovalFailsWithInvalidNftId")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -222,7 +221,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canDeleteAllowanceFromDeletedSpender() {
+    final HapiSpec canDeleteAllowanceFromDeletedSpender() {
         return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -319,7 +318,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
+    final HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
         return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -405,7 +404,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
+    final HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
         return defaultHapiSpec("approveForAllSpenderCanDelegateOnNFT", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -469,7 +468,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canGrantFungibleAllowancesWithTreasuryOwner() {
+    final HapiSpec canGrantFungibleAllowancesWithTreasuryOwner() {
         return defaultHapiSpec("canGrantFungibleAllowancesWithTreasuryOwner", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -504,7 +503,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canGrantNftAllowancesWithTreasuryOwner() {
+    final HapiSpec canGrantNftAllowancesWithTreasuryOwner() {
         return defaultHapiSpec("canGrantNftAllowancesWithTreasuryOwner", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -548,7 +547,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidOwnerFails() {
+    final HapiSpec invalidOwnerFails() {
         return defaultHapiSpec("invalidOwnerFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -607,13 +606,12 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .blankMemo()
                                 .hasPrecheck(INVALID_ALLOWANCE_OWNER_ID))
                 .then(getAccountDetails(OWNER)
-                        .payingWith(GENESIS)
-                        .hasCostAnswerPrecheck(ACCOUNT_DELETED)
-                        .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                        .has(accountDetailsWith().deleted(true))
+                        .payingWith(GENESIS));
     }
 
     @HapiTest
-    private HapiSpec invalidSpenderFails() {
+    final HapiSpec invalidSpenderFails() {
         return defaultHapiSpec("invalidSpenderFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -670,7 +668,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noOwnerDefaultsToPayer() {
+    final HapiSpec noOwnerDefaultsToPayer() {
         return defaultHapiSpec("noOwnerDefaultsToPayer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -729,7 +727,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canHaveMultipleOwners() {
+    final HapiSpec canHaveMultipleOwners() {
         return defaultHapiSpec("canHaveMultipleOwners", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -824,7 +822,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec feesAsExpected() {
+    final HapiSpec feesAsExpected() {
         return defaultHapiSpec("feesAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -949,7 +947,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec serialsInAscendingOrder() {
+    final HapiSpec serialsInAscendingOrder() {
         return defaultHapiSpec("serialsInAscendingOrder")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -995,7 +993,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
+    final HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
         return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1086,7 +1084,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec tokenExceedsMaxSupplyFails() {
+    final HapiSpec tokenExceedsMaxSupplyFails() {
         return defaultHapiSpec("tokenExceedsMaxSupplyFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1113,7 +1111,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesSerialNums() {
+    final HapiSpec validatesSerialNums() {
         return defaultHapiSpec("validatesSerialNums")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1162,7 +1160,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTokenTypeFails() {
+    final HapiSpec invalidTokenTypeFails() {
         return defaultHapiSpec("invalidTokenTypeFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1212,7 +1210,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec emptyAllowancesRejected() {
+    final HapiSpec emptyAllowancesRejected() {
         return defaultHapiSpec("emptyAllowancesRejected")
                 .given(cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))
                 .when(cryptoApproveAllowance().hasPrecheck(EMPTY_ALLOWANCES).fee(ONE_HUNDRED_HBARS))
@@ -1220,7 +1218,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec tokenNotAssociatedToAccountFails() {
+    final HapiSpec tokenNotAssociatedToAccountFails() {
         return defaultHapiSpec("tokenNotAssociatedToAccountFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1271,7 +1269,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec negativeAmountFailsForFungible() {
+    final HapiSpec negativeAmountFailsForFungible() {
         return defaultHapiSpec("negativeAmountFailsForFungible")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1326,7 +1324,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathWorks() {
+    final HapiSpec happyPathWorks() {
         return defaultHapiSpec("happyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1392,7 +1390,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec duplicateEntriesGetsReplacedWithDifferentTxn() {
+    final HapiSpec duplicateEntriesGetsReplacedWithDifferentTxn() {
         return defaultHapiSpec("duplicateEntriesGetsReplacedWithDifferentTxn", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1484,7 +1482,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotHaveMultipleAllowedSpendersForTheSameNFTSerial() {
+    final HapiSpec cannotHaveMultipleAllowedSpendersForTheSameNFTSerial() {
         return defaultHapiSpec(
                         "CannotHaveMultipleAllowedSpendersForTheSameNFTSerial", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
@@ -1564,7 +1562,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec approveForAllDoesNotSetExplicitNFTSpender() {
+    final HapiSpec approveForAllDoesNotSetExplicitNFTSpender() {
         return defaultHapiSpec("approveForAllDoesNotSetExplicitNFTSpender", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1604,7 +1602,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec scheduledCryptoApproveAllowanceWorks() {
+    final HapiSpec scheduledCryptoApproveAllowanceWorks() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),

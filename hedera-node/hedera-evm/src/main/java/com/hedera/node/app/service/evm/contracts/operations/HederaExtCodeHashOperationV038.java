@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
@@ -27,7 +27,8 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
@@ -63,8 +64,11 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
                 frame.pushStackItem(UInt256.ZERO);
                 return new OperationResult(cost(true), null);
             }
-            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_45)
-                    || !evmProperties.allowCallsToNonContractAccounts()) {
+            // skip target entity existing check when
+            // evm >= 0.46 or FF is enabled or the target is grandfather contract
+            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_46)
+                    || !evmProperties.allowCallsToNonContractAccounts()
+                    || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {
                 if (!addressValidator.test(address, frame)) {
                     return new OperationResult(cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
                 }
@@ -84,9 +88,9 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
 
                 return new OperationResult(localCost, null);
             }
-        } catch (final FixedStack.UnderflowException ufe) {
+        } catch (final UnderflowException ufe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
-        } catch (final FixedStack.OverflowException ofe) {
+        } catch (final OverflowException ofe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }
     }
