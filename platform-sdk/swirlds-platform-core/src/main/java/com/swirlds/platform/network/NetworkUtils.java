@@ -79,7 +79,7 @@ public final class NetworkUtils {
             String formattedException = NetworkUtils.formatException(e);
             logger.warn(marker, "Connection broken: {} {}", description, formattedException);
         } else {
-            logger.error(marker, "Connection broken: {}", description, e);
+            logger.error(EXCEPTION.getMarker(), "Connection broken: {}", description, e);
         }
     }
 
