@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,7 +61,7 @@ public class PayloadDistribution {
             System.out.println("ERROR Payload distribution array is not same size " + ratioDistribution.length
                     + sizeDistribution.length + typeDistribution.length);
             logger.error(
-                    ERROR,
+                    EXCEPTION.getMarker(),
                     " Payload distribution array is not same size {} {} {} ",
                     ratioDistribution.length,
                     sizeDistribution.length,
@@ -82,7 +84,7 @@ public class PayloadDistribution {
                     sum += ratioDistribution[i];
                 }
             } catch (ArrayIndexOutOfBoundsException e) {
-                logger.error(ERROR, "", e);
+                logger.error(EXCEPTION.getMarker(), "", e);
             }
         }
         return property;
