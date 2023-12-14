@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.virtualmerkle.transaction.handler;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLED;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.CreateExistingAccount;
@@ -159,7 +160,10 @@ public class VirtualMerkleTransactionHandler {
                 smartContractByteCodeVirtualMap.get(byteCodeKey);
 
         if (smartContractByteCodeMapValue == null) {
-            logger.error(ERROR, "Value for key {} was not found inside smart contract bytecode map.", byteCodeKey);
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Value for key {} was not found inside smart contract bytecode map.",
+                    byteCodeKey);
             return;
         }
 
@@ -167,7 +171,8 @@ public class VirtualMerkleTransactionHandler {
 
         final SmartContractMapValue smartContractKeyValuePairsCounter = smartContractVirtualMap.get(contractKey);
         if (smartContractKeyValuePairsCounter == null) {
-            logger.error(ERROR, "Value for key {} was not found inside smart contract map.", contractKey);
+            logger.error(
+                    EXCEPTION.getMarker(), "Value for key {} was not found inside smart contract map.", contractKey);
             return;
         }
         final long totalKeyValuePairs = smartContractKeyValuePairsCounter.getValueAsLong();
@@ -179,7 +184,10 @@ public class VirtualMerkleTransactionHandler {
                     new SmartContractMapKey(methodExecution.getContractId(), keyValuePairIdx);
             final SmartContractMapValue smartContractMapValue = smartContractVirtualMap.get(smartContractMapKey);
             if (smartContractMapValue == null) {
-                logger.error(ERROR, "Value for key {} was not found inside smart contract map.", smartContractMapKey);
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Value for key {} was not found inside smart contract map.",
+                        smartContractMapKey);
                 return;
             }
         }
@@ -190,7 +198,10 @@ public class VirtualMerkleTransactionHandler {
                     new SmartContractMapKey(methodExecution.getContractId(), keyValuePairIdx);
             final SmartContractMapValue smartContractMapValue = smartContractVirtualMap.get(smartContractMapKey);
             if (smartContractMapValue == null) {
-                logger.error(ERROR, "Value for key {} was not found inside smart contract map.", smartContractMapKey);
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Value for key {} was not found inside smart contract map.",
+                        smartContractMapKey);
                 return;
             }
 
@@ -365,7 +376,8 @@ public class VirtualMerkleTransactionHandler {
                 final AccountVirtualMapValue virtualMapValue = virtualMap.get(accountVirtualMapKey);
                 if (virtualMapValue == null) {
                     notMismatching.set(false);
-                    logger.error(ERROR, "An account from the expected map is not present inside the state.");
+                    logger.error(
+                            EXCEPTION.getMarker(), "An account from the expected map is not present inside the state.");
                     return;
                 }
                 final MapValueData mapValueData = new MapValueData(
@@ -377,21 +389,18 @@ public class VirtualMerkleTransactionHandler {
 
                 if (!mapValueData.calculateHash().equals(expectedValue.getHash())) {
                     notMismatching.set(false);
-                    logger.error(
-                            ERROR,
-                            "The hash of an account from the expected map is not equal to the same account in state.");
                 }
             } else if (lastTransactionType == CreateExistingAccount) {
                 if (!virtualMap.containsKey(accountVirtualMapKey)) {
                     notMismatching.set(false);
-                    logger.error(ERROR, "A created account does not exist inside the state.");
+                    logger.error(EXCEPTION.getMarker(), "A created account does not exist inside the state.");
                 }
             } else if (lastTransactionType == Delete
                     || lastTransactionType == DeleteNotExistentAccount
                     || lastTransactionType == UpdateNotExistentAccount) {
                 if (virtualMap.containsKey(accountVirtualMapKey)) {
                     notMismatching.set(false);
-                    logger.error(ERROR, "A deleted account is still present inside the state.");
+                    logger.error(EXCEPTION.getMarker(), "A deleted account is still present inside the state.");
                 }
             }
         });

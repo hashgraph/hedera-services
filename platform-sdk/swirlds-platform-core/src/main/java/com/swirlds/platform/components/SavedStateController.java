@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
@@ -110,7 +111,7 @@ public class SavedStateController {
 
         if (!accepted) {
             logger.error(
-                    STATE_TO_DISK.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Unable to save signed state to disk for round {} due to backlog of "
                             + "operations in the SignedStateManager task queue.",
                     signedState.getRound());

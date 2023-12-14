@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
@@ -94,7 +93,7 @@ public class SignatureValidator implements GossipEventValidator {
 
         if (!valid) {
             logger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     """
 							failed the signature check {}
 							with sig {}

@@ -16,6 +16,8 @@
 
 package com.swirlds.common.test.fixtures.stream;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -78,7 +80,7 @@ public class WriteToStreamConsumer implements LinkedObjectStream<ObjectForTestSt
             this.runningHash = object.getRunningHash();
             consumedCount++;
         } catch (IOException ex) {
-            logger.error(LOGM_EXCEPTION, "Failed to add object", ex);
+            logger.error(EXCEPTION.getMarker(), "Failed to add object", ex);
         }
     }
 
@@ -93,7 +95,7 @@ public class WriteToStreamConsumer implements LinkedObjectStream<ObjectForTestSt
             outputStream.close();
             isClosed = true;
         } catch (IOException ex) {
-            logger.error(LOGM_EXCEPTION, "Failed to close output stream", ex);
+            logger.error(EXCEPTION.getMarker(), "Failed to close output stream", ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
@@ -107,7 +109,7 @@ public class WriteToStreamConsumer implements LinkedObjectStream<ObjectForTestSt
         try {
             outputStream.close();
         } catch (IOException ex) {
-            logger.error(LOGM_EXCEPTION, "Failed to close output stream", ex);
+            logger.error(EXCEPTION.getMarker(), "Failed to close output stream", ex);
         }
     }
 

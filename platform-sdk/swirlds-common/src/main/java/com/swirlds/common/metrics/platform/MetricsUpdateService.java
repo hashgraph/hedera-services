@@ -118,7 +118,8 @@ class MetricsUpdateService implements Startable {
                 return false;
             } catch (final ExecutionException e) {
                 // this should not happen
-                logger.error("MetricsUpdateService.runUpdaters threw an unexpected exception", e);
+                logger.error(
+                        EXCEPTION.getMarker(), "MetricsUpdateService.runUpdaters threw an unexpected exception", e);
             } catch (final CancellationException e) {
                 // ignore, this is expected behavior
             }

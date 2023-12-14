@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
@@ -188,7 +189,7 @@ public class ReconnectProtocol implements Protocol {
         if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
             stateIncompleteLogger.error(
-                    RECONNECT.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state."
                             + " The signed state manager attempted to provide a state that was not"
                             + " fully signed, which should not be possible.",

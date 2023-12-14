@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.event.report.EventStreamMultiNodeReport;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
@@ -195,7 +195,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
                 final EventStreamReport individualReport = generateReport(directory, bound);
 
                 if (individualReport == null) {
-                    logger.error(LogMarker.CLI.getMarker(), "No event stream files found in `{}`", directory);
+                    logger.error(EXCEPTION.getMarker(), "No event stream files found in `{}`", directory);
                     return;
                 }
 
@@ -208,7 +208,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
         } catch (final NoSuchElementException e) {
             // the multi report is empty
             logger.error(
-                    LogMarker.CLI.getMarker(),
+                    EXCEPTION.getMarker(),
                     "No event stream files found in any child directory of `{}`",
                     eventStreamDirectory);
         }
@@ -237,7 +237,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             final EventStreamReport report = generateReport(eventStreamDirectory, bound);
 
             if (report == null) {
-                logger.error(LogMarker.CLI.getMarker(), "No event stream files found in `{}`", eventStreamDirectory);
+                logger.error(EXCEPTION.getMarker(), "No event stream files found in `{}`", eventStreamDirectory);
             } else {
                 // an individual report was requested. Simply print the report to stdout.
                 System.out.println(report);

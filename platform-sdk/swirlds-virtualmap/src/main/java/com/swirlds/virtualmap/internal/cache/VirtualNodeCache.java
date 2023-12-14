@@ -171,8 +171,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                             .setThreadGroup(new ThreadGroup("virtual-cache-cleaners"))
                             .setComponent("virtual-map")
                             .setThreadName("cache-cleaner")
-                            .setExceptionHandler(
-                                    (t, ex) -> logger.error("Failed to purge unneeded key/mutationList pairs", ex))
+                            .setExceptionHandler((t, ex) -> logger.error(
+                                    EXCEPTION.getMarker(), "Failed to purge unneeded key/mutationList pairs", ex))
                             .buildFactory());
 
     /**

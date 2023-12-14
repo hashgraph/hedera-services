@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.merkle.map;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Append;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.BurnToken;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
@@ -89,7 +90,8 @@ public class FCMTransactionUtils {
                     case FCQDelete:
                         return Delete;
                     default:
-                        logger.error(ERROR, "Invalid Assorted FCQ body in FCMTransaction: {}", bodyCase);
+                        logger.error(
+                                EXCEPTION.getMarker(), "Invalid Assorted FCQ body in FCMTransaction: {}", bodyCase);
                         return null;
                 }
 
@@ -105,12 +107,12 @@ public class FCMTransactionUtils {
                     case Delete:
                         return Delete;
                     default:
-                        logger.error(ERROR, "Invalid Assorted body in FCMTransaction: {}", bodyCase);
+                        logger.error(EXCEPTION.getMarker(), "Invalid Assorted body in FCMTransaction: {}", bodyCase);
                         return null;
                 }
             }
         } else {
-            logger.error(ERROR, "Invalid body for TransactionType in FCMTransaction: {}", bodyCase);
+            logger.error(EXCEPTION.getMarker(), "Invalid body for TransactionType in FCMTransaction: {}", bodyCase);
             return null;
         }
     }
@@ -131,7 +133,7 @@ public class FCMTransactionUtils {
         } else if (bodyCase.contains("TOKEN")) {
             return EntityType.NFT;
         } else {
-            logger.error(ERROR, "Invalid body for EntityType in FCMTransaction: {}", bodyCase);
+            logger.error(EXCEPTION.getMarker(), "Invalid body for EntityType in FCMTransaction: {}", bodyCase);
             return null;
         }
     }
@@ -193,7 +195,7 @@ public class FCMTransactionUtils {
 
             mapKeys.add(new MapKey(shardId, realmId, accountId));
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            logger.error(ERROR, "Exception when extracting MapKey " + "from FCMTransaction. {}", e);
+            logger.error(EXCEPTION.getMarker(), "Exception when extracting MapKey " + "from FCMTransaction. {}", e);
         }
     }
 

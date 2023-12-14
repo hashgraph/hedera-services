@@ -18,7 +18,6 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.legacy.LogMarker.ERROR;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
@@ -509,7 +508,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     try {
                         writeHashes(lastLeafPath, hashRecordsToUpdate);
                     } catch (final IOException e) {
-                        logger.error(ERROR.getMarker(), "[{}] Failed to store internal records", tableName, e);
+                        logger.error(EXCEPTION.getMarker(), "[{}] Failed to store internal records", tableName, e);
                         throw new UncheckedIOException(e);
                     } finally {
                         countDownLatch.countDown();

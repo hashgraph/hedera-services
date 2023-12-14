@@ -29,6 +29,7 @@ package com.swirlds.demo.iss;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -380,7 +381,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         }
 
         logger.error(
-                STARTUP.getMarker(),
+                EXCEPTION.getMarker(),
                 "This error was scheduled to be logged at time after genesis {}, and actually was logged "
                         + "at time after genesis {}.",
                 plannedLogError.getTimeAfterGenesis(),

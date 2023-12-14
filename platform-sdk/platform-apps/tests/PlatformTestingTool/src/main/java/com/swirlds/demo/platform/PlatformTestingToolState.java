@@ -648,7 +648,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final Instant previousTransTimestampPlusIncr = previousTimestamp.plusNanos(minTransTimestampIncrNanos);
             if (timestamp.isBefore(previousTransTimestampPlusIncr)) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         "Transaction has timestamp {} which is earlier than previous timestamp {} plus {} nanos: "
                                 + "{}",
                         timestamp,
@@ -706,7 +706,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         } catch (final InvalidProtocolBufferException ex) {
             exceptionRateLimiter.handle(
-                    ex, (error) -> logger.error(LOGM_EXCEPTION, "InvalidProtocolBufferException", error));
+                    ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
             return Optional.empty();
         }
     }
@@ -724,7 +724,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                     purgeExpiredRecords(timestamp.getEpochSecond());
                 } catch (final Throwable ex) {
                     exceptionRateLimiter.handle(
-                            ex, (error) -> logger.error(LOGM_EXCEPTION, "Failed to purge expired records", error));
+                            ex,
+                            (error) -> logger.error(EXCEPTION.getMarker(), "Failed to purge expired records", error));
                 }
             }
         }
@@ -755,7 +756,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final long seq = Utilities.toLong(bytesTransaction.getData().toByteArray());
             if (getNextSeqCons().get(nodeIndex).getValue() != seq) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         platform.getSelfId() + " error, new (id=" + id
                                 + ") seq should be " + getNextSeqCons().get(nodeIndex)
                                 + " but is " + seq);
@@ -829,7 +830,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             } else if (activityType == Activity.ActivityType.SAVE_EXPECTED_MAP) {
                 logger.info(LOGM_DEMO_INFO, "Received SAVE_EXPECTED_MAP transaction from node {}", id);
             } else {
-                logger.info(LOGM_EXCEPTION, "unknown Activity type");
+                logger.info(EXCEPTION.getMarker(), "unknown Activity type");
             }
             return;
         }
@@ -849,7 +850,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         if ((keys.isEmpty() && entityType != EntityType.NFT) || transactionType == null || entityType == null) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "Invalid Transaction: keys: {}, transactionType: {}, entityType: {}",
                     keys,
                     transactionType,
@@ -868,7 +869,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         // which is set when generating this FCMTransaction, it denotes an error
         if (getConfig().isAppendSig() && invalidSig != fcmTransaction.getInvalidSig()) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "Unexpected signature verification result: " + "actual: {}; expected:{}",
                     () -> (invalidSig ? "INVALID" : "VALID"),
                     () -> (fcmTransaction.getInvalidSig() ? "INVALID" : "VALID"));
@@ -919,7 +920,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             exceptionRateLimiter.handle(
                     ex,
                     (error) -> logger.error(
-                            LOGM_EXCEPTION,
+                            EXCEPTION.getMarker(),
                             "Exceptions while handling transaction: {} {} for {}, originId:{}",
                             transactionType,
                             entityType,
@@ -1176,7 +1177,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 exceptionRateLimiter.handle(
                         ex,
                         (error) -> logger.error(
-                                LOGM_EXCEPTION, "" + "InvalidProtocolBufferException while chekcing signature", error));
+                                EXCEPTION.getMarker(),
+                                "" + "InvalidProtocolBufferException while chekcing signature",
+                                error));
             }
         }
 
@@ -1217,7 +1220,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 handleVirtualMerkleTransaction(testTransaction.get().getVirtualMerkleTransaction(), id, timeCreated);
                 break;
             default:
-                logger.error(LOGM_EXCEPTION, "Unrecognized transaction!");
+                logger.error(EXCEPTION.getMarker(), "Unrecognized transaction!");
         }
 
         //////////// end timing/////////////
@@ -1367,7 +1370,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
             } catch (final InvalidProtocolBufferException ex) {
                 exceptionRateLimiter.handle(
-                        ex, (error) -> logger.error(LOGM_EXCEPTION, "InvalidProtocolBufferException", error));
+                        ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
             }
         }
     }
@@ -1426,7 +1429,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         final Future<Void> future = signature.waitForFuture();
                         future.get();
                     } catch (final ExecutionException | InterruptedException ex) {
-                        logger.info(LOGM_EXCEPTION, "Error when verifying signature", ex);
+                        logger.info(EXCEPTION.getMarker(), "Error when verifying signature", ex);
                     }
                 }
                 if (VerificationStatus.INVALID.equals(signature.getSignatureStatus())) {
@@ -1554,7 +1557,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public void rebuildExpirationQueue() {
         final FCMFamily fcmFamily = getFcmFamily();
         if (fcmFamily == null || fcmFamily.getAccountFCQMap() == null) {
-            logger.error(LOGM_EXCEPTION, "FCMFamily is null, so could not rebuild Expiration Queue");
+            logger.error(EXCEPTION.getMarker(), "FCMFamily is null, so could not rebuild Expiration Queue");
             return;
         }
         if (fcmFamily.getAccountFCQMap().size() == 0) {

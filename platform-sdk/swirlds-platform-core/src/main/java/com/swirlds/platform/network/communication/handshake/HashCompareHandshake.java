@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.network.communication.handshake;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
@@ -80,7 +81,7 @@ public class HashCompareHandshake implements ProtocolRunnable {
         if (throwOnMismatch) {
             throw new HandshakeException(message);
         } else {
-            logger.error(LogMarker.ERROR.getMarker(), message);
+            logger.error(EXCEPTION.getMarker(), message);
         }
     }
 }

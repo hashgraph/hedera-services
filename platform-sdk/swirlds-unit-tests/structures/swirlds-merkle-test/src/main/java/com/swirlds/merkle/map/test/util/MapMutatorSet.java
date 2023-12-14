@@ -16,6 +16,8 @@
 
 package com.swirlds.merkle.map.test.util;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.test.fixtures.dummy.Key;
@@ -76,7 +78,7 @@ public class MapMutatorSet {
                 insertKeyFCQIntoMap(startIndex, endIndex, fcm);
                 break;
             default:
-                logger.error(FCM_TEST, () -> "Invalid ValueType");
+                logger.error(EXCEPTION.getMarker(), () -> "Invalid ValueType");
         }
     }
 

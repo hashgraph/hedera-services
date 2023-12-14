@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;
@@ -282,9 +282,9 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
             waitUntilReady();
             records.getDataSource().close();
         } catch (final IOException e) {
-            logger.error(RECONNECT.getMarker(), "interrupted while attempting to close data source");
+            logger.error(EXCEPTION.getMarker(), "interrupted while attempting to close data source");
         } catch (final InterruptedException e) {
-            logger.error(RECONNECT.getMarker(), "Failed to close data source properly", e);
+            logger.error(EXCEPTION.getMarker(), "Failed to close data source properly", e);
             Thread.currentThread().interrupt();
         }
     }
