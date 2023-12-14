@@ -697,6 +697,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 2));
     }
 
+    @HapiTest
     final HapiSpec transferErc20TokenFromContractWithNoApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = NESTED_ERC_20_CONTRACT;
