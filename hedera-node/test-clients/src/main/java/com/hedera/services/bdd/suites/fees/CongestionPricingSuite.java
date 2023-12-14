@@ -69,7 +69,7 @@ public class CongestionPricingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canUpdateMultipliersDynamically() {
+    final HapiSpec canUpdateMultipliersDynamically() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         var contract = "Multipurpose";
@@ -157,7 +157,7 @@ public class CongestionPricingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canUpdateMultipliersDynamically2() {
+    final HapiSpec canUpdateMultipliersDynamically2() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriod = "1";

@@ -51,7 +51,7 @@ public class CryptoTransferPerfSuite extends HapiSuite {
         return false;
     }
 
-    private HapiSpec cryptoTransferPerf() {
+    final HapiSpec cryptoTransferPerf() {
         final int NUM_ACCOUNTS = 10;
         final int NUM_TRANSFERS = 10_000;
         final long INIT_BALANCE = 100_000_000_000L;

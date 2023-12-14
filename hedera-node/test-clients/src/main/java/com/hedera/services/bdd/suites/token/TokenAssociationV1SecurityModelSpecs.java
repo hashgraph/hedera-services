@@ -72,7 +72,7 @@ public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
         return false;
     }
 
-    private HapiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
+    final HapiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
         final var nfToken = "nfToken";
         final var civilian = "civilian";
         final var multiAssociate = "multiAssociate";

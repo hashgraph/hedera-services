@@ -58,7 +58,7 @@ public class ContractCreateV1SecurityModelSuite extends HapiSuite {
         return false;
     }
 
-    private HapiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
+    final HapiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
         final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
         final var justSendContract = "JustSend";
         final var beneficiary = "civilian";
