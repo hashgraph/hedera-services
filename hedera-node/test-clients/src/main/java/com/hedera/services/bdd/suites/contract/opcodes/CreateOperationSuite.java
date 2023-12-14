@@ -91,7 +91,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec factoryQuickSelfDestructContract() {
+    final HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
@@ -116,7 +116,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec inheritanceOfNestedCreatedContracts() {
+    final HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
                 .given(
@@ -270,7 +270,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
+    final HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
         return defaultHapiSpec("contractCreateWithNewOpInConstructorAbandoningParent")
                 .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))

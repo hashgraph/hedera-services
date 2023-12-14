@@ -63,7 +63,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec distinguishesAdminPrivileges() {
+    final HapiSpec distinguishesAdminPrivileges() {
         final var lifetime = THREE_MONTHS_IN_SECONDS;
 
         return defaultHapiSpec("DistinguishesAdminPrivileges")
@@ -80,7 +80,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec systemDeleteWithPastExpiryDestroysFile() {
+    final HapiSpec systemDeleteWithPastExpiryDestroysFile() {
         final var lifetime = THREE_MONTHS_IN_SECONDS;
 
         return defaultHapiSpec("systemDeleteWithPastExpiryDestroysFile")
@@ -94,7 +94,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec systemDeleteThenUndeleteRestoresContentsAndExpiry() {
+    final HapiSpec systemDeleteThenUndeleteRestoresContentsAndExpiry() {
         var now = Instant.now().getEpochSecond();
         var lifetime = THREE_MONTHS_IN_SECONDS;
         AtomicLong initExpiry = new AtomicLong();

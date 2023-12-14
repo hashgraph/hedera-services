@@ -46,7 +46,7 @@ public class FreezeRekeyedState extends HapiSuite {
         });
     }
 
-    private HapiSpec freezeWithNewTreasuryKey() {
+    final HapiSpec freezeWithNewTreasuryKey() {
         return customHapiSpec("FreezeWithNewTreasuryKey")
                 .withProperties(Map.of(
                         "nodes",

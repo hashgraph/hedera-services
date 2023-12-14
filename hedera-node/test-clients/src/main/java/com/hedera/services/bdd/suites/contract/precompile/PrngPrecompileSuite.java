@@ -91,7 +91,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
     }
 
-    private HapiSpec multipleCallsHaveIndependentResults() {
+    final HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -136,7 +136,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec emptyInputCallFails() {
+    final HapiSpec emptyInputCallFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails")
@@ -164,7 +164,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidLargeInputFails() {
+    final HapiSpec invalidLargeInputFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails")
@@ -191,7 +191,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                         }));
     }
 
-    private HapiSpec nonSupportedAbiCallGracefullyFails() {
+    final HapiSpec nonSupportedAbiCallGracefullyFails() {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails")
@@ -213,7 +213,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                         }));
     }
 
-    private HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
+    final HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
                 .given(cryptoCreate(BOB), uploadInitCode(THE_PRNG_CONTRACT), contractCreate(THE_PRNG_CONTRACT))
@@ -240,7 +240,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec prngPrecompileHappyPathWorks() {
+    final HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
