@@ -401,7 +401,8 @@ public final class RecordListBuilder {
      * If there are no following records in the checkpoint, it means that the revert was executed on the user transaction.
      */
     public void revertChildrenFrom(@NonNull final RecordListCheckPoint checkPoint) {
-        // If there are no following transactions than this means that the revert was executed on the user transaction
+        requireNonNull(checkPoint, "the record checkpoint must not be null");
+        // The revert was executed on the user transaction
         if (checkPoint.lastFollowingRecord() == null) {
             revertChildrenOf(userTxnRecordBuilder);
             return;
