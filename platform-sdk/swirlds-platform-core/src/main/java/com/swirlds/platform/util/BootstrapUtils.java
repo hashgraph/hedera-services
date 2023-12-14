@@ -424,19 +424,13 @@ public final class BootstrapUtils {
      *
      * @param nodesToRun the nodes to run
      */
-    public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun, final boolean allowMultipleNodes) {
+    public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun) {
         // if the local machine did not match any address in the address book then we should log an error and exit
         if (nodesToRun.isEmpty()) {
             final String externalIpAddress = Network.getExternalIpAddress().getIpAddress();
             logger.error(
                     EXCEPTION.getMarker(),
                     new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
-            exitSystem(NODE_ADDRESS_MISMATCH);
-        }
-        if (!allowMultipleNodes && nodesToRun.size() > 1) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Multiple nodes are configured to run. Only one node can be started per java process.");
             exitSystem(NODE_ADDRESS_MISMATCH);
         }
         logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", nodesToRun.size());

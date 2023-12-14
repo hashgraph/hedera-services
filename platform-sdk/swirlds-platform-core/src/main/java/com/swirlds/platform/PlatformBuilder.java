@@ -200,7 +200,7 @@ public final class PlatformBuilder {
 
         final AddressBook configAddressBook = loadConfigAddressBook();
 
-        checkNodesToRun(List.of(selfId), true);
+        checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
         final PlatformContext platformContext = new DefaultPlatformContext(selfId, getMetricsProvider(), configuration);

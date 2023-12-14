@@ -150,7 +150,7 @@ public class Browser {
         // Determine which nodes to run locally
         final List<NodeId> nodesToRun =
                 getNodesToRun(appDefinition.getConfigAddressBook(), commandLineArgs.localNodesToStart());
-        checkNodesToRun(nodesToRun, true);
+        checkNodesToRun(nodesToRun);
 
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
