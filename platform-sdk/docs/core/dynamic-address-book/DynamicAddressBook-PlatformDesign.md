@@ -126,7 +126,7 @@ Validating state signatures.
 
 Use the effective roster for the relevant round when validating signatures on the round's state.
 
-NOTE: The node must be able to validate 1/2 of the weight with its current effective roster. Since 2/3 of the
+NOTE: The node must be able to validate >1/2 of the weight with its current effective roster. Since >2/3 of the
 weight is needed to sign the state, a reconnecting node can tolerate 1/6 of variance in weight assigned to nodes.
 
 ## Metrics
