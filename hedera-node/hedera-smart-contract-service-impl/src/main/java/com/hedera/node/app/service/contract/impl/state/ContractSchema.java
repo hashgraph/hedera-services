@@ -21,6 +21,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,11 +35,14 @@ public class ContractSchema extends Schema {
     public static final String BYTECODE_KEY = "BYTECODE";
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
-    private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(40).build();
 
-    public ContractSchema() {
-        super(CURRENT_VERSION);
+    public ContractSchema(final SemanticVersion version) {
+        super(version);
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        super.migrate(ctx);
     }
 
     @NonNull
