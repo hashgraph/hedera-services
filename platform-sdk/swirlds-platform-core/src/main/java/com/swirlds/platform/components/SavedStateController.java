@@ -67,7 +67,7 @@ public class SavedStateController {
             final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
 
             if (reason != null) {
-                markSavingToDisk(signedState.reserve("saving to disk"), reason);
+                markSavingToDisk(reservedSignedState, reason);
             }
             // if a null reason is returned, then there isn't anything to do, since the state shouldn't be saved
         }
