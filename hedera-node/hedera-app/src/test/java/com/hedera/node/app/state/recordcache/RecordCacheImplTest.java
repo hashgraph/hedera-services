@@ -38,6 +38,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -94,7 +95,7 @@ final class RecordCacheImplTest extends AppTestBase {
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
         final var svc = new RecordCacheService();
-        svc.registerSchemas(registry);
+        svc.registerSchemas(registry, Service.RELEASE_045_VERSION);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);

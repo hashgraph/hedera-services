@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -668,7 +667,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec wipeHappyPath() {
-        return onlyDefaultHapiSpec("WipeHappyPath")
+        return defaultHapiSpec("WipeHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),

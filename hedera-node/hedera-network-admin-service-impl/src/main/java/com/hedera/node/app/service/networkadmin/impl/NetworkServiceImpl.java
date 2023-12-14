@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
@@ -30,12 +31,12 @@ import java.util.Set;
 public final class NetworkServiceImpl implements NetworkService {
 
     @Override
-    public void registerSchemas(final @NonNull SchemaRegistry registry) {
-        registry.register(networkSchema());
+    public void registerSchemas(final @NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(networkSchema(version));
     }
 
-    private Schema networkSchema() {
-        return new Schema(RELEASE_045_VERSION) {
+    private Schema networkSchema(final SemanticVersion version) {
+        return new Schema(version) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

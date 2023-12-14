@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -49,7 +50,7 @@ class FileServiceImplTest {
     void registersExpectedSchema() {
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        subject().registerSchemas(registry);
+        subject().registerSchemas(registry, Service.RELEASE_045_VERSION);
 
         verify(registry).register(schemaCaptor.capture());
 

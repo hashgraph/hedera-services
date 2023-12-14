@@ -114,7 +114,9 @@ import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutDownNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.StartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForBehindOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForReconnectOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
@@ -269,20 +271,40 @@ public class UtilVerbs {
         return new WaitForActiveOp(allNodes(), waitSeconds);
     }
 
+    public static WaitForActiveOp waitForNodeToBecomeBehind(String name, int waitSeconds) {
+        return new WaitForActiveOp(byName(name), waitSeconds);
+    }
+
     public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
         return new WaitForFreezeOp(byName(name), waitSeconds);
     }
 
-    public static StartNodesOp startAllNodes(int waitSeconds) {
-        return new StartNodesOp(allNodes(), waitSeconds);
+    public static StartNodesOp startAllNodes() {
+        return new StartNodesOp(allNodes());
     }
 
-    public static ShutDownNodesOp shutDownAllNodes(int waitSeconds) {
-        return new ShutDownNodesOp(allNodes(), waitSeconds);
+    public static StartNodesOp startNode(String name) {
+        return new StartNodesOp(byName(name));
+    }
+
+    public static ShutDownNodesOp shutDownAllNodes() {
+        return new ShutDownNodesOp(allNodes());
+    }
+
+    public static ShutDownNodesOp shutDownNode(String name) {
+        return new ShutDownNodesOp(byName(name));
     }
 
     public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {
         return new WaitForFreezeOp(allNodes(), waitSeconds);
+    }
+
+    public static WaitForBehindOp waitForNodeToBeBehind(String name, int waitSeconds) {
+        return new WaitForBehindOp(byName(name), waitSeconds);
+    }
+
+    public static WaitForReconnectOp waitForNodeToFinishReconnect(String name, int waitSeconds) {
+        return new WaitForReconnectOp(byName(name), waitSeconds);
     }
 
     public static WaitForShutdownOp waitForNodeToShutDown(String name, int waitSeconds) {

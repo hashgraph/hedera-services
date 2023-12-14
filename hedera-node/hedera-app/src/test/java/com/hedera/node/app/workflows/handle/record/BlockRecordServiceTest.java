@@ -83,6 +83,6 @@ final class BlockRecordServiceTest {
             return null;
         });
         BlockRecordService blockRecordService = new BlockRecordService();
-        blockRecordService.registerSchemas(schemaRegistry);
+        blockRecordService.registerSchemas(schemaRegistry, RELEASE_045_VERSION);
     }
 }
