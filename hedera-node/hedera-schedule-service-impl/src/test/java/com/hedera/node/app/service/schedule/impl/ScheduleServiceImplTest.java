@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -48,7 +49,7 @@ class ScheduleServiceImplTest {
     void registersExpectedSchema() {
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
-        subject.registerSchemas(registry);
+        subject.registerSchemas(registry, Service.RELEASE_045_VERSION);
         Mockito.verify(registry).register(schemaCaptor.capture());
 
         final Schema schema = schemaCaptor.getValue();
