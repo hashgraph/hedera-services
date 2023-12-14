@@ -48,7 +48,7 @@ public class AdjustFeeScheduleSuite extends HapiSuite {
         return List.of(updateFeesFor());
     }
 
-    private HapiSpec updateFeesFor() {
+    final HapiSpec updateFeesFor() {
         final var fixedFee = ONE_HUNDRED_HBARS;
         return customHapiSpec("updateFees")
                 .withProperties(Map.of("fees.useFixedOffer", "true", "fees.fixedOffer", "" + fixedFee))

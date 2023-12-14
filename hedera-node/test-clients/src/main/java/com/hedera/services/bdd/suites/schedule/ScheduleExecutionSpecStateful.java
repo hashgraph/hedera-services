@@ -103,7 +103,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 suiteCleanup()));
     }
 
-    private HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
+    final HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))
                 .when(scheduleCreate(VALID_SCHEDULE, burnToken("0.0.123231", List.of(1L, 2L)))
@@ -112,7 +112,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
+    final HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -142,7 +142,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
-    private HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
+    final HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -218,7 +218,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         }));
     }
 
-    private HapiSpec executionWithTokenTransferListSizeExceedFails() {
+    final HapiSpec executionWithTokenTransferListSizeExceedFails() {
         String xToken = "XXX";
         String invalidSchedule = "withMaxTokenTransfer";
         String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
@@ -253,7 +253,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
-    private HapiSpec suiteCleanup() {
+    final HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()

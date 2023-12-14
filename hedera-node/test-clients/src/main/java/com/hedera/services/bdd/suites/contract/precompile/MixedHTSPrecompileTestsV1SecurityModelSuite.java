@@ -89,7 +89,7 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                 createTokenWithFixedFeeThenTransferAndAssessFee());
     }
 
-    private HapiSpec hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
+    final HapiSpec hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
         final var theAccount = "anybody";
         final var token = "Token";
         final var outerContract = "AssociateTryCatch";
@@ -139,7 +139,7 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-    private HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
+    final HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
         final var CONTRACT_ADMIN_KEY = "contractAdminKey";
         final var FEE_COLLECTOR = "feeCollector";

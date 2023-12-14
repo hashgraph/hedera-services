@@ -164,7 +164,7 @@ public class TokenBalanceValidation extends HapiSuite {
      * Create HAPI queries to check whether token balances match what's given in <code>expectedTokenBalances</code>
      * @return HAPI queries to execute
      */
-    private HapiSpec validateTokenBalances() {
+    final HapiSpec validateTokenBalances() {
         return defaultHapiSpec("ValidateTokenBalances")
                 .given(getHapiSpecsForTransferTxs()) // set up transfers if needed
                 .when()

@@ -46,7 +46,7 @@ public class AppendFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec handleRejectsOversized() {
+    final HapiSpec handleRejectsOversized() {
         byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
         Arrays.fill(BYTES_3K_MINUS1, (byte) 0xAB);
         byte[] BYTES_1 = new byte[] {(byte) 0xAB};
