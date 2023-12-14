@@ -39,6 +39,7 @@ import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
@@ -396,7 +397,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration originalConfig = ConfigurationHolder.getInstance().get();
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("virtualMap.copyFlushThreshold", "0")
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 

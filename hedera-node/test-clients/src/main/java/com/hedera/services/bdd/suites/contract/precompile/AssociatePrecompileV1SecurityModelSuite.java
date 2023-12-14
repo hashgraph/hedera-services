@@ -101,7 +101,7 @@ public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-006 from HTS Precompile Test Plan -- */
-    private HapiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
+    final HapiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
@@ -184,7 +184,7 @@ public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */
-    private HapiSpec nestedAssociateWorksAsExpected() {
+    final HapiSpec nestedAssociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 

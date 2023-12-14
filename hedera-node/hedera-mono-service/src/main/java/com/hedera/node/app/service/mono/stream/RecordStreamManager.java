@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.stream;
 
+import static com.swirlds.base.units.UnitConstants.MB_TO_BYTES;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.units.UnitConstants.MB_TO_BYTES;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -32,7 +32,7 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;

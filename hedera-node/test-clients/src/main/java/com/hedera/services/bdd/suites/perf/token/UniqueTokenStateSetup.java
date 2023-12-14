@@ -109,7 +109,7 @@ public class UniqueTokenStateSetup extends HapiSuite {
         });
     }
 
-    private HapiSpec createNfts() {
+    final HapiSpec createNfts() {
         return defaultHapiSpec("CreateNfts")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, "mint_"),

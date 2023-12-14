@@ -21,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.test.framework.TestComponentTags;
@@ -37,10 +38,10 @@ class ReconnectThrottleTest {
 
     private ReconnectConfig buildSettings(final String minimumTimeBetweenReconnects) {
         final Configuration config = new TestConfigBuilder()
-                .withValue("reconnect.active", "true")
-                .withValue("reconnect.asyncStreamTimeout", "0ms") // Not needed in Test
-                .withValue("reconnect.asyncOutputStreamFlush", "0ms") // Not needed in Test
-                .withValue("reconnect.minimumTimeBetweenReconnects", minimumTimeBetweenReconnects)
+                .withValue(ReconnectConfig_.ACTIVE, "true")
+                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "0ms") // Not needed in Test
+                .withValue(ReconnectConfig_.ASYNC_OUTPUT_STREAM_FLUSH, "0ms") // Not needed in Test
+                .withValue(ReconnectConfig_.MINIMUM_TIME_BETWEEN_RECONNECTS, minimumTimeBetweenReconnects)
                 .getOrCreateConfig();
 
         return config.getConfigData(ReconnectConfig.class);

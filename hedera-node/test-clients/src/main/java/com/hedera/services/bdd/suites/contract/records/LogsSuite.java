@@ -68,7 +68,7 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec log0Works() {
+    final HapiSpec log0Works() {
         return defaultHapiSpec("log0Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
@@ -78,11 +78,11 @@ public class LogsSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith().noTopics().longValue(15)))
-                                        .gasUsed(22_285))));
+                                        .gasUsed(22_489))));
     }
 
     @HapiTest
-    private HapiSpec log1Works() {
+    final HapiSpec log1Works() {
         return defaultHapiSpec("log1Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
@@ -95,11 +95,11 @@ public class LogsSuite extends HapiSuite {
                                                 .noData()
                                                 .withTopicsInOrder(List.of(
                                                         eventSignatureOf("Log1(uint256)"), parsedToByteString(15)))))
-                                        .gasUsed(22_583))));
+                                        .gasUsed(22_787))));
     }
 
     @HapiTest
-    private HapiSpec log2Works() {
+    final HapiSpec log2Works() {
         return defaultHapiSpec("log2Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
@@ -114,11 +114,11 @@ public class LogsSuite extends HapiSuite {
                                                         eventSignatureOf("Log2(uint256,uint256)"),
                                                         parsedToByteString(1),
                                                         parsedToByteString(2)))))
-                                        .gasUsed(23_112))));
+                                        .gasUsed(23_456))));
     }
 
     @HapiTest
-    private HapiSpec log3Works() {
+    final HapiSpec log3Works() {
         return defaultHapiSpec("log3Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
@@ -134,11 +134,11 @@ public class LogsSuite extends HapiSuite {
                                                         parsedToByteString(1),
                                                         parsedToByteString(2),
                                                         parsedToByteString(3)))))
-                                        .gasUsed(23_638))));
+                                        .gasUsed(24_122))));
     }
 
     @HapiTest
-    private HapiSpec log4Works() {
+    final HapiSpec log4Works() {
         return defaultHapiSpec("log4Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(
@@ -160,6 +160,6 @@ public class LogsSuite extends HapiSuite {
                                                         parsedToByteString(1),
                                                         parsedToByteString(2),
                                                         parsedToByteString(3)))))
-                                        .gasUsed(24_294))));
+                                        .gasUsed(24_918))));
     }
 }

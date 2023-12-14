@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.stats.cycle;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.units.UnitConstants;
 
 /**
  * Tracks the fraction of busy time to idle in a cycle

@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.TargetNetworkType.HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
@@ -110,6 +111,8 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutDownNodesOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.StartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
@@ -165,6 +168,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -237,6 +241,14 @@ public class UtilVerbs {
         return new RecordSystemProperty<>(property, converter, historian);
     }
 
+    public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.of(HAPI_TEST_NETWORK), ops);
+    }
+
+    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(HAPI_TEST_NETWORK)), ops);
+    }
+
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {
         return new SourcedOp(source);
     }
@@ -259,6 +271,14 @@ public class UtilVerbs {
 
     public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
         return new WaitForFreezeOp(byName(name), waitSeconds);
+    }
+
+    public static StartNodesOp startAllNodes(int waitSeconds) {
+        return new StartNodesOp(allNodes(), waitSeconds);
+    }
+
+    public static ShutDownNodesOp shutDownAllNodes(int waitSeconds) {
+        return new ShutDownNodesOp(allNodes(), waitSeconds);
     }
 
     public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {

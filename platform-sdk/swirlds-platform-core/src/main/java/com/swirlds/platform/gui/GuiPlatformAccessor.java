@@ -17,12 +17,13 @@
 package com.swirlds.platform.gui;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
+import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -45,6 +46,7 @@ public final class GuiPlatformAccessor {
     private final Map<NodeId, ShadowGraph> shadowGraphs = new ConcurrentHashMap<>();
     private final Map<NodeId, StateManagementComponent> stateManagementComponents = new ConcurrentHashMap<>();
     private final Map<NodeId, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
+    private final Map<NodeId, SignedStateNexus> latestCompleteStateComponents = new ConcurrentHashMap<>();
 
     private static final GuiPlatformAccessor INSTANCE = new GuiPlatformAccessor();
 
@@ -198,5 +200,30 @@ public final class GuiPlatformAccessor {
             return null;
         }
         return consensusReference.get();
+    }
+
+    /**
+     * Set the latest complete state component for a node.
+     *
+     * @param nodeId              the ID of the node
+     * @param latestCompleteState the latest complete state component
+     */
+    public void setLatestCompleteStateComponent(
+            @NonNull final NodeId nodeId, @NonNull final SignedStateNexus latestCompleteState) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(latestCompleteState, "latestCompleteState must not be null");
+        latestCompleteStateComponents.put(nodeId, latestCompleteState);
+    }
+
+    /**
+     * Get the latest complete state component for a node, or null if none is set.
+     *
+     * @param nodeId the ID of the node
+     * @return the latest complete state component
+     */
+    @Nullable
+    public SignedStateNexus getLatestCompleteStateComponent(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        return latestCompleteStateComponents.getOrDefault(nodeId, null);
     }
 }

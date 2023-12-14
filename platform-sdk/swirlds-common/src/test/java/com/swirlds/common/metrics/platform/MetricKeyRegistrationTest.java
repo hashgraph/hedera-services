@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import org.junit.jupiter.api.Test;
 
 class MetricKeyRegistrationTest {

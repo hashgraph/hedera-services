@@ -61,7 +61,7 @@ public class TopicGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec allFieldsSetHappyCase() {
+    final HapiSpec allFieldsSetHappyCase() {
         // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("AllFieldsSetHappyCase")

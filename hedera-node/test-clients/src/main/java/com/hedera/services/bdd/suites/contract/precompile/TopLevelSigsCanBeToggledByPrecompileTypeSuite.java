@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -87,7 +86,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -100,10 +98,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-@Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
 
@@ -138,7 +133,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                 canToggleTopLevelSigUsageForWipePrecompile());
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForWipePrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForWipePrecompile() {
         final var failedWipeTxn = "failedWipeTxn";
         final var succeededWipeTxn = "succeededWipeTxn";
 
@@ -199,7 +194,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_SIGNATURE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForUpdatePrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForUpdatePrecompile() {
         final var failedUpdateTxn = "failedUpdateTxn";
         final var succeededUpdateTxn = "succeededUpdateTxn";
 
@@ -306,7 +301,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_SIGNATURE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForPauseAndUnpausePrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForPauseAndUnpausePrecompile() {
         final var failedPauseTxn = "failedPauseTxn";
         final var failedUnpauseTxn = "failedUnpauseTxn";
         final var succeededPauseTxn = "succeededPauseTxn";
@@ -394,7 +389,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_SIGNATURE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForAssociatePrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForAssociatePrecompile() {
         final var tokenToAssociate = "tokenToAssociate";
         final var accountToBeAssociated = "accountToBeAssociated";
         final var failedAssociateTxn = "failedAssociateTxn";
@@ -443,7 +438,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForBurnPrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForBurnPrecompile() {
         final var failedBurnTxn = "failedBurnTxn";
         final var succeededBurnTxn = "succeededBurnTxn";
 
@@ -499,7 +494,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForMintPrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForMintPrecompile() {
         final var tokenToMint = "tokenToMint";
         final var failedMintTxn = "failedMintTxn";
         final var succeededMintTxn = "succeededMintTxn";
@@ -554,7 +549,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForDeletePrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForDeletePrecompile() {
         final var failedDeleteTxn = "failedDeleteTxn";
         final var succeededDeleteTxn = "succeededDeleteTxn";
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -609,7 +604,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_SIGNATURE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForFreezeAndUnfreezePrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForFreezeAndUnfreezePrecompile() {
         final var failedFreezeTxn = "failedFreezeTxn";
         final var failedUnfreezeTxn = "failedUnfreezeTxn";
         final var succeededFreezeTxn = "succeededFreezeTxn";
@@ -701,7 +696,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 recordWith().status(INVALID_SIGNATURE)));
     }
 
-    private HapiSpec canToggleTopLevelSigUsageForGrantKycAndRevokeKycPrecompile() {
+    final HapiSpec canToggleTopLevelSigUsageForGrantKycAndRevokeKycPrecompile() {
         final var failedGrantTxn = "failedGrantTxn";
         final var failedRevokeTxn = "failedRevokeTxn";
         final var succeededGrantTxn = "succeededGrantTxn";

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -62,7 +63,8 @@ public class GetAccountDetailsAnswer implements AnswerService {
         final AccountID id = query.getAccountDetails().getAccountId();
         final var entityNum =
                 id.getAlias().isEmpty() ? EntityNum.fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
-        return optionValidator.queryableAccountOrContractStatus(entityNum, view.accounts());
+        final var validity = optionValidator.queryableAccountOrContractStatus(entityNum, view.accounts());
+        return (validity == ACCOUNT_DELETED) ? OK : validity;
     }
 
     @Override

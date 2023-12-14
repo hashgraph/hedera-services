@@ -146,7 +146,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec signingDeletedSchedulesHasNoEffect() {
+    final HapiSpec signingDeletedSchedulesHasNoEffect() {
         String sender = "X";
         String receiver = "Y";
         String schedule = "Z";
@@ -169,7 +169,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec changeInNestedSigningReqsRespected() {
+    final HapiSpec changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -210,7 +210,6 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    @HapiTest
     private Key bumpThirdNestedThresholdSigningReq(Key source) {
         var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
         newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));
@@ -222,7 +221,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
+    final HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -260,7 +259,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiSpec reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
+    final HapiSpec reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -312,7 +311,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nestedSigningReqsWorkAsExpected() {
+    final HapiSpec nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, ON, OFF), sigs(OFF, OFF, OFF)));
@@ -344,7 +343,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiSpec receiverSigRequiredNotConfusedByOrder() {
+    final HapiSpec receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -381,7 +380,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
+    final HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -418,7 +417,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec receiverSigRequiredUpdateIsRecognized() {
+    final HapiSpec receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -459,7 +458,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction() {
+    final HapiSpec scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -495,7 +494,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec scheduleAlreadyExecutedDoesntRepeatTransaction() {
+    final HapiSpec scheduleAlreadyExecutedDoesntRepeatTransaction() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -529,7 +528,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec basicSignatureCollectionWorks() {
+    final HapiSpec basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("BasicSignatureCollectionWorks")
@@ -543,7 +542,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec signalsIrrelevantSig() {
+    final HapiSpec signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("SignalsIrrelevantSig")
@@ -560,7 +559,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
+    final HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
         return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdate")
@@ -587,7 +586,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec addingSignaturesToNonExistingTxFails() {
+    final HapiSpec addingSignaturesToNonExistingTxFails() {
         return defaultHapiSpec("AddingSignaturesToNonExistingTxFails")
                 .given(cryptoCreate(SENDER), newKeyNamed(SOMEBODY))
                 .when()
@@ -598,7 +597,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
-    private HapiSpec addingSignaturesToExecutedTxFails() {
+    final HapiSpec addingSignaturesToExecutedTxFails() {
         var txnBody = cryptoCreate(SOMEBODY);
         var creation = "basicCryptoCreate";
 

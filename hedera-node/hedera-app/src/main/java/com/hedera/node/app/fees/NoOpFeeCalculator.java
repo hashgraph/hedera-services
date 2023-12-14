@@ -81,4 +81,9 @@ public class NoOpFeeCalculator implements FeeCalculator {
     public Fees calculate() {
         return Fees.FREE;
     }
+
+    @Override
+    public long getCongestionMultiplier() {
+        return 1;
+    }
 }

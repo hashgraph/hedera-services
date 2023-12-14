@@ -97,7 +97,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec multipleCallsHaveIndependentResults() {
+    final HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -145,7 +145,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec emptyInputCallFails() {
+    final HapiSpec emptyInputCallFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails")
@@ -177,7 +177,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidLargeInputFails() {
+    final HapiSpec invalidLargeInputFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails")
@@ -209,7 +209,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonSupportedAbiCallGracefullyFails() {
+    final HapiSpec nonSupportedAbiCallGracefullyFails() {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails")
@@ -231,12 +231,12 @@ public class PrngPrecompileSuite extends HapiSuite {
                                     .getTransactionRecord(failedCall)
                                     .getContractCallResult()
                                     .getGasUsed();
-                            assertEquals(394209, gasUsed);
+                            assertEquals(394210, gasUsed);
                         }));
     }
 
     @HapiTest
-    private HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
+    final HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
                 .given(
@@ -268,7 +268,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prngPrecompileHappyPathWorks() {
+    final HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")

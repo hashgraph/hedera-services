@@ -75,7 +75,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
         });
     }
 
-    private HapiSpec validateCongestionPricing() {
+    final HapiSpec validateCongestionPricing() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-6N.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriodInSecs = "5";

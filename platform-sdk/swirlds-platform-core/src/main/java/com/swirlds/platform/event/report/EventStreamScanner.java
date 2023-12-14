@@ -23,12 +23,12 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.units.TimeUnit;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.MultiFileRunningHashIterator;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;

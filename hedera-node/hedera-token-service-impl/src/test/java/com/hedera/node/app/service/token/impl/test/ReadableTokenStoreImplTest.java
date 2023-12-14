@@ -116,4 +116,10 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         assertFalse(meta.hasRoyaltyWithFallback());
         assertEquals(treasury, meta.treasuryAccountId());
     }
+
+    @Test
+    void returnSizeOfState() {
+        final var store = new ReadableTokenStoreImpl(readableStates);
+        assertEquals(readableStates.get(TOKENS).size(), store.sizeOfState());
+    }
 }

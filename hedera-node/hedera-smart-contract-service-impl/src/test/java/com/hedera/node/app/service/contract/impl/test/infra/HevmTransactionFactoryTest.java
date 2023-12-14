@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.infra;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -367,6 +368,17 @@ class HevmTransactionFactoryTest {
     }
 
     @Test
+    void fromHapiCreationValidatesInlineInitcodeNotEmpty() {
+        assertCreateFailsWith(CONTRACT_BYTECODE_EMPTY, b -> b.memo(SOME_MEMO)
+                .adminKey(AN_ED25519_KEY)
+                .initcode(Bytes.EMPTY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
+                .proxyAccountID(AccountID.DEFAULT)
+                .autoRenewPeriod(SOME_DURATION));
+    }
+
+    @Test
     void fromHapiCreationTranslatesHexParsingException() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
                 .willReturn(File.newBuilder().contents(CALL_DATA).build());
@@ -408,6 +420,35 @@ class HevmTransactionFactoryTest {
     void fromHapiCreationAppendsConstructorArgsIfPresent() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
                 .willReturn(File.newBuilder().contents(INITCODE).build());
+        String hexedPayload = new String(INITCODE.toByteArray()) + CommonUtils.hex(CONSTRUCTOR_PARAMS.toByteArray());
+        final var expectedPayload = Bytes.wrap(CommonUtils.unhex(hexedPayload));
+        final var transaction = getManufacturedCreation(b -> b.memo(SOME_MEMO)
+                .fileID(INITCODE_FILE_ID)
+                .constructorParameters(CONSTRUCTOR_PARAMS)
+                .initialBalance(123L)
+                .adminKey(Key.newBuilder().keyList(KeyList.DEFAULT))
+                .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
+                .proxyAccountID(AccountID.DEFAULT)
+                .autoRenewPeriod(SOME_DURATION));
+        assertEquals(SENDER_ID, transaction.senderId());
+        assertNull(transaction.contractId());
+        assertNull(transaction.relayerId());
+        assertFalse(transaction.hasExpectedNonce());
+        assertEquals(expectedPayload, transaction.payload());
+        assertNull(transaction.chainId());
+        assertEquals(123L, transaction.value());
+        assertEquals(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec(), transaction.gasLimit());
+        assertFalse(transaction.hasOfferedGasPrice());
+        assertFalse(transaction.hasMaxGasAllowance());
+        assertNotNull(transaction.hapiCreation());
+    }
+
+    @Test
+    void fromHapiCreationSkips0xPrefixFromInitcodeIfPresent() {
+        given(fileStore.getFileLeaf(INITCODE_FILE_ID))
+                .willReturn(File.newBuilder()
+                        .contents(Bytes.wrap("0x" + new String(INITCODE.toByteArray())))
+                        .build());
         String hexedPayload = new String(INITCODE.toByteArray()) + CommonUtils.hex(CONSTRUCTOR_PARAMS.toByteArray());
         final var expectedPayload = Bytes.wrap(CommonUtils.unhex(hexedPayload));
         final var transaction = getManufacturedCreation(b -> b.memo(SOME_MEMO)

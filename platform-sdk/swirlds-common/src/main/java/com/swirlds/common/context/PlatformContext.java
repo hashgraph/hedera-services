@@ -25,7 +25,7 @@ import com.swirlds.config.api.Configuration;
  * {@link PlatformContext} a developer does not need to take care of the lifecycle of any basic service or resource.
  * <p>
  * The basic architecture approach of the {@link PlatformContext} defines the context as a single instance per
- * {@link com.swirlds.common.system.Platform}. When a platform is created the context will be passed to the platform and
+ * Platform. When a platform is created the context will be passed to the platform and
  * can be used internally in the platform to access all basic services.
  */
 public interface PlatformContext {
