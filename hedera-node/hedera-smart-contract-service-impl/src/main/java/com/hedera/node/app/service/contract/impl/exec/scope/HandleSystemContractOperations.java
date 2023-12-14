@@ -101,6 +101,19 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     public void externalizeResult(
             @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
+        childRecordBuilder
+                .transaction(Transaction.DEFAULT)
+                .status(responseStatus)
+                .contractCallResult(result);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void externalizeUtilPrngFailedResult(
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
+        final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
 
         final var body = TransactionBody.newBuilder()
                 .utilPrng(UtilPrngTransactionBody.DEFAULT)
@@ -112,10 +125,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 .copyBuilder()
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTransaction))
                 .build();
-
-        if (ResponseCodeEnum.SUCCESS.equals(responseStatus)) {
-            childRecordBuilder.entropyBytes(result.contractCallResult());
-        }
 
         childRecordBuilder.transaction(transaction).status(responseStatus).contractCallResult(result);
     }
