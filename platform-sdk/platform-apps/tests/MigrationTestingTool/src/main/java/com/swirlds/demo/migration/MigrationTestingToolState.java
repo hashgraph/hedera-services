@@ -18,6 +18,7 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -50,7 +51,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -240,12 +240,12 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         selfId = platform.getSelfId();
 
         if (trigger == InitTrigger.GENESIS) {
-            logger.error(MARKER, "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
+            logger.error(EXCEPTION.getMarker(), "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
         }
 
-        if (!Objects.equals(previousSoftwareVersion, PREVIOUS_SOFTWARE_VERSION)) {
+        if (previousSoftwareVersion == null || previousSoftwareVersion.compareTo(PREVIOUS_SOFTWARE_VERSION) != 0) {
             logger.error(
-                    MARKER,
+                    EXCEPTION.getMarker(),
                     "previousSoftwareVersion was {} when expecting it to be {}",
                     previousSoftwareVersion,
                     PREVIOUS_SOFTWARE_VERSION);

@@ -81,7 +81,7 @@ public class FeatureFlagSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec disableAllFeatureFlagsAndConfirmNotSupported() {
+    final HapiSpec disableAllFeatureFlagsAndConfirmNotSupported() {
         return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
                 .when()
@@ -93,7 +93,7 @@ public class FeatureFlagSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
+    final HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
         return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
                 .given()
                 .when()

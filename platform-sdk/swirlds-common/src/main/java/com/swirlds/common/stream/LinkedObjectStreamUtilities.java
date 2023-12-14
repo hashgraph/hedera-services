@@ -16,9 +16,9 @@
 
 package com.swirlds.common.stream;
 
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.OBJECT_STREAM_VERSION;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;

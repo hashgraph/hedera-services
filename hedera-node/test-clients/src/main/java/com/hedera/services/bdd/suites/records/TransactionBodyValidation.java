@@ -40,7 +40,7 @@ public class TransactionBodyValidation extends HapiSuite {
         return List.of(validateTransactionBodySet());
     }
 
-    private HapiSpec validateTransactionBodySet() {
+    final HapiSpec validateTransactionBodySet() {
         return defaultHapiSpec("TransactionBodyValidation")
                 .given()
                 .when()

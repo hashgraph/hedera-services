@@ -157,7 +157,7 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
         return List.of(justDoOne(), addFibNums());
     }
 
-    private HapiSpec addFibNums() {
+    final HapiSpec addFibNums() {
         return defaultHapiSpec("AddFibNums")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, SUITE_PROPS_PREFIX),
@@ -355,7 +355,7 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
         gasUsed.addAndGet(gas);
     }
 
-    private HapiSpec justDoOne() {
+    final HapiSpec justDoOne() {
         final var civilian = "civilian";
         final int[] firstTargets = {19, 24};
         final int[] secondTargets = {30, 31};

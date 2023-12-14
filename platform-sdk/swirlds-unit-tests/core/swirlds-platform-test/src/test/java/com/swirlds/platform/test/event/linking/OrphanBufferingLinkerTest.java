@@ -176,6 +176,7 @@ class OrphanBufferingLinkerTest {
         final OrphanBufferTester orphanBuffer = new OrphanBufferTester(pf ->
                 new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED, mock(IntakeEventCounter.class)));
         for (final GossipEvent event : generatedList) {
+            event.buildDescriptor();
             orphanBuffer.linkEvent(event);
             while (orphanBuffer.hasLinkedEvents()) {
                 returnedList.add(orphanBuffer.pollLinkedEvent().getBaseEvent());
