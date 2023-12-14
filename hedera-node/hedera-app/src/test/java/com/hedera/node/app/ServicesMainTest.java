@@ -75,9 +75,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class ServicesMainTest {
-    private static MockedStatic<LegacyConfigPropertiesLoader> legacyConfigPropertiesLoaderMockedStatic =
+    private static final MockedStatic<LegacyConfigPropertiesLoader> legacyConfigPropertiesLoaderMockedStatic =
             mockStatic(LegacyConfigPropertiesLoader.class);
-    private static MockedStatic<BootstrapUtils> bootstrapUtilsMockedStatic = mockStatic(BootstrapUtils.class);
+    private static final MockedStatic<BootstrapUtils> bootstrapUtilsMockedStatic = mockStatic(BootstrapUtils.class);
 
     private final NodeId selfId = new NodeId(123L);
     private final NodeId unselfId = new NodeId(666L);
@@ -186,7 +186,7 @@ final class ServicesMainTest {
     @Test
     void hardExitOnTooManyMatchingNodes() {
         withBadCommandLineArgs();
-        String[] args = {"-local", "1", "2"};   // both "1" and "2" match entries in address book
+        String[] args = {"-local", "1", "2"}; // both "1" and "2" match entries in address book
 
         try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
             systemExitUtilsMockedStatic
@@ -322,7 +322,7 @@ final class ServicesMainTest {
                 .when(() -> LegacyConfigPropertiesLoader.loadConfigFile(any()))
                 .thenReturn(legacyConfigProperties);
 
-        List<NodeId> nodeIds = new ArrayList();
+        List<NodeId> nodeIds = new ArrayList<>();
         nodeIds.add(new NodeId(1));
         nodeIds.add(new NodeId(2));
 
