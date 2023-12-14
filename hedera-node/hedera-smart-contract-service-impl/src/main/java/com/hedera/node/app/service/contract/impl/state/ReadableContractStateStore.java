@@ -28,11 +28,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A read-only {@link ContractStateStore}.
  */
 public class ReadableContractStateStore implements ContractStateStore {
+    private static final Logger logger = LogManager.getLogger(ReadableContractStateStore.class);
     private final ReadableKVState<SlotKey, SlotValue> storage;
     private final ReadableKVState<EntityNumber, Bytecode> bytecode;
 

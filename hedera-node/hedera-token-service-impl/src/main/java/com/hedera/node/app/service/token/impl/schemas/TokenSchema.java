@@ -25,12 +25,12 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator.asAccountId;
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -93,8 +93,9 @@ public class TokenSchema extends Schema {
             @NonNull final Supplier<SortedSet<Account>> stakingAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> treasuryAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> miscAcctRcds,
-            @NonNull final Supplier<SortedSet<Account>> blocklistAcctRcds) {
-        super(RELEASE_045_VERSION);
+            @NonNull final Supplier<SortedSet<Account>> blocklistAcctRcds,
+            @NonNull final SemanticVersion version) {
+        super(version);
 
         this.sysAccts = sysAcctRcds;
         this.stakingAccts = stakingAcctRcds;
