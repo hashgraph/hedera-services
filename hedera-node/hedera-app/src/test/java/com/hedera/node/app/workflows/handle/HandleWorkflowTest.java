@@ -42,7 +42,6 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
 import com.hedera.node.app.fixtures.workflows.handle.record.SingleTransactionRecordConditions;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
@@ -50,9 +49,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
-import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.Fees;
@@ -88,7 +85,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,12 +149,6 @@ class HandleWorkflowTest extends AppTestBase {
 
     @Mock
     private BlockRecordManager blockRecordManager;
-
-    @Mock(strictness = LENIENT)
-    private SignatureExpander signatureExpander;
-
-    @Mock
-    private SignatureVerifier signatureVerifier;
 
     @Mock
     private TransactionChecker checker;
@@ -275,8 +265,6 @@ class HandleWorkflowTest extends AppTestBase {
                 preHandleWorkflow,
                 dispatcher,
                 blockRecordManager,
-                signatureExpander,
-                signatureVerifier,
                 checker,
                 serviceLookup,
                 configProvider,
@@ -302,8 +290,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -325,8 +311,6 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -348,8 +332,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         null,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -370,54 +352,6 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        null,
-                        signatureExpander,
-                        signatureVerifier,
-                        checker,
-                        serviceLookup,
-                        configProvider,
-                        recordCache,
-                        genesisRecordsTimeHook,
-                        stakingPeriodTimeHook,
-                        feeManager,
-                        exchangeRateManager,
-                        childRecordFinalizer,
-                        finalizer,
-                        systemFileUpdateFacility,
-                        dualStateUpdateFacility,
-                        solvencyPreCheck,
-                        authorizer,
-                        networkUtilizationManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        preHandleWorkflow,
-                        dispatcher,
-                        blockRecordManager,
-                        null,
-                        signatureVerifier,
-                        checker,
-                        serviceLookup,
-                        configProvider,
-                        recordCache,
-                        genesisRecordsTimeHook,
-                        stakingPeriodTimeHook,
-                        feeManager,
-                        exchangeRateManager,
-                        childRecordFinalizer,
-                        finalizer,
-                        systemFileUpdateFacility,
-                        dualStateUpdateFacility,
-                        solvencyPreCheck,
-                        authorizer,
-                        networkUtilizationManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        preHandleWorkflow,
-                        dispatcher,
-                        blockRecordManager,
-                        signatureExpander,
                         null,
                         checker,
                         serviceLookup,
@@ -440,8 +374,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         null,
                         serviceLookup,
                         configProvider,
@@ -463,8 +395,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         null,
                         configProvider,
@@ -486,8 +416,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         null,
@@ -509,8 +437,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -532,8 +458,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -555,8 +479,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -578,8 +500,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -601,8 +521,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -624,8 +542,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -647,8 +563,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -670,8 +584,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -693,8 +605,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -716,8 +626,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -739,8 +647,6 @@ class HandleWorkflowTest extends AppTestBase {
                         preHandleWorkflow,
                         dispatcher,
                         blockRecordManager,
-                        signatureExpander,
-                        signatureVerifier,
                         checker,
                         serviceLookup,
                         configProvider,
@@ -991,13 +897,6 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
             workflow.handleRound(state, dualState, round);
@@ -1018,15 +917,6 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
 
             // when
             workflow.handleRound(state, dualState, round);
@@ -1037,7 +927,7 @@ class HandleWorkflowTest extends AppTestBase {
 
         @Test
         @DisplayName("Add passing verification result, if a key was handled in preHandle")
-        void testOptionalExistingKeyWithPassingSignature() throws PreCheckException, TimeoutException {
+        void testOptionalExistingKeyWithPassingSignature() throws PreCheckException {
             given(preHandleWorkflow.preHandleTransaction(any(), any(), any(), any(), any()))
                     .willAnswer(invocation -> invocation.getArgument(4));
 
@@ -1068,13 +958,6 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
             workflow.handleRound(state, dualState, round);

@@ -361,9 +361,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         return signatureVerifier.verify(txInfo.signedBytes(), expanded);
     }
 
+    // too many parameters
     private boolean wasComputedWithCurrentNodeConfiguration(@Nullable PreHandleResult previousResult) {
         // (FUTURE) IMPORTANT: Given a completely dynamic address book, we will also need to check
-        // whether this node's account id has changed since we computed the previous result
+        // whether this node's account id has changed since we computed the previous result; c.f.,
+        // https://github.com/hashgraph/hedera-services/issues/10514
         return previousResult == null
                 || previousResult.configVersion()
                         == configProvider.getConfiguration().getVersion();

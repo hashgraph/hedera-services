@@ -49,7 +49,7 @@ public interface PreHandleWorkflow {
      * @param storeFactory The {@link ReadableStoreFactory} based on the current state
      * @param accountStore The {@link ReadableAccountStore} based on the current state
      * @param platformTx The {@link Transaction} to pre-handle
-     * @return
+     * @return The {@link PreHandleResult} of running pre-handle
      */
     default @NonNull PreHandleResult preHandleTransaction(
             @NonNull AccountID creator,

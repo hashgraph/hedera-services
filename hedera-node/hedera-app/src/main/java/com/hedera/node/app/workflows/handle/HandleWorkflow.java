@@ -62,8 +62,6 @@ import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.signature.SignatureExpander;
-import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -120,8 +118,6 @@ public class HandleWorkflow {
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
     private final BlockRecordManager blockRecordManager;
-    private final SignatureExpander signatureExpander;
-    private final SignatureVerifier signatureVerifier;
     private final TransactionChecker checker;
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
@@ -144,8 +140,6 @@ public class HandleWorkflow {
             @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final SignatureExpander signatureExpander,
-            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final TransactionChecker checker,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
@@ -165,8 +159,6 @@ public class HandleWorkflow {
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
-        this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
-        this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
         this.checker = requireNonNull(checker, "checker must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
@@ -728,6 +720,13 @@ public class HandleWorkflow {
         if (metadata instanceof PreHandleResult result) {
             previousResult = result;
         } else {
+            // This should be impossible since the Platform contract guarantees that SwirldState.preHandle()
+            // is always called before SwirldState.handleTransaction(); and our preHandle() implementation
+            // always sets the metadata to a PreHandleResult
+            logger.error(
+                    "Received transaction without PreHandleResult metadata from node {} (was {})",
+                    creator.nodeId(),
+                    metadata);
             previousResult = null;
         }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
