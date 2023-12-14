@@ -20,7 +20,6 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -54,11 +53,7 @@ public record ApplicationTransactionPrehandlerWiring(
      */
     public void bind(@NonNull final SwirldStateManager swirldStateManager) {
         ((BindableInputWire<GossipEvent, Void>) appTransactionsToPrehandleInput).bind(event -> {
-            // As a temporary work around, convert to EventImpl.
-            // Once we remove the legacy pathway, we can remove this.
-            final EventImpl eventImpl = new EventImpl(event, null, null);
-            swirldStateManager.prehandleApplicationTransactions(eventImpl);
-            event.signalPrehandleCompletion();
+            swirldStateManager.prehandleApplicationTransactions(event);
         });
     }
 }

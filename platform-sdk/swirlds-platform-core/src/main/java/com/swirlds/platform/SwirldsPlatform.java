@@ -641,7 +641,7 @@ public class SwirldsPlatform implements Platform {
 
         final Consumer<EventImpl> preconsensusEventHandlerConsumer;
         final Clearable preconsensusEventHandlerClear;
-        if (eventConfig.useLegacyIntake() || eventConfig.useLegacyPrehandle()) {
+        if (eventConfig.useLegacyIntake()) {
             final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
                     metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
             preconsensusEventHandlerConsumer = preConsensusEventHandler::preconsensusEvent;
@@ -762,14 +762,7 @@ public class SwirldsPlatform implements Platform {
             final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
             final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
             final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                    platformContext,
-                    threadManager,
-                    time,
-                    consensusRef::get,
-                    eventObserverDispatcher,
-                    shadowGraph,
-                    preconsensusEventHandlerConsumer,
-                    intakeEventCounter);
+                    platformContext, time, consensusRef::get, eventObserverDispatcher, shadowGraph, intakeEventCounter);
 
             final EventCreationManager eventCreationManager = buildEventCreationManager(
                     platformContext,

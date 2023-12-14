@@ -17,9 +17,7 @@
 package com.swirlds.platform.components;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -31,12 +29,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -63,9 +55,6 @@ public class LinkedEventIntake {
      */
     private final ShadowGraph shadowGraph;
 
-    private final ExecutorService prehandlePool;
-    private final Consumer<EventImpl> prehandleEvent;
-
     private final EventIntakeMetrics metrics;
     private final Time time;
 
@@ -82,63 +71,31 @@ public class LinkedEventIntake {
     private boolean paused;
 
     /**
-     * Whether or not to use the legacy prehandle strategy (i.e. prehandle on a thread pool in this class).
-     * If false then prehandle will be handled by the wiring framework.
-     */
-    private final boolean useLegacyPrehandle;
-
-    /**
      * Constructor
      *
      * @param platformContext    the platform context
-     * @param threadManager      creates new threading resources
      * @param time               provides the wall clock time
      * @param consensusSupplier  provides the current consensus instance
      * @param dispatcher         invokes event related callbacks
      * @param shadowGraph        tracks events in the hashgraph
-     * @param prehandleEvent     prehandles transactions in an event
      * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
      */
     public LinkedEventIntake(
             @NonNull final PlatformContext platformContext,
-            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> prehandleEvent,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
-        this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
-        useLegacyPrehandle = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .useLegacyPrehandle();
         this.paused = false;
-
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-
-        final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
-
-        if (useLegacyPrehandle) {
-            prehandlePool = new ThreadPoolExecutor(
-                    eventConfig.prehandlePoolSize(),
-                    eventConfig.prehandlePoolSize(),
-                    0L,
-                    TimeUnit.MILLISECONDS,
-                    prehandlePoolQueue,
-                    threadManager.createThreadFactory("platform", "txn-prehandle"));
-        } else {
-            prehandlePool = null;
-        }
-
-        metrics = new EventIntakeMetrics(platformContext, prehandlePoolQueue::size);
+        metrics = new EventIntakeMetrics(platformContext, () -> 0 /* TODO */);
     }
 
     /**
@@ -168,11 +125,6 @@ public class LinkedEventIntake {
 
             final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
 
-            if (useLegacyPrehandle) {
-                // Prehandle transactions on the thread pool.
-                prehandlePool.submit(buildPrehandleTask(event));
-            }
-
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
 
@@ -201,19 +153,6 @@ public class LinkedEventIntake {
      */
     public void setPaused(final boolean paused) {
         this.paused = paused;
-    }
-
-    /**
-     * Build a task that will prehandle transactions in an event. Executed on a thread pool.
-     *
-     * @param event the event to prehandle
-     */
-    @NonNull
-    private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
-        return () -> {
-            prehandleEvent.accept(event);
-            event.getBaseEvent().signalPrehandleCompletion();
-        };
     }
 
     /**

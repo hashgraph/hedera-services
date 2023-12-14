@@ -71,9 +71,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring;
 
     private final PlatformCoordinator platformCoordinator;
-
-    private final boolean useLegacyPrehandle;
-
     /**
      * Constructor.
      *
@@ -86,11 +83,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         model = WiringModel.create(platformContext, time);
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
-
-        useLegacyPrehandle = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .useLegacyPrehandle();
 
         // the new intake pipeline components must only be constructed if they are enabled
         // this ensures that no exception will arise for unbound wires
@@ -106,15 +98,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             eventCreationManagerWiring =
                     EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
 
-            if (useLegacyPrehandle) {
-                applicationTransactionPrehandlerWiring = null;
-                systemTransactionPrehandlerWiring = null;
-            } else {
-                applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
-                        schedulers.applicationTransactionPrehandlerScheduler());
-                systemTransactionPrehandlerWiring =
-                        SystemTransactionPrehandlerWiring.create(schedulers.systemTransactionPrehandlerScheduler());
-            }
+            applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
+                    schedulers.applicationTransactionPrehandlerScheduler());
+            systemTransactionPrehandlerWiring =
+                    SystemTransactionPrehandlerWiring.create(schedulers.systemTransactionPrehandlerScheduler());
 
             platformCoordinator = new PlatformCoordinator(
                     internalEventValidatorWiring,
@@ -184,15 +171,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
             eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
-
-            if (!useLegacyPrehandle) {
-                orphanBufferWiring
-                        .eventOutput()
-                        .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
-                orphanBufferWiring
-                        .eventOutput()
-                        .solderTo(systemTransactionPrehandlerWiring.systemTransactionsToPrehandleInput());
-            }
+            orphanBufferWiring
+                    .eventOutput()
+                    .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
+            orphanBufferWiring
+                    .eventOutput()
+                    .solderTo(systemTransactionPrehandlerWiring.systemTransactionsToPrehandleInput());
 
             solderMinimumGenerationNonAncient();
         }
@@ -261,11 +245,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
         eventCreationManagerWiring.bind(eventCreationManager);
-
-        if (!useLegacyPrehandle) {
-            applicationTransactionPrehandlerWiring.bind(swirldStateManager);
-            systemTransactionPrehandlerWiring.bind(swirldStateManager);
-        }
+        applicationTransactionPrehandlerWiring.bind(swirldStateManager);
+        systemTransactionPrehandlerWiring.bind(swirldStateManager);
     }
 
     /**

@@ -24,6 +24,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -126,6 +127,13 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         initialState(state);
     }
 
+    public void prehandleApplicationTransactions(final GossipEvent event) {
+        // As a temporary work around, convert to EventImpl.
+        // Once we remove the legacy pathway, we can remove this.
+        final EventImpl eventImpl = new EventImpl(event, null, null);
+        prehandleApplicationTransactions(eventImpl);
+    }
+
     /**
      * Prehandles application transactions.
      *
@@ -139,6 +147,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
             immutableState = latestImmutableState.get();
         }
         transactionHandler.preHandle(event, immutableState.getSwirldState());
+        event.getBaseEvent().signalPrehandleCompletion();
         immutableState.release();
 
         stats.preHandleTime(startTime, System.nanoTime());
