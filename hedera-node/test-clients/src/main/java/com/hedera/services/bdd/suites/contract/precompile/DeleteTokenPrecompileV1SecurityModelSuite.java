@@ -86,7 +86,7 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
         return List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases());
     }
 
-    private HapiSpec deleteFungibleTokenWithNegativeCases() {
+    final HapiSpec deleteFungibleTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
 
@@ -146,7 +146,7 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
                                                 htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
-    private HapiSpec deleteNftTokenWithNegativeCases() {
+    final HapiSpec deleteNftTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";
 

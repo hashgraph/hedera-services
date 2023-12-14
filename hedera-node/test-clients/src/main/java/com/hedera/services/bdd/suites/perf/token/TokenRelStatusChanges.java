@@ -67,7 +67,7 @@ public class TokenRelStatusChanges extends HapiSuite {
         });
     }
 
-    private HapiSpec runTokenRelStatusChanges() {
+    final HapiSpec runTokenRelStatusChanges() {
         return HapiSpec.defaultHapiSpec("RunTokenRelStatusChanges")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when()

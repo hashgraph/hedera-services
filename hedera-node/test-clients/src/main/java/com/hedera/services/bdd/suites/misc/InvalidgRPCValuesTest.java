@@ -50,7 +50,7 @@ public class InvalidgRPCValuesTest extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidIdCheck() {
+    final HapiSpec invalidIdCheck() {
         final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
         final String invalidMaxId = MAX_NUM_ALLOWED + 1 + ".2.3";
         return defaultHapiSpec("TransferWithInvalidAccount")

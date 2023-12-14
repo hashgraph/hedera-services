@@ -65,7 +65,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountDetailsDemo() {
+    final HapiSpec getAccountDetailsDemo() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -138,7 +138,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec retryLimitDemo() {
+    final HapiSpec retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
                 .when()
@@ -150,8 +150,8 @@ public class RandomOps extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
-    // @todo('8687') Revisit once isolated tests are enabled
-    private HapiSpec freezeDemo() {
+    @HapiTest
+    final HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()
