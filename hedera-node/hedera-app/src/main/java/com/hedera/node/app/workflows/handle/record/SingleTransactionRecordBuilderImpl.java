@@ -310,6 +310,36 @@ public class SingleTransactionRecordBuilderImpl
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
 
+    public void nullOutSideEffectFields() {
+        serialNumbers.clear();
+        tokenTransferLists.clear();
+        automaticTokenAssociations.clear();
+        if (transferList.hasAccountAmounts()) {
+            transferList.accountAmounts().clear();
+        }
+        paidStakingRewards.clear();
+        assessedCustomFees.clear();
+
+        newTotalSupply = 0L;
+        contractFunctionResult = null;
+
+        transactionReceiptBuilder.accountID((AccountID) null);
+        transactionReceiptBuilder.contractID((ContractID) null);
+        transactionReceiptBuilder.fileID((FileID) null);
+        transactionReceiptBuilder.tokenID((TokenID) null);
+        transactionReceiptBuilder.scheduleID((ScheduleID) null);
+        transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
+        transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
+        transactionReceiptBuilder.newTotalSupply(0L);
+        transactionReceiptBuilder.topicRunningHashVersion(0L);
+        transactionReceiptBuilder.topicSequenceNumber(0L);
+        transactionRecordBuilder.contractCreateResult((ContractFunctionResult) null);
+        transactionRecordBuilder.scheduleRef((ScheduleID) null);
+        transactionRecordBuilder.alias(Bytes.EMPTY);
+        transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
+        transactionRecordBuilder.evmAddress(Bytes.EMPTY);
+    }
+
     public ReversingBehavior reversingBehavior() {
         return reversingBehavior;
     }
@@ -473,6 +503,17 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the transferList.
+     *
+     * @return transferList
+     */
+    @Override
+    @NonNull
+    public TransferList transferList() {
+        return transferList;
+    }
+
+    /**
      * Sets the transferList.
      *
      * @param transferList the transferList
@@ -484,12 +525,6 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(transferList, "transferList must not be null");
         this.transferList = transferList;
         return this;
-    }
-
-    @Override
-    @NonNull
-    public TransferList transferList() {
-        return transferList;
     }
 
     /**
