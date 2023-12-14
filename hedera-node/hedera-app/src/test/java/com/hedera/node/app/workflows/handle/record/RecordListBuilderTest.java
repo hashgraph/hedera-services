@@ -876,7 +876,7 @@ class RecordListBuilderTest extends AppTestBase {
         // when
         recordListBuilder.revertChildrenFrom(checkpoint);
 
-        //then
+        // then
         final var result = recordListBuilder.build();
         assertThat(result.records()).hasSize(1);
         assertThat(result.records().get(0)).isSameAs(result.userTransactionRecord());
@@ -890,7 +890,8 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // When
-        final var followingChild = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        final var followingChild =
+                recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var nonExistentPreceding = new SingleTransactionRecordBuilderImpl(Instant.EPOCH);
         final var recordListCheckPoint = new RecordListCheckPoint(nonExistentPreceding, followingChild);
 
@@ -913,7 +914,9 @@ class RecordListBuilderTest extends AppTestBase {
         final var fourth = simpleCryptoTransferWithNonce(txnId, 4);
         // mixing up preceding vs. following, but within which, in order
         var following = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(third);
-        var preceding=  recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(first);
+        var preceding = recordListBuilder
+                .addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS)
+                .transaction(first);
         recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(second);
         recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(fourth);
 
@@ -958,7 +961,8 @@ class RecordListBuilderTest extends AppTestBase {
         final var recordListBuilder = new RecordListBuilder(consensusTime);
 
         addUserTransaction(recordListBuilder);
-        final var followingChild = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        final var followingChild =
+                recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var recordListCheckPoint = new RecordListCheckPoint(null, followingChild);
 
@@ -990,7 +994,8 @@ class RecordListBuilderTest extends AppTestBase {
         final var recordListBuilder = new RecordListBuilder(consensusTime);
 
         addUserTransaction(recordListBuilder);
-        final var followingChild = recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var followingChild =
+                recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
         final var recordListCheckPoint = new RecordListCheckPoint(null, followingChild);
 
@@ -1003,9 +1008,7 @@ class RecordListBuilderTest extends AppTestBase {
         assertThat(records).hasSize(2);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
         assertCreatedRecord(records.get(0)).hasNonce(0).hasResponseCode(OK).hasNoParent();
-        assertCreatedRecord(records.get(1))
-                .hasResponseCode(OK)
-                .hasParent(result.userTransactionRecord());
+        assertCreatedRecord(records.get(1)).hasResponseCode(OK).hasParent(result.userTransactionRecord());
     }
 
     private SingleTransactionRecordBuilderImpl addUserTransaction(final RecordListBuilder builder) {
