@@ -63,6 +63,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -359,6 +362,9 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     HapiSpec smallContractCreate() {
         return defaultHapiSpec("smallContractCreate")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -414,6 +420,9 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         final Long insufficientGasAllowance = 1L;
         return defaultHapiSpec("doesNotCreateChildRecordIfEthereumContractCreateFails")
                 .given(
+                        snapshotMode(
+                        SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS,
+                        SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
