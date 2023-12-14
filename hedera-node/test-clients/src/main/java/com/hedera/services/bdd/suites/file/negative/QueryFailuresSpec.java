@@ -51,7 +51,7 @@ public class QueryFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getsExpectedRejections() {
+    final HapiSpec getsExpectedRejections() {
         return defaultHapiSpec("getsExpectedRejections")
                 .given(fileCreate("tbd"), fileDelete("tbd"))
                 .when()

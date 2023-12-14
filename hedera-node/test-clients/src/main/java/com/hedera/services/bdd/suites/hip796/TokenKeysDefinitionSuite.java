@@ -68,7 +68,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec manageLockKeyCapabilities() {
+    final HapiSpec manageLockKeyCapabilities() {
         return defaultHapiSpec("ManageLockKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING), newKeyNamed("newLockKey"))
                 .when(
@@ -90,7 +90,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec managePartitionKeyCapabilities() {
+    final HapiSpec managePartitionKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionKeyCapabilities")
                 .given(fungibleTokenWithFeatures(ADMIN_CONTROL, PARTITIONING), newKeyNamed("newPartitionKey"))
                 .when(
@@ -112,7 +112,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec managePartitionMoveKeyCapabilities() {
+    final HapiSpec managePartitionMoveKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionMoveKeyCapabilities")
                 .given(
                         fungibleTokenWithFeatures(ADMIN_CONTROL, INTER_PARTITION_MANAGEMENT),
@@ -136,7 +136,7 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    private HapiSpec manageKeysViaSmartContract() {
+    final HapiSpec manageKeysViaSmartContract() {
         return defaultHapiSpec("ManageKeysViaSmartContract")
                 .given(
                         fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING, PARTITIONING, INTER_PARTITION_MANAGEMENT)

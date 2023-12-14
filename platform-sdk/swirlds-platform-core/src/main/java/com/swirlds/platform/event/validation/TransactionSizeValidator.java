@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
@@ -55,7 +55,7 @@ public class TransactionSizeValidator implements GossipEventValidator {
         // This might be due to a malicious node in the network
         if (tmpEventTransSize > maxTransactionBytesPerEvent) {
             logger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "maxTransactionBytesPerEvent exceeded by event {} with a total size of {} bytes",
                     () -> EventStrings.toShortString(event),
                     () -> finalEventTransSize);

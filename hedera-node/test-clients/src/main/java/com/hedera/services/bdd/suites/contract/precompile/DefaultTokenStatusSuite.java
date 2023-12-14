@@ -83,7 +83,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getTokenDefaultFreezeStatus() {
+    final HapiSpec getTokenDefaultFreezeStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("GetTokenDefaultFreezeStatus")
@@ -126,7 +126,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getTokenDefaultKycStatus() {
+    final HapiSpec getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("GetTokenDefaultKycStatus")

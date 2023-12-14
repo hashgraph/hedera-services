@@ -56,7 +56,7 @@ public class UnsupportedQueriesRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec verifyUnsupportedOps() {
+    final HapiSpec verifyUnsupportedOps() {
         return defaultHapiSpec("VerifyUnsupportedOps")
                 .given()
                 .when()
