@@ -25,7 +25,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -33,7 +32,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -317,7 +315,8 @@ public class PreconsensusEventFileManager {
         if (files.getFileCount() == 1) {
             previousFileHighestGeneration = 0;
         } else {
-            previousFileHighestGeneration = files.getFile(files.getFileCount() - 2).getMaximumGeneration();
+            previousFileHighestGeneration =
+                    files.getFile(files.getFileCount() - 2).getMaximumGeneration();
         }
 
         // Compress the generational span of the file. Reduces overlap between files.

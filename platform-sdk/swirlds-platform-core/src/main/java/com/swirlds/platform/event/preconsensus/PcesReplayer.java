@@ -16,29 +16,27 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-
-import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
-import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.
@@ -54,7 +52,11 @@ public final class PcesReplayer {
 
     private final StateManagementComponent stateManagementComponent;
 
-    public PcesReplayer(final @NonNull Time time, final @NonNull OutputWire<GossipEvent> eventOutputWire, final @NonNull Runnable flushSystem, @NonNull final StateManagementComponent stateManagementComponent) {
+    public PcesReplayer(
+            final @NonNull Time time,
+            final @NonNull OutputWire<GossipEvent> eventOutputWire,
+            final @NonNull Runnable flushSystem,
+            @NonNull final StateManagementComponent stateManagementComponent) {
         this.time = Objects.requireNonNull(time);
         this.eventOutputWire = Objects.requireNonNull(eventOutputWire);
         this.flushSystem = Objects.requireNonNull(flushSystem);
@@ -65,12 +67,10 @@ public final class PcesReplayer {
      * Write information about the replay to disk.
      */
     private void logReplayInfo(
-            final long eventCount,
-            final long transactionCount,
-            @NonNull final Duration elapsedTime) {
+            final long eventCount, final long transactionCount, @NonNull final Duration elapsedTime) {
 
         try (final ReservedSignedState latestConsensusRound =
-                     stateManagementComponent.getLatestImmutableState("SwirldsPlatform.replayPreconsensusEventStream()")) {
+                stateManagementComponent.getLatestImmutableState("SwirldsPlatform.replayPreconsensusEventStream()")) {
 
             if (latestConsensusRound.isNull()) {
                 logger.info(

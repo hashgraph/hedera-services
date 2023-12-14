@@ -1,19 +1,34 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.event.preconsensus;
+
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager.NO_MINIMUM_GENERATION;
 
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
-
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager.NO_MINIMUM_GENERATION;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Tracks preconsensus event files currently on disk.
@@ -137,8 +152,10 @@ public class PreconsensusEventFiles {
      * @param startingRound     the round to start iterating from
      * @return an iterator that walks over events
      */
-    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(final long minimumGeneration, final long startingRound) {
-        return new PreconsensusEventMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration, startingRound));
+    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(
+            final long minimumGeneration, final long startingRound) {
+        return new PreconsensusEventMultiFileIterator(
+                minimumGeneration, getFileIterator(minimumGeneration, startingRound));
     }
 
     /**
@@ -154,7 +171,8 @@ public class PreconsensusEventFiles {
      * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(final long minimumGeneration, final long startingRound) {
+    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(
+            final long minimumGeneration, final long startingRound) {
         final int firstFileIndex = getFirstFileIndex(startingRound);
 
         // Edge case: we want all events regardless of generation

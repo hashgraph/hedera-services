@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.common.wiring.wires.SolderType.INJECT;
+
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
@@ -48,11 +50,9 @@ import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
+import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
-
-import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
@@ -72,6 +72,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
+    private final PcesWriterWiring pcesWriterWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -125,6 +126,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
+        pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
 
         wire();
     }
@@ -153,6 +155,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(
                 eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
     }
 
     /**
@@ -255,7 +258,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param pcesReplayer           the PCES replayer to bind
      */
     public void bind(
-            @NonNull final EventHasher eventHasher, @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner, @NonNull final PcesReplayer pcesReplayer) {
+            @NonNull final EventHasher eventHasher,
+            @NonNull final SignedStateFileManager signedStateFileManager,
+            @NonNull final StateSigner stateSigner,
+            @NonNull final PcesReplayer pcesReplayer) {
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
@@ -347,6 +353,51 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * Get the input wire for the PCES writer minimum generation to store
+     *
+     * @return the input wire for the PCES writer minimum generation to store
+     */
+    public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
+        return pcesWriterWiring.minimumGenerationToStoreInputWire();
+    }
+
+    /**
+     * Get the input wire for the PCES writer to register a discontinuity
+     *
+     * @return the input wire for the PCES writer to register a discontinuity
+     */
+    public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
+        return pcesWriterWiring.discontinuityInputWire();
+    }
+
+    /**
+     * Get the input wire for the PCES writer to update the minimum generation non-ancient
+     *
+     * @return the input wire for the PCES writer to update the minimum generation non-ancient
+     */
+    public InputWire<Long> getPcesWriterMinimumGenerationNonAncientInput() {
+        return pcesWriterWiring.minimumGenerationNonAncientInput();
+    }
+
+    /**
+     * Get the input wire for passing events to the PCES writer.
+     *
+     * @return the input wire for passing events to the PCES writer
+     */
+    public InputWire<GossipEvent> getPcesWriterEventInput() {
+        return pcesWriterWiring.eventInputWire();
+    }
+
+    /**
+     * Get the runnable that will flush the PCES writer.
+     *
+     * @return the runnable that will flush the PCES writer
+     */
+    public Runnable getPcesWriterFlushRunnable() {
+        return pcesWriterWiring.flushRunnable();
+    }
+
+    /**
      * Inject a new minimum generation non-ancient on all components that need it.
      * <p>
      * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient during
@@ -360,6 +411,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
         inOrderLinkerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
         eventCreationManagerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        pcesWriterWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 
     /**

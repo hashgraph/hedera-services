@@ -49,22 +49,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         public static final int BIRTH_ROUND = 3;
     }
 
-    /**
-     * The sequence number of an event before it is added to the write queue.
-     */
-    public static final long NO_STREAM_SEQUENCE_NUMBER = -1;
-
-    /**
-     * The sequence number of an event that will never be written to disk because it is stale.
-     */
-    public static final long STALE_EVENT_STREAM_SEQUENCE_NUMBER = -2;
-
-    /**
-     * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
-     * signal when events have been made durable.
-     */
-    private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
-
     private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
@@ -294,30 +278,5 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public int hashCode() {
         return hashedData.getHash().hashCode();
-    }
-
-    /**
-     * Set the sequence number in the preconsensus event stream for this event.
-     *
-     * @param streamSequenceNumber the sequence number
-     */
-    public void setStreamSequenceNumber(final long streamSequenceNumber) {
-        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
-                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("sequence number already set");
-        }
-        this.streamSequenceNumber = streamSequenceNumber;
-    }
-
-    /**
-     * Get the sequence number in the preconsensus event stream for this event.
-     *
-     * @return the sequence number
-     */
-    public long getStreamSequenceNumber() {
-        if (streamSequenceNumber == NO_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("sequence number not set");
-        }
-        return streamSequenceNumber;
     }
 }

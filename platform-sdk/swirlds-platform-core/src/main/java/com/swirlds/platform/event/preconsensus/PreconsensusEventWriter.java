@@ -16,6 +16,10 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.CountUpLatch;
@@ -23,17 +27,11 @@ import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
 import java.util.Objects;
-
-import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
-import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This object is responsible for writing events to the database.

@@ -27,7 +27,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 
 /**
@@ -55,7 +54,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
-        @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler) {
+        @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
+        @NonNull TaskScheduler<Void> pcesWriterScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -70,7 +70,7 @@ public record PlatformSchedulers(
 
         return new PlatformSchedulers(
                 model.schedulerBuilder("eventHasher")
-                        .withType(config.getEventHasherSchedulerType())
+                        .withType(config.eventHasherSchedulerType())
                         .withUnhandledTaskCapacity(config.eventHasherUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
@@ -138,6 +138,12 @@ public record PlatformSchedulers(
                         .cast(),
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("pcesWriter")
+                        .withType(config.pcesWriterSchedulerType())
+                        .withUnhandledTaskCapacity(config.pcesWriterUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());
     }

@@ -19,7 +19,6 @@ package com.swirlds.common.config;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Contains configuration values for the platform schedulers.
@@ -72,10 +71,9 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventCreationManagerSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String signedStateFileManagerSchedulerType,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String pcesWriterSchedulerType,
-        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity) {
-}
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
+        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity) {}
