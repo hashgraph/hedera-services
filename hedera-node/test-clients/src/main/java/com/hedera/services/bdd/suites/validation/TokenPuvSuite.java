@@ -64,7 +64,7 @@ public class TokenPuvSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec initialFunding() {
+    final HapiSpec initialFunding() {
         return HapiSpec.customHapiSpec("InitialFunding")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
@@ -94,7 +94,7 @@ public class TokenPuvSuite extends HapiSuite {
                                         .balance(Amounts.BESTOWED_CAT_TOKENS)));
     }
 
-    private HapiSpec initialAssociation() {
+    final HapiSpec initialAssociation() {
         return HapiSpec.customHapiSpec("InitialAssociation")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
@@ -112,7 +112,7 @@ public class TokenPuvSuite extends HapiSuite {
                                         .kyc(TokenKycStatus.KycNotApplicable)));
     }
 
-    private HapiSpec cleanupIfNecessary() {
+    final HapiSpec cleanupIfNecessary() {
         return HapiSpec.customHapiSpec("CleanupIfNecessary")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given()

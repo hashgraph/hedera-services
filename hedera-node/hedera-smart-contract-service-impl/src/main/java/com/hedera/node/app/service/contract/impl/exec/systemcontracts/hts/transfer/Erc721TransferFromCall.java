@@ -38,7 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -46,7 +46,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Implements the ERC-721 {@code transferFrom()} call of the HTS contract.
  */
 public class Erc721TransferFromCall extends AbstractHtsCall {
-
     private final long serialNo;
     private final Address from;
     private final Address to;
@@ -77,34 +76,6 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         this.serialNo = serialNo;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @NonNull PricedResult execute() {
-        // https://eips.ethereum.org/EIPS/eip-721
-        if (tokenId == null) {
-            return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.TRANSFER_NFT));
-        }
-        final var syntheticTransfer = syntheticTransfer(senderId);
-        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
-        final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticTransfer, verificationStrategy, senderId, CryptoTransferRecordBuilder.class);
-        final var status = recordBuilder.status();
-        if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, gasRequirement), status, false);
-        } else {
-            return gasOnly(
-                    successResult(
-                            Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
-                                    .getOutputs()
-                                    .encodeElements(),
-                            gasRequirement),
-                    status,
-                    false);
-        }
-    }
-
     @NonNull
     @Override
     public PricedResult execute(final MessageFrame frame) {
@@ -115,10 +86,10 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         final var syntheticTransfer = syntheticTransfer(senderId);
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticTransfer, verificationStrategy, senderId, CryptoTransferRecordBuilder.class);
+                .dispatch(syntheticTransfer, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, gasRequirement), status, false);
+            return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
         } else {
             final var nftTransfer = syntheticTransfer
                     .cryptoTransferOrThrow()
@@ -132,7 +103,8 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                             Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
                                     .getOutputs()
                                     .encodeElements(),
-                            gasRequirement),
+                            gasRequirement,
+                            recordBuilder),
                     status,
                     false);
         }

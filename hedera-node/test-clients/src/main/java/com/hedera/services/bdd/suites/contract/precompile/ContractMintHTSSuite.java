@@ -118,7 +118,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferNftAfterNestedMint() {
+    final HapiSpec transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
 
         return defaultHapiSpec(
@@ -191,7 +191,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                     .withStatus(SUCCESS)
                                                                     .withTotalSupply(1L)
                                                                     .withSerialNumbers(1L))
-                                                            .gas(3_837_920L)
+                                                            .gas(3_836_587L)
                                                             .amount(0L)
                                                             .functionParameters(functionParameters()
                                                                     .forFunction(
@@ -220,7 +220,7 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
+    final HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
         return defaultHapiSpec(

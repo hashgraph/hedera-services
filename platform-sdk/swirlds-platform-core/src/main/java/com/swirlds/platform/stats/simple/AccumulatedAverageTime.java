@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.stats.simple;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.units.UnitConstants;
 
 /**
  * Tracks the average time taken for an operation by accumulating the time and the number of operation. The actual

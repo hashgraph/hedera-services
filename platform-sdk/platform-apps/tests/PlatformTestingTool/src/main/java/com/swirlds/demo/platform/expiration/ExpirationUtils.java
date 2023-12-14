@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform.expiration;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.demo.merkle.map.FCMFamily;
