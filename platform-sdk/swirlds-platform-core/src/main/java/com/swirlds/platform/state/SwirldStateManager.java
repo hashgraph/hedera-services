@@ -127,6 +127,12 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         initialState(state);
     }
 
+    /**
+     * Prehandles application transactions. Similar to {@link #prehandleApplicationTransactions(EventImpl)} but accepts
+     * a {@link GossipEvent} instead of an {@link EventImpl}.
+     *
+     * @param event the event to handle
+     */
     public void prehandleApplicationTransactions(final GossipEvent event) {
         // As a temporary work around, convert to EventImpl.
         // Once we remove the legacy pathway, we can remove this.

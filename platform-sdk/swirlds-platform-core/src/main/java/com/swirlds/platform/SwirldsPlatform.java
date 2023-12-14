@@ -648,7 +648,7 @@ public class SwirldsPlatform implements Platform {
             preconsensusEventHandlerClear = preConsensusEventHandler;
         } else {
             preconsensusEventHandlerConsumer = event -> {};
-            preconsensusEventHandlerClear = () -> {};
+            preconsensusEventHandlerClear = null;
         }
 
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
@@ -911,7 +911,6 @@ public class SwirldsPlatform implements Platform {
                             Pair.of(intakeQueue, "intakeQueue"),
                             Pair.of(platformWiring, "platformWiring"),
                             Pair.of(shadowGraph, "shadowGraph"),
-                            Pair.of(preconsensusEventHandlerClear, "preConsensusEventHandler"),
                             Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                             Pair.of(transactionPool, "transactionPool")));
         }

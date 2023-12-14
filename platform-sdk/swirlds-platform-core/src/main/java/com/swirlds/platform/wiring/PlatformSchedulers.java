@@ -41,6 +41,7 @@ import java.util.List;
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
+ * @param systemTransactionPrehandlerScheduler      the scheduler for the system transaction prehandler
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,

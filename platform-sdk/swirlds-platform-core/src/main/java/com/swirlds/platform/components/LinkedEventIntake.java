@@ -95,7 +95,7 @@ public class LinkedEventIntake {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.paused = false;
-        metrics = new EventIntakeMetrics(platformContext, () -> 0 /* TODO */);
+        metrics = new EventIntakeMetrics(platformContext, () -> -1);
     }
 
     /**

@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for system transaction prehandling.
  *
- * @param systemTransactionsToPrehandleInput the input wire containing events where application transactions should be
+ * @param systemTransactionsToPrehandleInput the input wire containing events where system transactions should be
  *                                           prehandled
  * @param flushRunnable                      the runnable that will flush the system transaction prehandler
  */
