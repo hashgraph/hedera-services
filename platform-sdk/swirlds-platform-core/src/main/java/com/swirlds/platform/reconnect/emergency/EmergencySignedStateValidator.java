@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.reconnect.emergency;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 
 import com.swirlds.common.config.StateConfig;
@@ -89,7 +90,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
         if (!signedState.getState().getHash().equals(emergencyRecoveryFile.hash())) {
 
             logger.error(
-                    SIGNED_STATE.getMarker(),
+                    EXCEPTION.getMarker(),
                     """
                             Emergency recovery signed state round matches the request but hash does not.
                             Failed emergency reconnect state:
@@ -116,7 +117,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
 
     private void throwStateTooOld(final SignedState signedState) {
         logger.error(
-                SIGNED_STATE.getMarker(),
+                EXCEPTION.getMarker(),
                 """
                         State is too old. Failed emergency reconnect state:
                         {}""",
@@ -149,7 +150,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
                 signedState.getState().getPlatformState().getPlatformData().getEpochHash();
         if (!emergencyRecoveryFile.hash().equals(epochHash)) {
             logger.error(
-                    SIGNED_STATE.getMarker(),
+                    EXCEPTION.getMarker(),
                     """
                             State is fully signed but has an incorrect epoch hash. Failed emergency recovery state:
                             {}""",

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -51,7 +52,7 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
 
-        wiring.bind(mock(SignedStateFileManager.class));
+        wiring.bind(mock(SignedStateFileManager.class), mock(StateSigner.class));
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
 
@@ -76,7 +77,7 @@ class PlatformWiringTests {
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
                 mock(EventCreationManager.class));
-        wiring.bind(mock(SignedStateFileManager.class));
+        wiring.bind(mock(SignedStateFileManager.class), mock(StateSigner.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
