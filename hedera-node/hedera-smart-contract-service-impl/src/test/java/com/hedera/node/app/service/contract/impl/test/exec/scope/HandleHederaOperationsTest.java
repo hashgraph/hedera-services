@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -192,6 +193,20 @@ class HandleHederaOperationsTest {
     void useNumberUsesContext() {
         given(context.newEntityNum()).willReturn(123L);
         assertEquals(123L, subject.useNextEntityNumber());
+    }
+
+    @Test
+    void createRecordListCheckPointUsesContext() {
+        var recordListCheckPoint = new RecordListCheckPoint(null, null);
+        given(context.createRecordListCheckPoint()).willReturn(recordListCheckPoint);
+        assertEquals(recordListCheckPoint, subject.createRecordListCheckPoint());
+    }
+
+    @Test
+    void revertRecordsFromUsesContext() {
+        var recordListCheckPoint = new RecordListCheckPoint(null, null);
+        subject.revertRecordsFrom(recordListCheckPoint);
+        verify(context).revertRecordsFrom(recordListCheckPoint);
     }
 
     @Test

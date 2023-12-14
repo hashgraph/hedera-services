@@ -1011,6 +1011,54 @@ class RecordListBuilderTest extends AppTestBase {
         assertCreatedRecord(records.get(1)).hasResponseCode(OK).hasParent(result.userTransactionRecord());
     }
 
+    @Test
+    void revertChildrenFrom_Correctly_Revert_RemovablePrecedingChild() {
+        // Given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var builder = addUserTransaction(recordListBuilder);
+        final var txnId = builder.transactionID();
+
+        final var first = simpleCryptoTransferWithNonce(txnId, 2);
+        final var second = simpleCryptoTransferWithNonce(txnId, 1);
+        final var third = simpleCryptoTransferWithNonce(txnId, 3);
+
+        // mixing up preceding vs. following, but within which, in order
+        var preceding = recordListBuilder
+                .addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS)
+                .transaction(first);
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(second);
+        var following = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(third);
+
+        final var recordListCheckPoint = new RecordListCheckPoint(preceding, following);
+
+        // When
+        recordListBuilder.revertChildrenFrom(recordListCheckPoint);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then
+        assertThat(records).hasSize(4);
+        assertThat(records.get(2)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasNoParent()
+                .hasTransaction(first);
+        assertCreatedRecord(records.get(1))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasNoParent()
+                .hasTransaction(second);
+        assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(3))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(3)
+                .hasParent(result.userTransactionRecord())
+                .hasTransaction(third);
+    }
+
     private SingleTransactionRecordBuilderImpl addUserTransaction(final RecordListBuilder builder) {
         final var start = Instant.now().minusSeconds(60);
         final var txnId = TransactionID.newBuilder()

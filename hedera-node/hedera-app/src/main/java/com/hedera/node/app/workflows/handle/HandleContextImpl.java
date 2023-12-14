@@ -478,7 +478,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             if (authorizer.hasWaivedFees(syntheticPayerId, functionOf(txBody), bodyToDispatch)) {
                 return Fees.FREE;
             }
-        } catch (final UnknownHederaFunctionality ex) {
+        } catch (UnknownHederaFunctionality ex) {
             throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
 
