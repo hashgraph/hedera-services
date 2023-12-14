@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gui.internal;
 
-import com.swirlds.gui.components.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.gui.components.ScrollableJPanel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.*;

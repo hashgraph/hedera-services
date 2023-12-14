@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.chatter.protocol.heartbeat;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSender;

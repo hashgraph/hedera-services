@@ -43,7 +43,7 @@ public class ValidateNewAddressBook extends HapiSuite {
         return List.of(fetchFiles());
     }
 
-    private HapiSpec fetchFiles() {
+    final HapiSpec fetchFiles() {
         return defaultHapiSpec("ValidateNewAddressBook")
                 .given()
                 .when()

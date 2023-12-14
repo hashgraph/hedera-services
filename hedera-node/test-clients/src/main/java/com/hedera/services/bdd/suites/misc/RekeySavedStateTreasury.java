@@ -50,7 +50,7 @@ public class RekeySavedStateTreasury extends HapiSuite {
     static final String newTreasuryPassphrase = "passphrase";
     static final String devKeyPemLoc = "devGenesisKeypair.pem";
 
-    private HapiSpec rekeyTreasury() {
+    final HapiSpec rekeyTreasury() {
         final var pemLocForOriginalTreasuryKey = "stabletestnet-account2.pem";
         final var passphraseForOriginalPemLoc = "<SECRET>";
 

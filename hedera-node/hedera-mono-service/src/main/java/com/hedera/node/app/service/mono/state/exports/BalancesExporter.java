@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.state.exports;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import java.time.Instant;
 
 public interface BalancesExporter {

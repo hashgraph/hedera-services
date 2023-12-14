@@ -47,7 +47,7 @@ public final class FreezeUpgrade extends HapiSuite {
         return List.of(new HapiSpec[] {freezeUpgrade()});
     }
 
-    private HapiSpec freezeUpgrade() {
+    final HapiSpec freezeUpgrade() {
         return defaultHapiSpec("FreezeUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> UtilVerbs.freezeUpgrade()

@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
@@ -56,6 +56,12 @@ public record FullResult(
         return result.isRefundGas();
     }
 
+    public void recordInsufficientGas() {
+        if (recordBuilder != null) {
+            recordBuilder.status(INSUFFICIENT_GAS);
+        }
+    }
+
     public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
         requireNonNull(reason);
         return new FullResult(
@@ -75,7 +81,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        ReturnTypes.tuweniEncodedRc(recordBuilder.status())),
+                        Bytes.wrap(recordBuilder.status().protoName().getBytes())),
                 gasRequirement,
                 recordBuilder);
     }
@@ -110,7 +116,7 @@ public record FullResult(
                 null);
     }
 
-    public static FullResult completionResult(
+    public static FullResult successResult(
             @NonNull final ByteBuffer encoded,
             final long gasRequirement,
             @NonNull final ContractCallRecordBuilder recordBuilder) {
@@ -127,5 +133,10 @@ public record FullResult(
                 PrecompiledContract.PrecompileContractResult.success(Bytes.wrap(encoded.array())),
                 gasRequirement,
                 null);
+    }
+
+    public static FullResult haltResult(final long gasRequirement) {
+        return new FullResult(
+                PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.empty()), gasRequirement, null);
     }
 }

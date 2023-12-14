@@ -30,12 +30,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param eventInput                       the input wire for events to be linked
  * @param minimumGenerationNonAncientInput the input wire for the minimum generation non-ancient
+ * @param clearInput                       the input wire to clear the internal state of the linker
  * @param eventOutput                      the output wire for linked events
  * @param flushRunnable                    the runnable to flush the linker
  */
 public record InOrderLinkerWiring(
         @NonNull InputWire<GossipEvent> eventInput,
         @NonNull InputWire<Long> minimumGenerationNonAncientInput,
+        @NonNull InputWire<ClearTrigger> clearInput,
         @NonNull OutputWire<EventImpl> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -49,6 +51,7 @@ public record InOrderLinkerWiring(
         return new InOrderLinkerWiring(
                 taskScheduler.buildInputWire("unlinked events"),
                 taskScheduler.buildInputWire("minimum generation non ancient"),
+                taskScheduler.buildInputWire("clear"),
                 taskScheduler.getOutputWire(),
                 taskScheduler::flush);
     }
@@ -62,5 +65,6 @@ public record InOrderLinkerWiring(
         ((BindableInputWire<GossipEvent, EventImpl>) eventInput).bind(inOrderLinker::linkEvent);
         ((BindableInputWire<Long, EventImpl>) minimumGenerationNonAncientInput)
                 .bind(inOrderLinker::setMinimumGenerationNonAncient);
+        ((BindableInputWire<ClearTrigger, EventImpl>) clearInput).bind(inOrderLinker::clear);
     }
 }

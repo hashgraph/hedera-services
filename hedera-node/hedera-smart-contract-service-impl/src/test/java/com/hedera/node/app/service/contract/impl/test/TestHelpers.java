@@ -173,7 +173,7 @@ public class TestHelpers {
     public static final long BESU_MAX_REFUND_QUOTIENT = 2;
     public static final long MAX_GAS_ALLOWANCE = 666_666_666;
     public static final int STACK_DEPTH = 1;
-    public static final Bytes INITCODE = Bytes.wrap("60a06040526000600b55".getBytes());
+    public static final Bytes INITCODE = Bytes.wrap("0060a06040526000600b55".getBytes());
     public static final Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     public static final Bytes CONSTRUCTOR_PARAMS = Bytes.wrap(new byte[] {2, 3, 2, 3, 2, 3, 2, 3, 2, 3});
     public static final Bytecode BYTECODE = new Bytecode(CALL_DATA);
@@ -595,6 +595,10 @@ public class TestHelpers {
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
         assertEquals(expected.getGasCost(), actual.getGasCost());
+    }
+
+    public static org.apache.tuweni.bytes.Bytes readableRevertReason(@NonNull final ResponseCodeEnum status) {
+        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes());
     }
 
     public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {

@@ -26,7 +26,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeSizeOperation;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -56,7 +56,7 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
                 return new OperationResult(cost(true), INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
-        } catch (FixedStack.UnderflowException ignore) {
+        } catch (UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
     }

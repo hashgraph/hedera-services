@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 
 import java.io.IOException;
 import java.nio.file.Path;

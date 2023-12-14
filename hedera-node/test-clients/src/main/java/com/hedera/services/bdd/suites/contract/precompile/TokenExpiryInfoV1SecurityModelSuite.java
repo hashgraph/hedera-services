@@ -99,7 +99,7 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
 
     @SuppressWarnings({"java:S5960", "java:S1192"
     }) // using `assertThat` in production code - except this isn't production code
-    private HapiSpec updateExpiryInfoForToken() {
+    final HapiSpec updateExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
@@ -251,7 +251,7 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S1192") // "use already defined const instead of copying its value here" - not this time
-    private HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
+    final HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();

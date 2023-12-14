@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
 import com.swirlds.common.metrics.DoubleGauge;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
