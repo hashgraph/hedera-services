@@ -889,9 +889,9 @@ class RecordListBuilderTest extends AppTestBase {
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         addUserTransaction(recordListBuilder);
 
+        // When
         final var followingChild = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var nonExistentPreceding = new SingleTransactionRecordBuilderImpl(Instant.EPOCH);
-
         final var recordListCheckPoint = new RecordListCheckPoint(nonExistentPreceding, followingChild);
 
         // then
@@ -907,7 +907,6 @@ class RecordListBuilderTest extends AppTestBase {
         final var builder = addUserTransaction(recordListBuilder);
         final var txnId = builder.transactionID();
 
-        // when
         final var first = simpleCryptoTransferWithNonce(txnId, 2);
         final var second = simpleCryptoTransferWithNonce(txnId, 1);
         final var third = simpleCryptoTransferWithNonce(txnId, 3);
@@ -954,7 +953,7 @@ class RecordListBuilderTest extends AppTestBase {
 
     @Test
     void revertChildrenFrom_Correctly_Revert_FollowingChild() {
-        // given
+        // Given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
 
@@ -963,12 +962,12 @@ class RecordListBuilderTest extends AppTestBase {
         recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var recordListCheckPoint = new RecordListCheckPoint(null, followingChild);
 
-        // when
+        // When
         recordListBuilder.revertChildrenFrom(recordListCheckPoint);
         final var result = recordListBuilder.build();
         final var records = result.records();
 
-        // then the following child should be reverted
+        // Then the following child should be reverted
         assertThat(records).hasSize(3);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
         assertCreatedRecord(records.get(0)).hasNonce(0).hasResponseCode(OK).hasNoParent();
@@ -986,7 +985,7 @@ class RecordListBuilderTest extends AppTestBase {
 
     @Test
     void revertChildrenFrom_Correctly_Revert_RemovableFollowingChild() {
-        // given
+        // Given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
 
@@ -995,12 +994,12 @@ class RecordListBuilderTest extends AppTestBase {
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
         final var recordListCheckPoint = new RecordListCheckPoint(null, followingChild);
 
-        // when
+        // When
         recordListBuilder.revertChildrenFrom(recordListCheckPoint);
         final var result = recordListBuilder.build();
         final var records = result.records();
 
-        // then the following child should have been removed from the list
+        // Then the following child should have been removed from the list
         assertThat(records).hasSize(2);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
         assertCreatedRecord(records.get(0)).hasNonce(0).hasResponseCode(OK).hasNoParent();
