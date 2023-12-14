@@ -1113,7 +1113,8 @@ public class SwirldsPlatform implements Platform {
             platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             latestImmutableState.setState(signedState.reserve("set latest immutable to reconnect state"));
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
-            savedStateController.reconnectStateReceived(signedState.reserve("savedStateController.reconnectStateReceived"));
+            savedStateController.reconnectStateReceived(
+                    signedState.reserve("savedStateController.reconnectStateReceived"));
             platformWiring.getSaveStateToDiskInput().put(signedState.reserve("save reconnect state to disk"));
 
             loadStateIntoConsensus(signedState);

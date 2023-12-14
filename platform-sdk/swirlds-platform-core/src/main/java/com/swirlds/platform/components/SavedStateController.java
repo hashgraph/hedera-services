@@ -55,15 +55,14 @@ public class SavedStateController {
         this.stateConfig = Objects.requireNonNull(stateConfig);
     }
 
-
     /**
      * Determine if a signed state should be written to disk. If the state should be written, the state will be marked
      * and then written to disk outside the scope of this class.
      *
      * @param reservedSignedState the signed state in question
      */
-    public synchronized void markSavedState(@NonNull final ReservedSignedState reservedSignedState){
-        try(reservedSignedState){
+    public synchronized void markSavedState(@NonNull final ReservedSignedState reservedSignedState) {
+        try (reservedSignedState) {
             final SignedState signedState = reservedSignedState.get();
             final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
 

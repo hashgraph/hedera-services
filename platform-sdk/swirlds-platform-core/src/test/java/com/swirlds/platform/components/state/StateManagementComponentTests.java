@@ -18,7 +18,6 @@ package com.swirlds.platform.components.state;
 
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -37,7 +36,6 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -276,7 +274,7 @@ class StateManagementComponentTests {
                 dispatchBuilder,
                 newLatestCompleteStateConsumer::consume,
                 (msg, t, code) -> {},
-                rss->{},
+                rss -> {},
                 signer);
 
         dispatchBuilder.start();
