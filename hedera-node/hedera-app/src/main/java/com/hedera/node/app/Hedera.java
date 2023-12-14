@@ -518,7 +518,7 @@ public final class Hedera implements SwirldMain {
         // AddressBook k = state.getChild(LEGACY_ADDRESS_BOOK);
 
         //--------------------- CONTRACT_STORAGE (11)
-        if (false) {
+        if (true) {
             VirtualMap<ContractKey, IterableContractValue> l = state.getChild(CONTRACT_STORAGE);
             final var fromStore = VirtualMapLike.from(l);
             final var expectedNumberOfSlots = Math.toIntExact(fromStore.size());
