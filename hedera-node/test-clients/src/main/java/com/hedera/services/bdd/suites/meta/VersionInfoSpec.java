@@ -59,7 +59,7 @@ public class VersionInfoSpec extends HapiSuite {
 
     @BddTestNameDoesNotMatchMethodName
     @HapiTest
-    private HapiSpec discoversExpectedVersions() {
+    final HapiSpec discoversExpectedVersions() {
         if (specConfig != null) {
             return customHapiSpec("getVersionInfo")
                     .withProperties(specConfig)

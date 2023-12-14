@@ -214,7 +214,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec beforeAll() {
+    final HapiSpec beforeAll() {
         try {
             initialize();
         } catch (final Exception e) {
@@ -229,7 +229,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario1() {
+    final HapiSpec traceabilityE2EScenario1() {
         return defaultHapiSpec("traceabilityE2EScenario1")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -599,7 +599,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario2() {
+    final HapiSpec traceabilityE2EScenario2() {
         return defaultHapiSpec("traceabilityE2EScenario2")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -1003,7 +1003,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario3() {
+    final HapiSpec traceabilityE2EScenario3() {
         return defaultHapiSpec("traceabilityE2EScenario3")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -1411,7 +1411,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario4() {
+    final HapiSpec traceabilityE2EScenario4() {
         return defaultHapiSpec("traceabilityE2EScenario4")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -1702,7 +1702,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario5() {
+    final HapiSpec traceabilityE2EScenario5() {
         return defaultHapiSpec("traceabilityE2EScenario5")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -2007,7 +2007,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario6() {
+    final HapiSpec traceabilityE2EScenario6() {
         return defaultHapiSpec("traceabilityE2EScenario6")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -2342,7 +2342,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario7() {
+    final HapiSpec traceabilityE2EScenario7() {
         return defaultHapiSpec("traceabilityE2EScenario7")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -2732,7 +2732,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario8() {
+    final HapiSpec traceabilityE2EScenario8() {
         return defaultHapiSpec("traceabilityE2EScenario8")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -3083,7 +3083,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario9() {
+    final HapiSpec traceabilityE2EScenario9() {
         return defaultHapiSpec("traceabilityE2EScenario9")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -3389,7 +3389,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario10() {
+    final HapiSpec traceabilityE2EScenario10() {
         return defaultHapiSpec("traceabilityE2EScenario10")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -3731,7 +3731,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario11() {
+    final HapiSpec traceabilityE2EScenario11() {
         return defaultHapiSpec("traceabilityE2EScenario11")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -4008,7 +4008,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario12() {
+    final HapiSpec traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
         return defaultHapiSpec(scenario12)
@@ -4081,7 +4081,7 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecodeWithMinimalFieldsSidecarFor(FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT));
     }
 
-    private HapiSpec traceabilityE2EScenario14() {
+    final HapiSpec traceabilityE2EScenario14() {
         return defaultHapiSpec("traceabilityE2EScenario14")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -4370,7 +4370,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario17() {
+    final HapiSpec traceabilityE2EScenario17() {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -4428,7 +4428,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario18() {
+    final HapiSpec traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(4))
@@ -4493,7 +4493,7 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec traceabilityE2EScenario20() {
+    final HapiSpec traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
@@ -4518,7 +4518,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec traceabilityE2EScenario21() {
+    final HapiSpec traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -4592,7 +4592,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec vanillaBytecodeSidecar() {
+    final HapiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
         final var firstTxn = "firstTxn";
@@ -4626,7 +4626,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec vanillaBytecodeSidecar2() {
+    final HapiSpec vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
@@ -4657,7 +4657,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec actionsShowPropagatedRevert() {
+    final HapiSpec actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
         final var badApproval = "BadApproval";
         final var somebody = "somebody";
@@ -4835,7 +4835,7 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
+    final HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
         final var lazyCreateTxn = "lazyCreateTxn";
@@ -4926,7 +4926,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
+    final HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
         final var create2Factory = "Create2Factory";
         final var creation = "creation";
@@ -5092,7 +5092,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec assertSidecars() {
+    final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars

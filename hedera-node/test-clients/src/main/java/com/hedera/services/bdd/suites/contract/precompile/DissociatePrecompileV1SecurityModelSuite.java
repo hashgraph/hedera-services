@@ -274,7 +274,7 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    private HapiSpec nestedDissociateWorksAsExpected() {
+    final HapiSpec nestedDissociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 

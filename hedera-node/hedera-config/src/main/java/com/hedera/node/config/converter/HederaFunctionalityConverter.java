@@ -18,6 +18,7 @@ package com.hedera.node.config.converter;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.swirlds.config.api.converter.ConfigConverter;
+import com.swirlds.config.extensions.converters.AbstractEnumConfigConverter;
 
 /**
  * Config api {@link ConfigConverter} implementation for the type {@link HederaFunctionality}. Based on

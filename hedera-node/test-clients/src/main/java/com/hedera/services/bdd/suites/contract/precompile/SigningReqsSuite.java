@@ -73,7 +73,7 @@ public class SigningReqsSuite extends HapiSuite {
         return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
     }
 
-    private HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
+    final HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewMirrorAddr = new AtomicReference<>();
         final AtomicLong contractId = new AtomicLong();
