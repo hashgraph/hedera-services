@@ -33,7 +33,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,7 +67,8 @@ public class Issue2098Spec extends HapiSuite {
                 .then(
                         cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1L))
                                 .payingWith(CIVILIAN)
-                                .hasPrecheckFrom(NOT_SUPPORTED, OK).hasKnownStatus(UNAUTHORIZED),
+                                .hasPrecheckFrom(NOT_SUPPORTED, OK)
+                                .hasKnownStatus(UNAUTHORIZED),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(CRYPTO_TRANSFER, "0-*")),
