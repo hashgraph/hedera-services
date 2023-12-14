@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.gas;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.node.app.service.contract.impl.exec.gas.GasCharges.ZERO_CHARGES;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -96,6 +95,8 @@ public class CustomGasCharging {
      * Tries to charge gas for the given transaction based on the pre-fetched sender and relayer accounts,
      * within the given context and world updater.
      *
+     * <p>Even if there are gas charges, still returns the intrinsic gas cost of the transaction.
+     *
      * @param sender  the sender account
      * @param relayer the relayer account
      * @param context the context of the transaction, including the network gas price
@@ -110,11 +111,11 @@ public class CustomGasCharging {
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
-        if (context.isNoopGasContext()) {
-            return ZERO_CHARGES;
-        }
         final var intrinsicGas =
                 gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), transaction.isCreate());
+        if (context.isNoopGasContext()) {
+            return new GasCharges(intrinsicGas, 0L);
+        }
         validateTrue(transaction.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
         if (transaction.isEthereumTransaction()) {
             final var allowanceUsed =
