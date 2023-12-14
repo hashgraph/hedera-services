@@ -368,7 +368,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(
-                        "node " + nodeId + ": Interrupted while sleeping in waitForFreeze busy loop", e);
+                        "node " + nodeId + ": Interrupted while sleeping in waitFor" + status + " busy loop", e);
             }
         }
     }

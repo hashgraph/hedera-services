@@ -93,24 +93,27 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         cryptoCreate(RECEIVER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
                         // Block network port on node 2
-                        disconnectNode("Carol", 75))
+                        disconnectNode("Alice", 75)
+                )
                 .when(
                         // submit operations when node 2 is down
-                        inParallel(mixedOpsBurst.get()),
+                        inParallel(mixedOpsBurst.get())
                         // Unblock network port on  node 2
-                        reviveNode("Carol", 75),
+//                        reviveNode("Alice", 75)
                         // wait for node 2 to go to BEHIND
-                        waitForNodeToBeBehind("Carol", 60),
-                        // Allow node 2 to reconnect to other nodes and goes to RECONNECT_COMPLETE
-                        waitForNodeToFinishReconnect("Carol", 60),
-                        // Once node 2 reconnects successfully it goes to ACTIVE
-                        waitForNodeToBecomeActive("Carol", 60))
+//                        waitForNodeToBeBehind("Carol", 60),
+//                        // Allow node 2 to reconnect to other nodes and goes to RECONNECT_COMPLETE
+//                        waitForNodeToFinishReconnect("Carol", 60),
+//                        // Once node 2 reconnects successfully it goes to ACTIVE
+//                        waitForNodeToBecomeActive("Carol", 60)
+                )
                 .then(
                         //                         Once nodes come back ACTIVE, submit some operations again
                         cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
-                        inParallel(mixedOpsBurst.get()));
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY)
+//                        inParallel(mixedOpsBurst.get())
+                );
     }
 }

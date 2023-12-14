@@ -304,13 +304,13 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             }
             try {
                 final Process process = Runtime.getRuntime().exec(cmd);
-                logger.info(
-                        "Blocking Network port {} for node {} running with OS {} running command {}",
-                        grpcPort,
+                final var isSuccess = process.waitFor(75, TimeUnit.SECONDS);
+                logger.info("Blocking Network port {} for node {} running with OS {} running command {} is {}",
+                        gossipPort,
                         nodeId,
                         os,
-                        cmd);
-                process.waitFor(75, TimeUnit.SECONDS);
+                        cmd,
+                        isSuccess ? "successful" : "failed");
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -382,7 +382,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 final Process process = Runtime.getRuntime().exec(cmd);
                 logger.info(
                         "Unblocking Network port {} for node {} running with OS {} running command {}",
-                        grpcPort,
+                        gossipPort,
                         nodeId,
                         os,
                         cmd);
