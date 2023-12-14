@@ -342,7 +342,7 @@ jobs:
             sudo cgclassify --sticky -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Listener' | tr '\n' ' ')
             sudo cgclassify -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Worker' | tr '\n' ' ')
           echo "::endgroup::"
-          
+
       - name: Configure RClone Authentication
         id: rclone-auth
         env:
