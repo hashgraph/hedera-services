@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
