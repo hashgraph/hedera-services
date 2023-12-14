@@ -320,6 +320,7 @@ public class SingleTransactionRecordBuilderImpl
         paidStakingRewards.clear();
         assessedCustomFees.clear();
 
+        newTotalSupply = 0L;
         contractFunctionResult = null;
 
         transactionReceiptBuilder.accountID((AccountID) null);
@@ -329,7 +330,7 @@ public class SingleTransactionRecordBuilderImpl
         transactionReceiptBuilder.scheduleID((ScheduleID) null);
         transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
         transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
-        transactionReceiptBuilder.newTotalSupply(-1L);
+        transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);
         transactionReceiptBuilder.topicSequenceNumber(0L);
         transactionRecordBuilder.contractCreateResult((ContractFunctionResult) null);
