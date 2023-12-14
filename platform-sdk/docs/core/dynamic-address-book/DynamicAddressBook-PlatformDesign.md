@@ -40,7 +40,7 @@ Begin using events from the node as parents of new events.
 This change takes effect when a roster with an added node becomes the `currentEffectiveRoster` for
 the `pendingConsensusRound`.
 
-This change will modify consensus weight for the network and the event creation algorithm will be reset.
+This change will modify network membership and the event creation algorithm will be reset.
 
 The event creator can build on top of any event that has a birth round that is less than or equal to the event creator's
 known value for the `pendingConsensusRound`. Events that have a higher birth round need to be buffered until the event
