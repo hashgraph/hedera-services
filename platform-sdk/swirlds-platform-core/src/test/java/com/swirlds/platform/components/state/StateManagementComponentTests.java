@@ -68,13 +68,11 @@ class StateManagementComponentTests {
     private final TestPrioritySystemTransactionConsumer systemTransactionConsumer =
             new TestPrioritySystemTransactionConsumer();
     private final TestSignedStateWrapperConsumer newLatestCompleteStateConsumer = new TestSignedStateWrapperConsumer();
-    private final TestSavedStateController controller = new TestSavedStateController();
 
     @BeforeEach
     protected void beforeEach() {
         systemTransactionConsumer.reset();
         newLatestCompleteStateConsumer.reset();
-        controller.getStatesQueue().clear();
     }
 
     /**
@@ -169,29 +167,6 @@ class StateManagementComponentTests {
                         "The unit test failed.");
             }
         }
-
-        component.stop();
-    }
-
-    @Test
-    @DisplayName("Test that the state is saved to disk when it is received via reconnect")
-    void testReconnectStateSaved() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final DefaultStateManagementComponent component = newStateManagementComponent();
-
-        component.start();
-
-        final List<NodeId> majorityWeightNodes =
-                IntStream.range(0, NUM_NODES - 1).mapToObj(NodeId::new).toList();
-        final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setRound(10)
-                .setSigningNodeIds(majorityWeightNodes)
-                .build();
-        component.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
-        final SignedState stateSentForWriting = controller.getStatesQueue().poll();
-        assertNotNull(stateSentForWriting, "The state should be saved to disk.");
-        assertEquals(
-                stateSentForWriting, signedState, "The state saved to disk should be the same as the state loaded.");
 
         component.stop();
     }
@@ -301,7 +276,7 @@ class StateManagementComponentTests {
                 dispatchBuilder,
                 newLatestCompleteStateConsumer::consume,
                 (msg, t, code) -> {},
-                controller,
+                rss->{},
                 signer);
 
         dispatchBuilder.start();
