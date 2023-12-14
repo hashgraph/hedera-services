@@ -17,17 +17,19 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_COMPACTION_LEVEL;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_NANOS;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_SECONDS;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_COMPACTION_LEVEL;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_CREATION_NANOS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_CREATION_SECONDS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_INDEX;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_ITEMS_COUNT;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_ITEM_VERSION;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS_COUNT;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEM_VERSION;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_METADATA;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.utility.ToStringBuilder;
@@ -38,9 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * DataFile's metadata that is stored in the data file's footer
@@ -125,39 +125,48 @@ public class DataFileMetadata {
         long serializationVersion = 0;
         byte compactionLevel = 0;
 
-        // Track which fields are read, so we don't have to scan through the whole file
-        final Set<String> fieldsToRead = new HashSet<>(Set.of(
-                "index", "creationSeconds", "creationNanos", "itemsCount", "serializationVersion", "compactionLevel"));
-
         // Read values from the file, skipping all data items
         try (final InputStream fin = Files.newInputStream(file, StandardOpenOption.READ)) {
             final ReadableSequentialData in = new ReadableStreamingData(fin);
             in.limit(Files.size(file));
-            while (in.hasRemaining() && !fieldsToRead.isEmpty()) {
+            while (in.hasRemaining()) {
                 final int tag = in.readVarInt(false);
                 final int fieldNum = tag >> TAG_FIELD_OFFSET;
-                if (fieldNum == FIELD_DATAFILE_INDEX.number()) {
-                    index = in.readVarInt(false);
-                    fieldsToRead.remove("index");
-                } else if (fieldNum == FIELD_DATAFILE_CREATION_SECONDS.number()) {
-                    creationSeconds = in.readVarLong(false);
-                    fieldsToRead.remove("creationSeconds");
-                } else if (fieldNum == FIELD_DATAFILE_CREATION_NANOS.number()) {
-                    creationNanos = in.readVarInt(false);
-                    fieldsToRead.remove("creationNanos");
-                } else if (fieldNum == FIELD_DATAFILE_ITEMS_COUNT.number()) {
-                    itemsCount = in.readLong();
-                    fieldsToRead.remove("itemsCount");
-                } else if (fieldNum == FIELD_DATAFILE_ITEM_VERSION.number()) {
-                    serializationVersion = in.readVarLong(false);
-                    fieldsToRead.remove("serializationVersion");
-                } else if (fieldNum == FIELD_DATAFILE_COMPACTION_LEVEL.number()) {
-                    final int compactionLevelInt = in.readVarInt(false);
-                    assert compactionLevelInt < MAX_COMPACTION_LEVEL;
-                    compactionLevel = (byte) compactionLevelInt;
-                    fieldsToRead.remove("compactionLevel");
+                if (fieldNum == FIELD_DATAFILE_METADATA.number()) {
+                    final int metadataSize = in.readVarInt(false);
+                    final long oldLimit = in.limit();
+                    in.limit(in.position() + metadataSize);
+                    try {
+                        while (in.hasRemaining()) {
+                            final int metadataTag = in.readVarInt(false);
+                            final int metadataFieldNum = metadataTag >> TAG_FIELD_OFFSET;
+                            if (metadataFieldNum == FIELD_DATAFILEMETADATA_INDEX.number()) {
+                                index = in.readVarInt(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_CREATION_SECONDS.number()) {
+                                creationSeconds = in.readVarLong(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_CREATION_NANOS.number()) {
+                                creationNanos = in.readVarInt(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_ITEMS_COUNT.number()) {
+                                itemsCount = in.readLong();
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_ITEM_VERSION.number()) {
+                                serializationVersion = in.readVarLong(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_COMPACTION_LEVEL.number()) {
+                                final int compactionLevelInt = in.readVarInt(false);
+                                assert compactionLevelInt < MAX_COMPACTION_LEVEL;
+                                compactionLevel = (byte) compactionLevelInt;
+                            } else {
+                                throw new IllegalArgumentException(
+                                        "Unknown data file metadata field: " + metadataFieldNum);
+                            }
+                        }
+                    } finally {
+                        in.limit(oldLimit);
+                    }
+                    break;
                 } else if (fieldNum == FIELD_DATAFILE_ITEMS.number()) {
-                    // Just skip it
+                    // Just skip it. By default, metadata is written to the very beginning of the file,
+                    // so this code should never be executed. However, with other implementations data
+                    // items may come first, this code must be ready to handle it
                     final int size = in.readVarInt(false);
                     in.skip(size);
                 } else {
@@ -175,24 +184,28 @@ public class DataFileMetadata {
     }
 
     void writeTo(final BufferedData out) {
+        ProtoUtils.writeDelimited(out, FIELD_DATAFILE_METADATA, fieldsSizeInBytes(), this::writeFields);
+    }
+
+    private void writeFields(final WritableSequentialData out) {
         if (getIndex() != 0) {
-            ProtoUtils.writeTag(out, FIELD_DATAFILE_INDEX);
+            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_INDEX);
             out.writeVarInt(getIndex(), false);
         }
         final Instant creationInstant = getCreationDate();
-        ProtoUtils.writeTag(out, FIELD_DATAFILE_CREATION_SECONDS);
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_SECONDS);
         out.writeVarLong(creationInstant.getEpochSecond(), false);
-        ProtoUtils.writeTag(out, FIELD_DATAFILE_CREATION_NANOS);
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_NANOS);
         out.writeVarInt(creationInstant.getNano(), false);
         dataItemCountHeaderOffset = out.position();
-        ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
         out.writeLong(0); // will be updated later
         if (getSerializationVersion() != 0) {
-            ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEM_VERSION);
+            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEM_VERSION);
             out.writeVarLong(getSerializationVersion(), false);
         }
         if (getCompactionLevel() != 0) {
-            ProtoUtils.writeTag(out, FIELD_DATAFILE_COMPACTION_LEVEL);
+            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_COMPACTION_LEVEL);
             out.writeVarInt(compactionLevel, false);
         }
     }
@@ -215,7 +228,7 @@ public class DataFileMetadata {
         this.itemsCount = count;
         assert dataItemCountHeaderOffset != 0;
         out.position(dataItemCountHeaderOffset);
-        ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
         out.writeLong(count);
     }
 
@@ -238,23 +251,27 @@ public class DataFileMetadata {
     // beginning of the file before reading data items, assuming file metadata is always written
     // first, then data items
     int metadataSizeInBytes() {
+        return ProtoUtils.sizeOfDelimited(FIELD_DATAFILE_METADATA, fieldsSizeInBytes());
+    }
+
+    private int fieldsSizeInBytes() {
         int size = 0;
         if (index != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_INDEX, WIRE_TYPE_VARINT);
             size += ProtoUtils.sizeOfVarInt32(index);
         }
-        size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_SECONDS, WIRE_TYPE_VARINT);
         size += ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond());
-        size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_NANOS, WIRE_TYPE_VARINT);
         size += ProtoUtils.sizeOfVarInt64(creationDate.getNano());
-        size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT);
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT);
         size += Long.BYTES;
         if (serializationVersion != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_ITEM_VERSION, WIRE_TYPE_VARINT);
             size += ProtoUtils.sizeOfVarInt64(serializationVersion);
         }
         if (compactionLevel != 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_COMPACTION_LEVEL, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_COMPACTION_LEVEL, WIRE_TYPE_VARINT);
             size += ProtoUtils.sizeOfVarInt32(compactionLevel);
         }
         return size;

@@ -361,7 +361,7 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
                 ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
                 out.writeLong(value);
             }
-            ProtoUtils.writeBytes(
+            ProtoUtils.writeDelimited(
                     out,
                     FIELD_BUCKETENTRY_KEYBYTES,
                     keySerializer.getSerializedSize(key),

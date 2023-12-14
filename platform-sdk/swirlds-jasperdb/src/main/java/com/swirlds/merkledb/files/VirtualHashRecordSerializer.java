@@ -130,7 +130,7 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
             // Use long instead of var long to keep the size fixed
             out.writeLong(hashRecord.path());
         }
-        ProtoUtils.writeBytes(
+        ProtoUtils.writeDelimited(
                 out,
                 FIELD_HASHRECORD_HASH,
                 hashRecord.hash().getValue().length,

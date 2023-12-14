@@ -272,12 +272,12 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         final int totalSize = ProtoUtils.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entrySize);
         setSize(Math.toIntExact(entryOffset + totalSize));
         bucketData.position(entryOffset);
-        ProtoUtils.writeBytes(bucketData, FIELD_BUCKET_ENTRIES, entrySize, out -> {
+        ProtoUtils.writeDelimited(bucketData, FIELD_BUCKET_ENTRIES, entrySize, out -> {
             ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
             out.writeInt(hashCode);
             ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
             out.writeLong(value);
-            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
+            ProtoUtils.writeDelimited(out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
         });
     }
 

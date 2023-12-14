@@ -19,6 +19,7 @@ package com.swirlds.merkledb.utilities;
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 
 import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import java.util.function.Consumer;
@@ -108,10 +109,13 @@ public class ProtoUtils {
 
     // Copied from ProtoWriterTools
     public static int sizeOfDelimited(final FieldDefinition field, final int length) {
+        assert (field.type() == FieldType.BYTES)
+                || (field.type() == FieldType.STRING)
+                || (field.type() == FieldType.MESSAGE);
         return Math.toIntExact(sizeOfTag(field, WIRE_TYPE_DELIMITED) + sizeOfVarInt32(length) + length);
     }
 
-    public static <T extends WritableSequentialData> void writeBytes(
+    public static <T extends WritableSequentialData> void writeDelimited(
             final T out, final FieldDefinition field, final int size, final Consumer<T> writer) {
         writeTag(out, field);
         out.writeVarInt(size, false);

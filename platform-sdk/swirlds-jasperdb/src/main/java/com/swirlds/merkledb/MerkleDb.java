@@ -633,7 +633,7 @@ public final class MerkleDb {
                 final WritableSequentialData out = new WritableStreamingData(fileOut);
                 for (final TableMetadata metadata : tables) {
                     final int len = metadata.pbjSizeInBytes();
-                    ProtoUtils.writeBytes(out, FIELD_DBMETADATA_TABLEMETADATA, len, metadata::writeTo);
+                    ProtoUtils.writeDelimited(out, FIELD_DBMETADATA_TABLEMETADATA, len, metadata::writeTo);
                 }
             } catch (final IOException z) {
                 throw new UncheckedIOException(z);
@@ -898,8 +898,8 @@ public final class MerkleDb {
                 out.writeVarInt(tableId, false);
             }
             final byte[] bb = tableName.getBytes(StandardCharsets.UTF_8);
-            ProtoUtils.writeBytes(out, FIELD_TABLEMETADATA_TABLENAME, bb.length, t -> t.writeBytes(bb));
-            ProtoUtils.writeBytes(
+            ProtoUtils.writeDelimited(out, FIELD_TABLEMETADATA_TABLENAME, bb.length, t -> t.writeBytes(bb));
+            ProtoUtils.writeDelimited(
                     out, FIELD_TABLEMETADATA_TABLECONFIG, tableConfig.pbjSizeInBytes(), tableConfig::writeTo);
         }
     }

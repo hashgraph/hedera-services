@@ -17,13 +17,8 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_COMPACTION_LEVEL;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_NANOS;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_SECONDS;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS_COUNT;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEM_VERSION;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_METADATA;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -34,7 +29,6 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -158,18 +152,9 @@ public final class DataFileIteratorPbj<D> implements DataFileIterator<D> {
                 dataItemBuffer = fillBuffer(currentDataItemSize);
                 currentDataItem++;
                 return true;
-            } else if (fieldNum == FIELD_DATAFILE_INDEX.number()) {
-                in.readVarInt(false); // skip index
-            } else if (fieldNum == FIELD_DATAFILE_CREATION_SECONDS.number()) {
-                in.readVarLong(false); // skip creation seconds
-            } else if (fieldNum == FIELD_DATAFILE_CREATION_NANOS.number()) {
-                in.readVarInt(false); // skip creation nanos
-            } else if (fieldNum == FIELD_DATAFILE_ITEMS_COUNT.number()) {
-                in.readLong(ByteOrder.LITTLE_ENDIAN); // skip items count
-            } else if (fieldNum == FIELD_DATAFILE_ITEM_VERSION.number()) {
-                in.readVarLong(false); // skip item serialization version
-            } else if (fieldNum == FIELD_DATAFILE_COMPACTION_LEVEL.number()) {
-                in.readVarInt(false); // skip compaction level
+            } else if (fieldNum == FIELD_DATAFILE_METADATA.number()) {
+                final int metadataSize = in.readVarInt(false);
+                in.skip(metadataSize);
             } else {
                 throw new IllegalArgumentException("Unknown data file field: " + fieldNum);
             }

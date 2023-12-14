@@ -153,12 +153,12 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
             ProtoUtils.writeTag(out, FIELD_LEAFRECORD_PATH);
             out.writeLong(leafRecord.getPath());
         }
-        ProtoUtils.writeBytes(
+        ProtoUtils.writeDelimited(
                 out,
                 FIELD_LEAFRECORD_KEY,
                 keySerializer.getSerializedSize(leafRecord.getKey()),
                 o -> keySerializer.serialize(leafRecord.getKey(), o));
-        ProtoUtils.writeBytes(
+        ProtoUtils.writeDelimited(
                 out,
                 FIELD_LEAFRECORD_VALUE,
                 valueSerializer.getSerializedSize(leafRecord.getValue()),
