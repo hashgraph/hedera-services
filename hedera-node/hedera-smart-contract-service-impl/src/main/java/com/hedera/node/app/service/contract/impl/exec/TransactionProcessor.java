@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -218,6 +219,10 @@ public class TransactionProcessor {
                 validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
                 final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
                 validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
+
+                // do not attempt to lazy create account with alias that is a long zero address
+                validateTrue(!isLongZeroAddress(alias.toByteArray()), INVALID_CONTRACT_ID);
+
                 parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
                 updater.setupTopLevelLazyCreate(parties.receiverAddress);
             } else {
