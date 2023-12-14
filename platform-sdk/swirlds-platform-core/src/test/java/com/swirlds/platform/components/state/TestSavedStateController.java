@@ -33,8 +33,8 @@ public class TestSavedStateController extends SavedStateController {
     }
 
     @Override
-    public synchronized void reconnectStateReceived(@NonNull final ReservedSignedState signedState) {
-        queue.add(signedState.get());
+    public synchronized void reconnectStateReceived(@NonNull final ReservedSignedState reservedSignedState) {
+        queue.add(reservedSignedState.get());
     }
 
     @Override

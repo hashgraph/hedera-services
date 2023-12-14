@@ -626,6 +626,7 @@ public class SwirldsPlatform implements Platform {
         final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs -> {
             latestImmutableState.setState(rs.getAndReserve("newSignedStateFromTransactionsConsumer"));
             latestCompleteState.newIncompleteState(rs.get().getRound());
+            savedStateController.markSavedState(rs.getAndReserve("savedStateController.markSavedState"));
             stateManagementComponent.newSignedStateFromTransactions(rs);
         };
 

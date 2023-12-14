@@ -75,12 +75,14 @@ public class SavedStateController {
 
     /**
      * Notifies the controller that a signed state was received from another node during reconnect. The controller saves
-     * its timestamp and pass it on to be written to disk.
+     * its timestamp and marks it to be written to disk.
      *
-     * @param signedState the signed state that was received from another node during reconnect
+     * @param reservedSignedState the signed state that was received from another node during reconnect
      */
-    public synchronized void reconnectStateReceived(@NonNull final ReservedSignedState signedState) {
-        markSavingToDisk(signedState, RECONNECT);
+    public synchronized void reconnectStateReceived(@NonNull final ReservedSignedState reservedSignedState) {
+        try (reservedSignedState) {
+            markSavingToDisk(reservedSignedState, RECONNECT);
+        }
     }
 
     /**
