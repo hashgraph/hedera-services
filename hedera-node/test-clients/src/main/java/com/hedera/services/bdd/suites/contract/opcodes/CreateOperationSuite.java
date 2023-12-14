@@ -33,10 +33,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_INFO;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.SKIP_LOG_INFO_CONTAINING_ADDRESSES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -101,8 +106,12 @@ public class CreateOperationSuite extends HapiSuite {
         final var contract = "FactorySelfDestructConstructor";
 
         final var sender = "sender";
-        return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract", NONDETERMINISTIC_LOG_INFO)
+        return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
                 .given(
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                NONDETERMINISTIC_TRANSACTION_FEES,
+                                SKIP_LOG_INFO_CONTAINING_ADDRESSES),
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract).balance(10).payingWith(sender))
@@ -114,8 +123,9 @@ public class CreateOperationSuite extends HapiSuite {
     final HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
-        return defaultHapiSpec("FactoryQuickSelfDestructContract", NONDETERMINISTIC_LOG_INFO)
+        return defaultHapiSpec("FactoryQuickSelfDestructContract")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, SKIP_LOG_INFO_CONTAINING_ADDRESSES),
                         uploadInitCode(contract),
                         contractCreate(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
@@ -138,8 +148,9 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     final HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
-        return defaultHapiSpec("InheritanceOfNestedCreatedContracts", FULLY_NONDETERMINISTIC)
+        return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, FULLY_NONDETERMINISTIC),
                         uploadInitCode(contract),
                         contractCreate(contract).logged().via("createRecord"),
                         getContractInfo(contract).logged().saveToRegistry(PARENT_INFO))
@@ -154,7 +165,10 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     HapiSpec simpleFactoryWorks() {
         return defaultHapiSpec("simpleFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_TRANSACTION_FEES),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
                         .gas(780_000)
                         .via(DEPLOYMENT_SUCCESS_TXN))
@@ -174,8 +188,11 @@ public class CreateOperationSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec stackedFactoryWorks() {
-        return defaultHapiSpec("StackedFactoryWorks", FULLY_NONDETERMINISTIC)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+        return defaultHapiSpec("StackedFactoryWorks")
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, FULLY_NONDETERMINISTIC),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "stackedDeploymentSuccess")
                         .gas(1_000_000)
                         .via("stackedDeploymentSuccessTxn"))
@@ -196,7 +213,10 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     HapiSpec resetOnFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(
                         contractCall(CONTRACT, "stackedDeploymentFailure")
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -228,7 +248,10 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     HapiSpec resetOnFactoryFailureAfterDeploymentWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(
                         contractCall(CONTRACT, "failureAfterDeploy")
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -260,7 +283,10 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     HapiSpec resetOnStackedFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(
                         contractCall(CONTRACT, "stackedDeploymentFailure")
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -293,7 +319,14 @@ public class CreateOperationSuite extends HapiSuite {
     final HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
         return defaultHapiSpec("contractCreateWithNewOpInConstructorAbandoningParent")
-                .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))
+                .given(
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                HIGHLY_NON_DETERMINISTIC_FEES,
+                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
+                        uploadInitCode(contract),
+                        contractCreate(contract).via("AbandoningParentTxn"))
                 .when()
                 .then(
                         getContractInfo(contract)
@@ -312,7 +345,7 @@ public class CreateOperationSuite extends HapiSuite {
         final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 
         return defaultHapiSpec("childContractStorageWorks")
-                .given(uploadInitCode(contract))
+                .given(snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS), uploadInitCode(contract))
                 .when(contractCreate(contract).via("firstContractTxn"))
                 .then(assertionsHold((spec, ctxLog) -> {
                     final var subop1 =

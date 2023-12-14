@@ -74,6 +74,6 @@ public enum SnapshotMatchMode {
     /**
      * Allows for non-deterministic logs.
      */
-    NONDETERMINISTIC_LOG_INFO,
+    SKIP_LOG_INFO_CONTAINING_ADDRESSES,
     NONDETERMINISTIC_ETHEREUM_DATA
 }

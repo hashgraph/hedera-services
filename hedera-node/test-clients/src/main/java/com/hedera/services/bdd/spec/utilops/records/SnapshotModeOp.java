@@ -30,9 +30,9 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_INFO;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.SKIP_LOG_INFO_CONTAINING_ADDRESSES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static java.util.Objects.requireNonNull;
@@ -749,10 +749,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
         } else if ("logInfo".equals(expectedName)) {
             // skip logs checking (we have logs containing EVM addresses on contract create)
-            return matchModes.contains(NONDETERMINISTIC_LOG_INFO);
-        } else if ("constructorParameters".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS);
-        } else if ("etereum_data".equals(expectedName)) {
+            return matchModes.contains(SKIP_LOG_INFO_CONTAINING_ADDRESSES);
+        } else if ("ethereum_data".equals(expectedName) || "ethereum_hash".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_ETHEREUM_DATA);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
