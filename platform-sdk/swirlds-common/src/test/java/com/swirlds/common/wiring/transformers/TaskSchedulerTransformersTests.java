@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.transformers.internal.AdvancedTransformation;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
@@ -63,7 +62,8 @@ class TaskSchedulerTransformersTests {
                 model.schedulerBuilder("D").build().cast();
         final BindableInputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
 
-        final OutputWire<Integer> splitter = taskSchedulerA.getOutputWire().buildSplitter();
+        final OutputWire<Integer> splitter =
+                taskSchedulerA.getOutputWire().buildSplitter("test splitter", "test splitter input");
         splitter.solderTo(wireBIn);
         splitter.solderTo(wireCIn);
         taskSchedulerA.getOutputWire().solderTo(wireDIn);
@@ -136,7 +136,8 @@ class TaskSchedulerTransformersTests {
         final AtomicInteger countLambda = new AtomicInteger(0);
 
         taskSchedulerA.getOutputWire().solderTo(inB);
-        final OutputWire<Integer> filter = taskSchedulerA.getOutputWire().buildFilter("onlyEven", x -> x % 2 == 0);
+        final OutputWire<Integer> filter =
+                taskSchedulerA.getOutputWire().buildFilter("onlyEven", "onlyEvenInput", x -> x % 2 == 0);
         filter.solderTo(inC);
         filter.solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
 
@@ -199,11 +200,11 @@ class TaskSchedulerTransformersTests {
         taskSchedulerA.getOutputWire().solderTo(inB);
         taskSchedulerA
                 .getOutputWire()
-                .buildTransformer("getValue", TestData::value)
+                .buildTransformer("getValue", "getValueInput", TestData::value)
                 .solderTo(inC);
         taskSchedulerA
                 .getOutputWire()
-                .buildTransformer("getInvert", TestData::invert)
+                .buildTransformer("getInvert", "getInvertInput", TestData::invert)
                 .solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);

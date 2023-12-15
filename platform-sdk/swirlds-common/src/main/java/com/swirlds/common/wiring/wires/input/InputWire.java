@@ -114,32 +114,45 @@ public abstract class InputWire<IN> {
      * Build a filter for data being inserted into this input wire. Data that passes the filter will be forwarded to
      * this input wire. Solder type {@link SolderType#PUT} is used.
      *
-     * @param name      the name of the filter
-     * @param predicate the predicate that determines whether data is forwarded, if this method returns true the data is
-     *                  forwarded, if this method returns false the data is discarded.
+     * @param filterName      the name of the filter
+     * @param filterInputName the label for the input wire going into the filter
+     * @param predicate       the predicate that determines whether data is forwarded, if this method returns true the
+     *                        data is forwarded, if this method returns false the data is discarded.
      * @return the input wire for the filter
      */
     @NonNull
-    public InputWire<IN> buildFilter(@NonNull final String name, @NonNull final Predicate<IN> predicate) {
+    public InputWire<IN> buildFilter(
+            @NonNull final String filterName,
+            @NonNull final String filterInputName,
+            @NonNull final Predicate<IN> predicate) {
 
-        return buildFilter(name, predicate, SolderType.PUT);
+        return buildFilter(filterName, filterInputName, predicate, SolderType.PUT);
     }
 
     /**
      * Build a filter for data being inserted into this input wire. Data that passes the filter will be forwarded to
      * this input wire.
      *
-     * @param name       the name of the filter
-     * @param predicate  the predicate that determines whether data is forwarded, if this method returns true the data
-     *                   is forwarded, if this method returns false the data is discarded.
-     * @param solderType the type of soldering to use when connecting the filter to this input wire
+     * @param filterName      the name of the filter
+     * @param predicate       the predicate that determines whether data is forwarded, if this method returns true the
+     *                        data is forwarded, if this method returns false the data is discarded.
+     * @param filterInputName the label for the input wire going into the filter
+     * @param solderType      the type of soldering to use when connecting the filter to this input wire
      * @return the input wire for the filter
      */
     @NonNull
     public InputWire<IN> buildFilter(
-            @NonNull final String name, @NonNull final Predicate<IN> predicate, @NonNull final SolderType solderType) {
+            @NonNull final String filterName,
+            @NonNull final String filterInputName,
+            @NonNull final Predicate<IN> predicate,
+            @NonNull final SolderType solderType) {
 
-        final WireFilter<IN> filter = new WireFilter<>(model, name, predicate);
+        Objects.requireNonNull(filterName);
+        Objects.requireNonNull(filterInputName);
+        Objects.requireNonNull(predicate);
+        Objects.requireNonNull(solderType);
+
+        final WireFilter<IN> filter = new WireFilter<>(model, filterName, filterInputName, predicate);
         filter.getOutputWire().solderTo(this, solderType);
         return filter.getInputWire();
     }
@@ -148,26 +161,36 @@ public abstract class InputWire<IN> {
      * Build a splitter for data being inserted into this input wire. Data passed to the input returned by this method
      * will be split and then passed to this input wire. Solder type {@link SolderType#PUT} is used.
      *
-     * @param name the name of the splitter
+     * @param splitterName      the name of the splitter
+     * @param splitterInputName the label for the input wire going into the splitter
      * @return the input wire for the splitter
      */
     @NonNull
-    public InputWire<List<IN>> buildSplitter(@NonNull final String name) {
-        return buildSplitter(name, SolderType.PUT);
+    public InputWire<List<IN>> buildSplitter(
+            @NonNull final String splitterName, @NonNull final String splitterInputName) {
+        return buildSplitter(splitterName, splitterInputName, SolderType.PUT);
     }
 
     /**
      * Build a splitter for data being inserted into this input wire. Data passed to the input returned by this method
      * will be split and then passed to this input wire.
      *
-     * @param name       the name of the splitter
-     * @param solderType the type of soldering to use when connecting the splitter to this input wire
+     * @param splitterName      the name of the splitter
+     * @param splitterInputName the label for the input wire going into the splitter
+     * @param solderType        the type of soldering to use when connecting the splitter to this input wire
      * @return the input wire for the splitter
      */
     @NonNull
-    public InputWire<List<IN>> buildSplitter(@NonNull final String name, @NonNull final SolderType solderType) {
+    public InputWire<List<IN>> buildSplitter(
+            @NonNull final String splitterName,
+            @NonNull final String splitterInputName,
+            @NonNull final SolderType solderType) {
 
-        final WireListSplitter<IN> splitter = new WireListSplitter<>(model, name);
+        Objects.requireNonNull(splitterName);
+        Objects.requireNonNull(splitterInputName);
+        Objects.requireNonNull(solderType);
+
+        final WireListSplitter<IN> splitter = new WireListSplitter<>(model, splitterInputName, splitterName);
         splitter.getOutputWire().solderTo(this, solderType);
         return splitter.getInputWire();
     }
@@ -176,33 +199,44 @@ public abstract class InputWire<IN> {
      * Build a transformer for data being inserted into this input wire. Data passed to the input returned by this
      * method will be transformed and then passed to this input wire. Solder type {@link SolderType#PUT} is used.
      *
-     * @param name        the name of the transformer
-     * @param transformer the transformer that will transform data
-     * @param <NEW_IN>    the type of data that passes into the transformer
+     * @param transformerName      the name of the transformer
+     * @param transformerInputName the label for the input wire going into the transformer
+     * @param transformer          the transformer that will transform data
+     * @param <NEW_IN>             the type of data that passes into the transformer
      * @return the input wire for the transformer
      */
     public <NEW_IN> InputWire<NEW_IN> buildTransformer(
-            @NonNull final String name, @NonNull final Function<NEW_IN, IN> transformer) {
-        return buildTransformer(name, transformer, SolderType.PUT);
+            @NonNull final String transformerName,
+            @NonNull final String transformerInputName,
+            @NonNull final Function<NEW_IN, IN> transformer) {
+        return buildTransformer(transformerName, transformerInputName, transformer, SolderType.PUT);
     }
 
     /**
      * Build a transformer for data being inserted into this input wire. Data passed to the input returned by this
      * method will be transformed and then passed to this input wire. Solder type {@link SolderType#PUT} is used.
      *
-     * @param name        the name of the transformer
-     * @param transformer the transformer that will transform data
-     * @param solderType  the type of soldering to use when connecting the transformer to this input wire
-     * @param <NEW_IN>    the type of data that passes into the transformer
+     * @param transformerName      the name of the transformer
+     * @param transformerInputName the label for the input wire going into the transformer
+     * @param transformer          the transformer that will transform data
+     * @param solderType           the type of soldering to use when connecting the transformer to this input wire
+     * @param <NEW_IN>             the type of data that passes into the transformer
      * @return the input wire for the transformer
      */
     @NonNull
     public <NEW_IN> InputWire<NEW_IN> buildTransformer(
-            @NonNull final String name,
+            @NonNull final String transformerName,
+            @NonNull final String transformerInputName,
             @NonNull final Function<NEW_IN, IN> transformer,
             @NonNull final SolderType solderType) {
 
-        final WireTransformer<NEW_IN, IN> wireTransformer = new WireTransformer<>(model, name, transformer);
+        Objects.requireNonNull(transformerName);
+        Objects.requireNonNull(transformerInputName);
+        Objects.requireNonNull(transformer);
+        Objects.requireNonNull(solderType);
+
+        final WireTransformer<NEW_IN, IN> wireTransformer =
+                new WireTransformer<>(model, transformerName, transformerInputName, transformer);
         wireTransformer.getOutputWire().solderTo(this, solderType);
         return wireTransformer.getInputWire();
     }

@@ -38,16 +38,20 @@ public class WireListSplitter<T> {
     /**
      * Constructor.
      *
-     * @param model the wiring model containing this output wire
-     * @param name  the name of the output channel
+     * @param model             the wiring model containing this output wire
+     * @param splitterName      the name of the output channel
+     * @param splitterInputName the label for the input wire going into the splitter
      */
-    public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
-        final TaskScheduler<T> taskScheduler = model.schedulerBuilder(name)
+    public WireListSplitter(
+            @NonNull final WiringModel model,
+            @NonNull final String splitterName,
+            @NonNull final String splitterInputName) {
+        final TaskScheduler<T> taskScheduler = model.schedulerBuilder(splitterName)
                 .withType(TaskSchedulerType.DIRECT_STATELESS)
                 .build()
                 .cast();
 
-        inputWire = taskScheduler.buildInputWire("List<" + name + ">");
+        inputWire = taskScheduler.buildInputWire(splitterInputName);
         outputWire = (StandardOutputWire<T>) taskScheduler.getOutputWire();
 
         inputWire.bind(list -> {

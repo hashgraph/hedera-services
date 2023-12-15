@@ -39,24 +39,29 @@ public class WireFilter<T> {
     /**
      * Constructor.
      *
-     * @param model     the wiring model containing this output channel
-     * @param name      the name of the output wire
-     * @param predicate only data that causes this method to return true is forwarded. This method must be very fast.
-     *                  Putting large amounts of work into this transformer violates the intended usage pattern of the
-     *                  wiring framework and may result in very poor system performance.
+     * @param model           the wiring model containing this output channel
+     * @param filterName      the name of the filter
+     * @param filterInputName the label for the input wire going into the filter
+     * @param predicate       only data that causes this method to return true is forwarded. This method must be very
+     *                        fast. Putting large amounts of work into this transformer violates the intended usage
+     *                        pattern of the wiring framework and may result in very poor system performance.
      */
     public WireFilter(
-            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
+            @NonNull final WiringModel model,
+            @NonNull final String filterName,
+            @NonNull final String filterInputName,
+            @NonNull final Predicate<T> predicate) {
+
         Objects.requireNonNull(predicate);
 
-        final TaskScheduler<T> taskScheduler = model.schedulerBuilder(name)
+        final TaskScheduler<T> taskScheduler = model.schedulerBuilder(filterName)
                 .withType(TaskSchedulerType.DIRECT_STATELESS)
                 .build()
                 .cast();
 
         // TODO should the caller be able to name the input wire?
 
-        inputWire = taskScheduler.buildInputWire("unfiltered data");
+        inputWire = taskScheduler.buildInputWire(filterInputName);
         inputWire.bind(t -> {
             if (predicate.test(t)) {
                 return t;

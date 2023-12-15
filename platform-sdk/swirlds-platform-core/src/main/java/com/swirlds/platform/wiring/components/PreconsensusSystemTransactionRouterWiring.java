@@ -44,10 +44,13 @@ public record PreconsensusSystemTransactionRouterWiring(
         preconsensusEventInput.bind(SystemTransactionExtractor::getSystemTransactions);
 
         final OutputWire<List<SystemTransaction>> systemTransactions = taskScheduler.getOutputWire();
-        final OutputWire<SystemTransaction> individualSystemTransactions = systemTransactions.buildSplitter();
+        final OutputWire<SystemTransaction> individualSystemTransactions =
+                systemTransactions.buildSplitter("systemTransactionSplitter", "system transaction list");
         final OutputWire<StateSignatureTransaction> stateSignatureTransactionOutput =
                 individualSystemTransactions.buildTransformer(
-                        "signature transactions filter", SystemTransactionExtractor::stateSignatureTransactionFilter);
+                        "signatureTransactionsFilter",
+                        "system transactions",
+                        SystemTransactionExtractor::stateSignatureTransactionFilter);
 
         return new PreconsensusSystemTransactionRouterWiring(preconsensusEventInput, stateSignatureTransactionOutput);
     }

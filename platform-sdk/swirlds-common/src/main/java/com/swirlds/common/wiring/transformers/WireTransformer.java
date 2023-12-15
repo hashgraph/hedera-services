@@ -40,23 +40,27 @@ public class WireTransformer<A, B> {
     /**
      * Constructor.
      *
-     * @param model       the wiring model containing this output channel
-     * @param name        the name of the output wire
-     * @param transformer an object that transforms from type A to type B. If this method returns null then no data is
-     *                    forwarded. This method must be very fast. Putting large amounts of work into this transformer
-     *                    violates the intended usage pattern of the wiring framework and may result in very poor system
-     *                    performance.
+     * @param model                the wiring model containing this output channel
+     * @param transformerName      the name of the transformer
+     * @param transformerInputName the label for the input wire going into the transformer
+     * @param transformer          an object that transforms from type A to type B. If this method returns null then no
+     *                             data is forwarded. This method must be very fast. Putting large amounts of work into
+     *                             this transformer violates the intended usage pattern of the wiring framework and may
+     *                             result in very poor system performance.
      */
     public WireTransformer(
-            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
+            @NonNull final WiringModel model,
+            @NonNull final String transformerName,
+            @NonNull final String transformerInputName,
+            @NonNull final Function<A, B> transformer) {
         Objects.requireNonNull(transformer);
 
-        final TaskScheduler<B> taskScheduler = model.schedulerBuilder(name)
+        final TaskScheduler<B> taskScheduler = model.schedulerBuilder(transformerName)
                 .withType(TaskSchedulerType.DIRECT_STATELESS)
                 .build()
                 .cast();
 
-        inputWire = taskScheduler.buildInputWire(name + " TODO name this");
+        inputWire = taskScheduler.buildInputWire(transformerInputName);
         inputWire.bind(transformer);
         outputWire = taskScheduler.getOutputWire();
     }
