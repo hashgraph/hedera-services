@@ -25,6 +25,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
@@ -211,10 +212,12 @@ public class ClassicTransfersDecoder {
                 IsApproval.TRUE)));
     }
 
-    public AccountID decodeSenderForTokenTransfer(@NonNull HtsCallAttempt attempt) {
+    public ResponseCodeEnum checkForFailureStatus(@NonNull HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
-            return call.get(1);
+            if ((int) call.get(3) < 0) {
+                return ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+            }
         }
         return null;
     }
