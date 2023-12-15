@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
@@ -27,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public enum ContractServiceImpl implements ContractService {
     CONTRACT_SERVICE;
-
+    public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractServiceComponent component;
 
     ContractServiceImpl() {
@@ -35,8 +36,8 @@ public enum ContractServiceImpl implements ContractService {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new ContractSchema());
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new ContractSchema(version));
     }
 
     public ContractHandlers handlers() {

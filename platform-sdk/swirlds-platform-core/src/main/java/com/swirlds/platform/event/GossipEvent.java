@@ -18,13 +18,13 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -36,6 +36,20 @@ import java.util.Objects;
  */
 public class GossipEvent implements BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
+    private static final int MAX_SIG_LENGTH = 384;
+
+    private static final class ClassVersion {
+        public static final int ORIGINAL = 1;
+        public static final int REMOVED_ROUND = 2;
+        /**
+         * Event serialization changes
+         *
+         * @since 0.46.0
+         */
+        public static final int BIRTH_ROUND = 3;
+    }
+
+    private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
     private EventDescriptor descriptor;
@@ -44,8 +58,8 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * The id of the node which sent us this event
      * <p>
-     * The sender ID of an event should not be serialized when an event is serialized, and it should not affect the
-     * hash of the event in any way.
+     * The sender ID of an event should not be serialized when an event is serialized, and it should not affect the hash
+     * of the event in any way.
      */
     private NodeId senderId;
 
@@ -59,6 +73,8 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
+        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
+        unhashedData.updateOtherParentEventDescriptor(hashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -68,8 +84,13 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeSerializable(hashedData, false);
-        out.writeSerializable(unhashedData, false);
+        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
+            out.writeSerializable(hashedData, false);
+            out.writeSerializable(unhashedData, false);
+        } else {
+            out.writeSerializable(hashedData, false);
+            out.writeByteArray(unhashedData.getSignature());
+        }
     }
 
     /**
@@ -77,11 +98,17 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        hashedData = in.readSerializable(false, BaseEventHashedData::new);
-        unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
-        if (version == ClassVersion.ORIGINAL) {
-            in.readLong(); // roundCreated
+        serializedVersion = version;
+        if (version < ClassVersion.BIRTH_ROUND) {
+            hashedData = in.readSerializable(false, BaseEventHashedData::new);
+            unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+        } else {
+            hashedData = in.readSerializable(false, BaseEventHashedData::new);
+            final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
+            unhashedData = new BaseEventUnhashedData(null, signature);
         }
+        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
+        unhashedData.updateOtherParentEventDescriptor(hashedData);
         timeReceived = Instant.now();
     }
 
@@ -115,10 +142,15 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
      * hashed before the descriptor can be built.
+     *
+     * @throws IllegalStateException if the descriptor has already been built
      */
     public void buildDescriptor() {
-        this.descriptor =
-                new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
+        if (descriptor != null) {
+            throw new IllegalStateException("Descriptor has already been built");
+        }
+
+        this.descriptor = hashedData.createEventDescriptor();
     }
 
     @Override
@@ -166,6 +198,11 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public int getVersion() {
+        return serializedVersion;
+    }
+
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.REMOVED_ROUND;
     }
 
@@ -200,10 +237,5 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public int hashCode() {
         return hashedData.getHash().hashCode();
-    }
-
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int REMOVED_ROUND = 2;
     }
 }

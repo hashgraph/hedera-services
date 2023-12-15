@@ -21,9 +21,10 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -92,7 +93,9 @@ public final class BestEffortPreconsensusEventFileCopy {
                                 platformContext, selfId, temporaryDirectory, minimumGenerationNonAncient));
 
                 return;
-            } catch (final IOException e) {
+            } catch (final IOException | UncheckedIOException e) {
+                // Note: Files.walk() sometimes throws an UncheckedIOException (?!!), so we have to catch both.
+
                 if (triesRemaining > 0) {
                     logger.warn(STATE_TO_DISK.getMarker(), "Unable to copy PCES files. Retrying.");
                 } else {

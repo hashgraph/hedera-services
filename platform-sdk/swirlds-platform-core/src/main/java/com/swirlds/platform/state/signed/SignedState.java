@@ -30,10 +30,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
@@ -42,6 +39,9 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -296,7 +296,7 @@ public class SignedState implements SignedStateInfo {
      * @return a wrapper that holds the state and the reservation
      */
     public @NonNull ReservedSignedState reserve(@NonNull final String reason) {
-        return new ReservedSignedState(this, reason);
+        return ReservedSignedState.createAndReserve(this, reason);
     }
 
     /**
@@ -307,6 +307,19 @@ public class SignedState implements SignedStateInfo {
             history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
         }
         reservations.reserve();
+    }
+
+    /**
+     * Try to increment the reservation count.
+     */
+    boolean tryIncrementReservationCount(@NonNull final String reason, final long reservationId) {
+        if (!reservations.tryReserve()) {
+            return false;
+        }
+        if (history != null) {
+            history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        }
+        return true;
     }
 
     /**
@@ -714,7 +727,7 @@ public class SignedState implements SignedStateInfo {
      * @return the reservation history
      */
     @Nullable
-    SignedStateHistory getHistory() {
+    public SignedStateHistory getHistory() {
         return history;
     }
 }

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -50,6 +51,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -88,8 +95,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractKeysHTSSuite extends HapiSuite {
 
     private static final long GAS_TO_OFFER = 1_500_000L;
@@ -218,11 +227,14 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnWithKeyAsPartOf1OfXThreshold() {
+    final HapiSpec burnWithKeyAsPartOf1OfXThreshold() {
         final var delegateContractKeyShape = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
         final var contractKeyShape = KeyShape.threshOf(1, SIMPLE, KeyShape.CONTRACT);
 
-        return defaultHapiSpec("burnWithKeyAsPartOf1OfXThreshold")
+        return defaultHapiSpec(
+                        "burnWithKeyAsPartOf1OfXThreshold",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -281,10 +293,14 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForBurnWithContractKey() {
+    final HapiSpec delegateCallForBurnWithContractKey() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("delegateCallForBurnWithContractKey")
+        return defaultHapiSpec(
+                        "delegateCallForBurnWithContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -329,10 +345,14 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForMintWithContractKey() {
+    final HapiSpec delegateCallForMintWithContractKey() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("delegateCallForMintWithContractKey")
+        return defaultHapiSpec(
+                        "delegateCallForMintWithContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -375,13 +395,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForDissociatePrecompileFails() {
+    final HapiSpec staticCallForDissociatePrecompileFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("StaticCallForDissociatePrecompileFails")
+        return defaultHapiSpec(
+                        "StaticCallForDissociatePrecompileFails",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -411,13 +435,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForTransferWithContractKey() {
+    final HapiSpec staticCallForTransferWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
 
-        return defaultHapiSpec("staticCallForTransferWithContractKey")
+        return defaultHapiSpec(
+                        "staticCallForTransferWithContractKey",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -459,11 +487,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForBurnWithContractKey() {
+    final HapiSpec staticCallForBurnWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("staticCallForBurnWithContractKey")
+        return defaultHapiSpec(
+                        "staticCallForBurnWithContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -498,11 +530,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForMintWithContractKey() {
+    final HapiSpec staticCallForMintWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("staticCallForMintWithContractKey")
+        return defaultHapiSpec(
+                        "staticCallForMintWithContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -534,13 +570,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForTransferWithDelegateContractKey() {
+    final HapiSpec staticCallForTransferWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
 
-        return defaultHapiSpec("staticCallForTransferWithDelegateContractKey")
+        return defaultHapiSpec(
+                        "staticCallForTransferWithDelegateContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -583,11 +623,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForBurnWithDelegateContractKey() {
+    final HapiSpec staticCallForBurnWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("staticCallForBurnWithDelegateContractKey")
+        return defaultHapiSpec(
+                        "staticCallForBurnWithDelegateContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -624,11 +669,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForMintWithDelegateContractKey() {
+    final HapiSpec staticCallForMintWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("staticCallForMintWithDelegateContractKey")
+        return defaultHapiSpec(
+                        "staticCallForMintWithDelegateContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -662,13 +711,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec staticCallForAssociatePrecompileFails() {
+    final HapiSpec staticCallForAssociatePrecompileFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("StaticCallForAssociatePrecompileFails")
+        return defaultHapiSpec(
+                        "StaticCallForAssociatePrecompileFails",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT)
                                 .balance(ONE_MILLION_HBARS)
@@ -700,13 +753,13 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForMintWithContractKey() {
+    final HapiSpec callForMintWithContractKey() {
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
 
         final AtomicLong fungibleNum = new AtomicLong();
 
-        return defaultHapiSpec("callForMintWithContractKey")
+        return defaultHapiSpec("callForMintWithContractKey", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT_NAME).balance(10 * ONE_HUNDRED_HBARS),
@@ -754,13 +807,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForMintWithDelegateContractKey() {
+    final HapiSpec callForMintWithDelegateContractKey() {
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
 
         final AtomicLong fungibleNum = new AtomicLong();
 
-        return defaultHapiSpec("callForMintWithDelegateContractKey")
+        return defaultHapiSpec(
+                        "callForMintWithDelegateContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT_NAME).balance(10 * ONE_HUNDRED_HBARS),
@@ -808,8 +864,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForTransferWithContractKey() {
-        return defaultHapiSpec("callForTransferWithContractKey")
+    final HapiSpec callForTransferWithContractKey() {
+        return defaultHapiSpec(
+                        "callForTransferWithContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
@@ -843,7 +902,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         1L)
-                                .fee(ONE_HBAR)
+                                .fee(2 * ONE_HBAR)
                                 .hasKnownStatus(SUCCESS)
                                 .payingWith(GENESIS)
                                 .gas(GAS_TO_OFFER)
@@ -867,8 +926,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForTransferWithDelegateContractKey() {
-        return defaultHapiSpec("callForTransferWithDelegateContractKey")
+    final HapiSpec callForTransferWithDelegateContractKey() {
+        return defaultHapiSpec(
+                        "callForTransferWithDelegateContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
@@ -902,7 +964,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         1L)
-                                .fee(ONE_HBAR)
+                                .fee(2 * ONE_HBAR)
                                 .hasKnownStatus(SUCCESS)
                                 .payingWith(GENESIS)
                                 .gas(GAS_TO_OFFER)
@@ -926,11 +988,14 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForAssociateWithDelegateContractKey() {
+    final HapiSpec callForAssociateWithDelegateContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("callForAssociateWithDelegateContractKey")
+        return defaultHapiSpec(
+                        "callForAssociateWithDelegateContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -967,11 +1032,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForAssociateWithContractKey() {
+    final HapiSpec callForAssociateWithContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("callForAssociateWithContractKey")
+        return defaultHapiSpec(
+                        "callForAssociateWithContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1014,7 +1083,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var totalSupply = 1_000;
 
-        return defaultHapiSpec("callForDissociateWithDelegateContractKey")
+        return defaultHapiSpec(
+                        "callForDissociateWithDelegateContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
@@ -1079,7 +1152,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var totalSupply = 1_000;
 
-        return defaultHapiSpec("callForDissociateWithContractKey")
+        return defaultHapiSpec(
+                        "callForDissociateWithContractKey",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
@@ -1138,8 +1215,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForBurnWithDelegateContractKey() {
-        return defaultHapiSpec("callForBurnWithDelegateContractKey")
+    final HapiSpec callForBurnWithDelegateContractKey() {
+        return defaultHapiSpec(
+                        "callForBurnWithDelegateContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1180,13 +1261,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
+    final HapiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DelegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks")
+        return defaultHapiSpec(
+                        "DelegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1225,13 +1310,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks() {
+    final HapiSpec delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks")
+        return defaultHapiSpec(
+                        "delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1271,11 +1360,14 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC")
+        return defaultHapiSpec(
+                        "AssociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -1356,7 +1448,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DissociatePrecompileWithDelegateContractKeyForFungibleVanilla")
+        return defaultHapiSpec(
+                        "DissociatePrecompileWithDelegateContractKeyForFungibleVanilla",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
@@ -1454,7 +1549,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DissociatePrecompileWithDelegateContractKeyForFungibleFrozen")
+        return defaultHapiSpec(
+                        "DissociatePrecompileWithDelegateContractKeyForFungibleFrozen",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -1518,7 +1617,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DissociatePrecompileWithDelegateContractKeyForFungibleWithKYC")
+        return defaultHapiSpec(
+                        "DissociatePrecompileWithDelegateContractKeyForFungibleWithKYC",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -1580,7 +1682,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla")
+        return defaultHapiSpec(
+                        "DissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -1681,7 +1787,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DissociatePrecompileWithDelegateContractKeyForNonFungibleFrozen")
+        return defaultHapiSpec(
+                        "DissociatePrecompileWithDelegateContractKeyForNonFungibleFrozen",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -1747,7 +1857,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DissociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC")
+        return defaultHapiSpec(
+                        "DissociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -1806,11 +1919,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleFrozen")
+        return defaultHapiSpec(
+                        "AssociatePrecompileWithDelegateContractKeyForNonFungibleFrozen",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -1887,11 +2004,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleVanilla")
+        return defaultHapiSpec(
+                        "AssociatePrecompileWithDelegateContractKeyForNonFungibleVanilla",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1964,11 +2085,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleWithKYC")
+        return defaultHapiSpec(
+                        "AssociatePrecompileWithDelegateContractKeyForFungibleWithKYC",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -2042,11 +2167,14 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleFrozen")
+        return defaultHapiSpec(
+                        "AssociatePrecompileWithDelegateContractKeyForFungibleFrozen",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -2122,11 +2250,14 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
+    final HapiSpec associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleVanilla")
+        return defaultHapiSpec(
+                        "AssociatePrecompileWithDelegateContractKeyForFungibleVanilla",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -2197,13 +2328,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
+    final HapiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DelegateCallForAssociatePrecompileSignedWithContractKeyFails")
+        return defaultHapiSpec(
+                        "DelegateCallForAssociatePrecompileSignedWithContractKeyFails",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -2241,13 +2376,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
+    final HapiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("DelegateCallForDissociatePrecompileSignedWithContractKeyFails")
+        return defaultHapiSpec(
+                        "DelegateCallForDissociatePrecompileSignedWithContractKeyFails",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -2286,8 +2425,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callForBurnWithContractKey() {
-        return defaultHapiSpec("callForBurnWithContractKey")
+    final HapiSpec callForBurnWithContractKey() {
+        return defaultHapiSpec(
+                        "callForBurnWithContractKey",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),

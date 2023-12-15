@@ -80,7 +80,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         validateTruePreCheck(nftId.hasTokenId(), INVALID_TOKEN_ID);
         validateTruePreCheck(nftId.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-        final var nft = nftStore.get(nftId.tokenId(), nftId.serialNumber());
+        final var nft = nftStore.get(nftId.tokenIdOrThrow(), nftId.serialNumber());
         validateFalsePreCheck(nft == null, INVALID_NFT_ID);
     }
 
@@ -134,15 +134,15 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         requireNonNull(readableTokenStore);
         requireNonNull(config);
 
-        final var nft = readableNftStore.get(nftId.tokenId(), nftId.serialNumber());
-        final var token = readableTokenStore.get(nftId.tokenId());
+        final var nft = readableNftStore.get(nftId.tokenIdOrThrow(), nftId.serialNumber());
+        final var token = requireNonNull(readableTokenStore.get(nftId.tokenIdOrThrow()));
         if (nft == null) {
             return Optional.empty();
         } else {
             final var info = TokenNftInfo.newBuilder()
                     .ledgerId(config.id())
                     .nftID(nftId)
-                    .accountID(nft.hasOwnerId() ? nft.ownerId() : token.treasuryAccountId())
+                    .accountID(nft.ownerIdOrElse(token.treasuryAccountIdOrThrow()))
                     .creationTime(nft.mintTime())
                     .metadata(nft.metadata())
                     .spenderId(nft.spenderId())

@@ -27,7 +27,9 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTE
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTE_KEYLIST;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_EVERYTHING_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.LEDGER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OPERATOR;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +65,11 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
+
+        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.ownerIdOrThrow().accountNumOrThrow()))
+                .thenReturn(SOMEBODY);
+        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.spenderIdOrThrow().accountNumOrThrow()))
+                .thenReturn(OPERATOR);
 
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
@@ -154,9 +161,6 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
 
     @Test
     void returnsNftTokenInfoStatusForMissingTokenStaticCall() {
-        when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
-
         final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), true, null, 0L, config);
 
         final var result = subject.execute().fullResult().result();

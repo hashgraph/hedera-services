@@ -30,18 +30,17 @@ import java.util.Set;
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
     public static final long RUNNING_HASH_VERSION = 3L;
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(consensusSchema());
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(consensusSchema(version));
     }
 
-    private Schema consensusSchema() {
-        return new Schema(GENESIS_VERSION) {
+    private Schema consensusSchema(final SemanticVersion version) {
+        return new Schema(version) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

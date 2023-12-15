@@ -27,12 +27,13 @@ module com.hedera.node.app.hapi.utils {
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
     requires com.sun.jna;
+    requires com.swirlds.base;
     requires org.apache.commons.codec;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires org.hyperledger.besu.secp256k1;
+    requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
 }

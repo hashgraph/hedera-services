@@ -71,6 +71,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -222,7 +224,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     signatureMapSize,
                     userTransactionConsensusTime,
                     subType,
-                    false);
+                    false,
+                    readableStoreFactory());
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
@@ -464,6 +467,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
             bodyToDispatch = txBody.copyBuilder()
                     .transactionID(TransactionID.newBuilder()
+                            .accountID(syntheticPayerId)
                             .transactionValidStart(Timestamp.newBuilder()
                                     .seconds(consensusNow().getEpochSecond())
                                     .nanos(consensusNow().getNano())))
@@ -540,11 +544,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
             throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
         }
+        // This condition fails, because for lazy-account creation we charge fees, before dispatching the transaction,
+        // and the state will be modified.
 
-        if (stack.depth() > 1) {
-            throw new IllegalStateException(
-                    "Cannot dispatch a preceding transaction when a savepoint has been created");
-        }
+        //        if (stack.depth() > 1) {
+        //            throw new IllegalStateException(
+        //                    "Cannot dispatch a preceding transaction when a savepoint has been created");
+        //        }
 
         // This condition fails, because for auto-account creation we charge fees, before dispatching the transaction,
         // and the state will be modified.
@@ -570,7 +576,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayerId,
             @NonNull final TransactionCategory childCategory) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addChild(configuration());
+                () -> recordListBuilder.addChild(configuration(), childCategory);
         return doDispatchChildTransaction(
                 syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback, childCategory);
     }
@@ -702,7 +708,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             final var finalizeContext = new ChildFinalizeContextImpl(
-                    readableStoreFactory, new WritableStoreFactory(childStack, TokenService.NAME), childRecordBuilder);
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder);
             childRecordFinalizer.finalizeChildRecord(finalizeContext);
             childStack.commitFullStack();
         } catch (final HandleException e) {
@@ -804,7 +812,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addChild(configuration());
+        final var result = recordListBuilder.addChild(configuration(), CHILD);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -829,8 +837,27 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public void revertChildRecords() {
-        recordListBuilder.revertChildrenOf(recordBuilder);
+    public void revertRecordsFrom(@NonNull final RecordListCheckPoint checkpoint) {
+        recordListBuilder.revertChildrenFrom(checkpoint);
+    }
+
+    @NonNull
+    @Override
+    public RecordListCheckPoint createRecordListCheckPoint() {
+        final var precedingRecordBuilders = recordListBuilder.precedingRecordBuilders();
+        final var childRecordBuilders = recordListBuilder.childRecordBuilders();
+
+        SingleTransactionRecordBuilder lastFollowing = null;
+        SingleTransactionRecordBuilder firstPreceding = null;
+
+        if (!precedingRecordBuilders.isEmpty()) {
+            firstPreceding = precedingRecordBuilders.get(precedingRecordBuilders.size() - 1);
+        }
+        if (!childRecordBuilders.isEmpty()) {
+            lastFollowing = childRecordBuilders.get(childRecordBuilders.size() - 1);
+        }
+
+        return new RecordListCheckPoint(firstPreceding, lastFollowing);
     }
 
     public enum PrecedingTransactionCategory {

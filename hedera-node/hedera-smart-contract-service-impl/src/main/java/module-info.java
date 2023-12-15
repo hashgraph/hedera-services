@@ -21,6 +21,7 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.evm;
     requires com.github.benmanes.caffeine;
     requires com.google.common;
+    requires com.swirlds.base;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
@@ -32,6 +33,7 @@ module com.hedera.node.app.service.contract.impl {
     exports com.hedera.node.app.service.contract.impl.handlers;
     exports com.hedera.node.app.service.contract.impl.hevm;
     exports com.hedera.node.app.service.contract.impl.state to
+            com.hedera.node.services.cli,
             com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app;
 

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
@@ -44,8 +45,10 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class PrngSeedOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(PrngSeedOperationSuite.class);
@@ -85,7 +88,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec multipleCallsHaveIndependentResults() {
+    final HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -134,7 +137,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prngPrecompileHappyPathWorks() {
+    final HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
@@ -158,7 +161,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prngPrecompileDisabledInV030() {
+    final HapiSpec prngPrecompileDisabledInV030() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileDisabledInV_0_30")

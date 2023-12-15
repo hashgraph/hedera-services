@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.FALSE;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -31,8 +32,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CrytoCreateSuiteWithUTF8.class);
 
@@ -52,7 +55,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createCryptoTxvWithUTF8Memo() {
+    final HapiSpec createCryptoTxvWithUTF8Memo() {
         return defaultHapiSpec("CreateCryptoTxvWithUTF8Memo")
                 .given(cryptoCreate("UTF8MemoTestAccount").via("utf8MemoTxn"))
                 .when()
@@ -60,7 +63,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoCreateTxnCustomSpec() {
+    final HapiSpec cryptoCreateTxnCustomSpec() {
         return customHapiSpec("UTF8CustomSpecMemoTxn")
                 .withProperties(Map.of("default.useMemoUTF8", utf8Mode.toString()))
                 .given(cryptoCreate("UTF8CustomSpecTestAccount").via("utf8CustomSpecMemoTxn"))

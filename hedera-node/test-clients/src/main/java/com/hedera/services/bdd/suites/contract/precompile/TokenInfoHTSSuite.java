@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -81,8 +82,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class TokenInfoHTSSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenInfoHTSSuite.class);
@@ -157,7 +160,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetTokenInfo() {
+    final HapiSpec happyPathGetTokenInfo() {
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetTokenInfo")
                 .given(
@@ -251,7 +254,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetFungibleTokenInfo() {
+    final HapiSpec happyPathGetFungibleTokenInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetFungibleTokenInfo")
@@ -346,7 +349,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetNonFungibleTokenInfo() {
+    final HapiSpec happyPathGetNonFungibleTokenInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -458,7 +461,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnDeletedFungibleTokenWorks() {
+    final HapiSpec getInfoOnDeletedFungibleTokenWorks() {
         return defaultHapiSpec("getInfoOnDeletedFungibleTokenWorks")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -504,7 +507,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnInvalidFungibleTokenFails() {
+    final HapiSpec getInfoOnInvalidFungibleTokenFails() {
         return defaultHapiSpec("getInfoOnInvalidFungibleTokenFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -547,7 +550,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
+    final HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoOnDeletedNonFungibleTokenFails")
                 .given(
@@ -590,7 +593,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
+    final HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoOnInvalidNonFungibleTokenFails")
                 .given(
@@ -644,7 +647,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetTokenCustomFees() {
+    final HapiSpec happyPathGetTokenCustomFees() {
         return defaultHapiSpec("HappyPathGetTokenCustomFees")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -700,7 +703,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetNonFungibleTokenCustomFees() {
+    final HapiSpec happyPathGetNonFungibleTokenCustomFees() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("HappyPathGetNonFungibleTokenCustomFees")

@@ -30,6 +30,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKno
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCallWithGasLimit;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -43,7 +45,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,6 +85,7 @@ class CustomGasChargingTest {
 
     @Test
     void staticCallsDoNotChargeGas() {
+        givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
@@ -91,23 +93,16 @@ class CustomGasChargingTest {
                 worldUpdater,
                 wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator, worldUpdater);
+        verifyNoInteractions(worldUpdater);
     }
 
     @Test
-    void zeroPriceGasDoesNoChargingWork() {
+    void zeroPriceGasDoesNoChargingWorkButDoesReturnIntrinsicGas() {
         final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
+        givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator, worldUpdater);
-    }
-
-    @Test
-    void zeroPriceGasReturnsImmediately() {
-        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
-        final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
-        assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator);
+        assertEquals(TestHelpers.INTRINSIC_GAS, chargingResult.intrinsicGas());
     }
 
     @Test
@@ -325,7 +320,7 @@ class CustomGasChargingTest {
     }
 
     @Test
-    void failsIfGasAllownaceLessThanRemainingGasCost() {
+    void failsIfGasAllowanceLessThanRemainingGasCost() {
         givenWellKnownIntrinsicGasCost();
         final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE / 2, 0);
         assertFailsWith(
@@ -365,7 +360,6 @@ class CustomGasChargingTest {
     }
 
     private void givenWellKnownIntrinsicGasCost(boolean isCreation) {
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, isCreation))
-                .willReturn(TestHelpers.INTRINSIC_GAS);
+        given(gasCalculator.transactionIntrinsicGasCost(any(), eq(isCreation))).willReturn(TestHelpers.INTRINSIC_GAS);
     }
 }

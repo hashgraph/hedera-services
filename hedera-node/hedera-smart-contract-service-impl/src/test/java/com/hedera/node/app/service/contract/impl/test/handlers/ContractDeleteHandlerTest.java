@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_REQUIRED;
@@ -136,10 +137,25 @@ class ContractDeleteHandlerTest {
     }
 
     @Test
-    void failsWithObtainerDeleted() {
+    void failsWithInvalidContractId() {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         final var deletedObtainer =
                 OBTAINER_ACCOUNT.copyBuilder().smartContract(true).deleted(true).build();
+        given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
+        given(readableAccountStore.getContractById(CALLED_CONTRACT_ID)).willReturn(deletedObtainer);
+        givenFailContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_CONTRACT_ID));
+
+        assertFailsWith(INVALID_CONTRACT_ID, () -> subject.handle(context));
+    }
+
+    @Test
+    void failsWithObtainerDeleted() {
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        final var deletedObtainer = OBTAINER_ACCOUNT
+                .copyBuilder()
+                .smartContract(false)
+                .deleted(true)
+                .build();
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
         given(readableAccountStore.getContractById(CALLED_CONTRACT_ID)).willReturn(deletedObtainer);
         givenFailContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_CONTRACT_ID));

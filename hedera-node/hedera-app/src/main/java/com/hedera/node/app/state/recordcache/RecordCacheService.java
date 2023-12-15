@@ -36,8 +36,6 @@ public class RecordCacheService implements Service {
     /** The name of the queue that stores the transaction records */
     static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
 
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-
     /** {@inheritDoc} */
     @NonNull
     @Override
@@ -47,10 +45,10 @@ public class RecordCacheService implements Service {
 
     /** {@inheritDoc} */
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         // This is the genesis schema for this service, and simply creates the queue state that stores the
         // transaction records.
-        registry.register(new Schema(GENESIS_VERSION) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public SemanticVersion getVersion() {

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -78,8 +79,10 @@ import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TOKEN)
 public class TokenUpdateSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -134,7 +137,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesNewExpiry() {
+    final HapiSpec validatesNewExpiry() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
@@ -147,7 +150,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesAlreadyDeletedToken() {
+    final HapiSpec validatesAlreadyDeletedToken() {
         return defaultHapiSpec("ValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed("adminKey"),
@@ -159,7 +162,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
+    final HapiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
         final var mutableForNow = "mutableForNow";
         return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
                 .given(
@@ -178,7 +181,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec standardImmutabilitySemanticsHold() {
+    final HapiSpec standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";
         return defaultHapiSpec("StandardImmutabilitySemanticsHold")
@@ -191,7 +194,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesMissingRef() {
+    final HapiSpec validatesMissingRef() {
         return defaultHapiSpec("ValidatesMissingRef")
                 .given(cryptoCreate(PAYER))
                 .when()
@@ -209,7 +212,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesMissingAdminKey() {
+    final HapiSpec validatesMissingAdminKey() {
         return defaultHapiSpec("ValidatesMissingAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -617,7 +620,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
+    final HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
         final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
         final var hbarCollector = "hbarFee";
         final var beneficiary = "luckyOne";
@@ -663,7 +666,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec customFeesOnlyUpdatableWithKey() {
+    final HapiSpec customFeesOnlyUpdatableWithKey() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
 

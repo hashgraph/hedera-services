@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -47,8 +48,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class RandomOps extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RandomOps.class);
 
@@ -62,7 +65,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountDetailsDemo() {
+    final HapiSpec getAccountDetailsDemo() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -135,7 +138,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec retryLimitDemo() {
+    final HapiSpec retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
                 .when()
@@ -147,8 +150,8 @@ public class RandomOps extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
-    // @todo('8687') Revisit once isolated tests are enabled
-    private HapiSpec freezeDemo() {
+    @HapiTest
+    final HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()
