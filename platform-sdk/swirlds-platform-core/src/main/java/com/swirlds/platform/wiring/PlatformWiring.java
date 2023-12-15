@@ -29,6 +29,7 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
@@ -348,7 +349,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the output wire that the replayer uses to pass events from file into the intake pipeline
      */
-    public OutputWire<GossipEvent> getPcesReplayerEventOutput() {
+    public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
         return pcesReplayerWiring.eventOutputWire();
     }
 

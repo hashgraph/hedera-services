@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.compactPreconsensusEventFile;
-import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.fileSanityChecks;
+import static com.swirlds.platform.event.preconsensus.PcesUtilities.compactPreconsensusEventFile;
+import static com.swirlds.platform.event.preconsensus.PcesUtilities.fileSanityChecks;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.ValueReference;
@@ -33,11 +33,11 @@ import java.util.stream.Stream;
 /**
  * This class is responsible for reading event files from disk and adding them to the collection of tracked files.
  */
-public class PreconsensusEventFileReader {
+public class PcesFileReader {
     /**
      * Hidden constructor.
      */
-    private PreconsensusEventFileReader() {}
+    private PcesFileReader() {}
 
     /**
      * Scan the file system for event files and add them to the collection of tracked files.
@@ -48,7 +48,7 @@ public class PreconsensusEventFileReader {
      * @return the files read from disk
      * @throws IOException if there is an error reading the files
      */
-    public static PreconsensusEventFiles readFilesFromDisk(
+    public static PcesFiles readFilesFromDisk(
             @NonNull final PlatformContext platformContext,
             @NonNull final Path databaseDirectory,
             final boolean permitGaps)
@@ -56,12 +56,12 @@ public class PreconsensusEventFileReader {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(databaseDirectory);
 
-        final PreconsensusEventFiles files = new PreconsensusEventFiles();
+        final PcesFiles files = new PcesFiles();
 
         try (final Stream<Path> fileStream = Files.walk(databaseDirectory)) {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
-                    .map(PreconsensusEventUtilities::parseFile)
+                    .map(PcesUtilities::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
                     .forEachOrdered(buildFileHandler(files, permitGaps));
@@ -82,20 +82,20 @@ public class PreconsensusEventFileReader {
      * It's possible (if not probable) that the node was shut down prior to the last file being closed and having its
      * generational span compaction. This method performs that compaction if necessary.
      */
-    private static void compactGenerationalSpanOfLastFile(@NonNull final PreconsensusEventFiles files) {
+    private static void compactGenerationalSpanOfLastFile(@NonNull final PcesFiles files) {
         Objects.requireNonNull(files);
 
-        final PreconsensusEventFile lastFile = files.getFile(files.getFileCount() - 1);
+        final PcesFile lastFile = files.getFile(files.getFileCount() - 1);
 
         final long previousMaximumGeneration;
         if (files.getFileCount() > 1) {
-            final PreconsensusEventFile secondToLastFile = files.getFile(files.getFileCount() - 2);
+            final PcesFile secondToLastFile = files.getFile(files.getFileCount() - 2);
             previousMaximumGeneration = secondToLastFile.getMaximumGeneration();
         } else {
             previousMaximumGeneration = 0;
         }
 
-        final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(lastFile, previousMaximumGeneration);
+        final PcesFile compactedFile = compactPreconsensusEventFile(lastFile, previousMaximumGeneration);
         files.setFile(files.getFileCount() - 1, compactedFile);
     }
 
@@ -107,8 +107,7 @@ public class PreconsensusEventFileReader {
      * @return the handler
      */
     @NonNull
-    private static Consumer<PreconsensusEventFile> buildFileHandler(
-            @NonNull final PreconsensusEventFiles files, final boolean permitGaps) {
+    private static Consumer<PcesFile> buildFileHandler(@NonNull final PcesFiles files, final boolean permitGaps) {
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
         final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);
         final ValueReference<Long> previousMaximumGeneration = new ValueReference<>(-1L);

@@ -18,7 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.buildGraphGenerator;
+import static com.swirlds.platform.test.event.preconsensus.PcesWriterTests.buildGraphGenerator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -35,8 +35,8 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
+import com.swirlds.platform.event.preconsensus.PcesFileManager;
+import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriterInterface;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -83,9 +83,9 @@ class PreconsensusEventReplayWorkflowTests {
         }
         final Iterator<GossipEvent> eventIterator = events.iterator();
 
-        final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
+        final PcesFileManager preconsensusEventFileManager = mock(PcesFileManager.class);
         when(preconsensusEventFileManager.getEventIterator(anyLong())).thenAnswer(invocation -> {
-            final PreconsensusEventMultiFileIterator it = mock(PreconsensusEventMultiFileIterator.class);
+            final PcesMultiFileIterator it = mock(PcesMultiFileIterator.class);
             when(it.hasNext()).thenAnswer(invocation2 -> eventIterator.hasNext());
             when(it.next()).thenAnswer(invocation2 -> eventIterator.next());
             return it;

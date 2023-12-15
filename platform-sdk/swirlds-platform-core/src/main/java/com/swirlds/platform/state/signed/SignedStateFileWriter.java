@@ -21,7 +21,7 @@ import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
-import static com.swirlds.platform.event.preconsensus.BestEffortPreconsensusEventFileCopy.copyPreconsensusEventStreamFilesRetryOnFailure;
+import static com.swirlds.platform.event.preconsensus.BestEffortPcesFileCopy.copyPreconsensusEventStreamFilesRetryOnFailure;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;

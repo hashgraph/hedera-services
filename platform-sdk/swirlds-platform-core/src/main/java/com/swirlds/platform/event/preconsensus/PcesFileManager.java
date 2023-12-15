@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.getDatabaseDirectory;
+import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;
@@ -44,9 +44,9 @@ import org.apache.logging.log4j.Logger;
  * This object is not thread safe.
  * </p>
  */
-public class PreconsensusEventFileManager {
+public class PcesFileManager {
 
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventFileManager.class);
+    private static final Logger logger = LogManager.getLogger(PcesFileManager.class);
 
     /**
      * This constant can be used when the caller wants all events, regardless of generation.
@@ -58,7 +58,7 @@ public class PreconsensusEventFileManager {
      */
     private final Time time;
 
-    private final PreconsensusEventMetrics metrics;
+    private final PcesMetrics metrics;
 
     /**
      * The root directory where event files are stored.
@@ -92,7 +92,7 @@ public class PreconsensusEventFileManager {
      */
     private long totalFileByteCount = 0;
 
-    private final PreconsensusEventFiles files;
+    private final PcesFiles files;
 
     /**
      * Instantiate an event file collection. Loads all event files in the specified directory.
@@ -105,10 +105,10 @@ public class PreconsensusEventFileManager {
      * @param startingRound   the round number of the initial state of the system
      * @throws IOException if there is an error reading the files
      */
-    public PreconsensusEventFileManager(
+    public PcesFileManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
-            @NonNull final PreconsensusEventFiles files,
+            @NonNull final PcesFiles files,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             final long startingRound)
@@ -126,7 +126,7 @@ public class PreconsensusEventFileManager {
 
         this.time = Objects.requireNonNull(time);
         this.files = Objects.requireNonNull(files);
-        this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
+        this.metrics = new PcesMetrics(platformContext.getMetrics());
         this.minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
         this.databaseDirectory = getDatabaseDirectory(platformContext, selfId);
         this.recycleBin = Objects.requireNonNull(recycleBin);
@@ -158,7 +158,7 @@ public class PreconsensusEventFileManager {
     private void resolveDiscontinuities() throws IOException {
         int firstIndexToDelete = firstFileIndex + 1;
         for (; firstIndexToDelete < files.getFileCount(); firstIndexToDelete++) {
-            final PreconsensusEventFile file = files.getFile(firstIndexToDelete);
+            final PcesFile file = files.getFile(firstIndexToDelete);
             if (file.getOrigin() != currentOrigin) {
                 break;
             }
@@ -169,8 +169,7 @@ public class PreconsensusEventFileManager {
             return;
         }
 
-        final PreconsensusEventFile lastUndeletedFile =
-                firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
+        final PcesFile lastUndeletedFile = firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
 
         logger.warn(
                 STARTUP.getMarker(),
@@ -234,7 +233,7 @@ public class PreconsensusEventFileManager {
                     + "Current origin round: " + currentOrigin + ", new origin round: " + newOriginRound);
         }
 
-        final PreconsensusEventFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
+        final PcesFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
 
         logger.info(
                 STARTUP.getMarker(),
@@ -255,8 +254,7 @@ public class PreconsensusEventFileManager {
      * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
-    public @NonNull PreconsensusEventFile getNextFileDescriptor(
-            final long minimumGeneration, final long maximumGeneration) {
+    public @NonNull PcesFile getNextFileDescriptor(final long minimumGeneration, final long maximumGeneration) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -277,7 +275,7 @@ public class PreconsensusEventFileManager {
                     Math.max(maximumGeneration, files.getLastFile().getMaximumGeneration());
         }
 
-        final PreconsensusEventFile descriptor = PreconsensusEventFile.of(
+        final PcesFile descriptor = PcesFile.of(
                 time.now(),
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
@@ -288,8 +286,8 @@ public class PreconsensusEventFileManager {
         if (files.getFileCount() > 0) {
             // There are never enough sanity checks. This is the same sanity check that is run when we parse
             // the files from disk, so if it doesn't pass now it's not going to pass when we read the files.
-            final PreconsensusEventFile previousFile = files.getLastFile();
-            PreconsensusEventUtilities.fileSanityChecks(
+            final PcesFile previousFile = files.getLastFile();
+            PcesUtilities.fileSanityChecks(
                     false,
                     previousFile.getSequenceNumber(),
                     previousFile.getMinimumGeneration(),
@@ -310,7 +308,7 @@ public class PreconsensusEventFileManager {
      *
      * @param file the file that has been completely written
      */
-    public void finishedWritingFile(@NonNull final PreconsensusEventMutableFile file) {
+    public void finishedWritingFile(@NonNull final PcesMutableFile file) {
         final long previousFileHighestGeneration;
         if (files.getFileCount() == 1) {
             previousFileHighestGeneration = 0;
@@ -320,7 +318,7 @@ public class PreconsensusEventFileManager {
         }
 
         // Compress the generational span of the file. Reduces overlap between files.
-        final PreconsensusEventFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
+        final PcesFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
         files.setFile(files.getFileCount() - 1, compressedDescriptor);
 
         // Update metrics
@@ -346,7 +344,7 @@ public class PreconsensusEventFileManager {
                 && files.getFirstFile().getMaximumGeneration() < minimumGeneration
                 && files.getFirstFile().getTimestamp().isBefore(minimumTimestamp)) {
 
-            final PreconsensusEventFile file = files.removeFirstFile();
+            final PcesFile file = files.removeFirstFile();
             totalFileByteCount -= Files.size(file.getPath());
             file.deleteFile(databaseDirectory);
         }
@@ -362,7 +360,7 @@ public class PreconsensusEventFileManager {
 
     /**
      * Delete all files in the preconsensus event stream. If this method is called, it must be called before a
-     * {@link PreconsensusEventFileManager} is instantiated. Any manager open when this method is called will be
+     * {@link PcesFileManager} is instantiated. Any manager open when this method is called will be
      * corrupted.
      *
      * @param platformContext the platform context for this node

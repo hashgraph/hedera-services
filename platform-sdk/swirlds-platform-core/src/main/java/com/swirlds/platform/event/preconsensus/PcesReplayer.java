@@ -24,7 +24,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -46,15 +46,23 @@ public final class PcesReplayer {
 
     private final Time time;
 
-    private final OutputWire<GossipEvent> eventOutputWire;
+    private final StandardOutputWire<GossipEvent> eventOutputWire;
 
     private final Runnable flushSystem;
 
     private final StateManagementComponent stateManagementComponent;
 
+    /**
+     * Constructor
+     *
+     * @param time                     a source of time
+     * @param eventOutputWire          the wire to put events on, to be replayed
+     * @param flushSystem              a runnable that flushes the system
+     * @param stateManagementComponent the state management component
+     */
     public PcesReplayer(
             final @NonNull Time time,
-            final @NonNull OutputWire<GossipEvent> eventOutputWire,
+            final @NonNull StandardOutputWire<GossipEvent> eventOutputWire,
             final @NonNull Runnable flushSystem,
             @NonNull final StateManagementComponent stateManagementComponent) {
         this.time = Objects.requireNonNull(time);
@@ -138,7 +146,7 @@ public final class PcesReplayer {
                 eventCount++;
                 transactionCount += event.getHashedData().getTransactions().length;
 
-                eventOutputWire.put(event);
+                eventOutputWire.forward(event);
             }
         } catch (final IOException e) {
             throw new UncheckedIOException("error encountered while reading from the PCES", e);

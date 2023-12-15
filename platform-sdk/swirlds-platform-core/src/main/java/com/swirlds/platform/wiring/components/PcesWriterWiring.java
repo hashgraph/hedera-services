@@ -19,11 +19,12 @@ package com.swirlds.platform.wiring.components;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for the {@link com.swirlds.platform.event.preconsensus.PreconsensusEventWriter}.
+ * Wiring for the {@link PcesWriter}.
  *
  * @param doneStreamingPcesInputWire        the input wire for the trigger to indicate that PCES streaming is complete
  * @param eventInputWire                    the input wire for events to be written

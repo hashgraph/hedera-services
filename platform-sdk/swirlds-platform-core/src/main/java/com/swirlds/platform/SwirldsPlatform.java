@@ -23,7 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildLegacyEventCreationManager;
-import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.getDatabaseDirectory;
+import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
@@ -95,13 +95,13 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.PcesFileManager;
+import com.swirlds.platform.event.preconsensus.PcesFileReader;
+import com.swirlds.platform.event.preconsensus.PcesFiles;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFileReader;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFiles;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -307,9 +307,9 @@ public class SwirldsPlatform implements Platform {
     /**
      * Writes preconsensus events to disk.
      */
-    private final PreconsensusEventWriter preconsensusEventWriter;
+    private final PcesWriter preconsensusEventWriter;
 
-    private final PreconsensusEventFiles initialPreconsensusEventFiles;
+    private final PcesFiles initialPreconsensusEventFiles;
 
     /**
      * Manages the status of the platform.
@@ -462,14 +462,14 @@ public class SwirldsPlatform implements Platform {
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
-        final PreconsensusEventFileManager preconsensusEventFileManager;
+        final PcesFileManager preconsensusEventFileManager;
         try {
             final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
-            initialPreconsensusEventFiles = PreconsensusEventFileReader.readFilesFromDisk(
+            initialPreconsensusEventFiles = PcesFileReader.readFilesFromDisk(
                     platformContext, databaseDirectory, preconsensusEventStreamConfig.permitGaps());
 
-            preconsensusEventFileManager = new PreconsensusEventFileManager(
+            preconsensusEventFileManager = new PcesFileManager(
                     platformContext,
                     Time.getCurrent(),
                     initialPreconsensusEventFiles,
@@ -480,7 +480,7 @@ public class SwirldsPlatform implements Platform {
             throw new UncheckedIOException(e);
         }
 
-        preconsensusEventWriter = new PreconsensusEventWriter(platformContext, preconsensusEventFileManager);
+        preconsensusEventWriter = new PcesWriter(platformContext, preconsensusEventFileManager);
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
         // ISS round == null means we haven't observed an ISS yet.
@@ -669,7 +669,7 @@ public class SwirldsPlatform implements Platform {
                 appVersion));
 
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
 
         final List<EventObserver> eventObservers = new ArrayList<>(List.of(
                 new ShadowGraphEventObserver(shadowGraph),

@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager.NO_MINIMUM_GENERATION;
+import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_MINIMUM_GENERATION;
 
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
@@ -33,8 +33,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Tracks preconsensus event files currently on disk.
  */
-public class PreconsensusEventFiles {
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventFiles.class);
+public class PcesFiles {
+    private static final Logger logger = LogManager.getLogger(PcesFiles.class);
 
     /**
      * The initial size of the ring buffer used to track event files.
@@ -44,14 +44,14 @@ public class PreconsensusEventFiles {
     /**
      * Tracks all files currently on disk.
      */
-    private final RandomAccessDeque<PreconsensusEventFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
+    private final RandomAccessDeque<PcesFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
 
     /**
      * Get the first file in the file list.
      *
      * @return the first file in the file list
      */
-    public PreconsensusEventFile getFirstFile() {
+    public PcesFile getFirstFile() {
         return files.getFirst();
     }
 
@@ -60,7 +60,7 @@ public class PreconsensusEventFiles {
      *
      * @return the last file in the file list
      */
-    public PreconsensusEventFile getLastFile() {
+    public PcesFile getLastFile() {
         return files.getLast();
     }
 
@@ -69,7 +69,7 @@ public class PreconsensusEventFiles {
      *
      * @return the file that was removed
      */
-    public PreconsensusEventFile removeFirstFile() {
+    public PcesFile removeFirstFile() {
         return files.removeFirst();
     }
 
@@ -78,7 +78,7 @@ public class PreconsensusEventFiles {
      *
      * @return the file that was removed
      */
-    public PreconsensusEventFile removeLastFile() {
+    public PcesFile removeLastFile() {
         return files.removeLast();
     }
 
@@ -101,7 +101,7 @@ public class PreconsensusEventFiles {
         long totalFileByteCount = 0;
 
         // Measure the size of each file.
-        for (final PreconsensusEventFile file : files) {
+        for (final PcesFile file : files) {
             totalFileByteCount += Files.size(file.getPath());
         }
 
@@ -113,7 +113,7 @@ public class PreconsensusEventFiles {
      *
      * @param file the file to be added
      */
-    public void addFile(@NonNull final PreconsensusEventFile file) {
+    public void addFile(@NonNull final PcesFile file) {
         Objects.requireNonNull(file);
         files.addLast(file);
     }
@@ -124,7 +124,7 @@ public class PreconsensusEventFiles {
      * @param index the index of the file to get
      * @return the file at the specified index
      */
-    public PreconsensusEventFile getFile(final int index) {
+    public PcesFile getFile(final int index) {
         return files.get(index);
     }
 
@@ -134,7 +134,7 @@ public class PreconsensusEventFiles {
      * @param index the index of the file to set
      * @param file  the file to set
      */
-    public void setFile(final int index, @NonNull final PreconsensusEventFile file) {
+    public void setFile(final int index, @NonNull final PcesFile file) {
         Objects.requireNonNull(file);
         files.set(index, file);
     }
@@ -147,15 +147,13 @@ public class PreconsensusEventFiles {
      *
      * @param minimumGeneration the desired minimum generation, iterator is guaranteed to return all available events
      *                          with a generation greater or equal to this value. No events with a smaller generation
-     *                          will be returned. A value of {@link PreconsensusEventFileManager::NO_MINIMUM_GENERATION}
+     *                          will be returned. A value of {@link PcesFileManager ::NO_MINIMUM_GENERATION}
      *                          will cause the returned iterator to walk over all available events.
      * @param startingRound     the round to start iterating from
      * @return an iterator that walks over events
      */
-    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(
-            final long minimumGeneration, final long startingRound) {
-        return new PreconsensusEventMultiFileIterator(
-                minimumGeneration, getFileIterator(minimumGeneration, startingRound));
+    public @NonNull PcesMultiFileIterator getEventIterator(final long minimumGeneration, final long startingRound) {
+        return new PcesMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration, startingRound));
     }
 
     /**
@@ -166,13 +164,12 @@ public class PreconsensusEventFiles {
      *
      * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
      *                          contain events with a generation greater or equal to this value. A value of
-     *                          {@link PreconsensusEventFileManager::NO_MINIMUM_GENERATION} will cause the returned
+     *                          {@link PcesFileManager ::NO_MINIMUM_GENERATION} will cause the returned
      *                          iterator to walk over all available event files.
      * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(
-            final long minimumGeneration, final long startingRound) {
+    public @NonNull Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
         final int firstFileIndex = getFirstFileIndex(startingRound);
 
         // Edge case: we want all events regardless of generation
@@ -215,7 +212,7 @@ public class PreconsensusEventFiles {
         // Standard case: we need to stream data starting from a file somewhere in the middle of stream
         final int fileCount = files.size();
         for (int index = firstFileIndex; index < fileCount; index++) {
-            final PreconsensusEventFile file = files.get(index);
+            final PcesFile file = files.get(index);
             if (file.getMaximumGeneration() >= minimumGeneration) {
                 // We have found the first file that may contain events at the requested generation.
                 return new UnmodifiableIterator<>(files.iterator(index));

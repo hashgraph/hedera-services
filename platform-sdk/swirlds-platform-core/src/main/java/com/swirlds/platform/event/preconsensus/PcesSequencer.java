@@ -22,7 +22,7 @@ import com.swirlds.platform.event.GossipEvent;
  * Responsible for assigning stream sequence numbers to events. All events that are written
  * to the preconsensus event stream must be assigned a sequence number.
  */
-public class PreconsensusEventStreamSequencer {
+public class PcesSequencer {
 
     private long nextStreamSequenceNumber = 0;
 

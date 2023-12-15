@@ -21,6 +21,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
@@ -37,7 +38,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public record PcesReplayerWiring(
         @NonNull InputWire<IOIterator<GossipEvent>> pcesIteratorInputWire,
         @NonNull OutputWire<DoneStreamingPcesTrigger> doneStreamingPcesOutputWire,
-        @NonNull OutputWire<GossipEvent> eventOutputWire) {
+        @NonNull StandardOutputWire<GossipEvent> eventOutputWire) {
 
     /**
      * Create a new instance of this wiring.

@@ -36,19 +36,19 @@ import org.apache.logging.log4j.Logger;
 /**
  * This object is responsible for writing events to the database.
  */
-public class PreconsensusEventWriter implements Stoppable {
+public class PcesWriter implements Stoppable {
 
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventWriter.class);
+    private static final Logger logger = LogManager.getLogger(PcesWriter.class);
 
     /**
      * Keeps track of the event stream files on disk.
      */
-    private final PreconsensusEventFileManager fileManager;
+    private final PcesFileManager fileManager;
 
     /**
      * The current file that is being written to.
      */
-    private PreconsensusEventMutableFile currentMutableFile;
+    private PcesMutableFile currentMutableFile;
 
     /**
      * The current minimum generation required to be considered non-ancient. Only read and written on the handle
@@ -128,13 +128,12 @@ public class PreconsensusEventWriter implements Stoppable {
     private boolean streamingNewEvents = false;
 
     /**
-     * Create a new PreConsensusEventWriter.
+     * Constructor
      *
      * @param platformContext the platform context
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
-    public PreconsensusEventWriter(
-            @NonNull final PlatformContext platformContext, @NonNull final PreconsensusEventFileManager fileManager) {
+    public PcesWriter(@NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
 
         Objects.requireNonNull(platformContext, "platformContext must not be null");
         Objects.requireNonNull(fileManager, "fileManager must not be null");

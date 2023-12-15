@@ -26,8 +26,10 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -52,7 +54,11 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
 
-        wiring.bind(mock(SignedStateFileManager.class), mock(StateSigner.class));
+        wiring.bind(
+                mock(EventHasher.class),
+                mock(SignedStateFileManager.class),
+                mock(StateSigner.class),
+                mock(PcesReplayer.class));
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
 

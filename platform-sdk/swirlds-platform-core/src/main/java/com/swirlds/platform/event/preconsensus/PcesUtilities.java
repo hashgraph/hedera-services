@@ -41,11 +41,11 @@ import org.apache.logging.log4j.Logger;
 /**
  * Utilities for preconsensus events.
  */
-public final class PreconsensusEventUtilities {
+public final class PcesUtilities {
 
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventUtilities.class);
+    private static final Logger logger = LogManager.getLogger(PcesUtilities.class);
 
-    private PreconsensusEventUtilities() {}
+    private PcesUtilities() {}
 
     /**
      * Compact the generational span of a PCES file.
@@ -56,12 +56,12 @@ public final class PreconsensusEventUtilities {
      * @return the new compacted PCES file.
      */
     @NonNull
-    public static PreconsensusEventFile compactPreconsensusEventFile(
-            @NonNull final PreconsensusEventFile originalFile, final long previousMaximumGeneration) {
+    public static PcesFile compactPreconsensusEventFile(
+            @NonNull final PcesFile originalFile, final long previousMaximumGeneration) {
 
         // Find the maximum generation in the file.
         long maxGeneration = originalFile.getMinimumGeneration();
-        try (final IOIterator<GossipEvent> iterator = new PreconsensusEventFileIterator(originalFile, 0)) {
+        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0)) {
 
             while (iterator.hasNext()) {
                 final GossipEvent next = iterator.next();
@@ -83,7 +83,7 @@ public final class PreconsensusEventUtilities {
         }
 
         // Now, compact the generational span of the file using the newly discovered maximum generation.
-        final PreconsensusEventFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
+        final PcesFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
         try {
             Files.move(originalFile.getPath(), newFile.getPath(), StandardCopyOption.ATOMIC_MOVE);
         } catch (final IOException e) {
@@ -107,9 +107,9 @@ public final class PreconsensusEventUtilities {
      * @return the wrapper object, or null if the file can't be parsed
      */
     @Nullable
-    public static PreconsensusEventFile parseFile(@NonNull final Path path) {
+    public static PcesFile parseFile(@NonNull final Path path) {
         try {
-            return PreconsensusEventFile.of(path);
+            return PcesFile.of(path);
         } catch (final IOException exception) {
             // ignore any file that can't be parsed
             logger.warn(EXCEPTION.getMarker(), "Failed to parse file: {}", path, exception);
@@ -123,12 +123,12 @@ public final class PreconsensusEventUtilities {
      * @param rootPath the root of the directory tree
      */
     public static void compactPreconsensusEventFiles(@NonNull final Path rootPath) {
-        final List<PreconsensusEventFile> files = new ArrayList<>();
+        final List<PcesFile> files = new ArrayList<>();
         try (final Stream<Path> fileStream = Files.walk(rootPath)) {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
-                    .filter(f -> f.toString().endsWith(PreconsensusEventFile.EVENT_FILE_EXTENSION))
-                    .map(PreconsensusEventUtilities::parseFile)
+                    .filter(f -> f.toString().endsWith(PcesFile.EVENT_FILE_EXTENSION))
+                    .map(PcesUtilities::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
                     .forEachOrdered(files::add);
@@ -137,8 +137,8 @@ public final class PreconsensusEventUtilities {
         }
 
         long previousMaximumGeneration = 0;
-        for (final PreconsensusEventFile file : files) {
-            final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
+        for (final PcesFile file : files) {
+            final PcesFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
             previousMaximumGeneration = compactedFile.getMaximumGeneration();
         }
     }
@@ -163,7 +163,7 @@ public final class PreconsensusEventUtilities {
             final long previousMaximumGeneration,
             final long previousOrigin,
             @NonNull final Instant previousTimestamp,
-            @NonNull final PreconsensusEventFile descriptor) {
+            @NonNull final PcesFile descriptor) {
 
         // Sequence number should always monotonically increase
         if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {
