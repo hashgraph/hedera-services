@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -104,7 +105,10 @@ public class PrngPrecompileSuite extends HapiSuite {
         final List<String> prngSeeds = new ArrayList<>();
         return defaultHapiSpec("MultipleCallsHaveIndependentResults")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                NONDETERMINISTIC_TRANSACTION_FEES,
+                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         uploadInitCode(prng),
                         contractCreate(prng))
                 .when(withOpContext((spec, opLog) -> {
@@ -150,7 +154,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
@@ -182,7 +186,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
@@ -214,7 +218,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
@@ -240,7 +244,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate(BOB),
                         uploadInitCode(THE_PRNG_CONTRACT),
                         contractCreate(THE_PRNG_CONTRACT))
@@ -273,7 +277,10 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                NONDETERMINISTIC_TRANSACTION_FEES,
+                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))

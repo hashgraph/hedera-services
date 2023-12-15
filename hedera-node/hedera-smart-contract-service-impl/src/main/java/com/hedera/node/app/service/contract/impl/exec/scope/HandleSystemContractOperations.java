@@ -103,6 +103,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
+                .contractID(result.contractID())
                 .status(responseStatus)
                 .contractCallResult(result);
     }
