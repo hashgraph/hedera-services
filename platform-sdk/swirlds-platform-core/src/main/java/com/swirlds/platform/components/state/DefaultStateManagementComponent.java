@@ -20,7 +20,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -70,7 +69,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     private final SignedStateSentinel signedStateSentinel;
 
-    private final SavedStateController savedStateController;
+    private final Consumer<ReservedSignedState> stateFileManager;
 
     private final Consumer<ReservedSignedState> stateSigner;
 
@@ -81,7 +80,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *                                           with this.
      * @param newLatestCompleteStateConsumer     consumer to invoke when there is a new latest complete signed state
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
-     * @param savedStateController               controls which states are saved to disk
+     * @param stateFileManager                   writes states to disk
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -89,7 +88,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final SavedStateController savedStateController,
+            @NonNull final Consumer<ReservedSignedState> stateFileManager,
             @NonNull final Consumer<ReservedSignedState> stateSigner) {
 
         Objects.requireNonNull(platformContext);
@@ -101,7 +100,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
-        this.savedStateController = Objects.requireNonNull(savedStateController);
+        this.stateFileManager = Objects.requireNonNull(stateFileManager);
         this.stateSigner = Objects.requireNonNull(stateSigner);
 
         hashLogger =
@@ -115,38 +114,23 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 platformContext.getConfiguration().getConfigData(StateConfig.class),
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
-                this::stateHasEnoughSignatures,
-                this::stateLacksSignatures);
+                this::signatureCollectionDone,
+                this::signatureCollectionDone);
     }
 
     /**
-     * Handles a signed state that is now complete by saving it to disk, if it should be saved.
+     * Signature for a signed state is now done. We should save it to disk, if it should be saved. The state may or may
+     * not have all its signatures collected.
      *
      * @param signedState the newly complete signed state
      */
-    private void stateHasEnoughSignatures(@NonNull final SignedState signedState) {
-        savedStateController.maybeSaveState(signedState);
+    private void signatureCollectionDone(@NonNull final SignedState signedState) {
+        if (signedState.isStateToSave()) {
+            stateFileManager.accept(signedState.reserve("save to disk"));
+        }
     }
 
-    /**
-     * Handles a signed state that did not collect enough signatures before being ejected from memory.
-     *
-     * @param signedState the signed state that lacks signatures
-     */
-    private void stateLacksSignatures(@NonNull final SignedState signedState) {
-        savedStateController.maybeSaveState(signedState);
-    }
-
-    private void newSignedStateBeingTracked(final SignedState signedState, final SourceOfSignedState source) {
-        // When we begin tracking a new signed state, "introduce" the state to the SignedStateFileManager
-        if (source == SourceOfSignedState.DISK) {
-            savedStateController.registerSignedStateFromDisk(signedState);
-        }
-        if (source == SourceOfSignedState.RECONNECT) {
-            // a state received from reconnect should be saved to disk
-            savedStateController.reconnectStateReceived(signedState);
-        }
-
+    private void logHashes(final SignedState signedState) {
         if (signedState.getState().getHash() != null) {
             hashLogger.logHashes(signedState);
         }
@@ -158,7 +142,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             signedState.get().setGarbageCollector(signedStateGarbageCollector);
             signedStateHasher.hashState(signedState.get());
 
-            newSignedStateBeingTracked(signedState.get(), SourceOfSignedState.TRANSACTIONS);
+            logHashes(signedState.get());
 
             stateSigner.accept(signedState.getAndReserve("signing state from transactions"));
 
@@ -180,7 +164,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public void stateToLoad(final SignedState signedState, final SourceOfSignedState sourceOfSignedState) {
         signedState.setGarbageCollector(signedStateGarbageCollector);
-        newSignedStateBeingTracked(signedState, sourceOfSignedState);
+        logHashes(signedState);
         signedStateManager.addState(signedState);
     }
 

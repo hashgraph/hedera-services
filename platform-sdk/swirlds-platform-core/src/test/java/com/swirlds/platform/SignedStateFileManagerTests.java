@@ -276,10 +276,7 @@ class SignedStateFileManagerTests {
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         final SavedStateController controller =
-                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class), (rss) -> {
-                    lastResult.set(manager.saveStateTask(rss));
-                    return lastResult.get() != null;
-                });
+                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class));
 
         Instant timestamp;
         final long firstRound;
@@ -317,12 +314,13 @@ class SignedStateFileManagerTests {
                     .setRound(round)
                     .build();
 
-            controller.maybeSaveState(signedState);
+            controller.markSavedState(signedState.reserve("markSavedState"));
 
             if (signedState.isStateToSave()) {
                 assertTrue(
                         nextBoundary == null || CompareTo.isGreaterThanOrEqualTo(timestamp, nextBoundary),
                         "timestamp should be after the boundary");
+                manager.saveStateTask(signedState.reserve("save to disk"));
 
                 savedStates.add(signedState);
 
