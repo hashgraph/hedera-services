@@ -10,20 +10,22 @@ The data for each node is contained in the node's `RosterEntry`.
 
 ```java
 public interface RosterEntry extends SelfSerializable {
-    public NodeId getNodeId();
-    public long getWeight();
-    public String getHostname();
-    public int getPort();
-    public PublicKey getSigningPublicKey();
-    public x509Certificate getSigningCertificate();
-    public boolean isZeroWeight();
+    NodeId getNodeId();
+    long getWeight();
+    String getHostname();
+    int getPort();
+    PublicKey getSigningPublicKey();
+    X509Certificate getSigningCertificate();
+    boolean isZeroWeight();
 }
 ```
 ### Roster
 
 ```java
 public interface Roster extends Iterable<RosterEntry>, SelfSerializable{
-    public RosterEntry getEntry(NodeId nodeId);
-    public long getTotalWeight();
+    int size();
+    boolean contains(NodeId nodeId);
+    RosterEntry getEntry(NodeId nodeId);
+    long getTotalWeight();
 }
 ```
