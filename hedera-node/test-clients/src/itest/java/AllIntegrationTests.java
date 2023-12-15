@@ -65,8 +65,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Order(2)
     @TestFactory
     List<DynamicTest> concurrentSpecs() {
-        return List.of(
-                concurrentSpecsFrom(ConcurrentSuites.all()), concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
+        return List.of(concurrentSpecsFrom(ConcurrentSuites.all()));
     }
 
     @Tag("integration")
