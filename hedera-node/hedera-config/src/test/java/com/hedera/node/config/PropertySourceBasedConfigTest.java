@@ -42,7 +42,6 @@ import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
-import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.sources.PropertySourceBasedConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -99,7 +98,6 @@ class PropertySourceBasedConfigTest {
                 .withConverter(new AccountIDConverter())
                 .withConverter(new ContractIDConverter())
                 .withConverter(new FileIDConverter())
-                .withConverter(new SidecarTypeConverter())
                 .withConverter(new BytesConverter())
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .build();
