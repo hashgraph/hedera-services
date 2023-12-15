@@ -215,7 +215,7 @@ public class ClassicTransfersDecoder {
     public ResponseCodeEnum checkForFailureStatus(@NonNull HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
-            if ((int) call.get(3) < 0) {
+            if ((long) call.get(3) < 0) {
                 return ResponseCodeEnum.INVALID_TRANSACTION_BODY;
             }
         }
