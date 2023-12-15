@@ -13,7 +13,7 @@ pcli diagram \
     -g 'State File Management:signedStateFileManager,extract oldestMinimumGenerationOnDisk,to StateWrittenToDiskAction' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
-    -g 'Transaction Prehandling:applicationTransactionPrehandler,systemTransactionPrehandler'
+    -g 'Transaction Prehandling:applicationTransactionPrehandler,preconsensusSystemTransactionRouter,preconsensusSystemTransactionRouter_splitter,signature transactions filter'
 
 ########################################################################################################################
 #### Simple Collapsing
@@ -30,7 +30,8 @@ pcli diagram \
     -g 'State File Management:signedStateFileManager,extract oldestMinimumGenerationOnDisk,to StateWrittenToDiskAction' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
-    -g 'Transaction Prehandling:applicationTransactionPrehandler,systemTransactionPrehandler' \
+    -g 'Transaction Prehandling:applicationTransactionPrehandler,preconsensusSystemTransactionRouter,preconsensusSystemTransactionRouter_splitter,signature transactions filter' \
     -c "Orphan Buffer" \
     -c "Linked Event Intake" \
-    -c "State File Management"
+    -c "State File Management" \
+    -c "Transaction Prehandling"

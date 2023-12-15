@@ -34,6 +34,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public record SystemTransactionPrehandlerWiring(
         @NonNull InputWire<GossipEvent> systemTransactionsToPrehandleInput, @NonNull Runnable flushRunnable) {
 
+    // TODO make this into StateSignatureCollectorWiring
+
     /**
      * Create a new instance of this wiring.
      *

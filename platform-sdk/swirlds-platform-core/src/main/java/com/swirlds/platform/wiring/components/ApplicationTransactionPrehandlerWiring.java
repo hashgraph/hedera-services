@@ -42,7 +42,7 @@ public record ApplicationTransactionPrehandlerWiring(
     @NonNull
     public static ApplicationTransactionPrehandlerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new ApplicationTransactionPrehandlerWiring(
-                taskScheduler.buildInputWire("app transactions to prehandle"), taskScheduler::flush);
+                taskScheduler.buildInputWire("preconsensus events"), taskScheduler::flush);
     }
 
     /**

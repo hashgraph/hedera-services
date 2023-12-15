@@ -47,6 +47,7 @@ import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.PreconsensusSystemTransactionRouterWiring;
 import com.swirlds.platform.wiring.components.SystemTransactionPrehandlerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -68,6 +69,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final PreconsensusSystemTransactionRouterWiring preconsensusSystemTransactionRouterWiring;
     private final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring;
 
     private final PlatformCoordinator platformCoordinator;
@@ -100,6 +102,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
             applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
                     schedulers.applicationTransactionPrehandlerScheduler());
+            preconsensusSystemTransactionRouterWiring = PreconsensusSystemTransactionRouterWiring.create(
+                    schedulers.preconsensusSystemTransactionRouterScheduler());
             systemTransactionPrehandlerWiring =
                     SystemTransactionPrehandlerWiring.create(schedulers.systemTransactionPrehandlerScheduler());
 
@@ -123,6 +127,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             eventCreationManagerWiring = null;
             platformCoordinator = null;
             applicationTransactionPrehandlerWiring = null;
+            preconsensusSystemTransactionRouterWiring = null;
             systemTransactionPrehandlerWiring = null;
         }
 
@@ -174,6 +179,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring
                     .eventOutput()
                     .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
+            orphanBufferWiring.eventOutput()
+                    .solderTo(preconsensusSystemTransactionRouterWiring.preconsensusEventInout());
             orphanBufferWiring
                     .eventOutput()
                     .solderTo(systemTransactionPrehandlerWiring.systemTransactionsToPrehandleInput());
