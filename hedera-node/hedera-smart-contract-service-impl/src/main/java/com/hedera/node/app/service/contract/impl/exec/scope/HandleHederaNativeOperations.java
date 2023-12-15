@@ -99,15 +99,15 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public @NonNull ResponseCodeEnum createHollowAccount(@NonNull final Bytes evmAddress) {
         final var synthTxn = TransactionBody.newBuilder()
-                .memo(LAZY_CREATION_MEMO)
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
         // Note the use of the null "verification assistant" callback; we don't want any
         // signing requirements enforced for this synthetic transaction
         try {
-            return context.dispatchRemovablePrecedingTransaction(
-                            synthTxn, CryptoCreateRecordBuilder.class, null, context.payer())
-                    .status();
+            final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
+                    synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
+            childRecordBuilder.memo(LAZY_CREATION_MEMO);
+            return childRecordBuilder.status();
         } catch (final HandleException e) {
             // It is critically important we don't let HandleExceptions propagate to the workflow because
             // it doesn't rollback for contract operations so we can commit gas charges; that is, the
