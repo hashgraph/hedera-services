@@ -18,7 +18,6 @@ package com.swirlds.platform.event.linking;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
