@@ -299,6 +299,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileInsufficientGas")
                 .given(
+                        // Will be enabled in https://github.com/hashgraph/hedera-services/issues/10166
                         // snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
                 .when(sourcing(() -> contractCall(prng, GET_SEED)
