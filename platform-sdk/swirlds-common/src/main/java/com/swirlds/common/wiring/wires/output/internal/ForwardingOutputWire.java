@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param <IN>  the type of data passed to the forwarding method
  * @param <OUT> the type of data forwarded to things soldered to this wire
  */
-public abstract class ForwardingOutputWire<IN, OUT> extends OutputWire<OUT> {
+public abstract class ForwardingOutputWire<IN, OUT> extends OutputWire<OUT> { // TODO does this need to exist?
 
     /**
      * Constructor.

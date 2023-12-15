@@ -17,7 +17,7 @@
 package com.swirlds.common.wiring.wires.output;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
-import com.swirlds.common.wiring.transformers.AdvancedTransformation;
+import com.swirlds.common.wiring.transformers.internal.AdvancedTransformation;
 import com.swirlds.common.wiring.transformers.AdvancedWireTransformer;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireListSplitter;
