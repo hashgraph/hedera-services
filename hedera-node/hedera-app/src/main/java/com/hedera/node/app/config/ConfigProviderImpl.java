@@ -27,7 +27,6 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
-import com.hedera.node.config.converter.EntityTypeConverter;
 import com.hedera.node.config.converter.FileIDConverter;
 import com.hedera.node.config.converter.FunctionalitySetConverter;
 import com.hedera.node.config.converter.HederaFunctionalityConverter;
@@ -194,7 +193,6 @@ public class ConfigProviderImpl extends ConfigProviderBase {
                 .withConfigDataType(VersionConfig.class)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
-                .withConverter(new EntityTypeConverter())
                 .withConverter(new KnownBlockValuesConverter())
                 .withConverter(new LegacyContractIdActivationsConverter())
                 .withConverter(new RecomputeTypeConverter())
