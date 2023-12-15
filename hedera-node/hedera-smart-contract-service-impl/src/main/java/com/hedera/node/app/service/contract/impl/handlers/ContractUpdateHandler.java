@@ -75,7 +75,13 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var op = context.body().contractUpdateInstanceOrThrow();
 
         if (isAdminSigRequired(op)) {
-            context.requireKeyOrThrow(op.contractIDOrElse(ContractID.DEFAULT), INVALID_CONTRACT_ID);
+            final var accountStore = context.createStore(ReadableAccountStore.class);
+            final var targetId = op.contractIDOrElse(ContractID.DEFAULT);
+            final var maybeContract = accountStore.getContractById(targetId);
+            if (maybeContract != null && maybeContract.keyOrThrow().key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
+                throw new PreCheckException(MODIFYING_IMMUTABLE_CONTRACT);
+            }
+            context.requireKeyOrThrow(targetId, INVALID_CONTRACT_ID);
         }
         if (hasCryptoAdminKey(op)) {
             context.requireKey(op.adminKeyOrThrow());
@@ -220,7 +226,17 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var builder = contract.copyBuilder();
         if (op.hasAdminKey()) {
             if (EMPTY_KEY_LIST.equals(op.adminKey())) {
-                builder.key(contract.key());
+                try {
+                    var contractID = ContractID.newBuilder()
+                            .shardNum(contract.accountIdOrThrow().shardNum())
+                            .realmNum(contract.accountIdOrThrow().realmNum())
+                            .contractNum(contract.accountIdOrThrow().accountNumOrThrow())
+                            .build();
+                    var key = Key.newBuilder().contractID(contractID).build();
+                    builder.key(key);
+                } catch (NullPointerException e) {
+                    builder.key(contract.key());
+                }
             } else {
                 builder.key(op.adminKey());
             }

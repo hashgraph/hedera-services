@@ -197,6 +197,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
         String ofGeneralInterest = "Scotch";
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
 
+        // validation here is checking fees and staking, not message creation on the topic...
         return defaultHapiSpec("CanScheduleChunkedMessages")
                 .given(
                         overridingAllOf(Map.of(

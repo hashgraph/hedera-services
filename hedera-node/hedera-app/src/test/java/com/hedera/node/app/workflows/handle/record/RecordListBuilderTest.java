@@ -26,11 +26,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,9 +48,12 @@ class RecordListBuilderTest extends AppTestBase {
     private static final long MAX_CHILDREN = 10;
 
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.create()
-            .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-            .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+            .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+            .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
             .getOrCreateConfig();
+    private static final int EXPECTED_CHILD_NANO_INCREMENT = 0;
+    private static final int EXPECTED_CHILD_NANO_INCREMENT_SCHEDULED =
+            Math.toIntExact(CONFIGURATION.getConfigData(ConsensusConfig.class).handleMaxPrecedingRecords());
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -133,8 +138,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -237,8 +242,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -351,8 +356,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 4L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -447,8 +452,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxChildren = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-                .withValue("consensus.message.maxFollowingRecords", maxChildren)
+                .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+                .withValue("consensus.handle.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -676,8 +681,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxChildren = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-                .withValue("consensus.message.maxFollowingRecords", maxChildren)
+                .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+                .withValue("consensus.handle.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -827,26 +832,26 @@ class RecordListBuilderTest extends AppTestBase {
                 .hasTransaction(child3Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(4))
-                // child4 was removed, leaving a gap in consensus time.
-                .nanosAfter(5, result.userTransactionRecord())
+                // child4 was removed, but for mono-service fidelity we "smooth" the gap in consensus times
+                .nanosAfter(4, result.userTransactionRecord())
                 .hasNonce(4) // child5 gets the 4th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child5Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(5))
-                .nanosAfter(6, result.userTransactionRecord()) // immediately after child5
+                .nanosAfter(5, result.userTransactionRecord()) // immediately after child5
                 .hasNonce(5) // child6 gets the 5th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child6Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(6))
-                .nanosAfter(7, result.userTransactionRecord())
+                .nanosAfter(6, result.userTransactionRecord())
                 .hasNonce(6)
                 .hasResponseCode(OK)
                 .hasTransaction(child8Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(7))
-                .nanosAfter(8, result.userTransactionRecord())
+                .nanosAfter(7, result.userTransactionRecord())
                 .hasNonce(7)
                 .hasResponseCode(OK)
                 .hasTransaction(child9Tx)
@@ -886,10 +891,11 @@ class RecordListBuilderTest extends AppTestBase {
         }
 
         TransactionRecordAssertions nanosAfter(final int nanos, @NonNull final SingleTransactionRecord otherRecord) {
-            final var otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
-            final var expectedTimestamp = otherTimestamp
+            final Timestamp otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
+            final int actualOffset = EXPECTED_CHILD_NANO_INCREMENT + nanos;
+            final Timestamp expectedTimestamp = otherTimestamp
                     .copyBuilder()
-                    .nanos(otherTimestamp.nanos() + nanos)
+                    .nanos(otherTimestamp.nanos() + actualOffset)
                     .build();
             assertThat(record.transactionRecord().consensusTimestampOrThrow()).isEqualTo(expectedTimestamp);
             return this;

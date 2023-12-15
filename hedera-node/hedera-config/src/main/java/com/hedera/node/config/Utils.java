@@ -16,8 +16,8 @@
 
 package com.hedera.node.config;
 
-import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;

@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -33,7 +34,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -68,7 +69,7 @@ class ScratchpadTests {
         Files.createDirectories(testDirectory);
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
+                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .getOrCreateConfig();
         platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)

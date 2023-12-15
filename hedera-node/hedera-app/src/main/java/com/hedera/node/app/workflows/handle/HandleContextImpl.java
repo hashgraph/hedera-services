@@ -222,7 +222,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     signatureMapSize,
                     userTransactionConsensusTime,
                     subType,
-                    false);
+                    false,
+                    readableStoreFactory());
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
@@ -464,6 +465,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
             bodyToDispatch = txBody.copyBuilder()
                     .transactionID(TransactionID.newBuilder()
+                            .accountID(syntheticPayerId)
                             .transactionValidStart(Timestamp.newBuilder()
                                     .seconds(consensusNow().getEpochSecond())
                                     .nanos(consensusNow().getNano())))
@@ -540,11 +542,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
             throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
         }
+        // This condition fails, because for lazy-account creation we charge fees, before dispatching the transaction,
+        // and the state will be modified.
 
-        if (stack.depth() > 1) {
-            throw new IllegalStateException(
-                    "Cannot dispatch a preceding transaction when a savepoint has been created");
-        }
+        //        if (stack.depth() > 1) {
+        //            throw new IllegalStateException(
+        //                    "Cannot dispatch a preceding transaction when a savepoint has been created");
+        //        }
 
         // This condition fails, because for auto-account creation we charge fees, before dispatching the transaction,
         // and the state will be modified.

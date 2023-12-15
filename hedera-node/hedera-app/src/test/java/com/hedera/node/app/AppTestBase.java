@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -54,14 +55,14 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -236,8 +237,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     }
 
     public static final class TestAppBuilder {
-        private SemanticVersion softwareVersion = SemanticVersion.DEFAULT;
-        private SemanticVersion hapiVersion = SemanticVersion.DEFAULT;
+        private SemanticVersion softwareVersion = RELEASE_045_VERSION;
+        private SemanticVersion hapiVersion = RELEASE_045_VERSION;
         private Set<Service> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
         private NodeInfo selfNodeInfo = null;
@@ -359,7 +360,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var initialState = new FakeHederaState();
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
-                svc.registerSchemas(reg);
+                svc.registerSchemas(reg, hederaSoftwareVersion.getServicesVersion());
                 reg.migrate(svc.getServiceName(), initialState, networkInfo);
             });
             workingStateAccessor.setHederaState(initialState);
@@ -442,11 +443,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
         @Override
         public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull String s) {
-            return null;
-        }
-
-        @Override
-        public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull String s) {
             return null;
         }
 

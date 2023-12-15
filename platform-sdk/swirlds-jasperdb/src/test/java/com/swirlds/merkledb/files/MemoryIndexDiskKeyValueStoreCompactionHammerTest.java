@@ -469,7 +469,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
         Compactor(final MemoryIndexDiskKeyValueStore<long[]> coll, LongListOffHeap storeIndex) {
             compactor = new DataFileCompactor(
-                    "megaMergeHammerTest", coll.getFileCollection(), storeIndex, null, null, null);
+                    "megaMergeHammerTest", coll.getFileCollection(), storeIndex, null, null, null, null);
         }
 
         @Override

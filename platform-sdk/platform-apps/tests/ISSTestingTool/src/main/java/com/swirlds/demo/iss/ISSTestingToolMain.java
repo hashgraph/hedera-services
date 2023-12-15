@@ -18,13 +18,13 @@ package com.swirlds.demo.iss;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.state.notifications.IssListener;
-import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;

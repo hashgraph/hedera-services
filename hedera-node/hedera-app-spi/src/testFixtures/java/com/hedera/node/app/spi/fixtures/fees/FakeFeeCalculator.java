@@ -64,6 +64,11 @@ public class FakeFeeCalculator implements FeeCalculator {
         return new Fees(0, 0, 0);
     }
 
+    @Override
+    public long getCongestionMultiplier() {
+        return 1;
+    }
+
     @NonNull
     @Override
     public Fees legacyCalculate(@NonNull Function<SigValueObj, FeeData> callback) {

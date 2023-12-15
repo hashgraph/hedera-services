@@ -48,8 +48,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.ORIG_FILE;
-import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.transferListCheck;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -167,7 +167,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec executionWithCustomPayerWorks() {
+    final HapiSpec executionWithCustomPayerWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerWorks")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
@@ -272,7 +272,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    private HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
+    final HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerAndAdminKeyWorks")
                 .given(
                         newKeyNamed("adminKey"),
@@ -379,7 +379,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    private HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+    final HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerWhoSignsAtCreationAsPayerWorks")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
@@ -1081,7 +1081,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    private HapiSpec scheduledFreezeWorksAsExpected() {
+    final HapiSpec scheduledFreezeWorksAsExpected() {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -1135,7 +1135,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    private HapiSpec scheduledFreezeWithUnauthorizedPayerFails() {
+    final HapiSpec scheduledFreezeWithUnauthorizedPayerFails() {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -1170,7 +1170,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)));
     }
 
-    private HapiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
+    final HapiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpectedAtExpiry")
                 .given(
@@ -1215,7 +1215,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    private HapiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
+    final HapiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFailsAtExpiry")
                 .given(
@@ -1261,7 +1261,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    private HapiSpec scheduledSystemDeleteWorksAsExpected() {
+    final HapiSpec scheduledSystemDeleteWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpectedAtExpiry")
                 .given(
@@ -1306,7 +1306,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    private HapiSpec scheduledSystemDeleteUnauthorizedPayerFails() {
+    final HapiSpec scheduledSystemDeleteUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFailsAtExpiry")
                 .given(
@@ -1442,7 +1442,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(0L));
     }
 
-    private HapiSpec futureThrottlesAreRespected() {
+    final HapiSpec futureThrottlesAreRespected() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-schedule.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 

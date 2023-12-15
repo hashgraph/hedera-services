@@ -16,7 +16,7 @@
 
 package com.swirlds.base.test.fixtures.time;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 
 import com.swirlds.base.time.Time;
 import java.time.Duration;

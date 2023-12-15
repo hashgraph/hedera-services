@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
 import static java.util.Collections.emptyList;
@@ -72,6 +71,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     @Nullable
     private final ApprovalSwitchHelper approvalSwitchHelper;
 
+    private final CallStatusStandardizer callStatusStandardizer;
     private final SystemAccountCreditScreen systemAccountCreditScreen;
 
     private final VerificationStrategy verificationStrategy;
@@ -86,6 +86,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final TransactionBody syntheticTransfer,
             @NonNull final Configuration configuration,
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
+            @NonNull final CallStatusStandardizer callStatusStandardizer,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final SystemAccountCreditScreen systemAccountCreditScreen) {
         super(gasCalculator, enhancement, false);
@@ -94,6 +95,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
         this.configuration = requireNonNull(configuration);
         this.approvalSwitchHelper = approvalSwitchHelper;
+        this.callStatusStandardizer = requireNonNull(callStatusStandardizer);
         this.systemAccountCreditScreen = systemAccountCreditScreen;
         this.verificationStrategy = requireNonNull(verificationStrategy);
     }
@@ -127,10 +129,11 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
+        final var op = transferToDispatch.cryptoTransferOrThrow();
         if (recordBuilder.status() == SUCCESS) {
-            maybeEmitErcLogsFor(transferToDispatch.cryptoTransferOrThrow(), frame);
+            maybeEmitErcLogsFor(op, frame);
         } else {
-            recordBuilder.status(standardized(recordBuilder.status()));
+            recordBuilder.status(callStatusStandardizer.codeForFailure(recordBuilder.status(), frame, op));
         }
         return completionWith(gasRequirement, recordBuilder, encodedRc(recordBuilder.status()));
     }

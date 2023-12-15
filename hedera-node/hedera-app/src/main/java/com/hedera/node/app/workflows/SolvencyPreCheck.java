@@ -162,7 +162,6 @@ public class SolvencyPreCheck {
         }
 
         if (availableBalance < totalFee) {
-
             throw new InsufficientServiceFeeException(insufficientFeeResponseCode, totalFee);
         }
 
@@ -184,7 +183,7 @@ public class SolvencyPreCheck {
 
     // FUTURE: This should be provided by the TransactionHandler:
     // https://github.com/hashgraph/hedera-services/issues/8354
-    private long estimateAdditionalCosts(
+    public long estimateAdditionalCosts(
             @NonNull final TransactionBody txBody,
             @NonNull final HederaFunctionality functionality,
             @NonNull final Instant consensusTime) {
@@ -221,9 +220,6 @@ public class SolvencyPreCheck {
     private long estimatedGasPriceInTinybars(
             @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
         final var feeData = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
-        if (feeData == null) {
-            throw new IllegalStateException("No fee data found for transaction type " + functionality);
-        }
         final long priceInTinyCents = feeData.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
         final long priceInTinyBars = exchangeRateManager.getTinybarsFromTinyCents(priceInTinyCents, consensusTime);
         return Math.max(priceInTinyBars, 1L);

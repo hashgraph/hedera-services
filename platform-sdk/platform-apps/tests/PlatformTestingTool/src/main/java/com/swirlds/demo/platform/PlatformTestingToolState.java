@@ -16,18 +16,14 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_0;
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
-import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
-import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
-import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
-import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.logging.legacy.LogMarker.*;
+import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -39,18 +35,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.events.Event;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
@@ -64,17 +49,7 @@ import com.swirlds.demo.platform.actions.QuorumTriggeredAction;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.demo.platform.expiration.ExpirationUtils;
 import com.swirlds.demo.platform.freeze.FreezeTransactionHandler;
-import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
-import com.swirlds.demo.platform.fs.stresstest.proto.AppTransactionSignatureType;
-import com.swirlds.demo.platform.fs.stresstest.proto.ControlTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
-import com.swirlds.demo.platform.fs.stresstest.proto.FCMTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.FreezeTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.RandomBytesTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.SimpleAction;
-import com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.TestTransactionWrapper;
-import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
+import com.swirlds.demo.platform.fs.stresstest.proto.*;
 import com.swirlds.demo.platform.iss.IssLeaf;
 import com.swirlds.demo.platform.nft.NftId;
 import com.swirlds.demo.platform.nft.NftLedger;
@@ -89,12 +64,23 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapVa
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
 import com.swirlds.logging.legacy.payload.ApplicationDualStatePayload;
 import com.swirlds.logging.legacy.payload.SoftwareVersionPayload;
-import com.swirlds.merkle.test.fixtures.lifecycle.EntityType;
-import com.swirlds.merkle.test.fixtures.lifecycle.TransactionState;
-import com.swirlds.merkle.test.fixtures.lifecycle.TransactionType;
-import com.swirlds.merkle.test.fixtures.pta.MapKey;
+import com.swirlds.merkle.map.test.lifecycle.EntityType;
+import com.swirlds.merkle.map.test.lifecycle.TransactionState;
+import com.swirlds.merkle.map.test.lifecycle.TransactionType;
+import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -102,14 +88,7 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -669,7 +648,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final Instant previousTransTimestampPlusIncr = previousTimestamp.plusNanos(minTransTimestampIncrNanos);
             if (timestamp.isBefore(previousTransTimestampPlusIncr)) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         "Transaction has timestamp {} which is earlier than previous timestamp {} plus {} nanos: "
                                 + "{}",
                         timestamp,
@@ -727,7 +706,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         } catch (final InvalidProtocolBufferException ex) {
             exceptionRateLimiter.handle(
-                    ex, (error) -> logger.error(LOGM_EXCEPTION, "InvalidProtocolBufferException", error));
+                    ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
             return Optional.empty();
         }
     }
@@ -745,7 +724,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                     purgeExpiredRecords(timestamp.getEpochSecond());
                 } catch (final Throwable ex) {
                     exceptionRateLimiter.handle(
-                            ex, (error) -> logger.error(LOGM_EXCEPTION, "Failed to purge expired records", error));
+                            ex,
+                            (error) -> logger.error(EXCEPTION.getMarker(), "Failed to purge expired records", error));
                 }
             }
         }
@@ -776,7 +756,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final long seq = Utilities.toLong(bytesTransaction.getData().toByteArray());
             if (getNextSeqCons().get(nodeIndex).getValue() != seq) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         platform.getSelfId() + " error, new (id=" + id
                                 + ") seq should be " + getNextSeqCons().get(nodeIndex)
                                 + " but is " + seq);
@@ -850,7 +830,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             } else if (activityType == Activity.ActivityType.SAVE_EXPECTED_MAP) {
                 logger.info(LOGM_DEMO_INFO, "Received SAVE_EXPECTED_MAP transaction from node {}", id);
             } else {
-                logger.info(LOGM_EXCEPTION, "unknown Activity type");
+                logger.info(EXCEPTION.getMarker(), "unknown Activity type");
             }
             return;
         }
@@ -870,7 +850,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         if ((keys.isEmpty() && entityType != EntityType.NFT) || transactionType == null || entityType == null) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "Invalid Transaction: keys: {}, transactionType: {}, entityType: {}",
                     keys,
                     transactionType,
@@ -889,7 +869,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         // which is set when generating this FCMTransaction, it denotes an error
         if (getConfig().isAppendSig() && invalidSig != fcmTransaction.getInvalidSig()) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "Unexpected signature verification result: " + "actual: {}; expected:{}",
                     () -> (invalidSig ? "INVALID" : "VALID"),
                     () -> (fcmTransaction.getInvalidSig() ? "INVALID" : "VALID"));
@@ -940,7 +920,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             exceptionRateLimiter.handle(
                     ex,
                     (error) -> logger.error(
-                            LOGM_EXCEPTION,
+                            EXCEPTION.getMarker(),
                             "Exceptions while handling transaction: {} {} for {}, originId:{}",
                             transactionType,
                             entityType,
@@ -1197,7 +1177,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 exceptionRateLimiter.handle(
                         ex,
                         (error) -> logger.error(
-                                LOGM_EXCEPTION, "" + "InvalidProtocolBufferException while chekcing signature", error));
+                                EXCEPTION.getMarker(),
+                                "" + "InvalidProtocolBufferException while chekcing signature",
+                                error));
             }
         }
 
@@ -1238,7 +1220,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 handleVirtualMerkleTransaction(testTransaction.get().getVirtualMerkleTransaction(), id, timeCreated);
                 break;
             default:
-                logger.error(LOGM_EXCEPTION, "Unrecognized transaction!");
+                logger.error(EXCEPTION.getMarker(), "Unrecognized transaction!");
         }
 
         //////////// end timing/////////////
@@ -1388,7 +1370,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
             } catch (final InvalidProtocolBufferException ex) {
                 exceptionRateLimiter.handle(
-                        ex, (error) -> logger.error(LOGM_EXCEPTION, "InvalidProtocolBufferException", error));
+                        ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
             }
         }
     }
@@ -1447,7 +1429,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         final Future<Void> future = signature.waitForFuture();
                         future.get();
                     } catch (final ExecutionException | InterruptedException ex) {
-                        logger.info(LOGM_EXCEPTION, "Error when verifying signature", ex);
+                        logger.info(EXCEPTION.getMarker(), "Error when verifying signature", ex);
                     }
                 }
                 if (VerificationStatus.INVALID.equals(signature.getSignatureStatus())) {
@@ -1575,7 +1557,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public void rebuildExpirationQueue() {
         final FCMFamily fcmFamily = getFcmFamily();
         if (fcmFamily == null || fcmFamily.getAccountFCQMap() == null) {
-            logger.error(LOGM_EXCEPTION, "FCMFamily is null, so could not rebuild Expiration Queue");
+            logger.error(EXCEPTION.getMarker(), "FCMFamily is null, so could not rebuild Expiration Queue");
             return;
         }
         if (fcmFamily.getAccountFCQMap().size() == 0) {
