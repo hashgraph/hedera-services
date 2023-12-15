@@ -1820,10 +1820,13 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(
+                expectedCountA, countA::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(
+                expectedCountB, countB::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(
+                expectedCountC, countC::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(
                 expectedCountD, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
-        assertEquals(expectedCountA, countA.get());
-        assertEquals(expectedCountB, countB.get());
-        assertEquals(expectedCountC, countC.get());
 
         model.stop();
     }
