@@ -484,7 +484,19 @@ public class SwirldsPlatform implements Platform {
                 Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
         issScratchpad.logContents();
         final SerializableLong issRound = issScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
-        final boolean ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
+
+        final boolean forceIgnorePcesSignatures = platformContext
+                .getConfiguration()
+                .getConfigData(PreconsensusEventStreamConfig.class)
+                .forceIgnorePcesSignatures();
+
+        final boolean ignorePreconsensusSignatures;
+        if (forceIgnorePcesSignatures) {
+            // this is used FOR TESTING ONLY
+            ignorePreconsensusSignatures = true;
+        } else {
+            ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
+        }
 
         // A round that we will completely skip ISS detection for. Needed for tests that do janky state modification
         // without a software upgrade (in production this feature should not be used).
