@@ -75,7 +75,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec accountAutoRemoval() {
+    final HapiSpec accountAutoRemoval() {
         String autoRemovedAccount = "autoRemovedAccount";
         return defaultHapiSpec("AccountAutoRemoval")
                 .given(
@@ -93,7 +93,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                 .then(getAccountBalance(autoRemovedAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiSpec accountAutoRenewal() {
+    final HapiSpec accountAutoRenewal() {
         final var briefAutoRenew = 3L;
         final var autoRenewedAccount = "autoRenewedAccount";
 
@@ -130,7 +130,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
      * periods, this test is just a minimal sanity check.
      */
     @SuppressWarnings("java:S5960")
-    private HapiSpec maxNumberOfEntitiesToRenewOrDeleteWorks() {
+    final HapiSpec maxNumberOfEntitiesToRenewOrDeleteWorks() {
         final var briefAutoRenew = 3L;
         final var firstTouchable = "a";
         final var secondTouchable = "b";
@@ -185,7 +185,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
      * <p>If run against a network that has existing funded accounts with very low auto-renew
      * periods, this test is just a minimal sanity check.
      */
-    private HapiSpec numberOfEntitiesToScanWorks() {
+    final HapiSpec numberOfEntitiesToScanWorks() {
         final var briefAutoRenew = 3L;
         final int abbrevMaxToScan = 10;
         final IntFunction<String> accountName = i -> "fastExpiring" + i;
@@ -224,7 +224,7 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec autoDeleteAfterGracePeriod() {
+    final HapiSpec autoDeleteAfterGracePeriod() {
         final var briefAutoRenew = 3L;
         String autoDeleteAccount = "autoDeleteAccount";
         return defaultHapiSpec("AutoDeleteAfterGracePeriod")
@@ -245,14 +245,14 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                 .then(getAccountBalance(autoDeleteAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiSpec accountAutoRenewalSuiteCleanup() {
+    final HapiSpec accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()
                 .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(disablingAutoRenewWithDefaults()));
     }
 
-    private HapiSpec freezeAtTheEnd() {
+    final HapiSpec freezeAtTheEnd() {
         return defaultHapiSpec("freezeAtTheEnd")
                 .given()
                 .when(freezeOnly().startingIn(30).seconds().payingWith(GENESIS))

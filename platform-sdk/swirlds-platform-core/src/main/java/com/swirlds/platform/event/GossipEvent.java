@@ -18,13 +18,13 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -56,6 +56,22 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     private Instant timeReceived;
 
     /**
+     * The sequence number of an event before it is added to the write queue.
+     */
+    public static final long NO_STREAM_SEQUENCE_NUMBER = -1;
+
+    /**
+     * The sequence number of an event that will never be written to disk because it is stale.
+     */
+    public static final long STALE_EVENT_STREAM_SEQUENCE_NUMBER = -2;
+
+    /**
+     * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
+     * signal when events have been made durable.
+     */
+    private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER;
+
+    /**
      * The id of the node which sent us this event
      * <p>
      * The sender ID of an event should not be serialized when an event is serialized, and it should not affect the hash
@@ -77,6 +93,31 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         unhashedData.updateOtherParentEventDescriptor(hashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
+    }
+
+    /**
+     * Set the sequence number in the preconsensus event stream for this event.
+     *
+     * @param streamSequenceNumber the sequence number
+     */
+    public void setStreamSequenceNumber(final long streamSequenceNumber) {
+        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
+                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("sequence number already set");
+        }
+        this.streamSequenceNumber = streamSequenceNumber;
+    }
+
+    /**
+     * Get the sequence number in the preconsensus event stream for this event.
+     *
+     * @return the sequence number
+     */
+    public long getStreamSequenceNumber() {
+        if (streamSequenceNumber == NO_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("sequence number not set");
+        }
+        return streamSequenceNumber;
     }
 
     /**
@@ -142,8 +183,14 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
      * hashed before the descriptor can be built.
+     *
+     * @throws IllegalStateException if the descriptor has already been built
      */
     public void buildDescriptor() {
+        if (descriptor != null) {
+            throw new IllegalStateException("Descriptor has already been built");
+        }
+
         this.descriptor = hashedData.createEventDescriptor();
     }
 

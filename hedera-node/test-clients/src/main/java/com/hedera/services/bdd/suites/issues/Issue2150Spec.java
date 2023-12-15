@@ -54,7 +54,7 @@ public class Issue2150Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec multiKeyNonPayerEntityVerifiedAsync() {
+    final HapiSpec multiKeyNonPayerEntityVerifiedAsync() {
         KeyShape LARGE_THRESH_SHAPE = KeyShape.threshOf(1, 10);
         SigControl firstOnly = LARGE_THRESH_SHAPE.signedWith(sigs(ON, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF));
 

@@ -19,7 +19,6 @@ package com.hedera.node.app.spi.workflows;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 
 /**
@@ -32,7 +31,7 @@ public interface TransactionKeys {
      *
      * @return the payer key
      */
-    @Nullable
+    @NonNull
     Key payerKey();
 
     /**

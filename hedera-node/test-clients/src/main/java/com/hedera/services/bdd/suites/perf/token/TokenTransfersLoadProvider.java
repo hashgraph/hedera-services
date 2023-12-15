@@ -78,7 +78,7 @@ public class TokenTransfersLoadProvider extends HapiSuite {
         });
     }
 
-    private HapiSpec runTokenTransfers() {
+    final HapiSpec runTokenTransfers() {
         return HapiSpec.defaultHapiSpec("RunTokenTransfers")
                 .given(
                         getAccountBalance(DEFAULT_PAYER).logged(),

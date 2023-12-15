@@ -82,7 +82,8 @@ public class FileServiceUtils {
 
         // @future('8172'): check if upgrade file exist after modularization is done
         FileMetadata fileMeta = null;
-        if (fileId.fileNum() != fileConfig.upgradeFileNumber()) {
+        if (fileId.fileNum() < fileConfig.softwareUpdateRange().left()
+                || fileId.fileNum() > fileConfig.softwareUpdateRange().right()) {
             fileMeta = fileStore.getFileMetadata(fileId);
             mustExist(fileMeta, INVALID_FILE_ID);
         }
