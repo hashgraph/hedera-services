@@ -38,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -133,8 +135,8 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public void revertChildRecords() {
-        context.revertChildRecords();
+    public void revertRecordsFrom(RecordListCheckPoint checkpoint) {
+        context.revertRecordsFrom(checkpoint);
     }
 
     /**
@@ -303,8 +305,11 @@ public class HandleHederaOperations implements HederaOperations {
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().evmAddress(evmAddress).build());
+        final ContractID contractId =
+                ContractID.newBuilder().evmAddress(evmAddress).build();
+
+        tokenServiceApi.deleteContract(contractId);
+        addContractDeleteChildRecord(contractId);
     }
 
     /**
@@ -313,8 +318,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void deleteUnaliasedContract(final long number) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().contractNum(number).build());
+        final ContractID contractId =
+                ContractID.newBuilder().contractNum(number).build();
+
+        tokenServiceApi.deleteContract(contractId);
+        addContractDeleteChildRecord(contractId);
     }
 
     /**
@@ -337,6 +345,11 @@ public class HandleHederaOperations implements HederaOperations {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         return tokenServiceApi.originalKvUsageFor(
                 AccountID.newBuilder().accountNum(contractNumber).build());
+    }
+
+    private void addContractDeleteChildRecord(final ContractID contractId) {
+        final var childRecordBuilder = context.addChildRecordBuilder(ContractDeleteRecordBuilder.class);
+        childRecordBuilder.contractID(contractId).transaction(Transaction.DEFAULT);
     }
 
     @Override
@@ -372,6 +385,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public ContractID shardAndRealmValidated(@NonNull final ContractID contractId) {
         return configValidated(contractId, hederaConfig);
+    }
+
+    @Override
+    public RecordListCheckPoint createRecordListCheckPoint() {
+        return context.createRecordListCheckPoint();
     }
 
     private void dispatchAndMarkCreation(
