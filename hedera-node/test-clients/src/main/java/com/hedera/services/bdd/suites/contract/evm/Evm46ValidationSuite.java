@@ -178,8 +178,12 @@ public class Evm46ValidationSuite extends HapiSuite {
                 internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey(),
                 // EOA -calls-> InternalCaller -callWValue-> ExistingMirror, expect success
                 internalCallWithValueToExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror, expect success
-                internalCallWithValueToNonExistingNonMirrorAddressResultsInSuccess(),
+                // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror and not enough gas for lazy creation,
+                // expect success with no account created
+                internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated(),
+                // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror and enough gas for lazy creation,
+                // expect success with account created
+                internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated(),
                 // EOA -calls-> InternalCaller -callWValue-> ExistingNonMirror, expect ?
                 internalCallWithValueToExistingNonMirrorAddressResultsInSuccess(),
 
@@ -893,34 +897,53 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToNonExistingNonMirrorAddressResultsInSuccess() {
-
-        return defaultHapiSpec("internalCallWithValueToNonExistingNonMirrorAddressResultsInSuccess")
+    private HapiSpec
+            internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated() {
+        return defaultHapiSpec(
+                        "internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated")
                 .given(
+                        cryptoCreate(CUSTOM_PAYER),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(
+                        balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
                         contractCall(
                                         INTERNAL_CALLER_CONTRACT,
                                         CALL_WITH_VALUE_TO_FUNCTION,
                                         nonMirrorAddrWith(new Random().nextLong()))
+                                .payingWith(CUSTOM_PAYER)
                                 .gas(NOT_ENOUGH_GAS_LIMIT_FOR_CREATION)
-                                .via("transferWithLowGasLimit"),
+                                .via("transferWithLowGasLimit"))
+                .then(
+                        getTxnRecord("transferWithLowGasLimit")
+                                .hasPriority(recordWith().status(SUCCESS)),
+                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
+                                .hasTinyBars(changeFromSnapshot("contractBalance", 0)));
+    }
+
+    @HapiTest
+    private HapiSpec
+            internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated() {
+        return defaultHapiSpec(
+                        "internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated")
+                .given(
+                        cryptoCreate(CUSTOM_PAYER),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(
+                        balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
                         contractCall(
                                         INTERNAL_CALLER_CONTRACT,
                                         CALL_WITH_VALUE_TO_FUNCTION,
                                         nonMirrorAddrWith(new Random().nextLong()))
+                                .payingWith(CUSTOM_PAYER)
                                 .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
-                                .via("transferWithHighGasLimit"))
+                                .via("transferWithEnoughGasLimit"))
                 .then(
-                        // todo check first call with value is unsuccessful,
-                        getTxnRecord("transferWithLowGasLimit")
-                                .andAllChildRecords()
-                                .logged(),
-                        // todo check second call with value is successful and creates hollow account
-                        getTxnRecord("transferWithHighGasLimit")
-                                .andAllChildRecords()
-                                .logged());
+                        getTxnRecord("transferWithEnoughGasLimit")
+                                .hasPriority(recordWith().status(SUCCESS)),
+                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
+                                .hasTinyBars(changeFromSnapshot("contractBalance", -1)));
     }
 
     @HapiTest
