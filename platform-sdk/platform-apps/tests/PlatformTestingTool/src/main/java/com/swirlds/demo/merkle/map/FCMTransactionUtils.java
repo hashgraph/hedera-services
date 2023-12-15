@@ -17,26 +17,23 @@
 package com.swirlds.demo.merkle.map;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Append;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.BurnToken;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.MintToken;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.TransferToken;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Append;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.BurnToken;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Create;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Delete;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.MintToken;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Transfer;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.TransferToken;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Update;
 
-import com.swirlds.demo.platform.fs.stresstest.proto.BurnToken;
 import com.swirlds.demo.platform.fs.stresstest.proto.FCMTransaction;
 import com.swirlds.demo.platform.fs.stresstest.proto.FCMTxType;
 import com.swirlds.demo.platform.fs.stresstest.proto.FCQTxType;
-import com.swirlds.demo.platform.fs.stresstest.proto.MintToken;
 import com.swirlds.demo.platform.fs.stresstest.proto.TransferBalance;
 import com.swirlds.demo.platform.fs.stresstest.proto.TransferBalanceFCQ;
-import com.swirlds.demo.platform.fs.stresstest.proto.TransferToken;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.TransactionType;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.lifecycle.TransactionType;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -160,7 +157,9 @@ public class FCMTransactionUtils {
     }
 
     private static boolean isBodyRelatedToNft(final Object body) {
-        return body instanceof TransferToken || body instanceof BurnToken || body instanceof MintToken;
+        return body instanceof com.swirlds.demo.platform.fs.stresstest.proto.TransferToken
+                || body instanceof com.swirlds.demo.platform.fs.stresstest.proto.BurnToken
+                || body instanceof com.swirlds.demo.platform.fs.stresstest.proto.MintToken;
     }
 
     /**

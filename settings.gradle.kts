@@ -113,9 +113,9 @@ include(":swirlds-test-framework", "platform-sdk/swirlds-unit-tests/common/swirl
 
 include(":swirlds-common-testing", "platform-sdk/swirlds-unit-tests/common/swirlds-common-test")
 
-include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
+include(":swirlds-platform-testing", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
-include(":swirlds-merkle-test", "platform-sdk/swirlds-unit-tests/structures/swirlds-merkle-test")
+include(":swirlds-merkle-testing", "platform-sdk/swirlds-unit-tests/structures/swirlds-merkle-test")
 
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")

@@ -66,23 +66,23 @@ module com.swirlds.platform.core {
 
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
-            com.swirlds.platform.test,
+            com.swirlds.platform.testing,
             com.swirlds.platform.core.test.fixtures,
             com.fasterxml.jackson.core,
             com.fasterxml.jackson.databind;
     exports com.swirlds.platform.swirldapp to
             com.swirlds.platform.test;
     exports com.swirlds.platform.observers to
-            com.swirlds.platform.test;
+            com.swirlds.platform.testing;
     exports com.swirlds.platform.consensus to
-            com.swirlds.platform.test,
+            com.swirlds.platform.testing,
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test,
             com.hedera.node.test.clients;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
-            com.swirlds.platform.test;
+            com.swirlds.platform.testing;
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss to

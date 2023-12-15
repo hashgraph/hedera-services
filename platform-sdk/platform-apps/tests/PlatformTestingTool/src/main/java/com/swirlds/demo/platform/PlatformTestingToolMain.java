@@ -32,10 +32,10 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.merkle.test.fixtures.lifecycle.EntityType.Crypto;
+import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
+import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
+import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.serialize;
 import static java.lang.System.exit;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -71,8 +71,8 @@ import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.logging.legacy.payload.CreateTransactionFailedPayload;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.pta.MapKey;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.model.GuiModel;

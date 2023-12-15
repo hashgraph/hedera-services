@@ -1,4 +1,4 @@
-open module com.swirlds.platform.test {
+open module com.swirlds.platform.testing {
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.common;
