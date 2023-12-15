@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,17 +42,6 @@ public final class TipsetUtils {
             throw new IllegalStateException("event is not hashed");
         }
         return event.getHashedData().createEventDescriptor();
-    }
-
-    /**
-     * Build a descriptor from a GossipEvent.
-     *
-     * @param event the event
-     * @return the descriptor
-     */
-    public static EventDescriptor buildDescriptor(@NonNull final GossipEvent event) {
-        event.buildDescriptor();
-        return event.getDescriptor();
     }
 
     /**

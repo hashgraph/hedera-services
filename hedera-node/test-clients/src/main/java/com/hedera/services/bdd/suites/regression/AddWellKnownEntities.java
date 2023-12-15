@@ -43,7 +43,7 @@ public class AddWellKnownEntities extends HapiSuite {
         });
     }
 
-    private HapiSpec instantiateEntities() {
+    final HapiSpec instantiateEntities() {
         return HapiSpec.customHapiSpec("AddWellKnownEntities")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

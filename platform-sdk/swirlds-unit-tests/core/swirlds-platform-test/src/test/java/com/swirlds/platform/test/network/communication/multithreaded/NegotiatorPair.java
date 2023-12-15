@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.network.communication.multithreaded;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.network.communication.TestProtocol;
 import com.swirlds.platform.test.sync.ConnectionFactory;

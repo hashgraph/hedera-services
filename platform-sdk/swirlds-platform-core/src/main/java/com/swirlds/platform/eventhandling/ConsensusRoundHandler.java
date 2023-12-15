@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.eventhandling;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
@@ -34,12 +35,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.EventStreamManager;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatNames;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -58,6 +55,10 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.CycleTimingStat;
+import com.swirlds.platform.system.PlatformStatNames;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Objects;
@@ -338,7 +339,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             // this may block until the queue isn't full
             queueThread.put(consensusRound);
         } catch (final InterruptedException e) {
-            logger.error(RECONNECT.getMarker(), "addEvent interrupted");
+            logger.error(EXCEPTION.getMarker(), "addEvent interrupted");
             Thread.currentThread().interrupt();
         }
     }

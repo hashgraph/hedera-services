@@ -20,6 +20,8 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.platform.NodeId;
 
 public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
     public enum Type {

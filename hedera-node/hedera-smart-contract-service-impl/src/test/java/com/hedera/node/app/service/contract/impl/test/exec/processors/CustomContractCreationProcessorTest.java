@@ -123,7 +123,7 @@ class CustomContractCreationProcessorTest {
 
         verify(frame).setExceptionalHaltReason(maybeReasonToHalt);
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
-        verify(tracer, never()).traceAccountCreationResult(frame, maybeReasonToHalt);
+        verify(tracer).traceAccountCreationResult(frame, maybeReasonToHalt);
     }
 
     @Test

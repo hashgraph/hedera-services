@@ -18,13 +18,13 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -142,8 +142,14 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
      * hashed before the descriptor can be built.
+     *
+     * @throws IllegalStateException if the descriptor has already been built
      */
     public void buildDescriptor() {
+        if (descriptor != null) {
+            throw new IllegalStateException("Descriptor has already been built");
+        }
+
         this.descriptor = hashedData.createEventDescriptor();
     }
 

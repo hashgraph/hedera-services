@@ -20,8 +20,8 @@ import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.system.Platform;
 import com.swirlds.demo.platform.nft.NftLedgerStatistics;
+import com.swirlds.platform.system.Platform;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.util.Optional;

@@ -23,7 +23,7 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
 import com.swirlds.metrics.api.Metrics;

@@ -27,9 +27,9 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.management.OperatingSystemMXBean;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.metrics.api.Metrics;

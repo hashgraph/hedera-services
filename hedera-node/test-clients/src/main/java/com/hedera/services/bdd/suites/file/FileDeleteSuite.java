@@ -53,7 +53,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
+    final HapiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
         KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
         SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));
 
@@ -64,7 +64,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getDeletedFileInfo() {
+    final HapiSpec getDeletedFileInfo() {
         return defaultHapiSpec("getDeletedFileInfo")
                 .given(fileCreate("deletedFile").logged())
                 .when(fileDelete("deletedFile").logged())

@@ -16,16 +16,17 @@
 
 package com.swirlds.platform.event.deduplication;
 
-import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.common.system.events.EventDescriptor;
-import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -144,5 +145,14 @@ public class EventDeduplicator {
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
 
         observedEvents.shiftWindow(minimumGenerationNonAncient);
+    }
+
+    /**
+     * Clear the internal state of this deduplicator.
+     *
+     * @param ignored ignored trigger object
+     */
+    public void clear(@NonNull final ClearTrigger ignored) {
+        observedEvents.clear();
     }
 }

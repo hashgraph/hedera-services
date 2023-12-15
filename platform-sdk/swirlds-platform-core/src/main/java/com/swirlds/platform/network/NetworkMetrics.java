@@ -16,20 +16,20 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_0;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_4_2;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_7_0;
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_4_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_7_0;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;

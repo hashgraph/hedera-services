@@ -7,7 +7,6 @@ module com.swirlds.demo.migration {
     requires com.swirlds.merkledb;
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
-    requires com.swirlds.platform.gui;
     requires com.swirlds.virtualmap;
     requires java.logging;
     requires org.apache.logging.log4j;

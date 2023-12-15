@@ -29,6 +29,8 @@ import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.AverageTimeStat;
+import com.swirlds.platform.system.PlatformStatNames;
+import com.swirlds.platform.system.SwirldState;
 import java.time.temporal.ChronoUnit;
 
 /**

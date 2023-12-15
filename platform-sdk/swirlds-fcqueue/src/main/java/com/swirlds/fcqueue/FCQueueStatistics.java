@@ -19,14 +19,12 @@ package com.swirlds.fcqueue;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.metrics.api.Metrics;
 
 /**
  * Singleton factory for loading and registering {@link FCQueue} statistics. This is the primary entry point for all
- * {@link SwirldMain} implementations that wish to track {@link FCQueue} statistics.
+ * SwirldMain implementations that wish to track {@link FCQueue} statistics.
  */
 public class FCQueueStatistics {
 
@@ -75,7 +73,7 @@ public class FCQueueStatistics {
     private FCQueueStatistics() {}
 
     /**
-     * Registers the {@link FCQueue} statistics with the specified {@link Platform} instance.
+     * Registers the {@link FCQueue} statistics with the specified Platform instance.
      *
      * @param metrics
      * 		the metrics-system
@@ -90,7 +88,7 @@ public class FCQueueStatistics {
     }
 
     /**
-     * Gets a value indicating whether the {@link SwirldMain} has called the {@link
+     * Gets a value indicating whether the SwirldMain has called the {@link
      * #register(Metrics)} method on this factory.
      *
      * @return true if these statistics have been registered by the application; otherwise false

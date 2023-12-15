@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.reconnect;
 
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;

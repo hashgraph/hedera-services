@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.stats.cycle;
 
-import com.swirlds.common.units.UnitConstants;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.base.units.UnitConstants;
+import com.swirlds.common.metrics.Metrics;
 
 /**
  * Tracks the fraction of time spent in a single interval of a cycle

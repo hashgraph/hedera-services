@@ -30,7 +30,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ class CustomBalanceOperationTest {
     @Test
     void catchesUnderflowWhenStackIsEmpty() {
         setupWarmGasCost();
-        given(frame.getStackItem(0)).willThrow(FixedStack.UnderflowException.class);
+        given(frame.getStackItem(0)).willThrow(UnderflowException.class);
         final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);

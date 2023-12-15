@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;

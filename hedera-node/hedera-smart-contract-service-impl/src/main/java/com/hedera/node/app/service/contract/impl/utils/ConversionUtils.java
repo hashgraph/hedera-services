@@ -127,15 +127,11 @@ public class ConversionUtils {
 
     /**
      * Given a {@link AccountID}, returns its address as a headlong address.
-     * @param accountID
-     * @return
+     * @param accountID the account id
+     * @return the headlong address
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
         requireNonNull(accountID);
-        if (accountID.account().kind() == AccountID.AccountOneOfType.UNSET) {
-            return asHeadlongAddress(Bytes.EMPTY.toArray());
-        }
-
         final var integralAddress = accountID.hasAccountNum()
                 ? asEvmAddress(accountID.accountNum())
                 : accountID.alias().toByteArray();
@@ -431,6 +427,19 @@ public class ConversionUtils {
      */
     public static ContractID asEvmContractId(@NonNull final Address address) {
         return ContractID.newBuilder().evmAddress(tuweniToPbjBytes(address)).build();
+    }
+
+    /**
+     * Converts a long-zero address to a PBJ {@link AccountID} with id number instead of alias.
+     *
+     * @param address the EVM address
+     * @return the PBJ {@link AccountID}
+     */
+    public static AccountID asNumberedAccountId(@NonNull final Address address) {
+        if (!isLongZero(address)) {
+            throw new IllegalArgumentException("Cannot extract id number from address " + address);
+        }
+        return AccountID.newBuilder().accountNum(numberOfLongZero(address)).build();
     }
 
     /**

@@ -162,7 +162,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
     @HapiTest
-    private HapiSpec validateNewTokenAssociations() {
+    final HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
         final String fractionalCollector = "fractionalCollector";
@@ -246,7 +246,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * Validates the default values for a {@code TokenCreate}'s token type (fungible) and supply type (infinite).
      */
     @HapiTest
-    private HapiSpec createsFungibleInfiniteByDefault() {
+    final HapiSpec createsFungibleInfiniteByDefault() {
         return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
                 .given()
                 .when(tokenCreate("DefaultFungible"))
@@ -256,7 +256,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec worksAsExpectedWithDefaultTokenId() {
+    final HapiSpec worksAsExpectedWithDefaultTokenId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
                 .given()
                 .when()
@@ -793,7 +793,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
+    final HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
         return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate")
                 .given(
                         newKeyNamed(customFeesKey),
@@ -974,7 +974,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prechecksWork() {
+    final HapiSpec prechecksWork() {
         return defaultHapiSpec("PrechecksWork")
                 .given(
                         cryptoCreate(TOKEN_TREASURY)

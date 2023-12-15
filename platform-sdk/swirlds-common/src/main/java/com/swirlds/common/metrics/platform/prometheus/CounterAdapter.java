@@ -22,16 +22,16 @@ import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.metrics.api.Metric;
+import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 
 /**
- * Adapter that synchronizes a {@link com.swirlds.metrics.api.Counter}
+ * Adapter that synchronizes a {@link com.swirlds.common.metrics.Counter}
  * with the corresponding Prometheus {@link Collector}.
  */
 public class CounterAdapter extends AbstractMetricAdapter {
@@ -44,9 +44,9 @@ public class CounterAdapter extends AbstractMetricAdapter {
      * @param registry
      * 		The {@link CollectorRegistry} with which the Prometheus {@link Collector} should be registered
      * @param metric
-     * 		The {@link com.swirlds.metrics.api.Counter} which value should be reported to Prometheus
+     * 		The {@link com.swirlds.common.metrics.Counter} which value should be reported to Prometheus
      * @param adapterType
-     * 		Scope of the {@link com.swirlds.metrics.api.Counter},
+     * 		Scope of the {@link com.swirlds.common.metrics.Counter},
      * 		either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
      * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
