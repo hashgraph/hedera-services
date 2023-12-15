@@ -35,7 +35,6 @@ import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.LongPairConverter;
-import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
@@ -198,7 +197,6 @@ public class ConfigProviderImpl extends ConfigProviderBase {
                 .withConverter(new EntityTypeConverter())
                 .withConverter(new KnownBlockValuesConverter())
                 .withConverter(new LegacyContractIdActivationsConverter())
-                .withConverter(new MapAccessTypeConverter())
                 .withConverter(new RecomputeTypeConverter())
                 .withConverter(new ScaleFactorConverter())
                 .withConverter(new AccountIDConverter())
