@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildLegacyEventCreationManager;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
@@ -153,6 +154,7 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
@@ -161,6 +163,7 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
+import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.InitTrigger;
@@ -239,6 +242,18 @@ public class SwirldsPlatform implements Platform {
     private final long initialMinimumGenerationNonAncient;
 
     private final StateManagementComponent stateManagementComponent;
+    /** Manages the pipeline of signed states to be written to disk */
+    private final SignedStateFileManager signedStateFileManager;
+
+    /**
+     * Holds the latest state that is immutable. May be unhashed (in the future), may or may not have all required
+     * signatures. State is returned with a reservation.
+     * <p>
+     * NOTE: This is currently set when a state has finished hashing. In the future, this will be set at the moment a
+     * new state is created, before it is hashed.
+     */
+    private final SignedStateNexus latestImmutableState = new SignedStateNexus();
+
     private final QueueThread<GossipEvent> intakeQueue;
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
@@ -494,8 +509,7 @@ public class SwirldsPlatform implements Platform {
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
-        // Manages the pipeline of signed states to be written to disk
-        final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
+        signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 new SignedStateMetrics(platformContext.getMetrics()),
                 Time.getCurrent(),
@@ -535,7 +549,6 @@ public class SwirldsPlatform implements Platform {
                 newLatestCompleteStateConsumer,
                 this::handleFatalError,
                 savedStateController,
-                platformWiring.getDumpStateToDiskInput()::put,
                 platformWiring.getSignStateInput()::put);
 
         // Load the minimum generation into the pre-consensus event writer
@@ -610,6 +623,7 @@ public class SwirldsPlatform implements Platform {
                 appVersion);
 
         final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs -> {
+            latestImmutableState.setState(rs.getAndReserve("newSignedStateFromTransactionsConsumer"));
             latestCompleteState.newIncompleteState(rs.get().getRound());
             stateManagementComponent.newSignedStateFromTransactions(rs);
         };
@@ -842,7 +856,7 @@ public class SwirldsPlatform implements Platform {
         } else {
             initialMinimumGenerationNonAncient =
                     initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
-
+            latestImmutableState.setState(initialState.reserve("set latest immutable to initial state"));
             stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
             consensusRoundHandler.loadDataFromSignedState(initialState, false);
 
@@ -1095,6 +1109,7 @@ public class SwirldsPlatform implements Platform {
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
             // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
             platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
+            latestImmutableState.setState(signedState.reserve("set latest immutable to reconnect state"));
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensus(signedState);
@@ -1277,7 +1292,22 @@ public class SwirldsPlatform implements Platform {
             eventCreator.start();
         }
         replayPreconsensusEvents();
-        stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
+        try (final ReservedSignedState reservedState = latestImmutableState.getState("Get PCES recovery state")) {
+            if (reservedState == null) {
+                logger.warn(
+                        STATE_TO_DISK.getMarker(),
+                        "Trying to dump PCES recovery state to disk, but no state is available.");
+            } else {
+                final SignedState signedState = reservedState.get();
+                signedState.markAsStateToSave(StateToDiskReason.PCES_RECOVERY_COMPLETE);
+
+                final StateDumpRequest request =
+                        StateDumpRequest.create(signedState.reserve("dumping PCES recovery state"));
+
+                signedStateFileManager.dumpStateTask(request);
+                request.waitForFinished().run();
+            }
+        }
     }
 
     /**
@@ -1305,8 +1335,8 @@ public class SwirldsPlatform implements Platform {
                     intakeQueue,
                     consensusRoundHandler,
                     stateHashSignQueue,
-                    stateManagementComponent,
                     initialMinimumGenerationNonAncient,
+                    () -> latestImmutableState.getState("PCES replay"),
                     platformWiring::flushIntakePipeline);
         }
 
@@ -1363,10 +1393,12 @@ public class SwirldsPlatform implements Platform {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
-        final ReservedSignedState wrapper = stateManagementComponent.getLatestImmutableState(reason);
-        return new AutoCloseableWrapper<>(
-                wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
+    public @NonNull <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
+            @NonNull final String reason) {
+        final ReservedSignedState wrapper = latestImmutableState.getState(reason);
+        return wrapper == null
+                ? AutoCloseableWrapper.empty()
+                : new AutoCloseableWrapper<>((T) wrapper.get().getState().getSwirldState(), wrapper::close);
     }
 
     /**

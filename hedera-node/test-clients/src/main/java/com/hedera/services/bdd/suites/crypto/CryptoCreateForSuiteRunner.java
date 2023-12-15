@@ -69,7 +69,7 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
     }
 
     @SuppressWarnings({"java:S5960", "java:S1141", "java:S1135"})
-    private HapiSpec createAccount() {
+    final HapiSpec createAccount() {
         int maxRetries = 5;
         return customHapiSpec("CreatePayerAccountForEachClient")
                 .withProperties(Map.of("nodes", nodes, "default.node", "0.0." + defaultNode))

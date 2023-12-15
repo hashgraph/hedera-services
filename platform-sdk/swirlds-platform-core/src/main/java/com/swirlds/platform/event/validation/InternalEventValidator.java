@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.validation;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 
 import com.swirlds.base.time.Time;
@@ -151,14 +151,14 @@ public class InternalEventValidator {
     private boolean areRequiredFieldsNonNull(@NonNull final GossipEvent event) {
         if (event.getHashedData() == null) {
             // do not log the event itself, since toString would throw a NullPointerException
-            nullHashedDataLogger.error(INVALID_EVENT_ERROR.getMarker(), "Event has null hashed data");
+            nullHashedDataLogger.error(EXCEPTION.getMarker(), "Event has null hashed data");
             nullHashedDataAccumulator.update(1);
             return false;
         }
 
         if (event.getUnhashedData() == null) {
             // do not log the event itself, since toString would throw a NullPointerException
-            nullUnhashedDataLogger.error(INVALID_EVENT_ERROR.getMarker(), "Event has null unhashed data");
+            nullUnhashedDataLogger.error(EXCEPTION.getMarker(), "Event has null unhashed data");
             nullUnhashedDataAccumulator.update(1);
             return false;
         }
@@ -180,7 +180,7 @@ public class InternalEventValidator {
 
         if (totalTransactionBytes > transactionConfig.maxTransactionBytesPerEvent()) {
             tooManyTransactionBytesLogger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Event %s has %s transaction bytes, which is more than permitted"
                             .formatted(event, totalTransactionBytes));
             tooManyTransactionBytesAccumulator.update(1);
@@ -206,7 +206,7 @@ public class InternalEventValidator {
         final long selfParentGeneration = hashedData.getSelfParentGen();
         if ((selfParentHash == null) != (selfParentGeneration < FIRST_GENERATION)) {
             inconsistentSelfParentLogger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Event %s has inconsistent self-parent hash and generation. Self-parent hash: %s, self-parent generation: %s"
                             .formatted(event, selfParentHash, selfParentGeneration));
             inconsistentSelfParentAccumulator.update(1);
@@ -217,7 +217,7 @@ public class InternalEventValidator {
         final long otherParentGeneration = hashedData.getOtherParentGen();
         if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
             inconsistentOtherParentLogger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Event %s has inconsistent other-parent hash and generation. Other-parent hash: %s, other-parent generation: %s"
                             .formatted(event, otherParentHash, otherParentGeneration));
             inconsistentOtherParentAccumulator.update(1);
@@ -227,7 +227,7 @@ public class InternalEventValidator {
         // single node networks are allowed to have identical self-parent and other-parent hashes
         if (!singleNodeNetwork && selfParentHash != null && selfParentHash.equals(otherParentHash)) {
             identicalParentsLogger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Event %s has identical self-parent and other-parent hash: %s".formatted(event, selfParentHash));
             identicalParentsAccumulator.update(1);
             return false;
@@ -250,7 +250,7 @@ public class InternalEventValidator {
 
         if (eventGeneration != Math.max(selfParentGeneration, otherParentGeneration) + 1) {
             invalidGenerationLogger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Event %s has an invalid generation. Event generation: %s, self-parent generation: %s, other-parent generation: %s"
                             .formatted(event, eventGeneration, selfParentGeneration, otherParentGeneration));
             invalidGenerationAccumulator.update(1);
