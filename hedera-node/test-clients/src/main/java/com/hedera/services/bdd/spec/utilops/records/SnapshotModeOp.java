@@ -126,6 +126,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // Keys are also regenerated every test execution
             "ed25519",
             "ECDSA_secp256k1",
+            // Ethereum data depends on ECDSA keys
+            "ethereum_data",
+            "ethereum_hash",
             // Plus some other fields that we might prefer to make deterministic
             "symbol",
             // Bloom field in ContractCall result
