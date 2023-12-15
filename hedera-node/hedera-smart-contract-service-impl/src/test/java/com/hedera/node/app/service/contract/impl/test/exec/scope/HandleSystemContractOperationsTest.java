@@ -40,7 +40,6 @@ import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Predicate;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,7 +123,6 @@ class HandleSystemContractOperationsTest {
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         given(recordBuilder.transaction(any())).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
-        given(recordBuilder.entropyBytes(Bytes.EMPTY)).willReturn(recordBuilder);
 
         // when
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
