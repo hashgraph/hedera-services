@@ -101,7 +101,8 @@ public class AddressBookRoster implements Roster {
 
     @Override
     @NonNull
-    public RosterEntry getEntry(NodeId nodeId) {
+    public RosterEntry getEntry(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId);
         return entries.get(nodeId);
     }
 
@@ -109,8 +110,6 @@ public class AddressBookRoster implements Roster {
     @NonNull
     public Iterator<RosterEntry> iterator() {
         return new Iterator<RosterEntry>() {
-            private final int size = entries.size();
-            private final int index = 0;
             private final Iterator<NodeId> nodeIds =
                     entries.keySet().stream().sorted().iterator();
 

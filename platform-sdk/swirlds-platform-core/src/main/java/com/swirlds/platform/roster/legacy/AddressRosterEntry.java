@@ -118,7 +118,7 @@ public class AddressRosterEntry implements RosterEntry {
     @NonNull
     @Override
     public String getHostname() {
-        return address.getHostnameExternal();
+        return Objects.requireNonNullElse(address.getHostnameExternal(), "");
     }
 
     @Override

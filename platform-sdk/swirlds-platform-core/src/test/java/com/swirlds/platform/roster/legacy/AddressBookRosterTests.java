@@ -17,6 +17,7 @@
 package com.swirlds.platform.roster.legacy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -32,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,15 +68,17 @@ public class AddressBookRosterTests {
     void addressBookRosterTest(
             @NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts) {
         final Roster roster = new AddressBookRoster(addressBook, keysAndCerts);
+        final Iterator<RosterEntry> entries = roster.iterator();
         for (int i = 0; i < addressBook.getSize(); i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
-            final RosterEntry rosterEntry = roster.getEntry(nodeId);
+            final RosterEntry rosterEntry = entries.next();
             assertEquals(address.getHostnameExternal(), rosterEntry.getHostname());
             assertEquals(address.getPortExternal(), rosterEntry.getPort());
             assertEquals(address.getNodeId(), rosterEntry.getNodeId());
             assertEquals(address.getWeight(), rosterEntry.getWeight());
             assertEquals(address.getSigPublicKey(), rosterEntry.getSigningPublicKey());
         }
+        assertFalse(entries.hasNext());
     }
 }

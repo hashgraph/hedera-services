@@ -39,7 +39,22 @@ public interface Roster extends Iterable<RosterEntry>, SelfSerializable {
      * @throws java.util.NoSuchElementException if the nodeId is not in the roster
      */
     @NonNull
-    RosterEntry getEntry(NodeId nodeId);
+    RosterEntry getEntry(@NonNull NodeId nodeId);
+
+    /**
+     * @param nodeId the nodeId to check for membership in the roster
+     * @return true if there is a rosterEntry with the given nodeId, false otherwise
+     */
+    default boolean contains(@NonNull NodeId nodeId) {
+        return getNodeIds().contains(nodeId);
+    }
+
+    /**
+     * @return the total number of nodes in the roster
+     */
+    default int getSize() {
+        return getNodeIds().size();
+    }
 
     /**
      * @return the total weight of all nodes in the roster
