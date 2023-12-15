@@ -43,37 +43,37 @@ jobs:
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
-  interval-02:
-    name: Interval 2
-    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
-    needs:
-      - interval-01
-    with:
-      ref: ${{ github.event.inputs.ref || github.sha }}
-      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
-      workflow-file: node-flow-fsts-daily-interval-02.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-02
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+#  interval-02:
+#    name: Interval 2
+#    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
+#    needs:
+#      - interval-01
+#    with:
+#      ref: ${{ github.event.inputs.ref || github.sha }}
+#      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
+#      workflow-file: node-flow-fsts-daily-interval-02.yaml
+#      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-02
+#    secrets:
+#      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
-  interval-03:
-    name: Interval 3
-    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
-    needs:
-      - interval-02
-    with:
-      ref: ${{ github.event.inputs.ref || github.sha }}
-      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
-      workflow-file: node-flow-fsts-daily-interval-03.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-03
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+#  interval-03:
+#    name: Interval 3
+#    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
+#    needs:
+#      - interval-02
+#    with:
+#      ref: ${{ github.event.inputs.ref || github.sha }}
+#      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
+#      workflow-file: node-flow-fsts-daily-interval-03.yaml
+#      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-03
+#    secrets:
+#      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
   interval-04:
     name: Interval 4
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     needs:
-      - interval-03
+      - interval-01
     with:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
@@ -82,28 +82,28 @@ jobs:
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
-  interval-05:
-    name: Interval 5
-    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
-    needs:
-      - interval-04
-    with:
-      ref: ${{ github.event.inputs.ref || github.sha }}
-      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
-      workflow-file: node-flow-fsts-daily-interval-05.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-05
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+#  interval-05:
+#    name: Interval 5
+#    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
+#    needs:
+#      - interval-04
+#    with:
+#      ref: ${{ github.event.inputs.ref || github.sha }}
+#      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
+#      workflow-file: node-flow-fsts-daily-interval-05.yaml
+#      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-05
+#    secrets:
+#      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
-  interval-06:
-    name: Interval 6
-    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
-    needs:
-      - interval-05
-    with:
-      ref: ${{ github.event.inputs.ref || github.sha }}
-      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
-      workflow-file: node-flow-fsts-daily-interval-06.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-06
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+#  interval-06:
+#    name: Interval 6
+#    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
+#    needs:
+#      - interval-05
+#    with:
+#      ref: ${{ github.event.inputs.ref || github.sha }}
+#      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
+#      workflow-file: node-flow-fsts-daily-interval-06.yaml
+#      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-06
+#    secrets:
+#      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
