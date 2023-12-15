@@ -43,12 +43,12 @@ import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
-import com.swirlds.platform.wiring.components.PreconsensusSystemTransactionRouterWiring;
-import com.swirlds.platform.wiring.components.SystemTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -69,8 +69,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
-    private final PreconsensusSystemTransactionRouterWiring preconsensusSystemTransactionRouterWiring;
-    private final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring;
+    private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
     private final PlatformCoordinator platformCoordinator;
     /**
@@ -102,10 +101,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
             applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
                     schedulers.applicationTransactionPrehandlerScheduler());
-            preconsensusSystemTransactionRouterWiring = PreconsensusSystemTransactionRouterWiring.create(
-                    schedulers.preconsensusSystemTransactionRouterScheduler());
-            systemTransactionPrehandlerWiring =
-                    SystemTransactionPrehandlerWiring.create(schedulers.systemTransactionPrehandlerScheduler());
+            stateSignatureCollectorWiring =
+                    StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
 
             platformCoordinator = new PlatformCoordinator(
                     internalEventValidatorWiring,
@@ -116,7 +113,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     linkedEventIntakeWiring,
                     eventCreationManagerWiring,
                     applicationTransactionPrehandlerWiring,
-                    systemTransactionPrehandlerWiring);
+                    stateSignatureCollectorWiring);
         } else {
             internalEventValidatorWiring = null;
             eventDeduplicatorWiring = null;
@@ -127,8 +124,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             eventCreationManagerWiring = null;
             platformCoordinator = null;
             applicationTransactionPrehandlerWiring = null;
-            preconsensusSystemTransactionRouterWiring = null;
-            systemTransactionPrehandlerWiring = null;
+            stateSignatureCollectorWiring = null;
         }
 
         signedStateFileManagerWiring =
@@ -179,12 +175,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring
                     .eventOutput()
                     .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
-            orphanBufferWiring
-                    .eventOutput()
-                    .solderTo(preconsensusSystemTransactionRouterWiring.preconsensusEventInout());
-            orphanBufferWiring
-                    .eventOutput()
-                    .solderTo(systemTransactionPrehandlerWiring.systemTransactionsToPrehandleInput());
+            orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
             solderMinimumGenerationNonAncient();
         }
@@ -244,7 +235,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake,
             @NonNull final EventCreationManager eventCreationManager,
-            @NonNull final SwirldStateManager swirldStateManager) {
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final SignedStateManager signedStateManager) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -254,7 +246,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         linkedEventIntakeWiring.bind(linkedEventIntake);
         eventCreationManagerWiring.bind(eventCreationManager);
         applicationTransactionPrehandlerWiring.bind(swirldStateManager);
-        systemTransactionPrehandlerWiring.bind(swirldStateManager);
+        stateSignatureCollectorWiring.bind(signedStateManager);
     }
 
     /**

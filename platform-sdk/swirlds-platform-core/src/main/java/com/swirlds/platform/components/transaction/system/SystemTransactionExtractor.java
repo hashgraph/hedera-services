@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.transaction.system;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SystemTransaction;
@@ -32,36 +33,47 @@ public final class SystemTransactionExtractor {
 
     private SystemTransactionExtractor() {}
 
+    // TODO javadoc
+    public record ScopedSystemTransaction<T extends SystemTransaction>(
+            @NonNull NodeId submitterId, @NonNull T transaction) {}
+
     /**
      * Extract all system transactions from the given event.
      *
      * @param event the event to extract system transactions from
      * @return the system transactions contained within the event
      */
-    @NonNull
-    public static List<SystemTransaction> getSystemTransactions(@NonNull final GossipEvent event) {
-        final List<SystemTransaction> transactions = new ArrayList<>();
+    @Nullable
+    public static List<ScopedSystemTransaction<?>> getScopedSystemTransactions(@NonNull final GossipEvent event) {
+        final var transactions = event.getHashedData().getTransactions();
+        if (transactions == null) {
+            return null;
+        }
+
+        final List<ScopedSystemTransaction<?>> scopedTransactions = new ArrayList<>();
 
         for (final Transaction transaction : event.getHashedData().getTransactions()) {
             if (transaction instanceof final SystemTransaction systemTransaction) {
-                transactions.add(systemTransaction);
+                scopedTransactions.add(
+                        new ScopedSystemTransaction<>(event.getHashedData().getCreatorId(), systemTransaction));
             }
         }
 
-        return transactions;
+        return scopedTransactions;
     }
 
     /**
      * Filter system transactions for state signature transactions.
      *
-     * @param transaction the transaction to filter
+     * @param scopedTransaction the transaction to filter and cast
      * @return the state signature transaction, or null if the transaction is not a state signature transaction
      */
+    @SuppressWarnings("unchecked")
     @Nullable
-    public static StateSignatureTransaction stateSignatureTransactionFilter(
-            @NonNull final SystemTransaction transaction) {
-        if (transaction instanceof StateSignatureTransaction) {
-            return (StateSignatureTransaction) transaction;
+    public static ScopedSystemTransaction<StateSignatureTransaction> stateSignatureTransactionFilter(
+            @NonNull final ScopedSystemTransaction<?> scopedTransaction) {
+        if (scopedTransaction.transaction() instanceof StateSignatureTransaction) {
+            return (ScopedSystemTransaction<StateSignatureTransaction>) scopedTransaction;
         }
         return null;
     }

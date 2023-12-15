@@ -797,7 +797,8 @@ public class SwirldsPlatform implements Platform {
                     inOrderLinker,
                     linkedEventIntake,
                     eventCreationManager,
-                    swirldStateManager);
+                    swirldStateManager,
+                    signedStateManager);
 
             intakeHandler = platformWiring.getEventInput()::put;
         }

@@ -11,14 +11,14 @@ pcli diagram \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getMinimumGenerationNonAncient' \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
-    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
-    -g 'Transaction Prehandling:applicationTransactionPrehandler,preconsensusSystemTransactionRouter,systemTransactionSplitter,signatureTransactionsFilter'
+    -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
 
 ########################################################################################################################
 #### Simple Collapsing
 
-Same as "Uncollapsed" but with low level things collapsed. Attempts to hide things like transformers and splitters.
+Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide things like transformers and splitters.
 
 pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
@@ -28,10 +28,10 @@ pcli diagram \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getMinimumGenerationNonAncient' \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
-    -g 'Transaction Prehandling:applicationTransactionPrehandler,preconsensusSystemTransactionRouter,systemTransactionSplitter,signatureTransactionsFilter' \
-    -c "Orphan Buffer" \
-    -c "Linked Event Intake" \
-    -c "State File Management" \
-    -c "Transaction Prehandling"
+    -c 'Orphan Buffer' \
+    -c 'Linked Event Intake' \
+    -c 'State File Management' \
+    -c 'State Signature Collection'

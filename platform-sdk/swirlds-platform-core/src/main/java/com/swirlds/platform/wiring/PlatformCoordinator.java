@@ -18,9 +18,8 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
-import com.swirlds.platform.wiring.components.SystemTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -35,7 +34,7 @@ public class PlatformCoordinator {
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
-    private final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring;
+    private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
     /**
      * Constructor
@@ -49,7 +48,7 @@ public class PlatformCoordinator {
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring, null if legacy
      *                                               prehandle is enabled
-     * @param systemTransactionPrehandlerWiring      the system transaction prehandler wiring, null if legacy prehandle
+     * @param stateSignatureCollectorWiring      the system transaction prehandler wiring, null if legacy prehandle
      *                                               is enabled
      */
     public PlatformCoordinator(
@@ -60,8 +59,8 @@ public class PlatformCoordinator {
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
-            @Nullable final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
-            @Nullable final SystemTransactionPrehandlerWiring systemTransactionPrehandlerWiring) {
+            @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
+            @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring) {
 
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
@@ -70,8 +69,8 @@ public class PlatformCoordinator {
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
-        this.applicationTransactionPrehandlerWiring = applicationTransactionPrehandlerWiring;
-        this.systemTransactionPrehandlerWiring = systemTransactionPrehandlerWiring;
+        this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
+        this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
     }
 
     /**
@@ -85,12 +84,8 @@ public class PlatformCoordinator {
         eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
-        if (applicationTransactionPrehandlerWiring != null) {
-            applicationTransactionPrehandlerWiring.flushRunnable().run();
-        }
-        if (systemTransactionPrehandlerWiring != null) {
-            systemTransactionPrehandlerWiring.flushRunnable().run();
-        }
+        applicationTransactionPrehandlerWiring.flushRunnable().run();
+        stateSignatureCollectorWiring.flush();
     }
 
     /**
