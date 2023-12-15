@@ -1645,15 +1645,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         getTokenNftInfo(NF_TOKEN, 5L).logged(),
-                        //                        childRecordsCheck(
-                        //                                MISSING_TO,
-                        //                                CONTRACT_REVERT_EXECUTED,
-                        //                                recordWith()
-                        //                                        .status(INVALID_ALLOWANCE_SPENDER_ID)
-                        //                                        .contractCallResult(resultWith()
-                        //                                                .contractCallResult(htsPrecompileResult()
-                        //
-                        // .withStatus(INVALID_ALLOWANCE_SPENDER_ID)))),
+                        childRecordsCheck(
+                                MISSING_TO,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_ALLOWANCE_SPENDER_ID)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_ALLOWANCE_SPENDER_ID)))),
                         // * Can't approve if msg.sender != owner and not an operator
                         cryptoTransfer(movingUnique(NF_TOKEN, 1L, 2L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
                         cryptoTransfer(movingUnique(NF_TOKEN, 3L, 4L).between(SOME_ERC_721_SCENARIOS, B_CIVILIAN)),

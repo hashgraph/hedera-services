@@ -140,10 +140,10 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     }
 
     private AccountID getOwnerId() {
-        return enhancement
-                .nativeOperations()
-                .getNft(token.tokenNum(), amount.longValue())
-                .ownerId();
+        final var nft = enhancement.nativeOperations().getNft(token.tokenNum(), amount.longValue());
+        return nft != null && nft.hasOwnerId()
+                ? nft.ownerId()
+                : enhancement.nativeOperations().getToken(token.tokenNum()).treasuryAccountId();
     }
 
     private boolean isNftApprovalRevocation() {
