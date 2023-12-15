@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -88,7 +88,7 @@ public class EventSignatureValidator {
     private final RateLimitedLogger rateLimitedLogger;
 
     private static final LongAccumulator.Config VALIDATION_FAILED_CONFIG = new LongAccumulator.Config(
-                    PLATFORM_CATEGORY, "eventsFailedSignatureValidation")
+                    Metrics.PLATFORM_CATEGORY, "eventsFailedSignatureValidation")
             .withDescription("Events for which signature validation failed")
             .withUnit("events");
     private final LongAccumulator validationFailedAccumulator;

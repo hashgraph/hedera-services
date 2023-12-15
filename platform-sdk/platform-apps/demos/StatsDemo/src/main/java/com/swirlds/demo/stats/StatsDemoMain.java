@@ -27,16 +27,16 @@ package com.swirlds.demo.stats;
  */
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.model.GuiModel;
@@ -290,7 +290,7 @@ public class StatsDemoMain implements SwirldMain {
 
     private String valueAsString(final Metric metric) {
         try {
-            return String.format(Locale.US, metric.getFormat(), metric.get(VALUE));
+            return String.format(Locale.US, metric.getFormat(), metric.get(ValueType.VALUE));
         } catch (final IllegalFormatException e) {
             if (console != null) {
                 console.out.println(e.getLocalizedMessage());

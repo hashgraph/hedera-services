@@ -25,8 +25,6 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.PlatformStatNames;
-import com.swirlds.common.system.SwirldState;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.system.PlatformStatNames;

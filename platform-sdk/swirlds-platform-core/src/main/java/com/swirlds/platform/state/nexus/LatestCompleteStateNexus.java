@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.state.nexus;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -29,7 +27,7 @@ import java.util.Objects;
  */
 public class LatestCompleteStateNexus extends SignedStateNexus {
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "roundSup")
+                    Metrics.PLATFORM_CATEGORY, "roundSup")
             .withDescription("latest round with state signed by a supermajority")
             .withUnit("round");
 

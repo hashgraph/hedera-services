@@ -34,8 +34,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Counter.Config;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Counter.Config;
 import com.swirlds.platform.system.Platform;
 import java.util.Arrays;
 import java.util.EnumMap;

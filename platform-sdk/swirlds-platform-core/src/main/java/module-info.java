@@ -141,7 +141,6 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
-    requires transitive com.swirlds.platform.gui;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive info.picocli;

@@ -16,14 +16,11 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
@@ -31,6 +28,8 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
@@ -108,10 +107,10 @@ public class PreConsensusEventHandler implements Clearable, Startable {
 
         final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(
                 metrics,
-                INTERNAL_CATEGORY,
+                Metrics.INTERNAL_CATEGORY,
                 PlatformStatNames.PRE_CONSENSUS_QUEUE_SIZE,
                 "average number of events in the preconsensus queue (q1) waiting to be handled",
-                FORMAT_10_3,
+                FloatFormats.FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
         metrics.addUpdater(() -> avgQ1PreConsEvents.update(queueThread.size()));
     }

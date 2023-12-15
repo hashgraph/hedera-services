@@ -16,13 +16,12 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.CollectorRegistry;
 
 /**
- * Common interface of all adapters, which synchronize a {@link Metric}
+ * Common interface of all adapters, which synchronize a {@link com.swirlds.metrics.api.Metric}
  * with a corresponding Prometheus {@link io.prometheus.client.Collector}.
  */
 public interface MetricAdapter {

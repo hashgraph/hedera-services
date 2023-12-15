@@ -16,12 +16,11 @@
 
 package com.swirlds.platform.event.deduplication;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -69,7 +68,7 @@ public class EventDeduplicator {
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     private static final LongAccumulator.Config DISPARATE_SIGNATURE_CONFIG = new LongAccumulator.Config(
-                    PLATFORM_CATEGORY, "eventsWithDisparateSignature")
+                    Metrics.PLATFORM_CATEGORY, "eventsWithDisparateSignature")
             .withDescription(
                     "Events received that match a descriptor of a previous event, but with a different signature")
             .withUnit("events");

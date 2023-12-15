@@ -17,7 +17,6 @@
 package com.swirlds.platform.metrics;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_0;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_4_2;
