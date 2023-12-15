@@ -38,7 +38,6 @@ import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
 import com.hedera.node.config.converter.FileIDConverter;
-import com.hedera.node.config.converter.HederaFunctionalityConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
@@ -100,7 +99,6 @@ class PropertySourceBasedConfigTest {
                 .withConverter(new AccountIDConverter())
                 .withConverter(new ContractIDConverter())
                 .withConverter(new FileIDConverter())
-                .withConverter(new HederaFunctionalityConverter())
                 .withConverter(new SidecarTypeConverter())
                 .withConverter(new BytesConverter())
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
