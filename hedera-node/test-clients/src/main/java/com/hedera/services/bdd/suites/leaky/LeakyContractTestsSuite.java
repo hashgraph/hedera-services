@@ -349,7 +349,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 someErc721GetApprovedScenariosPass(),
                 someErc721OwnerOfScenariosPass(),
                 someErc721BalanceOfScenariosPass(),
-                callToNonExistingContractFailsGracefully());
+                callToNonExistingContractFailsGracefully(),
+                getErc20TokenNameExceedingLimits());
     }
 
     @SuppressWarnings("java:S5960")
