@@ -177,7 +177,7 @@ public class ReconnectProtocol implements Protocol {
         // Check if we have a state that is legal to send to a learner.
         teacherState = lastCompleteSignedState.get();
 
-        if (teacherState.isNull()) {
+        if (teacherState == null || teacherState.isNull()) {
             stateNullLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state",

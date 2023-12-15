@@ -29,17 +29,13 @@ import org.apache.logging.log4j.Logger;
 public class ShutDownNodesOp extends LifecycleOp {
     private static final Logger logger = LogManager.getLogger(ShutDownNodesOp.class);
 
-    /** The number of seconds to wait for the node(s) to become active */
-    private final int waitSeconds;
-
-    public ShutDownNodesOp(@NonNull final NodeSelector selector, int waitSeconds) {
+    public ShutDownNodesOp(@NonNull final NodeSelector selector) {
         super(selector);
-        this.waitSeconds = waitSeconds;
     }
 
     @Override
     protected boolean run(@NonNull final HapiTestNode node) {
-        logger.info("Starting all nodes, waiting up to {}s...", node, waitSeconds);
+        logger.info("Shutting down node {}...", node);
         node.shutdown();
         return false;
     }

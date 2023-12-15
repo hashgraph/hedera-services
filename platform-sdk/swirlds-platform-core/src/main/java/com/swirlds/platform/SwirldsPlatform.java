@@ -350,6 +350,8 @@ public class SwirldsPlatform implements Platform {
 
     /** Manages emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
+    /** Controls which states are saved to disk */
+    private final SavedStateController savedStateController;
 
     /**
      * Encapsulated wiring for the platform.
@@ -482,7 +484,19 @@ public class SwirldsPlatform implements Platform {
                 Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
         issScratchpad.logContents();
         final SerializableLong issRound = issScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
-        final boolean ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
+
+        final boolean forceIgnorePcesSignatures = platformContext
+                .getConfiguration()
+                .getConfigData(PreconsensusEventStreamConfig.class)
+                .forceIgnorePcesSignatures();
+
+        final boolean ignorePreconsensusSignatures;
+        if (forceIgnorePcesSignatures) {
+            // this is used FOR TESTING ONLY
+            ignorePreconsensusSignatures = true;
+        } else {
+            ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
+        }
 
         // A round that we will completely skip ISS detection for. Needed for tests that do janky state modification
         // without a software upgrade (in production this feature should not be used).
@@ -532,8 +546,7 @@ public class SwirldsPlatform implements Platform {
 
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
-        final SavedStateController savedStateController =
-                new SavedStateController(stateConfig, platformWiring.getSaveStateToDiskInput()::offer);
+        savedStateController = new SavedStateController(stateConfig);
         final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
             // the app comm component will reserve the state, this should be done by the wiring in the future
             appCommunicationComponent.newLatestCompleteStateEvent(ss);
@@ -548,7 +561,7 @@ public class SwirldsPlatform implements Platform {
                 dispatchBuilder,
                 newLatestCompleteStateConsumer,
                 this::handleFatalError,
-                savedStateController,
+                platformWiring.getSaveStateToDiskInput()::put,
                 platformWiring.getSignStateInput()::put);
 
         // Load the minimum generation into the pre-consensus event writer
@@ -625,6 +638,7 @@ public class SwirldsPlatform implements Platform {
         final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs -> {
             latestImmutableState.setState(rs.getAndReserve("newSignedStateFromTransactionsConsumer"));
             latestCompleteState.newIncompleteState(rs.get().getRound());
+            savedStateController.markSavedState(rs.getAndReserve("savedStateController.markSavedState"));
             stateManagementComponent.newSignedStateFromTransactions(rs);
         };
 
@@ -673,10 +687,10 @@ public class SwirldsPlatform implements Platform {
                 addedEventMetrics,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
-                    sequencer.assignStreamSequenceNumber(event);
+                    sequencer.assignStreamSequenceNumber(event.getBaseEvent());
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::writeEvent,
-                            event,
+                            event.getBaseEvent(),
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {
@@ -862,6 +876,7 @@ public class SwirldsPlatform implements Platform {
                     initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
             latestImmutableState.setState(initialState.reserve("set latest immutable to initial state"));
             stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
+            savedStateController.registerSignedStateFromDisk(initialState);
             consensusRoundHandler.loadDataFromSignedState(initialState, false);
 
             loadStateIntoConsensus(initialState);
@@ -1114,6 +1129,9 @@ public class SwirldsPlatform implements Platform {
             platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             latestImmutableState.setState(signedState.reserve("set latest immutable to reconnect state"));
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
+            savedStateController.reconnectStateReceived(
+                    signedState.reserve("savedStateController.reconnectStateReceived"));
+            platformWiring.getSaveStateToDiskInput().put(signedState.reserve("save reconnect state to disk"));
 
             loadStateIntoConsensus(signedState);
             loadStateIntoEventCreator(signedState);
@@ -1307,7 +1325,7 @@ public class SwirldsPlatform implements Platform {
                 final StateDumpRequest request =
                         StateDumpRequest.create(signedState.reserve("dumping PCES recovery state"));
 
-                signedStateFileManager.dumpStateTask(request);
+                platformWiring.getDumpStateToDiskInput().put(request);
                 request.waitForFinished().run();
             }
         }
