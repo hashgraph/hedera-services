@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -76,6 +77,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Nullable
     private final WorldUpdater parent;
+
+    /**
+     * The current checkpoint of the child records for this ProxyWorldUpdater.
+     */
+    private final RecordListCheckPoint recordListCheckPoint;
+
     /**
      * The {@link EvmFrameState} managing this {@code ProxyWorldUpdater}'s state.
      */
@@ -118,6 +125,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.enhancement = requireNonNull(enhancement);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
+        // Everytime we create a new child updater, we need to create a new record list checkpoint containing the
+        // last preceding record and the first following record, so that we can revert the child records from the
+        // checkpoint
+        // when revert() operation is called.
+        this.recordListCheckPoint = enhancement.operations().createRecordListCheckPoint();
     }
 
     /**
@@ -380,7 +392,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public void revertChildRecords() {
-        enhancement.operations().revertChildRecords();
+        if (recordListCheckPoint != null) {
+            enhancement.operations().revertRecordsFrom(recordListCheckPoint);
+        }
     }
 
     /**

@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -133,8 +134,8 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public void revertChildRecords() {
-        context.revertChildRecords();
+    public void revertRecordsFrom(RecordListCheckPoint checkpoint) {
+        context.revertRecordsFrom(checkpoint);
     }
 
     /**
@@ -368,6 +369,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public ContractID shardAndRealmValidated(@NonNull final ContractID contractId) {
         return configValidated(contractId, hederaConfig);
+    }
+
+    @Override
+    public RecordListCheckPoint createRecordListCheckPoint() {
+        return context.createRecordListCheckPoint();
     }
 
     private void dispatchAndMarkCreation(

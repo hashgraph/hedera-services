@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,9 +67,9 @@ public interface HederaOperations {
     void revert();
 
     /**
-     * Revert child records.
+     * Revert child records from the given {@link RecordListCheckPoint}.
      */
-    void revertChildRecords();
+    void revertRecordsFrom(RecordListCheckPoint checkpoint);
 
     /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update
@@ -258,6 +259,13 @@ public interface HederaOperations {
      * @return the validated contract ID
      */
     ContractID shardAndRealmValidated(@NonNull ContractID contractId);
+
+    /**
+     * Creates a {@link RecordListCheckPoint} that can be used to revert records from a given point.
+     *
+     * @return a {@link RecordListCheckPoint}
+     */
+    RecordListCheckPoint createRecordListCheckPoint();
 
     /**
      * Given a {@link ContractID} and the current Hedera config, returns the given id if its shard and realm
