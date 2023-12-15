@@ -1586,6 +1586,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     final HapiSpec executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithDefaultPayerWorks")
@@ -1600,7 +1601,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 .when(scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).via(SIGN_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     var createTx = getTxnRecord(CREATE_TXN);
-                    var signTx = getTxnRecord(SIGN_TXN);
+                    var signTx = getTxnRecord(SIGN_TXN).logged();
                     var triggeredTx = getTxnRecord(CREATE_TXN).scheduled();
                     allRunFor(spec, createTx, signTx, triggeredTx);
 
@@ -1958,6 +1959,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     final HapiSpec executionWithCustomPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorks")
@@ -2024,6 +2026,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     final HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerAndAdminKeyWorks")
@@ -2092,6 +2095,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     final HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWhoSignsAtCreationAsPayerWorks")
@@ -2175,11 +2179,13 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 .build();
 
         var accountAmountList = triggered.getResponseRecord().getTransferList().getAccountAmountsList();
-
+        System.out.println("accountAmountList: " + accountAmountList);
         boolean payerHasPaid =
                 accountAmountList.stream().anyMatch(a -> a.getAccountID().equals(payingAccountID) && a.getAmount() < 0);
+        System.out.println("payerHasPaid: " + payerHasPaid);
         boolean amountHasBeenTransferred =
                 accountAmountList.contains(givingAmount) && accountAmountList.contains(receivingAmount);
+        System.out.println("amountHasBeenTransferred: " + amountHasBeenTransferred);
 
         return amountHasBeenTransferred && payerHasPaid;
     }
