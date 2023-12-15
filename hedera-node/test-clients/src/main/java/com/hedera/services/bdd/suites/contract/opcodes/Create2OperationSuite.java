@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexe
 import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -65,7 +64,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -75,12 +73,10 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.SKIP_LOG_INFO_CONTAINING_ADDRESSES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -261,8 +257,8 @@ public class Create2OperationSuite extends HapiSuite {
                         snapshotMode(
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                //diff mono/hapi
-                                //?NONDETERMINISTIC_TRANSACTION_FEES,
+                                // diff mono/hapi
+                                // ?NONDETERMINISTIC_TRANSACTION_FEES,
                                 ALLOW_SKIPPED_ENTITY_IDS),
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -315,7 +311,7 @@ public class Create2OperationSuite extends HapiSuite {
                         snapshotMode(
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                //diff mono/hapi
+                                // diff mono/hapi
                                 ALLOW_SKIPPED_ENTITY_IDS),
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -362,7 +358,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                //diff mono/hapi
+                                // diff mono/hapi
                                 ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
                         uploadInitCode(contract),
                         tokenCreate(token)
@@ -426,7 +422,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
                                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                //diff mono/hapi
+                                // diff mono/hapi
                                 ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
                                 HIGHLY_NON_DETERMINISTIC_FEES,
                                 SKIP_LOG_INFO_CONTAINING_ADDRESSES),
@@ -572,7 +568,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 // the "contractCallResult" and "functionParameters" fields
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
                                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                //diff mono/hapi
+                                // diff mono/hapi
                                 NONDETERMINISTIC_TRANSACTION_FEES,
                                 SKIP_LOG_INFO_CONTAINING_ADDRESSES),
                         newKeyNamed(adminKey),
@@ -790,12 +786,11 @@ public class Create2OperationSuite extends HapiSuite {
         final var vacateAddressAbi =
                 "{\"inputs\":[],\"name\":\"vacateAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-        return propertyPreservingHapiSpec("CanCallFinalizedContractViaHapi")
-                .preserving(CHAIN_ID_PROP)
+        return defaultHapiSpec("CanCallFinalizedContractViaHapi")
                 .given(
-                        //todo: missing transaction fee and memo on preceding crypto create record
-                        //snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES),
-                        overriding(CHAIN_ID_PROP, String.valueOf(CHAIN_ID)),
+                        // todo: missing transaction fee and memo on preceding crypto create record
+                        // snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_ETHEREUM_DATA,
+                        // NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
@@ -841,7 +836,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
                                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                //diff mono/hapi
+                                // diff mono/hapi
                                 HIGHLY_NON_DETERMINISTIC_FEES,
                                 ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
                         newKeyNamed(SWISS),
@@ -911,7 +906,10 @@ public class Create2OperationSuite extends HapiSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec("canUseAliasesInPrecompilesAndContractKeys", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "canUseAliasesInPrecompilesAndContractKeys",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1090,7 +1088,10 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("CannotSelfDestructToMirrorAddress")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES),
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                NONDETERMINISTIC_TRANSACTION_FEES),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
                         contractCall(contract, "buildDonor", salt)
@@ -1144,7 +1145,7 @@ public class Create2OperationSuite extends HapiSuite {
                 .given(
                         snapshotMode(
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                //diff mono/hapi
+                                // diff mono/hapi
                                 NONDETERMINISTIC_TRANSACTION_FEES,
                                 ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
                         newKeyNamed(adminKey),
@@ -1354,7 +1355,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
                                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                //diff mono/hapi
+                                // diff mono/hapi
                                 NONDETERMINISTIC_TRANSACTION_FEES),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
