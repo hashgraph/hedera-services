@@ -25,8 +25,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -44,6 +42,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

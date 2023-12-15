@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.test.framework.config.TestConfigBuilder;
