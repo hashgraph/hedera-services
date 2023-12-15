@@ -979,6 +979,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     final HapiSpec lazyCreateViaEthereumCryptoTransfer() {
         final var RECIPIENT_KEY = LAZY_ACCOUNT_RECIPIENT;
         final var lazyCreateTxn = PAY_TXN;
