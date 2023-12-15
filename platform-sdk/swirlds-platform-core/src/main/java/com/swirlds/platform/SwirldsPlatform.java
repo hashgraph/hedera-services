@@ -677,10 +677,10 @@ public class SwirldsPlatform implements Platform {
                 addedEventMetrics,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
-                    sequencer.assignStreamSequenceNumber(event);
+                    sequencer.assignStreamSequenceNumber(event.getBaseEvent());
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::writeEvent,
-                            event,
+                            event.getBaseEvent(),
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {

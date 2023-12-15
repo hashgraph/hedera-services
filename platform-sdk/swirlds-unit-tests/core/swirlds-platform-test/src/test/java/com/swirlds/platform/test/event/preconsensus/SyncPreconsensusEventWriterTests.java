@@ -36,13 +36,13 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
@@ -111,9 +111,9 @@ class SyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> events = new LinkedList<>();
+        final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().convertToEventImpl());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         final PlatformContext platformContext = buildContext();
@@ -128,9 +128,9 @@ class SyncPreconsensusEventWriterTests {
         writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
-        final Iterator<EventImpl> iterator = events.iterator();
+        final Iterator<GossipEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
-            final EventImpl event = iterator.next();
+            final GossipEvent event = iterator.next();
 
             sequencer.assignStreamSequenceNumber(event);
 
@@ -167,9 +167,9 @@ class SyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> events = new LinkedList<>();
+        final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().convertToEventImpl());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         final PlatformContext platformContext = buildContext();
@@ -184,9 +184,9 @@ class SyncPreconsensusEventWriterTests {
         writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
-        final Iterator<EventImpl> iterator = events.iterator();
+        final Iterator<GossipEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
-            final EventImpl event = iterator.next();
+            final GossipEvent event = iterator.next();
             sequencer.assignStreamSequenceNumber(event);
 
             minimumGenerationNonAncient =
@@ -221,11 +221,11 @@ class SyncPreconsensusEventWriterTests {
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
         // We will add this event at the very end, it should be ancient by then
-        final EventImpl ancientEvent = generator.generateEvent().convertToEventImpl();
+        final GossipEvent ancientEvent = generator.generateEvent().getBaseEvent();
 
-        final List<EventImpl> events = new LinkedList<>();
+        final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().convertToEventImpl());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         final PlatformContext platformContext = buildContext();
@@ -240,9 +240,9 @@ class SyncPreconsensusEventWriterTests {
         writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
-        final Iterator<EventImpl> iterator = events.iterator();
+        final Iterator<GossipEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
-            final EventImpl event = iterator.next();
+            final GossipEvent event = iterator.next();
 
             sequencer.assignStreamSequenceNumber(event);
 
@@ -271,7 +271,7 @@ class SyncPreconsensusEventWriterTests {
         }
 
         writer.writeEvent(ancientEvent);
-        assertEquals(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER, ancientEvent.getStreamSequenceNumber());
+        assertEquals(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER, ancientEvent.getStreamSequenceNumber());
 
         writer.requestFlush();
 
@@ -296,9 +296,9 @@ class SyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().convertToEventImpl());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         final PlatformContext platformContext = buildContext();
@@ -312,7 +312,7 @@ class SyncPreconsensusEventWriterTests {
         writer.start();
         writer.beginStreamingNewEvents();
 
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
             writer.writeEvent(event);
         }
@@ -342,9 +342,9 @@ class SyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> events = new LinkedList<>();
+        final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().convertToEventImpl());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         final PlatformContext platformContext = buildContext();
@@ -361,7 +361,7 @@ class SyncPreconsensusEventWriterTests {
         // passed into the writer to be more or less ignored.
 
         long minimumGenerationNonAncient = 0;
-        for (EventImpl event : events) {
+        for (GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
 
             minimumGenerationNonAncient =
@@ -394,10 +394,10 @@ class SyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> eventsBeforeDiscontinuity = new LinkedList<>();
-        final List<EventImpl> eventsAfterDiscontinuity = new LinkedList<>();
+        final List<GossipEvent> eventsBeforeDiscontinuity = new LinkedList<>();
+        final List<GossipEvent> eventsAfterDiscontinuity = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            final EventImpl event = generator.generateEvent().convertToEventImpl();
+            final GossipEvent event = generator.generateEvent().getBaseEvent();
             if (i < numEvents / 2) {
                 eventsBeforeDiscontinuity.add(event);
             } else {
@@ -417,9 +417,9 @@ class SyncPreconsensusEventWriterTests {
         writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
-        final Iterator<EventImpl> iterator1 = eventsBeforeDiscontinuity.iterator();
+        final Iterator<GossipEvent> iterator1 = eventsBeforeDiscontinuity.iterator();
         while (iterator1.hasNext()) {
-            final EventImpl event = iterator1.next();
+            final GossipEvent event = iterator1.next();
 
             sequencer.assignStreamSequenceNumber(event);
 
@@ -438,9 +438,9 @@ class SyncPreconsensusEventWriterTests {
 
         writer.registerDiscontinuity(100);
 
-        final Iterator<EventImpl> iterator2 = eventsAfterDiscontinuity.iterator();
+        final Iterator<GossipEvent> iterator2 = eventsAfterDiscontinuity.iterator();
         while (iterator2.hasNext()) {
-            final EventImpl event = iterator2.next();
+            final GossipEvent event = iterator2.next();
 
             sequencer.assignStreamSequenceNumber(event);
 

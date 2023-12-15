@@ -53,7 +53,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -151,13 +150,6 @@ class AsyncPreconsensusEventWriterTests {
     }
 
     /**
-     * Assert that two events are equal.
-     */
-    public static void assertEventsAreEqual(final EventImpl expected, final GossipEvent actual) {
-        assertEquals(expected.getBaseEvent(), actual);
-    }
-
-    /**
      * Perform verification on a stream written by a {@link SyncPreconsensusEventWriter}.
      *
      * @param events             the events that were written to the stream
@@ -165,13 +157,13 @@ class AsyncPreconsensusEventWriterTests {
      * @param truncatedFileCount the expected number of truncated files
      */
     static void verifyStream(
-            @NonNull final List<EventImpl> events,
+            @NonNull final List<GossipEvent> events,
             @NonNull final PlatformContext platformContext,
             final int truncatedFileCount)
             throws IOException {
 
         long lastGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             lastGeneration = Math.max(lastGeneration, event.getGeneration());
         }
 
@@ -180,9 +172,9 @@ class AsyncPreconsensusEventWriterTests {
 
         // Verify that the events were written correctly
         final PreconsensusEventMultiFileIterator eventsIterator = reader.getEventIterator(0);
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             assertTrue(eventsIterator.hasNext());
-            assertEventsAreEqual(event, eventsIterator.next());
+            assertEquals(event, eventsIterator.next());
         }
         assertFalse(eventsIterator.hasNext());
         assertEquals(truncatedFileCount, eventsIterator.getTruncatedFileCount());
@@ -190,12 +182,12 @@ class AsyncPreconsensusEventWriterTests {
         // Make sure things look good when iterating starting in the middle of the stream that was written
         final long startingGeneration = lastGeneration / 2;
         final IOIterator<GossipEvent> eventsIterator2 = reader.getEventIterator(startingGeneration);
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             if (event.getGeneration() < startingGeneration) {
                 continue;
             }
             assertTrue(eventsIterator2.hasNext());
-            assertEventsAreEqual(event, eventsIterator2.next());
+            assertEquals(event, eventsIterator2.next());
         }
         assertFalse(eventsIterator2.hasNext());
 
@@ -266,9 +258,9 @@ class AsyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().convertToEventImpl());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         final int idleWaitPeriodMs = 10;
@@ -287,7 +279,7 @@ class AsyncPreconsensusEventWriterTests {
         writer.start();
         writer.beginStreamingNewEvents();
 
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
             writer.writeEvent(event);
 
@@ -350,9 +342,9 @@ class AsyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> events = new LinkedList<>();
+        final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().convertToEventImpl());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         final int idleWaitPeriodMs = 10;
@@ -373,10 +365,10 @@ class AsyncPreconsensusEventWriterTests {
         writer.start();
         writer.beginStreamingNewEvents();
 
-        final Set<EventImpl> rejectedEvents = new HashSet<>();
+        final Set<GossipEvent> rejectedEvents = new HashSet<>();
 
         long minimumGenerationNonAncient = 0;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
 
             sequencer.assignStreamSequenceNumber(event);
             assertFalse(writer.isEventDurable(event));
@@ -406,12 +398,12 @@ class AsyncPreconsensusEventWriterTests {
 
         // Events should become durable as they are written to disk
         writer.requestFlush();
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             assertTrue(writer.waitUntilDurable(event, Duration.ofSeconds(1)));
         }
 
         // Rejected events should never become durable
-        for (final EventImpl event : rejectedEvents) {
+        for (final GossipEvent event : rejectedEvents) {
             assertFalse(writer.isEventDurable(event));
         }
 
@@ -463,13 +455,13 @@ class AsyncPreconsensusEventWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
 
-        final List<EventImpl> events1 = new LinkedList<>();
-        final List<EventImpl> events2 = new LinkedList<>();
+        final List<GossipEvent> events1 = new LinkedList<>();
+        final List<GossipEvent> events2 = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
             if (i < numEvents / 2) {
-                events1.add(generator.generateEvent().convertToEventImpl());
+                events1.add(generator.generateEvent().getBaseEvent());
             } else {
-                events2.add(generator.generateEvent().convertToEventImpl());
+                events2.add(generator.generateEvent().getBaseEvent());
             }
         }
 
@@ -488,8 +480,8 @@ class AsyncPreconsensusEventWriterTests {
         writer1.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
-        final Set<EventImpl> rejectedEvents1 = new HashSet<>();
-        for (final EventImpl event : events1) {
+        final Set<GossipEvent> rejectedEvents1 = new HashSet<>();
+        for (final GossipEvent event : events1) {
 
             sequencer1.assignStreamSequenceNumber(event);
             assertFalse(writer1.isEventDurable(event));
@@ -537,8 +529,7 @@ class AsyncPreconsensusEventWriterTests {
         // Write all events currently in the stream, we expect these to be ignored and not written to the stream twice.
         final IOIterator<GossipEvent> iterator = fileManager1b.getEventIterator(NO_MINIMUM_GENERATION);
         while (iterator.hasNext()) {
-            final GossipEvent gossipEvent = iterator.next();
-            final EventImpl next = new EventImpl(gossipEvent.getHashedData(), gossipEvent.getUnhashedData());
+            final GossipEvent next = iterator.next();
             sequencer2.assignStreamSequenceNumber(next);
             writer2.writeEvent(next);
 
@@ -551,8 +542,8 @@ class AsyncPreconsensusEventWriterTests {
         writer2.beginStreamingNewEvents();
         writer2.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
 
-        final Set<EventImpl> rejectedEvents2 = new HashSet<>();
-        for (final EventImpl event : events2) {
+        final Set<GossipEvent> rejectedEvents2 = new HashSet<>();
+        for (final GossipEvent event : events2) {
 
             sequencer2.assignStreamSequenceNumber(event);
             assertFalse(writer2.isEventDurable(event));
@@ -572,11 +563,11 @@ class AsyncPreconsensusEventWriterTests {
 
         // Events should become durable as they are written to disk
         writer2.requestFlush();
-        for (final EventImpl event : events2) {
+        for (final GossipEvent event : events2) {
             assertTrue(writer2.waitUntilDurable(event, Duration.ofSeconds(1)));
         }
 
-        final List<EventImpl> allEvents = new ArrayList<>();
+        final List<GossipEvent> allEvents = new ArrayList<>();
         allEvents.addAll(events1);
         allEvents.addAll(events2);
 
