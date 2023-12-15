@@ -138,7 +138,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.44.0"
+val hapiProtoVersion = "0.45.0-hip-796-SNAPSHOT"
 
 dependencyResolutionManagement {
     // Protobuf tool versions
