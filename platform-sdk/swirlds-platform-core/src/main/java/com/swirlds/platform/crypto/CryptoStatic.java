@@ -594,7 +594,7 @@ public final class CryptoStatic {
 
         keysAndCerts.forEach((nodeId, keysAndCertsForNode) -> {
             if (keysAndCertsForNode == null) {
-                logger.error(CERTIFICATES.getMarker(), "No keys and certs for node {}", nodeId);
+                logger.error(EXCEPTION.getMarker(), "No keys and certs for node {}", nodeId);
                 return;
             }
             logger.debug(CERTIFICATES.getMarker(), "Node ID: {}", nodeId);

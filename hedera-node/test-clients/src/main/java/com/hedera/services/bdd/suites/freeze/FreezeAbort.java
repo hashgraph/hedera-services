@@ -42,7 +42,7 @@ public final class FreezeAbort extends HapiSuite {
         return List.of(new HapiSpec[] {freezeAbort()});
     }
 
-    private HapiSpec freezeAbort() {
+    final HapiSpec freezeAbort() {
         return defaultHapiSpec("FreezeAbort")
                 .given()
                 .when(UtilVerbs.freezeAbort().payingWith(GENESIS))

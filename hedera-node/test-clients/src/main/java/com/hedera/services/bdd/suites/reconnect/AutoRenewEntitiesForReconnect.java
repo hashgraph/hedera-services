@@ -54,7 +54,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                 accountAutoRenewalSuiteCleanup());
     }
 
-    private HapiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
+    final HapiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
         String autoDeleteAccount = "autoDeleteAccount";
         int autoRenewSecs = 1;
         return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
@@ -86,7 +86,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                         .hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID));
     }
 
-    private HapiSpec accountAutoRenewalSuiteCleanup() {
+    final HapiSpec accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()
