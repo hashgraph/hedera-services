@@ -50,7 +50,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -65,6 +64,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +88,6 @@ public class Evm38ValidationSuite extends HapiSuite {
     private static final String CREATE_2_TXN = "create2Txn";
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
-    public static final String SALT = "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
     public static final String RETURNER_REPORTED_LOG_MESSAGE = "Returner reported {} when called with mirror address";
     private static final String STATIC_CALL = "staticcall";
     private static final String BENEFICIARY = "beneficiary";
@@ -578,7 +577,8 @@ public class Evm38ValidationSuite extends HapiSuite {
         final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
         final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
 
-        final var salt = unhex(SALT);
+        final var salt = new byte[32];
+        new Random().nextBytes(salt);
 
         return propertyPreservingHapiSpec("canInternallyCallAliasedAddressesOnlyViaCreate2Address")
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
