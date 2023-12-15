@@ -727,7 +727,7 @@ public class SignedState implements SignedStateInfo {
      * @return the reservation history
      */
     @Nullable
-    SignedStateHistory getHistory() {
+    public SignedStateHistory getHistory() {
         return history;
     }
 }

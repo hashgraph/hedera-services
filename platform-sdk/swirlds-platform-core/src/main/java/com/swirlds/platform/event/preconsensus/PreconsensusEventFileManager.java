@@ -21,11 +21,11 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.compactPreconsensusEventFile;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
 import com.swirlds.common.utility.ValueReference;

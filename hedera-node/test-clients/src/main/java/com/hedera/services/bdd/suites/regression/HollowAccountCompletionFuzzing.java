@@ -49,7 +49,7 @@ public class HollowAccountCompletionFuzzing extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hollowAccountCompletionFuzzing() {
+    final HapiSpec hollowAccountCompletionFuzzing() {
         return defaultHapiSpec("HollowAccountCompletionFuzzing")
                 .given(initOperations())
                 .when()

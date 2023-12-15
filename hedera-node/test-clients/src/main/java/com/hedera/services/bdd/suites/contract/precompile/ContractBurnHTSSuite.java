@@ -90,7 +90,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
+    final HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
                 .given(
@@ -154,7 +154,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnNonFungibleV1andV2WithNegativeValues() {
+    final HapiSpec burnNonFungibleV1andV2WithNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec("burnNonFungibleV1andV2WithNegativeValues")
                 .given(

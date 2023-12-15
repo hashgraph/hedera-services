@@ -118,7 +118,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferNftAfterNestedMint() {
+    final HapiSpec transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
 
         return defaultHapiSpec(
@@ -220,7 +220,7 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
+    final HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
         return defaultHapiSpec(

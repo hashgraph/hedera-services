@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 
 import java.util.concurrent.TimeUnit;
 

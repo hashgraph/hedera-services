@@ -30,7 +30,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,7 +55,7 @@ class HederaEvmOperationsUtilV038Test {
     @Test
     void throwsUnderflowExceptionWhenGettingAddress() {
         // given:
-        given(messageFrame.getStackItem(0)).willThrow(new FixedStack.UnderflowException());
+        given(messageFrame.getStackItem(0)).willThrow(new UnderflowException());
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 
         // when:
@@ -80,7 +81,7 @@ class HederaEvmOperationsUtilV038Test {
     @Test
     void handlesOverlowExceptionAsExpected() {
         // given:
-        doThrow(FixedStack.OverflowException.class).when(messageFrame).pushStackItem(Bytes.EMPTY);
+        doThrow(OverflowException.class).when(messageFrame).pushStackItem(Bytes.EMPTY);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
