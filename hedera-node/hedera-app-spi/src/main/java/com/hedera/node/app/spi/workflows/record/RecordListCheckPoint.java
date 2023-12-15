@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.gas;
+package com.hedera.node.app.spi.workflows.record;
 
-public record GasCharges(long intrinsicGas, long relayerAllowanceUsed) {}
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+public record RecordListCheckPoint(
+        @Nullable SingleTransactionRecordBuilder firstPrecedingRecord,
+        @Nullable SingleTransactionRecordBuilder lastFollowingRecord) {}
