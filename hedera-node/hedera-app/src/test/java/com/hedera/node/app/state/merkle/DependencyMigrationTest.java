@@ -55,14 +55,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DependencyMigrationTest extends MerkleTestBase {
 
-    private static final HederaSoftwareVersion version =
+    private static final HederaSoftwareVersion VERSION =
             new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION);
+    private static final VersionedConfigImpl VERSIONED_CONFIG =
+            new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
     private static final long INITIAL_ENTITY_ID = 5;
 
     @Mock
     private ThrottleAccumulator accumulator;
-
-    private VersionedConfigImpl versionedConfig = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
 
     @Mock
     private NetworkInfo networkInfo;
@@ -102,7 +102,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void stateRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(null, RELEASE_045_VERSION, null, versionedConfig, networkInfo))
+                            () -> subject.doMigrations(null, RELEASE_045_VERSION, null, VERSIONED_CONFIG, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -110,7 +110,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void currentVersionRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(merkleTree, null, null, versionedConfig, networkInfo))
+                            () -> subject.doMigrations(merkleTree, null, null, VERSIONED_CONFIG, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -126,7 +126,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void networkInfoRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, versionedConfig, null))
+                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, VERSIONED_CONFIG, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -154,12 +154,12 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service, version));
+        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service, VERSION));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
         subject.doMigrations(
-                merkleTree, SemanticVersion.newBuilder().major(2).build(), null, versionedConfig, networkInfo);
+                merkleTree, SemanticVersion.newBuilder().major(2).build(), null, VERSIONED_CONFIG, networkInfo);
 
         // Then: we verify the migrations had the desired effects on both entity ID state and DependentService state
         // First check that the entity ID service has an updated entity ID, despite its schema migration not doing
@@ -250,12 +250,12 @@ class DependencyMigrationTest extends MerkleTestBase {
         };
         // Intentionally register the services in a different order than the expected migration order
         List.of(dsService, serviceA, entityIdService, serviceB)
-                .forEach(service -> servicesRegistry.register(service, version));
+                .forEach(service -> servicesRegistry.register(service, VERSION));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
         subject.doMigrations(
-                merkleTree, SemanticVersion.newBuilder().major(1).build(), null, versionedConfig, networkInfo);
+                merkleTree, SemanticVersion.newBuilder().major(1).build(), null, VERSIONED_CONFIG, networkInfo);
 
         // Then: we verify the migrations were run in the expected order
         Assertions.assertThat(orderedInvocations)
