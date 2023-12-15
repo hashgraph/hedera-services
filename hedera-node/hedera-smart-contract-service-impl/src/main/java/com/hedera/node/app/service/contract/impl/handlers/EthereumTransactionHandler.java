@@ -19,16 +19,22 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.mono.fees.calculation.ethereum.txns.EthereumTransactionResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -105,5 +111,16 @@ public class EthereumTransactionHandler implements TransactionHandler {
             }
         }
         throwIfUnsuccessful(outcome.status());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var body = feeContext.body();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new EthereumTransactionResourceUsage(new SmartContractFeeBuilder())
+                        .usageGiven(fromPbj(body), sigValueObj, null));
     }
 }
