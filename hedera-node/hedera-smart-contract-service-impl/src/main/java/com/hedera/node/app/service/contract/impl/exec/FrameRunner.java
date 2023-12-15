@@ -141,9 +141,7 @@ public class FrameRunner {
                 };
         executor.process(frame, tracer);
 
-        frame.getExceptionalHaltReason().ifPresent(haltReason -> {
-            propagateHaltException(frame, haltReason);
-        });
+        frame.getExceptionalHaltReason().ifPresent(haltReason -> propagateHaltException(frame, haltReason));
         // For mono-service compatibility, we need to also halt the frame on the stack that
         // executed the CALL operation whose dispatched frame failed due to a missing receiver
         // signature; since mono-service did that check as part of the CALL operation itself
