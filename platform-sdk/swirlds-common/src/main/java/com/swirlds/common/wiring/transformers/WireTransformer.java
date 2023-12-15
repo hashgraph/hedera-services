@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.transformers.internal;
+package com.swirlds.common.wiring.transformers;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -31,10 +32,10 @@ import java.util.function.Function;
  * @param <A> the input type
  * @param <B> the output type
  */
-public class WireTransformer<A, B> implements Consumer<A> {
+public class WireTransformer<A, B> {
 
-    private final Function<A, B> transformer;
-    private final StandardOutputWire<B> outputWire;
+    private final BindableInputWire<A, B> inputWire;
+    private final OutputWire<B> outputWire;
 
     /**
      * Constructor.
@@ -47,23 +48,27 @@ public class WireTransformer<A, B> implements Consumer<A> {
      *                    performance.
      */
     public WireTransformer(
-            @NonNull final StandardWiringModel model,
-            @NonNull final String name,
-            @NonNull final Function<A, B> transformer) {
-        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
-        this.transformer = Objects.requireNonNull(transformer);
-        outputWire = new StandardOutputWire<>(model, name);
+            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
+        Objects.requireNonNull(transformer);
+
+        final TaskScheduler<B> taskScheduler = model.schedulerBuilder(name)
+                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .build()
+                .cast();
+
+        inputWire = taskScheduler.buildInputWire(name + " TODO name this");
+        inputWire.bind(transformer);
+        outputWire = taskScheduler.getOutputWire();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the input wire for this transformer.
+     *
+     * @return the input wire
      */
-    @Override
-    public void accept(@NonNull final A a) {
-        final B b = transformer.apply(a);
-        if (b != null) {
-            outputWire.forward(b);
-        }
+    @NonNull
+    public InputWire<A> getInputWire() {
+        return inputWire;
     }
 
     /**

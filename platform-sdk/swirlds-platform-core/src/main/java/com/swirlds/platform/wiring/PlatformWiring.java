@@ -179,7 +179,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring
                     .eventOutput()
                     .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
-            orphanBufferWiring.eventOutput()
+            orphanBufferWiring
+                    .eventOutput()
                     .solderTo(preconsensusSystemTransactionRouterWiring.preconsensusEventInout());
             orphanBufferWiring
                     .eventOutput()

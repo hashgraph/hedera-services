@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.transformers.internal;
+package com.swirlds.common.wiring.transformers;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -35,6 +35,8 @@ import java.util.function.Function;
  * @param <B> the output type
  */
 public class AdvancedWireTransformer<A, B> implements Consumer<A> {
+
+    // TODO give this a makeover so it can stand alone
 
     private final ForwardingOutputWire<A, B> outputWire;
 

@@ -18,10 +18,10 @@ package com.swirlds.common.wiring.wires.output;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
-import com.swirlds.common.wiring.transformers.internal.AdvancedWireTransformer;
-import com.swirlds.common.wiring.transformers.internal.WireFilter;
-import com.swirlds.common.wiring.transformers.internal.WireListSplitter;
-import com.swirlds.common.wiring.transformers.internal.WireTransformer;
+import com.swirlds.common.wiring.transformers.AdvancedWireTransformer;
+import com.swirlds.common.wiring.transformers.WireFilter;
+import com.swirlds.common.wiring.transformers.WireListSplitter;
+import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -138,7 +138,7 @@ public abstract class OutputWire<OUT> {
     public OutputWire<OUT> buildFilter(@NonNull final String name, @NonNull final Predicate<OUT> predicate) {
         final WireFilter<OUT> filter =
                 new WireFilter<>(model, Objects.requireNonNull(name), Objects.requireNonNull(predicate));
-        solderTo(name, filter);
+        solderTo(filter.getInputWire());
         return filter.getOutputWire();
     }
 
@@ -156,7 +156,7 @@ public abstract class OutputWire<OUT> {
     public <ELEMENT> OutputWire<ELEMENT> buildSplitter() {
         final String splitterName = name + "_splitter";
         final WireListSplitter<ELEMENT> splitter = new WireListSplitter<>(model, splitterName);
-        solderTo(splitterName, (Consumer<OUT>) splitter);
+        solderTo((InputWire<OUT>) splitter.getInputWire());
         return splitter.getOutputWire();
     }
 
@@ -176,7 +176,7 @@ public abstract class OutputWire<OUT> {
             @NonNull final String name, @NonNull final Function<OUT, NEW_OUT> transformer) {
         final WireTransformer<OUT, NEW_OUT> wireTransformer =
                 new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transformer));
-        solderTo(name, wireTransformer);
+        solderTo(wireTransformer.getInputWire());
         return wireTransformer.getOutputWire();
     }
 

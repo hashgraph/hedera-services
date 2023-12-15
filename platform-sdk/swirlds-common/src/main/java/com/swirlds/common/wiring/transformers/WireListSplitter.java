@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.transformers.internal;
+package com.swirlds.common.wiring.transformers;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
  * collection.
  */
-public class WireListSplitter<T> implements Consumer<List<T>> {
+public class WireListSplitter<T> {
 
+    private final BindableInputWire<List<T>, T> inputWire;
     private final StandardOutputWire<T> outputWire;
 
     /**
@@ -38,23 +41,34 @@ public class WireListSplitter<T> implements Consumer<List<T>> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output channel
      */
-    public WireListSplitter(@NonNull final StandardWiringModel model, @NonNull final String name) {
-        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
-        outputWire = new StandardOutputWire<>(model, name);
+    public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
+        final TaskScheduler<T> taskScheduler = model.schedulerBuilder(name)
+                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .build()
+                .cast();
+
+        inputWire = taskScheduler.buildInputWire("List<" + name + ">");
+        outputWire = (StandardOutputWire<T>) taskScheduler.getOutputWire();
+
+        inputWire.bind(list -> {
+            for (final T t : list) {
+                outputWire.forward(t);
+            }
+        });
     }
 
     /**
-     * {@inheritDoc}
+     * Get the input wire for this splitter.
+     *
+     * @return the input wire
      */
-    @Override
-    public void accept(@NonNull final List<T> list) {
-        for (final T t : list) {
-            outputWire.forward(t);
-        }
+    @NonNull
+    public InputWire<List<T>> getInputWire() {
+        return inputWire;
     }
 
     /**
-     * Get the output wire for this transformer.
+     * Get the output wire for this splitter.
      *
      * @return the output wire
      */

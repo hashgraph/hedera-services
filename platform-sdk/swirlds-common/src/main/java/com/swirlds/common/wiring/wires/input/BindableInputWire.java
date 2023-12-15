@@ -46,7 +46,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
             @NonNull final StandardWiringModel model,
             @NonNull final TaskScheduler<OUT> taskScheduler,
             @NonNull final String name) {
-        super(taskScheduler, name);
+        super(model, taskScheduler, name);
         this.model = Objects.requireNonNull(model);
         taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         taskSchedulerName = taskScheduler.getName();

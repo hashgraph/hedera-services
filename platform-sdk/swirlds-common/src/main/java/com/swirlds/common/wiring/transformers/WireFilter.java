@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.transformers.internal;
+package com.swirlds.common.wiring.transformers;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+// TODO make it so this can be directly instantiated. Also, consider if we should support auto-soldering. Possibly not.
 
 /**
  * Filters out data, allowing some objects to pass and blocking others.
  */
-public class WireFilter<T> implements Consumer<T> {
+public class WireFilter<T> {
 
-    private final Predicate<T> predicate;
-    private final StandardOutputWire<T> outputWire;
+    private final BindableInputWire<T, T> inputWire;
+    private final OutputWire<T> outputWire;
 
     /**
      * Constructor.
@@ -43,26 +46,38 @@ public class WireFilter<T> implements Consumer<T> {
      *                  wiring framework and may result in very poor system performance.
      */
     public WireFilter(
-            @NonNull final StandardWiringModel model,
-            @NonNull final String name,
-            @NonNull final Predicate<T> predicate) {
-        this.predicate = Objects.requireNonNull(predicate);
-        this.outputWire = new StandardOutputWire<>(model, name);
-        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
+            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
+        Objects.requireNonNull(predicate);
+
+        final TaskScheduler<T> taskScheduler = model.schedulerBuilder(name)
+                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .build()
+                .cast();
+
+        // TODO should the caller be able to name the input wire?
+
+        inputWire = taskScheduler.buildInputWire("unfiltered data");
+        inputWire.bind(t -> {
+            if (predicate.test(t)) {
+                return t;
+            }
+            return null;
+        });
+        this.outputWire = taskScheduler.getOutputWire();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the input wire for this filter.
+     *
+     * @return the input wire
      */
-    @Override
-    public void accept(@NonNull final T t) {
-        if (predicate.test(t)) {
-            outputWire.forward(t);
-        }
+    @NonNull
+    public InputWire<T> getInputWire() {
+        return inputWire;
     }
 
     /**
-     * Get the output wire for this transformer.
+     * Get the output wire for this filter.
      *
      * @return the output wire
      */
