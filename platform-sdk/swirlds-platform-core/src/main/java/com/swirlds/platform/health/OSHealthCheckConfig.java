@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.swirlds.platform.health;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;

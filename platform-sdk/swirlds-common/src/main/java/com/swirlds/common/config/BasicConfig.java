@@ -47,7 +47,7 @@ import java.time.Duration;
  * @param freezeSecondsAfterStartup
  * 		do not create events for this many seconds after the platform has started (0 or less to not freeze at startup)
  * @param loadKeysFromPfxFiles
- * 		When enabled, the platform will try to load node keys from .pfx files located in the {@link PathsConfig keysDirPath}. If even a
+ * 		When enabled, the platform will try to load node keys from .pfx files located in the {@code PathsConfig.keysDirPath}. If even a
  * 		single key is missing, the platform will warn and exit. If disabled, the platform will generate keys
  * 		deterministically.
  * @param jvmPauseDetectorSleepMs

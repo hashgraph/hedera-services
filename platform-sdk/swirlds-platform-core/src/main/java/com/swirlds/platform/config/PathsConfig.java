@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.swirlds.platform.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;

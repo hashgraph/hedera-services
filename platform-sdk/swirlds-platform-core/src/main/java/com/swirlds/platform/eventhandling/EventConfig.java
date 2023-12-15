@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.swirlds.platform.eventhandling;
 
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.config.api.ConfigData;
