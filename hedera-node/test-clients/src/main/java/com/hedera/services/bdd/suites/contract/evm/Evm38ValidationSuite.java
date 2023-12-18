@@ -50,7 +50,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -65,6 +64,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,6 +79,8 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm38ValidationSuite.class);
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
+    private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
+            "contracts.evm.allowCallsToNonContractAccounts";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_038 = "v0.38";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
@@ -86,7 +88,6 @@ public class Evm38ValidationSuite extends HapiSuite {
     private static final String CREATE_2_TXN = "create2Txn";
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
-    public static final String SALT = "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
     public static final String RETURNER_REPORTED_LOG_MESSAGE = "Returner reported {} when called with mirror address";
     private static final String STATIC_CALL = "staticcall";
     private static final String BENEFICIARY = "beneficiary";
@@ -576,7 +577,8 @@ public class Evm38ValidationSuite extends HapiSuite {
         final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
         final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
 
-        final var salt = unhex(SALT);
+        final var salt = new byte[32];
+        new Random().nextBytes(salt);
 
         return propertyPreservingHapiSpec("canInternallyCallAliasedAddressesOnlyViaCreate2Address")
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
@@ -629,10 +631,11 @@ public class Evm38ValidationSuite extends HapiSuite {
     HapiSpec callingDestructedContractReturnsStatusDeleted() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return propertyPreservingHapiSpec("callingDestructedContractReturnsStatusDeleted")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
@@ -655,10 +658,11 @@ public class Evm38ValidationSuite extends HapiSuite {
 
         final var sender = "sender";
         return propertyPreservingHapiSpec("factoryAndSelfDestructInConstructorContract")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS)
                 .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract).balance(10).payingWith(sender))
