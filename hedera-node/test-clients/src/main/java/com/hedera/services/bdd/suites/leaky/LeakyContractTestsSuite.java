@@ -768,6 +768,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 485L));
     }
 
+    @HapiTest
     final HapiSpec transferFailsWithIncorrectAmounts() {
         final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
         final var contract = TOKEN_TRANSFER_CONTRACT;
@@ -1490,6 +1491,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
+    @HapiTest
     HapiSpec propagatesNestedCreations() {
         final var call = "callTxn";
         final var creation = "createTxn";
@@ -1719,6 +1721,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     final HapiSpec evmLazyCreateViaSolidityCall() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";

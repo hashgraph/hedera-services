@@ -19,6 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl.test;
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FREEZE_TIME_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.LAST_FROZEN_TIME_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
@@ -64,7 +65,7 @@ class FreezeServiceImplTest {
         final var subject = new FreezeServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        subject.registerSchemas(registry);
+        subject.registerSchemas(registry, RELEASE_045_VERSION);
         verify(registry).register(schemaCaptor.capture());
         final var schema = schemaCaptor.getValue();
 
@@ -83,7 +84,7 @@ class FreezeServiceImplTest {
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
 
-        subject.registerSchemas(registry);
+        subject.registerSchemas(registry, RELEASE_045_VERSION);
         registry.migrate(FreezeService.NAME, state, networkInfo);
         final var upgradeFileHashKeyState =
                 state.createReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
