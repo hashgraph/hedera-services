@@ -78,9 +78,13 @@ public class SnapshotService implements Startable {
      * 		the {@link ScheduledExecutorService} that will be used to schedule the writer-tasks
      * @param interval
      * 		interval between snapshot generations
-     * @throws NullPointerException in case {@code globalMetrics} parameter is {@code null}
-     * @throws NullPointerException in case {@code executor} parameter is {@code null}
-     * @throws NullPointerException in case {@code interval} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code globalMetrics}</li>
+     *       <li>{@code executor}</li>
+     *       <li>{@code interval}</li>
+     *     </ul>
+     *
      */
     public SnapshotService(
             final DefaultMetrics globalMetrics, final ScheduledExecutorService executor, final Duration interval) {

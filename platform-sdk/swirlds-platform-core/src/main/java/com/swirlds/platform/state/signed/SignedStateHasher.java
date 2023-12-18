@@ -62,8 +62,11 @@ public class SignedStateHasher {
      * @param stateHashedTrigger the StateHashedTrigger dispatcher to notify with hash.
      * @param fatalErrorConsumer the FatalErrorConsumer to consume any fatal errors during hashing.
      *
-     * @throws NullPointerException in case {@code stateHashedTrigger} parameter is {@code null}
-     * @throws NullPointerException in case {@code fatalErrorConsumer} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code stateHashedTrigger}</li>
+     *       <li>{@code fatalErrorConsumer}</li>
+     *     </ul>
      */
     public SignedStateHasher(
             SignedStateMetrics signedStateMetrics,

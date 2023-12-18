@@ -48,8 +48,11 @@ public class DistributionAdapter extends AbstractMetricAdapter {
      * 		The {@link Metric} which value should be reported to Prometheus
      * @param adapterType
      * 		Scope of the {@link Metric}, either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
-     * @throws NullPointerException in case {@code registry} parameter is {@code null}
-     * @throws NullPointerException in case {@code metric} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code registry}</li>
+     *       <li>{@code metric}</li>
+     *     </ul>
      */
     public DistributionAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);

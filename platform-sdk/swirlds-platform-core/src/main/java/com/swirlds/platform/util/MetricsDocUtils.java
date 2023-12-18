@@ -58,9 +58,13 @@ public final class MetricsDocUtils {
      * @param globalMetrics the global {@code Metrics}
      * @param platforms     the collection of {@code SwirldsPlatform}s
      * @param configuration the {@code Configuration}
-     * @throws NullPointerException in case {@code globalMetrics} parameter is {@code null}
-     * @throws NullPointerException in case {@code platforms} parameter is {@code null}
-     * @throws NullPointerException in case {@code configuration} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code globalMetrics}</li>
+     *       <li>{@code platforms}</li>
+     *       <li>{@code configuration}</li>
+     *     </ul>
+     *
      */
     public static void writeMetricsDocumentToFile(
             final Metrics globalMetrics,

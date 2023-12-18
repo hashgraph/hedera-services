@@ -86,10 +86,14 @@ public class DefaultMetrics implements PlatformMetrics {
      * 		the {@link PlatformMetricsFactory} that will be used to create new instances of {@link Metric}
      * @param metricsConfig
      *      the {@link MetricsConfig} for metrics configuration
-     * @throws NullPointerException in case {@code metricKeyRegistry} parameter is {@code null}
-     * @throws NullPointerException in case {@code executor} parameter is {@code null}
-     * @throws NullPointerException in case {@code factory} parameter is {@code null}
-     * @throws NullPointerException in case {@code metricsConfig} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code metricKeyRegistry}</li>
+     *       <li>{@code executor}</li>
+     *       <li>{@code factory}</li>
+     *       <li>{@code metricsConfig}</li>
+     *     </ul>
+     *
      */
     public DefaultMetrics(
             final NodeId selfId,

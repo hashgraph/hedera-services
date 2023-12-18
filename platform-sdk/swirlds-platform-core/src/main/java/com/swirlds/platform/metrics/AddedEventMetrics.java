@@ -126,8 +126,12 @@ public class AddedEventMetrics implements EventAddedObserver {
      * 		the {@link NodeId} of this node
      * @param metrics
      * 		a reference to the metrics-system
-     * @throws NullPointerException in case {@code selfId} parameter is {@code null}
-     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code selfId}</li>
+     *       <li>{@code metrics}</li>
+     *     </ul>
+     *
      */
     public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");

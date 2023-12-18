@@ -48,8 +48,11 @@ public class CounterAdapter extends AbstractMetricAdapter {
      * @param adapterType
      * 		Scope of the {@link com.swirlds.common.metrics.Counter},
      * 		either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
-     * @throws NullPointerException in case {@code registry} parameter is {@code null}
-     * @throws NullPointerException in case {@code metric} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code registry}</li>
+     *       <li>{@code metric}</li>
+     *     </ul>
      */
     public CounterAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);

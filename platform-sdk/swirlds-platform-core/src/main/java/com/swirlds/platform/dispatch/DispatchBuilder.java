@@ -152,8 +152,12 @@ public class DispatchBuilder implements Mutable, Startable {
      * @return this object
      * @throws MutabilityException
      * 		if called after {@link #start()}
-     * @throws NullPointerException in case {@code triggerClass} parameter is {@code null}
-     * @throws NullPointerException in case {@code observer} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code triggerClass}</li>
+     *       <li>{@code observer}</li>
+     *     </ul>
+     *
      */
     public <BASE_INTERFACE extends Trigger<BASE_INTERFACE>, TRIGGER_CLASS extends BASE_INTERFACE>
             DispatchBuilder registerObserver(

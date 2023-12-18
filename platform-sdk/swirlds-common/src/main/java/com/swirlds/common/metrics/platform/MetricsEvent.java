@@ -27,8 +27,11 @@ public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
     }
 
     /**
-     * @throws NullPointerException in case {@code type} parameter is {@code null}
-     * @throws NullPointerException in case {@code metric} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code type}</li>
+     *       <li>{@code metric}</li>
+     *     </ul>
      */
     public MetricsEvent {
         Objects.requireNonNull(type, "type must not be null");

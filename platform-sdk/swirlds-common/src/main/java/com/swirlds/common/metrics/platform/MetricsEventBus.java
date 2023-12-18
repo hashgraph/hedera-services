@@ -58,8 +58,11 @@ public class MetricsEventBus<T> {
      * 		A {@link Supplier} of previous events. To ensure, that we do not miss events, this will be evaluated
      * 		after the subscriber was added.
      * @return a {@link Runnable} with which the subscriber can be unsubscribed
-     * @throws NullPointerException in case {@code subscriber} parameter is {@code null}
-     * @throws NullPointerException in case {@code previousEvents} parameter is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code subscriber}</li>
+     *       <li>{@code previousEvents}</li>
+     *     </ul>
      */
     public Runnable subscribe(final Consumer<? super T> subscriber, final Supplier<Stream<T>> previousEvents) {
         Objects.requireNonNull(subscriber, "subscriber must not be null");
