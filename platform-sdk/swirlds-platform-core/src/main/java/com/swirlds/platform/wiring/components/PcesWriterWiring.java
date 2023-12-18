@@ -52,7 +52,7 @@ public record PcesWriterWiring(
                 taskScheduler.buildInputWire("done streaming pces"),
                 taskScheduler.buildInputWire("events to write"),
                 taskScheduler.buildInputWire("discontinuity"),
-                taskScheduler.buildInputWire("minimum generation non-ancient"),
+                taskScheduler.buildInputWire("minimum generation non ancient"),
                 taskScheduler.buildInputWire("minimum generation to store"),
                 taskScheduler::flush);
     }

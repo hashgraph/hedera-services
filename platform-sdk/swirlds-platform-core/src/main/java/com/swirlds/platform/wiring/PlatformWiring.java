@@ -174,12 +174,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
             eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+            orphanBufferWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
             eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
 
             solderMinimumGenerationNonAncient();
+        } else {
+            // TODO: wire events into the pces writer from the old pipeline
+            // TODO: wire event output from the hasher to the old pipeline
         }
+
+        pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
+        pcesReplayerWiring.eventOutputWire().solderTo(eventHasherWiring.eventInput());
+
     }
 
     /**
@@ -191,6 +199,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param statusManager             the status manager to wire
      * @param appCommunicationComponent the app communication component to wire
      * @param transactionPool           the transaction pool to wire
+     * @param intakeQueue               the intake queue to wire
      */
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,

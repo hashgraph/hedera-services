@@ -41,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.
  */
-public final class PcesReplayer {
+public class PcesReplayer {
     private static final Logger logger = LogManager.getLogger(PcesReplayer.class);
 
     private final Time time;
