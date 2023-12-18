@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.ids;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 
 import com.hedera.node.app.spi.Service;
@@ -54,8 +53,7 @@ public class EntityIdService implements Service {
     /** {@inheritDoc} */
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(43).build()) {
+        registry.register(new Schema(RELEASE_045_VERSION) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
              * perhaps in this version of the schema, you need to create a new state FOO. The set will have
@@ -91,8 +89,7 @@ public class EntityIdService implements Service {
         });
 
 //        if(true)return;
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 System.out.println("BBM: doing entity id migration");

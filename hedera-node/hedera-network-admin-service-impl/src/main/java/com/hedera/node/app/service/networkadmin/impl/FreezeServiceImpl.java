@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.FreezeService;
@@ -39,8 +38,7 @@ public final class FreezeServiceImpl implements FreezeService {
     }
 
     private Schema networkAdminSchema() {
-        // BBM: reducing version just for testing
-        return new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        return new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")

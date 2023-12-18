@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
@@ -64,8 +63,7 @@ public final class FileServiceImpl implements FileService {
         registry.register(new FileGenesisSchema());
 
 //        if(true)return;
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);

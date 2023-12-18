@@ -31,7 +31,6 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -95,8 +94,7 @@ public class TokenSchema extends Schema {
             @NonNull final Supplier<SortedSet<Account>> treasuryAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> miscAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> blocklistAcctRcds) {
-        // BBM: reducing version just for testing
-        super(SemanticVersion.newBuilder().minor(44).build());
+        super(RELEASE_045_VERSION);
 
         this.sysAccts = sysAcctRcds;
         this.stakingAccts = stakingAcctRcds;

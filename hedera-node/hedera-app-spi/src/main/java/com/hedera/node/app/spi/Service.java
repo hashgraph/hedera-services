@@ -30,6 +30,8 @@ import java.util.Set;
  */
 public interface Service {
     SemanticVersion RELEASE_045_VERSION = new SemanticVersion(0, 45, 0, "SNAPSHOT", "");
+    SemanticVersion RELEASE_MIGRATION_VERSION = new SemanticVersion(0, 45, 1, "SNAPSHOT", "");
+
     /**
      * Returns the name of the service. This name must be unique for each service deployed on the
      * application.

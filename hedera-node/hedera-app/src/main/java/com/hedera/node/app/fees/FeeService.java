@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.fees;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -50,7 +49,7 @@ public class FeeService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(43).build()) {
+        registry.register(new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
@@ -85,8 +84,7 @@ public class FeeService implements Service {
         });
 
 //        if(true)return;
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 System.out.println("BBM: migrating fee service");

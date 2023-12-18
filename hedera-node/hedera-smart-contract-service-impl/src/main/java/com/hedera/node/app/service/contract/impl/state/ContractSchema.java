@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
@@ -34,9 +36,7 @@ public class ContractSchema extends Schema {
     public static final String BYTECODE_KEY = "BYTECODE";
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
-    // BBM: increasing version just for testing
-    private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(43).build();
+    private static final SemanticVersion CURRENT_VERSION = RELEASE_045_VERSION;
 
     public ContractSchema() {
         super(CURRENT_VERSION);

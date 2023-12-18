@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.ContractService;
@@ -66,7 +65,7 @@ public enum ContractServiceImpl implements ContractService {
         registry.register(cs);
 
 //        if(true)return;
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(45).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
 
            @Override
            public void migrate(MigrationContext ctx) {

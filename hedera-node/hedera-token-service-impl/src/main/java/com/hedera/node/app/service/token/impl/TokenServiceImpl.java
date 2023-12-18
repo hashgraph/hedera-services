@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -91,7 +90,6 @@ public class TokenServiceImpl implements TokenService {
     private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> trFs;
     private VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFs;
     private MerkleMap<EntityNum, MerkleToken> tFs;
-
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingFs;
     private MerkleNetworkContext mnc;
 
@@ -141,8 +139,7 @@ public class TokenServiceImpl implements TokenService {
         registry.register(new TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts));
 
 //        if(true)return;
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
                 System.out.println("BBM: migrating token service");

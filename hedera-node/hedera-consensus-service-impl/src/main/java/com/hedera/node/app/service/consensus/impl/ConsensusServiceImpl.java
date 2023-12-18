@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -41,15 +40,14 @@ public final class ConsensusServiceImpl implements ConsensusService {
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
 
-    private MerkleMap<EntityNum, MerkleTopic> fs;
+        private MerkleMap<EntityNum, MerkleTopic> fs;
 
-    @Override
+        @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(consensusSchema());
 
 //        if(true)return;
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 System.out.println("BBM: running consensus migration...");
@@ -70,8 +68,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
     }
 
     private Schema consensusSchema() {
-        // BBM: reducing version just for testing
-        return new Schema(SemanticVersion.newBuilder().minor(43).build()) {
+        return new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

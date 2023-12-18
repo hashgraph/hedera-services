@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.records;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -66,7 +65,7 @@ public final class BlockRecordService implements Service {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(43).build()) {
+        registry.register(new Schema(RELEASE_045_VERSION) {
             /** {@inheritDoc} */
             @NonNull
             @Override
@@ -98,8 +97,7 @@ public final class BlockRecordService implements Service {
         });
 
 //        if(true)return;
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 System.out.println("BBM: doing block record migration");

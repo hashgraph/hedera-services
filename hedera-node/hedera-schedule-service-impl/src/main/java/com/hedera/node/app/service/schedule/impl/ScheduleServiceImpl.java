@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
@@ -69,8 +68,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
         registry.register(scheduleSchema());
 
 //        if(true)return;
-        // BBM: reducing version just for testing
-        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 System.out.println("BBM: doing schedule migration");
@@ -165,8 +163,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     private static final class ScheduleServiceSchema extends Schema {
         public ScheduleServiceSchema() {
-            // BBM: reducing version just for testing
-            super(SemanticVersion.newBuilder().minor(43).build());
+            super(RELEASE_045_VERSION);
         }
 
         @SuppressWarnings("rawtypes")
