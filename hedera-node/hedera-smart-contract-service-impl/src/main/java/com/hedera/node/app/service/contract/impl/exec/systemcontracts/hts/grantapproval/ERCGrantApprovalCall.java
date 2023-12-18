@@ -70,8 +70,8 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
             var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
             var encodedRc = ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
-            var contractFunctionResult = contractFunctionResultFailedForProto(gasRequirement,
-                    INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID, Bytes.wrap(encodedRc));
+            var contractFunctionResult = contractFunctionResultFailedForProto(
+                    gasRequirement, INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID, Bytes.wrap(encodedRc));
 
             enhancement.systemOperations().externalizeResult(contractFunctionResult, INVALID_ALLOWANCE_SPENDER_ID);
 
