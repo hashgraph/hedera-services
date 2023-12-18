@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
+    INVALID_CONTRACT_ID("Invalid contract id"),
     INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
     INVALID_ALIAS_KEY("Invalid alias key"),
     SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
@@ -72,6 +73,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
         } else if (reason == CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS) {
             return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+        } else if (reason == CustomExceptionalHaltReason.INVALID_CONTRACT_ID) {
+            return ResponseCodeEnum.INVALID_CONTRACT_ID;
         } else {
             return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
         }
