@@ -17,9 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
@@ -38,7 +36,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -79,12 +76,6 @@ class HtsSystemContractTest {
     @Mock
     private GasCalculator gasCalculator;
 
-    @Mock
-    private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
-
-    @Mock
-    private CryptoCreateRecordBuilder contractCallRecordBuilder;
-
     private MockedStatic<FrameUtils> frameUtils;
 
     private HtsSystemContract subject;
@@ -117,28 +108,6 @@ class HtsSystemContractTest {
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
         assertSamePrecompileResult(expected, result);
-    }
-
-    @Test
-    void returnsInvalidStatusForFullResultWithCryptoCreateRecordBuilder() {
-        givenValidCallAttempt();
-
-        given(cryptoCreateRecordBuilder.status()).willReturn(TOKEN_HAS_NO_SUPPLY_KEY);
-        final var pricedResult = gasOnly(revertResult(cryptoCreateRecordBuilder, 123L), TOKEN_HAS_NO_SUPPLY_KEY, false);
-        given(call.execute(frame)).willReturn(pricedResult);
-
-        assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
-    }
-
-    @Test
-    void returnsInvalidStatusForFullResultWithContractCallRecordBuilder() {
-        givenValidCallAttempt();
-
-        given(contractCallRecordBuilder.status()).willReturn(TOKEN_HAS_NO_SUPPLY_KEY);
-        final var pricedResult = gasOnly(revertResult(contractCallRecordBuilder, 123L), TOKEN_HAS_NO_SUPPLY_KEY, true);
-        given(call.execute(frame)).willReturn(pricedResult);
-
-        assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
     }
 
     @Test

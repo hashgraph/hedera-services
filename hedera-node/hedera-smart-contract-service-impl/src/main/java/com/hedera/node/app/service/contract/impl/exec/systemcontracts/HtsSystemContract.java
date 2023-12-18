@@ -27,11 +27,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,15 +94,36 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         try {
             pricedResult = call.execute(frame);
             final var dispatchedRecordBuilder = pricedResult.fullResult().recordBuilder();
-            if (dispatchedRecordBuilder instanceof ContractCallRecordBuilder contractCallBuilder) {
-                contractCallBuilder.contractCallResult(pricedResult.asResultOfCall(
+            if (dispatchedRecordBuilder != null) {
+                dispatchedRecordBuilder.contractCallResult(pricedResult.asResultOfCall(
                         attempt.senderId(),
                         HTS_CONTRACT_ID,
                         ConversionUtils.tuweniToPbjBytes(input),
                         frame.getRemainingGas()));
             }
             if (pricedResult.isViewCall()) {
-                externalizeResult(frame, pricedResult);
+                final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
+                final var enhancement = proxyWorldUpdater.enhancement();
+                final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
+
+                if (responseCode == SUCCESS) {
+                    final var output = pricedResult.fullResult().result().getOutput();
+                    enhancement
+                            .systemOperations()
+                            .externalizeResult(
+                                    contractFunctionResultSuccessFor(
+                                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID),
+                                    responseCode);
+                } else {
+                    enhancement
+                            .systemOperations()
+                            .externalizeResult(
+                                    contractFunctionResultFailedFor(
+                                            pricedResult.fullResult().gasRequirement(),
+                                            responseCode.toString(),
+                                            HTS_CONTRACT_ID),
+                                    responseCode);
+                }
             }
         } catch (final HandleException handleException) {
             // TODO - this is almost certainly not the right way to handle this!
@@ -117,30 +136,5 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             throw new AssertionError("Not implemented");
         }
         return pricedResult.fullResult();
-    }
-
-    private static void externalizeResult(@NonNull final MessageFrame frame, @NonNull final PricedResult pricedResult) {
-        final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
-        final var enhancement = proxyWorldUpdater.enhancement();
-        final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
-
-        if (responseCode == SUCCESS) {
-            final var output = pricedResult.fullResult().result().getOutput();
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultSuccessFor(
-                                    pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID),
-                            responseCode);
-        } else {
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultFailedFor(
-                                    pricedResult.fullResult().gasRequirement(),
-                                    responseCode.toString(),
-                                    HTS_CONTRACT_ID),
-                            responseCode);
-        }
     }
 }
