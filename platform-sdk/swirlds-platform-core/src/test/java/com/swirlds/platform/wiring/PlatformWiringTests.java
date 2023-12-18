@@ -83,7 +83,11 @@ class PlatformWiringTests {
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
                 mock(EventCreationManager.class));
-        wiring.bind(mock(EventHasher.class), mock(SignedStateFileManager.class), mock(StateSigner.class), mock(PcesReplayer.class));
+        wiring.bind(
+                mock(EventHasher.class),
+                mock(SignedStateFileManager.class),
+                mock(StateSigner.class),
+                mock(PcesReplayer.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

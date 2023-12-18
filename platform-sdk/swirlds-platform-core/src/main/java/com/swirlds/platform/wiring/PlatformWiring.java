@@ -188,6 +188,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutputWire().solderTo(eventHasherWiring.eventInput());
 
+        signedStateFileManagerWiring
+                .oldestMinimumGenerationOnDiskOutputWire()
+                .solderTo(pcesWriterWiring.minimumGenerationToStoreInputWire());
     }
 
     /**

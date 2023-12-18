@@ -590,7 +590,7 @@ public class SwirldsPlatform implements Platform {
                 time,
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
-                stateManagementComponent);
+                () -> latestImmutableState.getState("PCES replay"));
         platformWiring.bind(eventHasher, signedStateFileManager, stateSigner, pcesReplayer);
 
         // Load the minimum generation into the pre-consensus event writer
