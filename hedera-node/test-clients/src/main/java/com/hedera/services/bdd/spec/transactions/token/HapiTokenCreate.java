@@ -376,8 +376,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                     b.addCustomFees(supplier.apply(spec));
                                 }
                             }
-                            lockKey.ifPresent(
-                                    k -> b.setLockKey(spec.registry().getKey(k)));
+                            lockKey.ifPresent(k -> b.setLockKey(spec.registry().getKey(k)));
                             partitionKey.ifPresent(
                                     k -> b.setPartitionKey(spec.registry().getKey(k)));
                             partitionMoveKey.ifPresent(
