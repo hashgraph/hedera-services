@@ -235,6 +235,7 @@ public final class IngestChecker {
         if (!isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expandedSigs);
         } else {
+            // If the payer is hollow, then we need to expand the signature for the payer
             final var originals = txInfo.signatureMap().sigPairOrElse(emptyList()).stream()
                     .filter(k -> k.ecdsaSecp256k1OrElse(Bytes.EMPTY).length() == 20)
                     .filter(k -> Bytes.wrap(EthSigsUtils.recoverAddressFromPubKey(
