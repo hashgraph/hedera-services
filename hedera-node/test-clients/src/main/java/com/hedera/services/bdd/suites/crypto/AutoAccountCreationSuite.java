@@ -1488,7 +1488,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             spec.registry().saveKey(ercUser, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
                         }),
                         // delete the account currently holding the alias
-                        cryptoDelete(ercUser).payingWith(SECP_256K1_SOURCE_KEY).via("deleteTx"))
+                        cryptoDelete(ercUser).payingWith(ercUser).via("deleteTx"))
                 .then(
                         // try to create a new account with the same alias
                         withOpContext((spec, opLog) -> {
