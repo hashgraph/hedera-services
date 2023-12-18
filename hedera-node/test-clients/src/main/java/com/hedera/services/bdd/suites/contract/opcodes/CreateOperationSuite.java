@@ -125,7 +125,7 @@ public class CreateOperationSuite extends HapiSuite {
         final var sender = "sender";
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, SKIP_LOG_INFO_CONTAINING_ADDRESSES),
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_TRANSACTION_FEES, SKIP_LOG_INFO_CONTAINING_ADDRESSES),
                         uploadInitCode(contract),
                         contractCreate(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
