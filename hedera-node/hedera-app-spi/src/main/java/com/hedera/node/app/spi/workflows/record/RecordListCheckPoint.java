@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.hedera.node.app.spi.workflows.record;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-/**
- * Configuration used to control the wiring of platform components.
- *
- * @param newLatestCompleteStateConsumerQueueSize
- * 		the size of the queue used to asynchronously invoke consumers of new latest complete states
- */
-@ConfigData("wiring")
-public record WiringConfig(@ConfigProperty(defaultValue = "1000") int newLatestCompleteStateConsumerQueueSize) {}
+public record RecordListCheckPoint(
+        @Nullable SingleTransactionRecordBuilder firstPrecedingRecord,
+        @Nullable SingleTransactionRecordBuilder lastFollowingRecord) {}

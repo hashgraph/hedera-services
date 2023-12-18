@@ -24,8 +24,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
-import com.swirlds.platform.internal.EventImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -39,8 +39,8 @@ class PreconsensusEventStreamSequencerTests {
 
         long prev = -1;
         for (int i = 0; i < 1000; i++) {
-            final ValueReference<Long> seq = new ValueReference<>(EventImpl.NO_STREAM_SEQUENCE_NUMBER);
-            final EventImpl event = mock(EventImpl.class);
+            final ValueReference<Long> seq = new ValueReference<>(GossipEvent.NO_STREAM_SEQUENCE_NUMBER);
+            final GossipEvent event = mock(GossipEvent.class);
             doAnswer(invocation -> {
                         seq.setValue(invocation.getArgument(0));
                         return null;
@@ -60,7 +60,7 @@ class PreconsensusEventStreamSequencerTests {
     void setValueTwiceTest() {
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
-        final EventImpl event = new EventImpl();
+        final GossipEvent event = new GossipEvent();
 
         sequencer.assignStreamSequenceNumber(event);
         assertThrows(IllegalStateException.class, () -> sequencer.assignStreamSequenceNumber(event));
@@ -71,11 +71,11 @@ class PreconsensusEventStreamSequencerTests {
     void setStaleTest() {
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
-        final EventImpl event = new EventImpl();
+        final GossipEvent event = new GossipEvent();
 
         sequencer.assignStreamSequenceNumber(event);
-        event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
-        assertEquals(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER, event.getStreamSequenceNumber());
+        event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+        assertEquals(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER, event.getStreamSequenceNumber());
 
         assertThrows(IllegalStateException.class, () -> sequencer.assignStreamSequenceNumber(event));
     }

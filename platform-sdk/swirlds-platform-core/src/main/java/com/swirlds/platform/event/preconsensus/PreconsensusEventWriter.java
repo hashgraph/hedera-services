@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +45,7 @@ public interface PreconsensusEventWriter extends Startable, Stoppable {
      * @param event the event to be written
      * @throws InterruptedException if interrupted while waiting on queue to drain
      */
-    void writeEvent(@NonNull EventImpl event) throws InterruptedException;
+    void writeEvent(@NonNull GossipEvent event) throws InterruptedException;
 
     /**
      * Let the event writer know the minimum generation for non-ancient events. Ancient events will be ignored if added
@@ -95,21 +95,21 @@ public interface PreconsensusEventWriter extends Startable, Stoppable {
      * @param event the event in question
      * @return true if the event can is guaranteed to be durable
      */
-    boolean isEventDurable(@NonNull EventImpl event);
+    boolean isEventDurable(@NonNull GossipEvent event);
 
     /**
      * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method, the
-     * event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()} should
+     * event in question should have been passed to {@link #writeEvent(GossipEvent)} and {@link #requestFlush()} should
      * have been called. Otherwise, this method may block indefinitely.
      *
      * @param event the event in question
      * @throws InterruptedException if interrupted while waiting
      */
-    void waitUntilDurable(@NonNull EventImpl event) throws InterruptedException;
+    void waitUntilDurable(@NonNull GossipEvent event) throws InterruptedException;
 
     /**
      * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method, the
-     * event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()} should
+     * event in question should have been passed to {@link #writeEvent(GossipEvent)} and {@link #requestFlush()} should
      * have been called. Otherwise, this method may block until the end of its timeout and return false.
      *
      * @param event      the event in question
@@ -117,5 +117,6 @@ public interface PreconsensusEventWriter extends Startable, Stoppable {
      * @return true if the event is durable, false if the time to wait has elapsed
      * @throws InterruptedException if interrupted while waiting
      */
-    boolean waitUntilDurable(@NonNull EventImpl event, @NonNull final Duration timeToWait) throws InterruptedException;
+    boolean waitUntilDurable(@NonNull GossipEvent event, @NonNull final Duration timeToWait)
+            throws InterruptedException;
 }
