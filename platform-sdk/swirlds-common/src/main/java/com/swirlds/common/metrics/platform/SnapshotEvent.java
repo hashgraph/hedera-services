@@ -23,7 +23,7 @@ import java.util.Objects;
 public record SnapshotEvent(NodeId nodeId, Collection<Snapshot> snapshots) {
 
     /**
-     * @throws NullPointerException in case {@code metric} parameter is {@code null}
+     * @throws NullPointerException in case {@code snapshots} parameter is {@code null}
      */
     public SnapshotEvent {
         Objects.requireNonNull(snapshots, "snapshots must not be null");
