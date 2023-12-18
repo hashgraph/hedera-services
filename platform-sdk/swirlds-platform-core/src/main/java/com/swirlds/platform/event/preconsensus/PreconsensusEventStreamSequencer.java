@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 
 /**
  * Responsible for assigning stream sequence numbers to events. All events that are written
@@ -30,7 +30,7 @@ public class PreconsensusEventStreamSequencer {
      * Set the stream sequence number of an event.
      * @param event an event that needs a sequence number
      */
-    public void assignStreamSequenceNumber(final EventImpl event) {
+    public void assignStreamSequenceNumber(final GossipEvent event) {
         event.setStreamSequenceNumber(nextStreamSequenceNumber++);
     }
 }
