@@ -228,7 +228,7 @@ public class FakePreHandleContext implements PreHandleContext {
     }
 
     @Override
-    @Nullable
+    @NonNull
     public Key payerKey() {
         return payerKey;
     }

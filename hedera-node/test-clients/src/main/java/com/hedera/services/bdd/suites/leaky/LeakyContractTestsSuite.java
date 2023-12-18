@@ -83,6 +83,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
@@ -90,6 +91,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -99,6 +101,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -144,29 +147,15 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TOTAL_SUPPLY;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TRANSFER_MULTIPLE_TOKENS;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.APPROVE;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.ERC_20_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.RECIPIENT;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM_ACCOUNT_TXN;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIG_NAME;
-import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.FIRST_META;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.NAME_TXN;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
-import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
@@ -219,6 +208,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -338,7 +328,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 someErc721GetApprovedScenariosPass(),
                 someErc721OwnerOfScenariosPass(),
                 someErc721BalanceOfScenariosPass(),
-                callToNonExistingContractFailsGracefully());
+                callToNonExistingContractFailsGracefully(),
+                getErc20TokenNameExceedingLimits());
     }
 
     @HapiTest
@@ -862,6 +853,62 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(
                         // Confirm the transactions succeeded
                         childRecordsCheck(transferTokenWithNegativeAmountTxn, CONTRACT_REVERT_EXECUTED));
+    }
+
+    final HapiSpec getErc20TokenNameExceedingLimits() {
+        final var REDUCED_NETWORK_FEE = 1L;
+        final var REDUCED_NODE_FEE = 1L;
+        final var REDUCED_SERVICE_FEE = 1L;
+        final var INIT_ACCOUNT_BALANCE = 100 * ONE_HUNDRED_HBARS;
+        return defaultHapiSpec("getErc20TokenNameExceedingLimits")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(INIT_ACCOUNT_BALANCE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(5)
+                                .name(TOKEN_NAME)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT))
+                .when(
+                        balanceSnapshot("accountSnapshot", ACCOUNT),
+                        reduceFeeFor(
+                                HederaFunctionality.ContractCall,
+                                REDUCED_NODE_FEE,
+                                REDUCED_NETWORK_FEE,
+                                REDUCED_SERVICE_FEE),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCall(
+                                                ERC_20_CONTRACT,
+                                                "nameNTimes",
+                                                asHeadlongAddress(asHexedAddress(
+                                                        spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                                BigInteger.valueOf(51))
+                                        .payingWith(ACCOUNT)
+                                        .via(NAME_TXN)
+                                        .gas(4_000_000)
+                                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED))))
+                .then(
+                        getTxnRecord(NAME_TXN)
+                                .andAllChildRecords()
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .error(Bytes.of(MAX_CHILD_RECORDS_EXCEEDED
+                                                                .name()
+                                                                .getBytes())
+                                                        .toHexString())
+                                                .gasUsed(4_000_000))),
+                        getAccountDetails(ACCOUNT)
+                                .has(accountDetailsWith()
+                                        .balanceLessThan(
+                                                INIT_ACCOUNT_BALANCE - REDUCED_NETWORK_FEE - REDUCED_NODE_FEE)));
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -1534,6 +1581,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
+    @HapiTest
     HapiSpec propagatesNestedCreations() {
         final var call = "callTxn";
         final var creation = "createTxn";
@@ -1763,6 +1811,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     final HapiSpec evmLazyCreateViaSolidityCall() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";

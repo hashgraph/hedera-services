@@ -77,9 +77,7 @@ public class OrderedServiceMigrator {
                 .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
                 .findFirst()
                 .orElseThrow();
-        final var entityIdService = new EntityIdService();
         final var entityIdRegistry = (MerkleSchemaRegistry) entityIdRegistration.registry();
-        entityIdService.registerSchemas(entityIdRegistry, currentVersion);
         entityIdRegistry.migrate(
                 state,
                 previousVersion,

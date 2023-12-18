@@ -89,6 +89,7 @@ class ConversionUtilsTest {
     @Test
     void numberedIdsRequireLongZeroAddress() {
         assertThrows(IllegalArgumentException.class, () -> asNumberedContractId(EIP_1014_ADDRESS));
+        assertThrows(IllegalArgumentException.class, () -> asNumberedAccountId(EIP_1014_ADDRESS));
     }
 
     @Test
