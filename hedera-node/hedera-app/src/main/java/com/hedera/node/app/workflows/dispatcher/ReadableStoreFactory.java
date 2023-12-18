@@ -57,6 +57,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
@@ -65,7 +67,7 @@ import java.util.function.Function;
  * dynamic approach.
  */
 public class ReadableStoreFactory {
-
+    private static final Logger logger = LogManager.getLogger(ReadableStoreFactory.class);
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
     private static final Map<Class<?>, StoreEntry> STORE_FACTORY = createFactoryMap();

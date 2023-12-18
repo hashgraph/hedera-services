@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -34,12 +35,12 @@ public final class ConsensusServiceImpl implements ConsensusService {
     public static final String TOPICS_KEY = "TOPICS";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(consensusSchema());
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(consensusSchema(version));
     }
 
-    private Schema consensusSchema() {
-        return new Schema(RELEASE_045_VERSION) {
+    private Schema consensusSchema(final SemanticVersion version) {
+        return new Schema(version) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

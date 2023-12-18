@@ -278,9 +278,10 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
     }
 
+    @Override
     protected void revert(final MessageFrame frame) {
         super.revert(frame);
-        // clear child records form any succeeded operations when revert
+        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
         ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

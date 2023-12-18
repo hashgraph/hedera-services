@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.FreezeService;
@@ -33,12 +34,12 @@ public final class FreezeServiceImpl implements FreezeService {
     public static final String LAST_FROZEN_TIME_KEY = "LAST_FROZEN_TIME";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(networkAdminSchema());
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(networkAdminSchema(version));
     }
 
-    private Schema networkAdminSchema() {
-        return new Schema(RELEASE_045_VERSION) {
+    private Schema networkAdminSchema(final SemanticVersion version) {
+        return new Schema(version) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
