@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -61,6 +63,9 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
     private Nft nft;
 
     @Mock
+    private Token token;
+
+    @Mock
     private Account account;
 
     @Test
@@ -81,6 +86,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(nativeOperations.getAccount(anyLong())).willReturn(account);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -109,8 +115,9 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
-        given(nft.ownerId()).willReturn(OWNER_ID);
-        given(nativeOperations.getAccount(OWNER_ID.accountNum())).willReturn(account);
+        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
+        given(token.treasuryAccountId()).willReturn(OWNER_ID);
+        given(nativeOperations.getAccount(anyLong())).willReturn(account);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -140,7 +147,9 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
-        given(nft.ownerId()).willReturn(OWNER_ID);
+        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
+        given(nativeOperations.getAccount(anyLong())).willReturn(account);
+        given(token.treasuryAccountId()).willReturn(OWNER_ID);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
