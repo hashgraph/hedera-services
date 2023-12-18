@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -38,8 +39,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class RedirectPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(RedirectPrecompileSuite.class);
@@ -66,7 +69,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec balanceOf() {
+    final HapiSpec balanceOf() {
         final var totalSupply = 50;
         return defaultHapiSpec("balanceOf")
                 .given(
@@ -107,7 +110,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec redirectToInvalidToken() {
+    final HapiSpec redirectToInvalidToken() {
         return defaultHapiSpec("redirectToInvalidToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -141,7 +144,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec redirectToNullSelector() {
+    final HapiSpec redirectToNullSelector() {
         return defaultHapiSpec("redirectToNullSelector")
                 .given(
                         newKeyNamed(MULTI_KEY),

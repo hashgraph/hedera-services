@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -41,8 +42,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class SelfDestructSuite extends HapiSuite {
 
     private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
@@ -73,7 +76,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
+    final HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
         return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
@@ -98,7 +101,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructWhenCalling() {
+    final HapiSpec hscsEvm008SelfDestructWhenCalling() {
         return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
                 .given(
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
@@ -115,7 +118,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
                 .given(

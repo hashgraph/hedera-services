@@ -18,7 +18,11 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
@@ -46,6 +50,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateExpiryTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -53,13 +58,28 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
+/**
+ * Exercises update a token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_EXPIRATION_TIME.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_TOKEN_ID.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}.
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_EXPIRATION_TIME.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_TOKEN_ID.</li>
+ * </ol>
+ */
 public class UpdatesExpiryXTest extends AbstractContractXTest {
     private static final long EXPIRY_TIMESTAMP = Instant.now().plusSeconds(3600).toEpochMilli() / 1000;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
 
     @Override
     protected void doScenarioOperations() {
-        // Successfully update token via TOKEN_UPDATE_INFO V1
+        // Successfully update token via UPDATE_TOKEN_EXPIRY_INFO_V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1
@@ -69,15 +89,15 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // Successfully update token via TOKEN_UPDATE_INFO V2
+        // Should throw `INVALID_SIGNATURE`
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1
                         .encodeCallWithArgs(
-                                ERC20_TOKEN_ADDRESS,
-                                Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
+                                A_TOKEN_ADDRESS, Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
 
         // Fails if the expiration time is invalid
         runHtsCallAndExpectOnSuccess(
@@ -104,6 +124,58 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1
+                        .encodeCallWithArgs(
+                                INVALID_TOKEN_ADDRESS,
+                                Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+
+        // Successfully update token via UPDATE_TOKEN_EXPIRY_INFO_V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
+                                Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
+                        .array()),
+                assertSuccess());
+
+        // Should throw `INVALID_SIGNATURE`
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS, Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
+
+        // Fails if the expiration time is invalid
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, Tuple.of(123456L, asAddress(""), 0L))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(INVALID_EXPIRATION_TIME).array()),
+                        output));
+
+        // Fails if the renewal period is invalid
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS, Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, 1000L))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_RENEWAL_PERIOD).array()), output));
+
+        // should fail when token has invalid address
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
                         .encodeCallWithArgs(
                                 INVALID_TOKEN_ADDRESS,
                                 Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
@@ -140,6 +212,15 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .supplyKey(AN_ED25519_KEY)
                         .adminKey(SENDER_CONTRACT_ID_KEY)
                         .autoRenewAccountId(SENDER_ID)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyKey(Scenarios.ALICE.account().key())
+                        .adminKey(Scenarios.ALICE.account().key())
                         .build());
         return tokens;
     }

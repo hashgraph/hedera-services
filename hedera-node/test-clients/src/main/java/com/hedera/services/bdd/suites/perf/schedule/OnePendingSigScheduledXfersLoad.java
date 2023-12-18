@@ -80,7 +80,7 @@ public class OnePendingSigScheduledXfersLoad extends HapiSuite {
         });
     }
 
-    private HapiSpec runOnePendingSigXfers() {
+    final HapiSpec runOnePendingSigXfers() {
         return defaultHapiSpec("RunOnePendingSigXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when(runWithProvider(pendingSigsFactory())

@@ -35,6 +35,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import picocli.CommandLine;
@@ -57,7 +58,7 @@ public class ConfigManager {
 
     static ConfigManager from(Yahcli yahcli) throws IOException {
         var yamlLoc = yahcli.getConfigLoc();
-        var yamlIn = new Yaml(new Constructor(GlobalConfig.class));
+        var yamlIn = new Yaml(new Constructor(GlobalConfig.class, new LoaderOptions()));
         try (InputStream fin = Files.newInputStream(Paths.get(yamlLoc))) {
             GlobalConfig globalConfig = yamlIn.load(fin);
             return new ConfigManager(yahcli, globalConfig);

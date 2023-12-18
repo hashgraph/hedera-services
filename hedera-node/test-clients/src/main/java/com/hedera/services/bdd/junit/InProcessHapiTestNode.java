@@ -18,6 +18,10 @@ package com.hedera.services.bdd.junit;
 
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -25,11 +29,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.PlatformBuilder;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -41,7 +45,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link HapiTestNode} that runs the node in this JVM process. The advantage of the in-process
@@ -60,6 +68,7 @@ import java.util.concurrent.TimeoutException;
  * variable, which we cannot do when running in process. See ConfigProviderBase.
  */
 public class InProcessHapiTestNode implements HapiTestNode {
+    private static final Logger logger = LogManager.getLogger(InProcessHapiTestNode.class);
     /** The thread in which the Hedera node will run */
     private WorkerThread th;
     /** The name of the node, such as Alice or Bob */
@@ -72,6 +81,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
     private final Path workingDir;
     /** The port on which the grpc server will be listening */
     private final int grpcPort;
+
+    public static final int START_PORT = 10000;
+    public static final int STOP_PORT = 65535;
 
     /**
      * Create a new in-process node.
@@ -167,12 +179,90 @@ public class InProcessHapiTestNode implements HapiTestNode {
                 "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
     }
 
+    public void blockNetworkPort() {
+        if (th != null && th.hedera.isActive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Blocking Network port {} for node {}", grpcPort, nodeId);
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            try {
+                MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(
+                        "node " + nodeId + ": Interrupted while sleeping in waitForActive busy loop", e);
+            }
+        }
+    }
+
+    public void unblockNetworkPort() {
+        if (th != null && th.hedera.isActive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Unblocking Network port {} for node {}", grpcPort, nodeId);
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     @Override
     public void shutdown() {
         if (th != null && (th.hedera.isFrozen() || th.hedera.isActive())) {
-            if (th.hedera != null) {
-                th.hedera.shutdown();
-            }
+            th.hedera.shutdown();
             th.interrupt();
 
             // This is a hack, but it's the best I can do without classloader isolation and without a systematic
@@ -214,9 +304,16 @@ public class InProcessHapiTestNode implements HapiTestNode {
             threadsToStop.forEach(Thread::interrupt);
             threadsToStop.forEach(Thread::stop);
 
-            MerkleDb.setDefaultPath(null);
             ConstructableRegistry.getInstance().reset();
         }
+    }
+
+    public void waitForBehind(long seconds) throws TimeoutException {
+        waitFor(BEHIND, seconds);
+    }
+
+    public void waitForReconnectComplete(long seconds) throws TimeoutException {
+        waitFor(RECONNECT_COMPLETE, seconds);
     }
 
     @Override
@@ -240,11 +337,15 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void waitForFreeze(long seconds) throws TimeoutException {
+        waitFor(FREEZE_COMPLETE, seconds);
+    }
+
+    private void waitFor(PlatformStatus status, long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
-        while (th != null && !th.hedera.isFrozen()) {
+        while (th != null && th.hedera != null && th.hedera.getPlatformStatus().equals(status)) {
             if (System.currentTimeMillis() > waitUntil) {
                 throw new TimeoutException(
-                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not freeze!");
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not reach status " + status);
             }
 
             try {
@@ -270,15 +371,13 @@ public class InProcessHapiTestNode implements HapiTestNode {
         }
 
         final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
-        try {
-            if (Files.exists(saved)) {
-                Files.walk(saved)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
+        if (Files.exists(saved)) {
+            try (Stream<Path> paths = Files.walk(saved)) {
+                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+
+            } catch (IOException e) {
+                throw new RuntimeException("Could not delete saved state " + saved, e);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not delete saved state " + saved, e);
         }
     }
 

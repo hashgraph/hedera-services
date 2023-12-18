@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -28,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAli
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
@@ -40,6 +42,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Note that we cannot test the behavior of the network when the auto-created account expires,
@@ -48,6 +51,7 @@ import org.apache.logging.log4j.Logger;
  * the auto-created account is about to expire.
  */
 @HapiTestSuite
+@Tag(CRYPTO)
 public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
     public static final long INITIAL_BALANCE = 1000L;
@@ -78,7 +82,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec modifySigRequiredAfterAutoAccountCreation() {
+    final HapiSpec modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -121,7 +125,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateKeyOnAutoCreatedAccount() {
+    final HapiSpec updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
         SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(
@@ -129,7 +133,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                 KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
                 KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
 
-        return defaultHapiSpec("updateKeyOnAutoCreatedAccount")
+        return defaultHapiSpec("updateKeyOnAutoCreatedAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ALIAS),
                         newKeyNamed(complexKey).shape(ENOUGH_UNIQUE_SIGS),

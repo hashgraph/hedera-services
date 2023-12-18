@@ -34,7 +34,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
@@ -152,14 +151,12 @@ class PreconsensusEventReplayWorkflowTests {
                 .when(preconsensusEventWriter)
                 .beginStreamingNewEvents();
 
-        final StateManagementComponent stateManagementComponent = mock(StateManagementComponent.class);
         final ReservedSignedState latestImmutableState = mock(ReservedSignedState.class);
         when(latestImmutableState.isNull()).thenReturn(false);
         final SignedState signedState = mock(SignedState.class);
         when(signedState.getRound()).thenReturn(random.nextLong(1, 10000));
         when(signedState.getConsensusTimestamp()).thenReturn(randomInstant(random));
         when(latestImmutableState.get()).thenReturn(signedState);
-        when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -170,12 +167,13 @@ class PreconsensusEventReplayWorkflowTests {
                 Time.getCurrent(),
                 preconsensusEventFileManager,
                 preconsensusEventWriter,
-                eventValidator,
+                eventValidator::validateEvent,
                 eventIntakeTaskQueueThread,
                 consensusRoundHandler,
                 stateHashSignQueue,
-                stateManagementComponent,
-                minimumGenerationNonAncient);
+                minimumGenerationNonAncient,
+                () -> latestImmutableState,
+                () -> {});
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());
     }

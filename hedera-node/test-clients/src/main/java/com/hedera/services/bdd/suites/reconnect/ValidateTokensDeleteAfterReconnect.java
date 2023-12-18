@@ -60,7 +60,7 @@ public class ValidateTokensDeleteAfterReconnect extends HapiSuite {
         return List.of(runTransfersBeforeReconnect(), validateTokensAfterReconnect());
     }
 
-    private HapiSpec validateTokensAfterReconnect() {
+    final HapiSpec validateTokensAfterReconnect() {
         String token = "token";
         String account = "account";
         String adminKey = "admin";

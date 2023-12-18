@@ -32,9 +32,6 @@ import static org.mockito.Mockito.spy;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -42,6 +39,9 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayPipeline;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -197,7 +197,7 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator);
+                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         pipeline.replayEvents();
 
@@ -265,7 +265,7 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator);
+                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
 
@@ -333,7 +333,7 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator);
+                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
 
@@ -395,7 +395,10 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildThrowingIOIterator(events, eventCount / 2), eventValidator);
+                platformContext,
+                threadManager,
+                buildThrowingIOIterator(events, eventCount / 2),
+                eventValidator::validateEvent);
 
         assertThrows(UncheckedIOException.class, pipeline::replayEvents);
 

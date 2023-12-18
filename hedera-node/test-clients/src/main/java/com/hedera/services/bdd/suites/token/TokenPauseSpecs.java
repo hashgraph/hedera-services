@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -69,8 +70,10 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TOKEN)
 public final class TokenPauseSpecs extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
@@ -121,7 +124,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotAddPauseKeyViaTokenUpdate() {
+    final HapiSpec cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
@@ -131,7 +134,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotPauseWithInvalidPauseKey() {
+    final HapiSpec cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("cannotPauseWithInvalidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
@@ -139,7 +142,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec pausedTokenInCustomFeeCaseStudy() {
+    final HapiSpec pausedTokenInCustomFeeCaseStudy() {
         return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -184,7 +187,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec unpauseWorks() {
+    final HapiSpec unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
 
@@ -219,7 +222,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
+    final HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
@@ -301,7 +304,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec pausedFungibleTokenCannotBeUsed() {
+    final HapiSpec pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
         final String firstUser = FIRST_USER;
@@ -381,7 +384,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
+    final HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -411,7 +414,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
+    final HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";
         final var tokenPauseTransaction = "tokenPauseTxn";

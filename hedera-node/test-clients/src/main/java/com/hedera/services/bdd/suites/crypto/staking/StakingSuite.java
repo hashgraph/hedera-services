@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto.staking;
 
+import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY
 import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -62,8 +64,10 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TIME_CONSUMING)
 public class StakingSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(StakingSuite.class);
@@ -123,7 +127,8 @@ public class StakingSuite extends HapiSuite {
      * periods, a series of credits and debits are made to them, and they are confirmed to have
      * received the expected rewards (all zero).
      */
-    private HapiSpec zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
+    @HapiTest
+    final HapiSpec zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
         final var zeroStakeAccount = "zeroStakeAccount";
         final var numZeroStakeAccounts = 10;
         final var stakePeriodMins = 1L;
@@ -174,7 +179,8 @@ public class StakingSuite extends HapiSuite {
      * Tests a scenario in which Alice repeatedly transfers her balance to Baldwin right before the
      * end of a staking period, only to receive it back shortly after that period starts.
      */
-    private HapiSpec stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
+    @HapiTest
+    final HapiSpec stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
         final var alice = "alice";
         final var baldwin = "baldwin";
         final var stakePeriodMins = 1L;
@@ -255,7 +261,8 @@ public class StakingSuite extends HapiSuite {
      *
      * @return the spec described above
      */
-    private HapiSpec autoRenewalsCanTriggerStakingRewards() {
+    @HapiTest
+    final HapiSpec autoRenewalsCanTriggerStakingRewards() {
         final var initBalance = ONE_HBAR * 1000;
         final var minimalLifetime = 3;
         final var creation = "creation";
@@ -284,7 +291,8 @@ public class StakingSuite extends HapiSuite {
                 .then(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
     }
 
-    private HapiSpec canBeRewardedWithoutMinStakeIfSoConfigured() {
+    @HapiTest
+    final HapiSpec canBeRewardedWithoutMinStakeIfSoConfigured() {
         final var patientlyWaiting = "patientlyWaiting";
 
         return defaultHapiSpec("CanBeRewardedWithoutMinStakeIfSoConfigured")
@@ -315,7 +323,7 @@ public class StakingSuite extends HapiSuite {
                 .then(getAccountBalance(patientlyWaiting).logged());
     }
 
-    private HapiSpec secondOrderRewardSituationsWork() {
+    final HapiSpec secondOrderRewardSituationsWork() {
         final long totalStakeStartCase1 = 3 * ONE_HUNDRED_HBARS;
         final long expectedRewardRate = Math.max(0, Math.min(10 * ONE_HBAR, SOME_REWARD_RATE));
         final long rewardSumHistoryCase1 =
@@ -356,7 +364,7 @@ public class StakingSuite extends HapiSuite {
                                 .logged());
     }
 
-    private HapiSpec evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
+    final HapiSpec evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
         return defaultHapiSpec("EvenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -374,7 +382,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
-    private HapiSpec zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
+    final HapiSpec zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
         return defaultHapiSpec("ZeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -395,7 +403,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
-    private HapiSpec losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
+    final HapiSpec losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
         return defaultHapiSpec("LosingEvenAZeroBalanceStakerTriggersStakeeRewardSituation")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -413,7 +421,7 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
-    private HapiSpec getInfoQueriesReturnsPendingRewards() {
+    final HapiSpec getInfoQueriesReturnsPendingRewards() {
         final long expectedTotalStakedRewardStart = ONE_HUNDRED_HBARS + ONE_HUNDRED_HBARS;
         final long accountTotalStake = ONE_HUNDRED_HBARS;
         final long expectedRewardRate = Math.max(0, Math.min(10 * ONE_HBAR, SOME_REWARD_RATE));
@@ -467,7 +475,7 @@ public class StakingSuite extends HapiSuite {
                                 .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, expectedPendingReward))));
     }
 
-    private HapiSpec rewardPaymentsNotRepeatedInSamePeriod() {
+    final HapiSpec rewardPaymentsNotRepeatedInSamePeriod() {
         return defaultHapiSpec("rewardPaymentsNotRepeatedInSamePeriod")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
@@ -540,7 +548,7 @@ public class StakingSuite extends HapiSuite {
                                 .hasPaidStakingRewards(List.of()));
     }
 
-    private HapiSpec rewardsWorkAsExpectedWithReceiverSigRequired() {
+    final HapiSpec rewardsWorkAsExpectedWithReceiverSigRequired() {
         final long expectedTotalStakedRewardStart = ONE_HUNDRED_HBARS + ONE_HBAR;
         final long expectedRewardRate = Math.max(0, Math.min(10 * ONE_HBAR, SOME_REWARD_RATE));
         final long expectedRewardSumHistory =
@@ -596,7 +604,7 @@ public class StakingSuite extends HapiSuite {
                                 .logged());
     }
 
-    private HapiSpec rewardsWorkAsExpected() {
+    final HapiSpec rewardsWorkAsExpected() {
         final long expectedTotalStakedRewardStart = ONE_HUNDRED_HBARS + ONE_HBAR;
         final long expectedRewardRate = Math.max(0, Math.min(10 * ONE_HBAR, SOME_REWARD_RATE));
         final long expectedRewardSumHistory =
@@ -661,7 +669,7 @@ public class StakingSuite extends HapiSuite {
                                 .hasPaidStakingRewards(List.of()));
     }
 
-    private HapiSpec endOfStakingPeriodRecTest() {
+    final HapiSpec endOfStakingPeriodRecTest() {
         return defaultHapiSpec("EndOfStakingPeriodRecTest")
                 .given(
                         cryptoCreate("a1").balance(24000 * ONE_MILLION_HBARS).stakedNodeId(0),
@@ -694,7 +702,8 @@ public class StakingSuite extends HapiSuite {
                                 .logged());
     }
 
-    private HapiSpec rewardsOfDeletedAreRedirectedToBeneficiary() {
+    @HapiTest
+    final HapiSpec rewardsOfDeletedAreRedirectedToBeneficiary() {
         final var bob = "bob";
         final var deletion = "deletion";
         return defaultHapiSpec("RewardsOfDeletedAreRedirectedToBeneficiary")

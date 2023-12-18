@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.transferList;
@@ -65,6 +67,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -78,8 +81,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class AtomicCryptoTransferHTSSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(AtomicCryptoTransferHTSSuite.class);
@@ -111,7 +116,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
@@ -128,16 +133,20 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec cryptoTransferForHbarOnly() {
+    @HapiTest
+    final HapiSpec cryptoTransferForHbarOnly() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
         final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
         final var cryptoTransferRevertTxn = "cryptoTransferRevertTxn";
         final var cryptoTransferRevertNoKeyTxn = "cryptoTransferRevertNoKeyTxn";
         final var cryptoTransferRevertBalanceTooLowTxn = "cryptoTransferRevertBalanceTooLowTxn";
 
-        return defaultHapiSpec("cryptoTransferForHbarOnly")
+        return propertyPreservingHapiSpec("cryptoTransferForHbarOnly")
+                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
+                        overridingTwo(
+                                "contracts.allowAutoAssociations", "true",
+                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER2).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -318,13 +327,16 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                         htsPrecompileResult().withStatus(INVALID_ACCOUNT_AMOUNTS)))));
     }
 
-    private HapiSpec cryptoTransferForFungibleTokenOnly() {
-
+    @HapiTest
+    final HapiSpec cryptoTransferForFungibleTokenOnly() {
         final var cryptoTransferTxnForFungible = "cryptoTransferTxnForFungible";
 
-        return defaultHapiSpec("cryptoTransferForFungibleTokenOnly")
+        return propertyPreservingHapiSpec("cryptoTransferForFungibleTokenOnly")
+                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
+                        overridingTwo(
+                                "contracts.allowAutoAssociations", "true",
+                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
                         cryptoCreate(TOKEN_TREASURY),
@@ -390,11 +402,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                 .including(FUNGIBLE_TOKEN, RECEIVER, 50))));
     }
 
-    private HapiSpec cryptoTransferForNonFungibleTokenOnly() {
+    @HapiTest
+    final HapiSpec cryptoTransferForNonFungibleTokenOnly() {
         final var cryptoTransferTxnForNft = "cryptoTransferTxnForNft";
 
-        return defaultHapiSpec("cryptoTransferForNonFungibleTokenOnly")
+        return propertyPreservingHapiSpec("cryptoTransferForNonFungibleTokenOnly")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).receiverSigRequired(true),
@@ -461,11 +476,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, SENDER, RECEIVER, 1L))));
     }
 
-    private HapiSpec cryptoTransferHBarFungibleNft() {
+    @HapiTest
+    final HapiSpec cryptoTransferHBarFungibleNft() {
         final var cryptoTransferTxnForAll = "cryptoTransferTxnForAll";
 
-        return defaultHapiSpec("cryptoTransferHBarFungibleNft")
+        return propertyPreservingHapiSpec("cryptoTransferHBarFungibleNft")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -586,7 +604,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                         .transfers(including(tinyBarsFromTo(SENDER, RECEIVER, 50 * ONE_HBAR)))));
     }
 
-    private HapiSpec cryptoTransferAllowanceHbarToken() {
+    @HapiTest
+    final HapiSpec cryptoTransferAllowanceHbarToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -594,8 +613,10 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
         final var revertingTransferFromTxn2 = "revertingTxn";
         final var revertingTransferFromTxn3 = "revertingTxnNoApproval";
 
-        return defaultHapiSpec("cryptoTransferAllowanceHbarToken")
+        return propertyPreservingHapiSpec("cryptoTransferAllowanceHbarToken")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
@@ -746,15 +767,18 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                         .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    private HapiSpec cryptoTransferAllowanceFungibleToken() {
+    @HapiTest
+    final HapiSpec cryptoTransferAllowanceFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
         final var revertingTransferFromTxnFungible = "revertWhenMoreThanAllowanceFungible";
         final var revertingTransferFromTxn2 = "revertingTxn";
         final var revertingTransferFromTxn3 = "revertingTxnNoApproval";
-        return defaultHapiSpec("CryptoTransferAllowanceFungibleToken")
+        return propertyPreservingHapiSpec("CryptoTransferAllowanceFungibleToken")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
@@ -931,11 +955,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                         .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    private HapiSpec cryptoTransferAllowanceNft() {
+    @HapiTest
+    final HapiSpec cryptoTransferAllowanceNft() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
-        return defaultHapiSpec("cryptoTransferAllowanceNft")
+        return propertyPreservingHapiSpec("cryptoTransferAllowanceNft")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
@@ -1012,11 +1039,16 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, OWNER, RECEIVER, 2L))));
     }
 
-    private HapiSpec cryptoTransferSpecialAccounts() {
+    @HapiTest
+    final HapiSpec cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
-        return defaultHapiSpec("cryptoTransferEmptyKeyList")
+        return propertyPreservingHapiSpec("cryptoTransferEmptyKeyList")
+                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overridingTwo(
+                                "contracts.allowAutoAssociations", "true",
+                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(RECEIVER).balance(1 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),

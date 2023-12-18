@@ -59,7 +59,7 @@ public class BalanceValidation extends HapiSuite {
         return List.of(validateBalances());
     }
 
-    private HapiSpec validateBalances() {
+    final HapiSpec validateBalances() {
         return customHapiSpec("ValidateBalances")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

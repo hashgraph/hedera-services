@@ -59,7 +59,7 @@ public class SpecialAccountsAreExempted extends HapiSuite {
 
     @LeakyFeeSchedule
     @HapiTest
-    private HapiSpec feeScheduleControlAccountIsntCharged() {
+    final HapiSpec feeScheduleControlAccountIsntCharged() {
         ResponseCodeEnum[] acceptable = {SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED};
 
         return defaultHapiSpec("FeeScheduleControlAccountIsntCharged")

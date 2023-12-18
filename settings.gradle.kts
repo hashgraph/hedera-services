@@ -87,9 +87,9 @@ include(":swirlds-sign-tool", "platform-sdk/swirlds-sign-tool")
 
 include(":swirlds-config-api", "platform-sdk/swirlds-config-api")
 
-include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
+include(":swirlds-config-processor", "platform-sdk/swirlds-config-processor")
 
-include(":swirlds-config-benchmark", "platform-sdk/swirlds-config-benchmark")
+include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
 
@@ -102,8 +102,6 @@ include(":swirlds-merkle", "platform-sdk/swirlds-merkle")
 include(":swirlds-merkledb", "platform-sdk/swirlds-jasperdb")
 
 include(":swirlds-virtualmap", "platform-sdk/swirlds-virtualmap")
-
-include(":swirlds-platform-gui", "platform-sdk/swirlds-platform-gui")
 
 include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
 
@@ -140,7 +138,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "hip-796-SNAPSHOT"
+val hapiProtoVersion = "0.45.0-hip-796-SNAPSHOT"
 
 dependencyResolutionManagement {
     // Protobuf tool versions

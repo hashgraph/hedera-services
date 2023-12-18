@@ -28,11 +28,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -82,7 +83,7 @@ class EventDeduplicatorTests {
             final long generation,
             @NonNull final byte[] signature) {
 
-        final EventDescriptor descriptor = new EventDescriptor(hash, creatorId, generation);
+        final EventDescriptor descriptor = new EventDescriptor(hash, creatorId, generation, -1);
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getSignature()).thenReturn(signature);
@@ -125,8 +126,8 @@ class EventDeduplicatorTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        final EventDeduplicator deduplicator =
-                new EventDeduplicator(TestPlatformContextBuilder.create().build(), intakeEventCounter);
+        final EventDeduplicator deduplicator = new EventDeduplicator(
+                TestPlatformContextBuilder.create().build(), intakeEventCounter, mock(EventIntakeMetrics.class));
 
         int duplicateEventCount = 0;
         int ancientEventCount = 0;

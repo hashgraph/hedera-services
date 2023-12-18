@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.readableRevertReason;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.CallStatusStandardizer;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
@@ -58,6 +60,9 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
     @Mock
     private VerificationStrategy verificationStrategy;
+
+    @Mock
+    private CallStatusStandardizer callStatusStandardizer;
 
     @Mock
     private Predicate<Key> signatureTest;
@@ -141,6 +146,9 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
                         CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
+        given(callStatusStandardizer.codeForFailure(
+                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, frame, CryptoTransferTransactionBody.DEFAULT))
+                .willReturn(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
 
         givenRetryingSubject();
 
@@ -177,7 +185,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(tuweniEncodedRc(INVALID_RECEIVING_NODE_ACCOUNT), result.getOutput());
+        assertEquals(readableRevertReason(INVALID_RECEIVING_NODE_ACCOUNT), result.getOutput());
     }
 
     @Test
@@ -212,6 +220,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 approvalSwitchHelper,
+                callStatusStandardizer,
                 verificationStrategy,
                 systemAccountCreditScreen);
     }
@@ -228,6 +237,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 PRETEND_TRANSFER,
                 config,
                 null,
+                callStatusStandardizer,
                 verificationStrategy,
                 systemAccountCreditScreen);
     }
@@ -241,6 +251,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 null,
+                callStatusStandardizer,
                 verificationStrategy,
                 systemAccountCreditScreen);
     }

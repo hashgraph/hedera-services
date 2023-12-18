@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -37,8 +38,10 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class TxnReceiptRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnReceiptRegression.class);
 
@@ -65,7 +68,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec returnsInvalidForUnspecifiedTxnId() {
+    final HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
@@ -73,7 +76,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec returnsNotSupportedForMissingOp() {
+    final HapiSpec returnsNotSupportedForMissingOp() {
         return defaultHapiSpec("ReturnsNotSupportedForMissingOp")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when()
@@ -81,7 +84,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     // FUTURE: revisit this test, which isn't passing in modular or mono code
-    private HapiSpec receiptUnavailableAfterCacheTtl() {
+    final HapiSpec receiptUnavailableAfterCacheTtl() {
         return defaultHapiSpec("ReceiptUnavailableAfterCacheTtl")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when(sleepFor(200_000L))
@@ -89,7 +92,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec receiptUnknownBeforeConsensus() {
+    final HapiSpec receiptUnknownBeforeConsensus() {
         return defaultHapiSpec("ReceiptUnknownBeforeConsensus")
                 .given()
                 .when()
@@ -99,7 +102,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec receiptAvailableWithinCacheTtl() {
+    final HapiSpec receiptAvailableWithinCacheTtl() {
         return defaultHapiSpec("ReceiptAvailableWithinCacheTtl")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when()
@@ -107,7 +110,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec receiptUnavailableIfRejectedInPrecheck() {
+    final HapiSpec receiptUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("ReceiptUnavailableIfRejectedInPrecheck")
                 .given(cryptoCreate("misc").balance(1_000L))
                 .when(cryptoCreate("nope")
@@ -118,7 +121,7 @@ public class TxnReceiptRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec receiptNotFoundOnUnknownTransactionID() {
+    final HapiSpec receiptNotFoundOnUnknownTransactionID() {
         return defaultHapiSpec("receiptNotFoundOnUnknownTransactionID")
                 .given()
                 .when()

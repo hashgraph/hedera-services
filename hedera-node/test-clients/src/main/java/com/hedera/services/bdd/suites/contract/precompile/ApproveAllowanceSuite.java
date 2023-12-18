@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -49,6 +50,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -60,8 +62,10 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -69,8 +73,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ApproveAllowanceSuite extends HapiSuite {
 
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
@@ -110,10 +116,55 @@ public class ApproveAllowanceSuite extends HapiSuite {
                 htsTokenAllowance(),
                 htsTokenApprove(),
                 htsTokenApproveToInnerContract(),
+                nftAutoCreationIncludeAllowanceCheck(),
                 testIndirectApprovalWithDirectPrecompileCallee(),
                 testIndirectApprovalWithDelegateErc20Callee(),
                 testIndirectApprovalWithDelegatePrecompileCallee(),
                 testIndirectApprovalWithDirectErc20Callee());
+    }
+
+    @HapiTest
+    final HapiSpec nftAutoCreationIncludeAllowanceCheck() {
+        final var ownerAccount = "owningAlias";
+        final var receivingAlias = "receivingAlias";
+        return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ownerAccount),
+                        newKeyNamed(receivingAlias),
+                        // Accounts to be referenced with aliases as well
+                        cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
+                        // A non-fungible token with 6 serial nos
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY))
+                .when(
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("A"),
+                                        ByteString.copyFromUtf8("B"),
+                                        ByteString.copyFromUtf8("C"),
+                                        ByteString.copyFromUtf8("D"),
+                                        ByteString.copyFromUtf8("E"),
+                                        ByteString.copyFromUtf8("F"))),
+                        tokenAssociate(ownerAccount, List.of(NON_FUNGIBLE_TOKEN)),
+                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, ownerAccount)))
+                .then(cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                .setToken(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSenderAccountID(spec.registry().getAccountID(ownerAccount))
+                                        .setReceiverAccountID(spec.registry().getKeyAlias(receivingAlias))
+                                        .setSerialNumber(1L)
+                                        .setIsApproval(true)
+                                        .build())
+                                .build()))
+                        .signedBy(DEFAULT_PAYER)
+                        .fee(10 * ONE_HBAR)
+                        .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
     public static final String DELEGATE_PRECOMPILE_CALLEE = "PretendCallee";
@@ -127,7 +178,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTokenApproveToInnerContract() {
+    final HapiSpec htsTokenApproveToInnerContract() {
         final var approveTxn = "NestedChildren";
         final var nestedContract = DIRECT_ERC_CALLEE;
         final var theSpender = SPENDER;
@@ -194,7 +245,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTokenAllowance() {
+    final HapiSpec htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
 
@@ -251,7 +302,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsTokenApprove() {
+    final HapiSpec htsTokenApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
 
@@ -312,7 +363,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiNftIsApprovedForAll() {
+    final HapiSpec hapiNftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
 
@@ -400,7 +451,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiNftGetApproved() {
+    final HapiSpec hapiNftGetApproved() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -460,7 +511,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiNftSetApprovalForAll() {
+    final HapiSpec hapiNftSetApprovalForAll() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -527,27 +578,27 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDelegatePrecompileCallee() {
+    final HapiSpec testIndirectApprovalWithDelegatePrecompileCallee() {
         return testIndirectApprovalWith("DelegatePrecompileCallee", DELEGATE_PRECOMPILE_CALLEE, false);
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDirectPrecompileCallee() {
+    final HapiSpec testIndirectApprovalWithDirectPrecompileCallee() {
         return testIndirectApprovalWith("DirectPrecompileCallee", DIRECT_PRECOMPILE_CALLEE, true);
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDelegateErc20Callee() {
+    final HapiSpec testIndirectApprovalWithDelegateErc20Callee() {
         return testIndirectApprovalWith("DelegateErc20Callee", DELEGATE_ERC_CALLEE, false);
     }
 
     @HapiTest
-    private HapiSpec testIndirectApprovalWithDirectErc20Callee() {
+    final HapiSpec testIndirectApprovalWithDirectErc20Callee() {
         return testIndirectApprovalWith("DirectErc20Callee", DIRECT_ERC_CALLEE, true);
     }
 
     @BddMethodIsNotATest
-    private HapiSpec testIndirectApprovalWith(
+    final HapiSpec testIndirectApprovalWith(
             @NonNull final String testName, @NonNull final String callee, final boolean expectGrantedApproval) {
 
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
