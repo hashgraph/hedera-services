@@ -64,7 +64,7 @@ public class Create2OperationV1SecurityModelSuite extends HapiSuite {
         return List.of(childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor());
     }
 
-    private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
+    final HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
         final var ft = "fungibleToken";
         final var multiKey = SWISS;
         final var creationAndAssociation = "creationAndAssociation";

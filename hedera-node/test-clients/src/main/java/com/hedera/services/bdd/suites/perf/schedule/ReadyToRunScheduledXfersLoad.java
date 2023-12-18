@@ -71,7 +71,7 @@ public class ReadyToRunScheduledXfersLoad extends HapiSuite {
         });
     }
 
-    private HapiSpec runReadyToRunXfers() {
+    final HapiSpec runReadyToRunXfers() {
         return defaultHapiSpec("RunReadyToRunXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when(runWithProvider(readyToRunXfersFactory())

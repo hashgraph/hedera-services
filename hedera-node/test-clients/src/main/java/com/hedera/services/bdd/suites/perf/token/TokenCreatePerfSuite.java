@@ -42,7 +42,7 @@ public class TokenCreatePerfSuite extends LoadTest {
         return List.of(runTokenCreates());
     }
 
-    private HapiSpec runTokenCreates() {
+    final HapiSpec runTokenCreates() {
         final int NUM_CREATES = 100000;
         return defaultHapiSpec("tokenCreatePerf")
                 .given()

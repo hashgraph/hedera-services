@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.workflows.TransactionScenarioBuilder.scenario;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +41,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -52,6 +54,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
@@ -64,6 +67,7 @@ import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -440,6 +444,29 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // But we do see this transaction registered with the deduplication cache
             verifyNoInteractions(deduplicationCache);
         }
+
+        /**
+         * If a node's event contains transactions that DO NOT have that node's account as the node account ID of the
+         * transaction, then the node is trying to send transactions that don't belong to it.
+         */
+        @Test
+        @DisplayName("Unparseable previous result is reused")
+        void reusesUnparseableTransactionResult() {
+            // Given the result of an unparseable transaction that is perfectly good
+            final var previousResult =
+                    nodeDueDiligenceFailure(NODE_1.nodeAccountID(), INVALID_TRANSACTION, null, DEFAULT_CONFIG_VERSION);
+
+            // When we pre-handle the transaction
+            final var result = workflow.preHandleTransaction(
+                    NODE_1.nodeAccountID(),
+                    storeFactory,
+                    storeFactory.getStore(ReadableAccountStore.class),
+                    new SwirldTransaction(new byte[2]),
+                    previousResult);
+
+            // Then the entire result is re-used
+            assertThat(result).isSameAs(previousResult);
+        }
     }
 
     /**
@@ -593,6 +620,101 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
             // And we do see this transaction registered with the deduplication cache
             verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
+        }
+
+        @Test
+        @DisplayName(
+                "Happy path with Key-based signature verification and a result derived from different config version")
+        void happyPathWithoutReuse(@Mock SignatureVerificationFuture sigFuture) throws Exception {
+            // Given a transaction that is perfectly good
+            final var payerAccount = ALICE.accountID();
+            final var payerKey = ALICE.keyInfo().publicKey();
+            final var txInfo = scenario().withPayer(payerAccount).txInfo();
+            final var txBytes = asByteArray(txInfo.transaction());
+            final Transaction platformTx = new SwirldTransaction(txBytes);
+            when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
+            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
+            when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(payerKey, sigFuture));
+            final var previousResult = new PreHandleResult(
+                    payerAccount,
+                    payerKey,
+                    SO_FAR_SO_GOOD,
+                    OK,
+                    new TransactionScenarioBuilder().txInfo(),
+                    Set.of(),
+                    Set.of(),
+                    Set.of(),
+                    Map.of(payerKey, sigFuture),
+                    null,
+                    DEFAULT_CONFIG_VERSION + 1);
+
+            // When we pre-handle the transaction
+            final var result = workflow.preHandleTransaction(
+                    NODE_1.nodeAccountID(),
+                    storeFactory,
+                    storeFactory.getStore(ReadableAccountStore.class),
+                    platformTx,
+                    previousResult);
+
+            // Then the transaction pre-handle succeeds!
+            assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
+            assertThat(result.responseCode()).isEqualTo(OK);
+            assertThat(result.payer()).isEqualTo(ALICE.accountID());
+            final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+            final KeyVerifier verifier = new DefaultKeyVerifier(1, config, result.verificationResults());
+            final var payerFutureResult = verifier.verificationFor(payerKey);
+            assertThat(payerFutureResult.passed()).isTrue();
+            assertThat(result.txInfo()).isNotNull();
+            assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
+        }
+
+        @Test
+        @DisplayName("Happy path with Key-based signature verification re-using previous verification results")
+        void happyPathWithFullReuseOfPreviousResult(@Mock SignatureVerificationFuture sigFuture) throws Exception {
+            // Given a transaction that is perfectly good
+            final var payerAccount = ALICE.accountID();
+            final var payerKey = ALICE.keyInfo().publicKey();
+            final var txInfo = scenario().withPayer(payerAccount).txInfo();
+            final var txBytes = asByteArray(txInfo.transaction());
+            final Transaction platformTx = new SwirldTransaction(txBytes);
+            when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
+            final var previousResult = new PreHandleResult(
+                    payerAccount,
+                    payerKey,
+                    SO_FAR_SO_GOOD,
+                    OK,
+                    new TransactionScenarioBuilder().txInfo(),
+                    Set.of(),
+                    Set.of(),
+                    Set.of(),
+                    Map.of(payerKey, sigFuture),
+                    null,
+                    DEFAULT_CONFIG_VERSION);
+
+            // When we pre-handle the transaction
+            final var result = workflow.preHandleTransaction(
+                    NODE_1.nodeAccountID(),
+                    storeFactory,
+                    storeFactory.getStore(ReadableAccountStore.class),
+                    platformTx,
+                    previousResult);
+
+            // Then the transaction pre-handle succeeds!
+            assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
+            assertThat(result.responseCode()).isEqualTo(OK);
+            assertThat(result.payer()).isEqualTo(ALICE.accountID());
+            final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+            final KeyVerifier verifier = new DefaultKeyVerifier(1, config, result.verificationResults());
+            final var payerFutureResult = verifier.verificationFor(payerKey);
+            assertThat(payerFutureResult.passed()).isTrue();
+            assertThat(result.txInfo()).isNotNull();
+            assertThat(result.txInfo()).isSameAs(previousResult.txInfo());
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            // And we do see this transaction registered with the deduplication cache
+            verifyNoInteractions(deduplicationCache);
         }
 
         @Test
