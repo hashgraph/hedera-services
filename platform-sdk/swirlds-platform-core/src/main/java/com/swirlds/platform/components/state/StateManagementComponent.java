@@ -35,10 +35,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface StateManagementComponent
         extends PlatformComponent, SignedStateToLoadConsumer, NewSignedStateFromTransactionsConsumer {
-
-    /**
-     * Get the signed state manager.
-     */
-    @NonNull
-    SignedStateManager getSignedStateManager();
 }

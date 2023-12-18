@@ -527,14 +527,31 @@ public class SwirldsPlatform implements Platform {
             latestCompleteState.setState(ss.reserve("setting latest complete state"));
         };
 
+        final Consumer<SignedState> signatureCollectionDone = ss -> {
+            /*
+             * Signature for a signed state is now done. We should save it to disk, if it should be saved. The state
+             * may or may not have all its signatures collected.
+             */
+            if (ss.isStateToSave()) {
+                platformWiring.getSaveStateToDiskInput().put(ss.reserve("save to disk"));
+            }
+        };
+        final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
+        final SignedStateManager signedStateManager = new SignedStateManager(
+                platformContext.getConfiguration().getConfigData(StateConfig.class),
+                signedStateMetrics,
+                newLatestCompleteStateConsumer,
+                signatureCollectionDone::accept,
+                signatureCollectionDone::accept);
+
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 threadManager,
                 dispatchBuilder,
-                newLatestCompleteStateConsumer,
                 this::handleFatalError,
-                platformWiring.getSaveStateToDiskInput()::put,
-                platformWiring.getSignStateInput()::put);
+                platformWiring.getSignStateInput()::put,
+                signedStateManager::addState,
+                signedStateMetrics);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
@@ -558,8 +575,6 @@ public class SwirldsPlatform implements Platform {
         }
 
         components.add(stateManagementComponent);
-
-        final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
 
         final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
                 new PreconsensusSystemTransactionManager();

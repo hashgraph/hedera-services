@@ -36,6 +36,7 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -129,53 +130,6 @@ class StateManagementComponentTests {
                 2,
                 lastCompleteSignedState.getReservationCount(),
                 "Incorrect number of reservations for state round " + lastCompleteSignedState.getRound());
-    }
-
-    /**
-     * Verify that as signatures are sent to the component, various consumers are invoked
-     */
-    @Test
-    @DisplayName("State signatures are applied and consumers are invoked")
-    void stateSignaturesAppliedAndTracked() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final DefaultStateManagementComponent component = newStateManagementComponent();
-
-        component.start();
-
-        final int firstRound = 1;
-        final int lastRound = 100;
-
-        for (int roundNum = firstRound; roundNum < lastRound; roundNum++) {
-            final SignedState signedState = new RandomSignedStateGenerator(random)
-                    .setRound(roundNum)
-                    .setSigningNodeIds(List.of())
-                    .build();
-
-            component.newSignedStateFromTransactions(signedState.reserve("test"));
-
-            if (roundNum % 2 == 0) {
-                // Send signatures from all nodes for this signed state
-                allNodesSign(signedState, component);
-
-                // This state should be sent out as the latest complete state
-                final int finalRoundNum = roundNum;
-                AssertionUtils.assertEventuallyDoesNotThrow(
-                        () -> verifyNewLatestCompleteStateConsumer(finalRoundNum / 2, signedState),
-                        Duration.ofSeconds(2),
-                        "The unit test failed.");
-            }
-        }
-
-        component.stop();
-    }
-
-    private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
-        final AddressBook addressBook = signedState.getAddressBook();
-        IntStream.range(0, NUM_NODES).forEach(index -> component
-                .getSignedStateManager()
-                .handlePreconsensusSignatureTransaction(
-                        addressBook.getNodeId(index),
-                        stateSignatureTransaction(addressBook.getNodeId(index), signedState)));
     }
 
     @NonNull
@@ -272,10 +226,10 @@ class StateManagementComponentTests {
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
                 dispatchBuilder,
-                newLatestCompleteStateConsumer::consume,
                 (msg, t, code) -> {},
-                rss -> {},
-                signer);
+                signer,
+                ss->{},
+                new SignedStateMetrics(new NoOpMetrics()));
 
         dispatchBuilder.start();
 
