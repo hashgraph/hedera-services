@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.platform.NodeId;
@@ -30,6 +29,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.EventIntakePhase;

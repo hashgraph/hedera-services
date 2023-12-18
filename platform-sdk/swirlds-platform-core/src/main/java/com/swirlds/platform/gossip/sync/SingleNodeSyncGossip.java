@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
@@ -30,6 +29,7 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
