@@ -63,7 +63,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         }
         final var spenderAccount = enhancement.nativeOperations().getAccount(spender.accountNum());
         final var body = callGrantApproval();
-        if (spenderAccount == null) {
+        if (spenderAccount == null && spender.accountNum() != 0) {
             var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
             var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
             var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);

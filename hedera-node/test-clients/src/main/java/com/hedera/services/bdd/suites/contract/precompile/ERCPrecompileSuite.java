@@ -1708,14 +1708,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .addNftAllowance(A_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS, true, List.of())
                                 .signedBy(DEFAULT_PAYER, A_CIVILIAN)
                                 .fee(ONE_HBAR),
-                        //                        sourcing(() -> contractCall(
-                        //                                        SOME_ERC_721_SCENARIOS,
-                        //                                        REVOKE_SPECIFIC_APPROVAL,
-                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                        //                                        BigInteger.ONE)
-                        //                                .via("B")
-                        //                                .gas(1_000_000))
-                        //                        // These should work because the contract is an operator for aCivilian
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        REVOKE_SPECIFIC_APPROVAL,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.ONE)
+                                .via("B")
+                                .gas(1_000_000)),
+                        // These should work because the contract is an operator for aCivilian
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         DO_SPECIFIC_APPROVAL,
@@ -1760,17 +1760,16 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .addNftAllowance(B_CIVILIAN, NF_TOKEN, A_CIVILIAN, false, List.of(5L))
                                 .signedBy(DEFAULT_PAYER, B_CIVILIAN)
                                 .fee(ONE_HBAR),
-                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasSpenderID(A_CIVILIAN)
+                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasSpenderID(A_CIVILIAN),
                         // * Because contract is operator for bCivilian, it can revoke aCivilian as
                         // spender for 5L
-                        //                        sourcing(() -> contractCall(
-                        //                                        SOME_ERC_721_SCENARIOS,
-                        //                                        REVOKE_SPECIFIC_APPROVAL,
-                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                        //                                        BigInteger.valueOf(5))
-                        //                                .gas(1_000_000)),
-                        //                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender()
-                        );
+                        sourcing(() -> contractCall(
+                                        SOME_ERC_721_SCENARIOS,
+                                        REVOKE_SPECIFIC_APPROVAL,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.valueOf(5))
+                                .gas(1_000_000)),
+                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
     }
 
     @HapiTest
