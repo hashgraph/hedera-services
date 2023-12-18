@@ -582,7 +582,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Amount '" + expected + "' and '" + actual
                                 + "' varied by more than " + maxVariation + " tinybar - "
                                 + mismatchContext.get());
-            } else if (("accountNum".equals(fieldName) || "contractNum".equals(fieldName)) && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
+            } else if (("accountNum".equals(fieldName) || "contractNum".equals(fieldName))
+                    && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
