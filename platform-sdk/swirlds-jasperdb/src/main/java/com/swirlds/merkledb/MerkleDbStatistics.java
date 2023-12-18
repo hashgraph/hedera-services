@@ -131,15 +131,15 @@ public class MerkleDbStatistics {
      */
     public MerkleDbStatistics(final String label) {
         this.label = Objects.requireNonNull(label, "label must not be null");
-        this.hashesStoreCompactionTimeMsList = new ArrayList<>();
-        this.hashesStoreCompactionSavedSpaceMbList = new ArrayList<>();
-        this.hashesStoreFileSizeByLevelMbList = new ArrayList<>();
-        this.leavesStoreCompactionTimeMsList = new ArrayList<>();
-        this.leavesStoreCompactionSavedSpaceMbList = new ArrayList<>();
-        this.leavesStoreFileSizeByLevelMbList = new ArrayList<>();
-        this.leafKeysStoreCompactionTimeMsList = new ArrayList<>();
-        this.leafKeysStoreCompactionSavedSpaceMbList = new ArrayList<>();
-        this.leafKeysStoreFileSizeByLevelMbList = new ArrayList<>();
+        hashesStoreCompactionTimeMsList = new ArrayList<>();
+        hashesStoreCompactionSavedSpaceMbList = new ArrayList<>();
+        hashesStoreFileSizeByLevelMbList = new ArrayList<>();
+        leavesStoreCompactionTimeMsList = new ArrayList<>();
+        leavesStoreCompactionSavedSpaceMbList = new ArrayList<>();
+        leavesStoreFileSizeByLevelMbList = new ArrayList<>();
+        leafKeysStoreCompactionTimeMsList = new ArrayList<>();
+        leafKeysStoreCompactionSavedSpaceMbList = new ArrayList<>();
+        leafKeysStoreFileSizeByLevelMbList = new ArrayList<>();
     }
 
     private static IntegerGauge buildIntegerGauge(final Metrics metrics, final String name, final String description) {
@@ -168,7 +168,7 @@ public class MerkleDbStatistics {
      *
      * @param metrics
      * 		reference to the metrics system
-     * @throws IllegalArgumentException if {@code metrics} is {@code null}
+     * @throws NullPointerException if {@code metrics} is {@code null}
      */
     public void registerMetrics(final Metrics metrics) {
         Objects.requireNonNull(metrics, "metrics must not be null");
