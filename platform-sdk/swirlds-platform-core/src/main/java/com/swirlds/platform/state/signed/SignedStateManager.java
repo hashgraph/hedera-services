@@ -26,7 +26,6 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,8 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
@@ -94,18 +91,6 @@ public class SignedStateManager {
     private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer;
     private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
-
-    /**
-     * The timestamp of the first state processed by this class since the last restart, or null if no state has been
-     * processed yet.
-     */
-    private final AtomicReference<Instant> firstStateTimestamp = new AtomicReference<>(null);
-
-    /**
-     * The round number of the first state processed by this class since the last restart, or -1 if no state has been
-     * processed yet.
-     */
-    private final AtomicLong firstStateRound = new AtomicLong(-1);
 
     /**
      * Start empty, with no known signed states. The number of addresses in platform.hashgraph.getAddressBook() must not
@@ -200,11 +185,6 @@ public class SignedStateManager {
                     "Unhashed state for round " + signedState.getRound() + " added to the signed state manager");
         }
 
-        if (firstStateTimestamp.get() == null) {
-            firstStateTimestamp.set(signedState.getState().getPlatformState().getConsensusTimestamp());
-            firstStateRound.set(signedState.getState().getPlatformState().getRound());
-        }
-
         // Double check that the signatures on this state are valid.
         // They may no longer be valid if we have done a data migration.
         signedState.pruneInvalidSignatures();
@@ -292,28 +272,6 @@ public class SignedStateManager {
 
             addSignature(reservedState.get(), signerId, transaction.getStateSignature());
         }
-    }
-
-    /**
-     * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
-     * total consensus time that this node has been operating for.
-     *
-     * @return the consensus timestamp of the first state ingested by the signed state manager, or null if no states
-     * have been ingested yet
-     */
-    @Nullable
-    public Instant getFirstStateTimestamp() {
-        return firstStateTimestamp.get();
-    }
-
-    /**
-     * Get the round of the first state ingested by the signed state manager. Useful for computing the total number of
-     * elapsed rounds since startup.
-     *
-     * @return the round of the first state ingested by the signed state manager, or -1 if no states have been ingested
-     */
-    public long getFirstStateRound() {
-        return firstStateRound.get();
     }
 
     /**
