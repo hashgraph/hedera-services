@@ -35,6 +35,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedAccountId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogFrom;
