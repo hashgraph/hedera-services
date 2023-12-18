@@ -119,12 +119,6 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         assertNull(manager.getLatestSignedState("test"));
         assertEquals(-1, manager.getLastCompleteRound());
 
-        try (final ReservedSignedState wrapper =
-                manager.find(emergencyStateCriteria(stateFromDisk.getRound(), stateHash), "test")) {
-            assertNotNull(wrapper.get(), "Should have returned a state");
-            assertEquals(stateFromDisk, wrapper.get(), "Should have returned the state from disk");
-        }
-
         assertEquals(
                 2,
                 stateFromDisk.getReservationCount(),

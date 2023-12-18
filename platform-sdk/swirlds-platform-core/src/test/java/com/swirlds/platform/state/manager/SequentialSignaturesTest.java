@@ -134,31 +134,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             validateCallbackCounts(0, Math.max(0, round - roundAgeToSign + 1));
         }
 
-        final long lastCompletedRound;
-        try (final ReservedSignedState wrapper = manager.getLatestSignedState("test")) {
-            lastCompletedRound = wrapper.get().getRound();
-        }
-
-        for (int round = 0; round < count; round++) {
-            final long finalRound = round;
-            try (final ReservedSignedState wrapper = manager.find(state -> state.getRound() == finalRound, "test")) {
-
-                final SignedState foundState = wrapper.getNullable();
-
-                if (round < count - roundsToKeepAfterSigning - 1) {
-                    assertNull(foundState);
-                    continue;
-                }
-                assertNotNull(foundState);
-
-                if (foundState.getRound() <= lastCompletedRound) {
-                    assertTrue(foundState.isComplete());
-                } else {
-                    assertFalse(foundState.isComplete());
-                }
-            }
-        }
-
         // Check reservation counts.
         validateReservationCounts(round -> round < signedStates.size() - roundsToKeepAfterSigning - 1);
 

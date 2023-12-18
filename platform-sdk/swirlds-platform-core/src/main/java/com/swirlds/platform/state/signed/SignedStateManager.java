@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
@@ -40,7 +38,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 /**
  * <p>
@@ -60,7 +57,7 @@ import java.util.function.Predicate;
  * </li>
  * </ul>
  */
-public class SignedStateManager implements SignedStateFinder {
+public class SignedStateManager {
 
     /**
      * The latest signed state. May be unhashed. May or may not have all of its signatures.
@@ -295,33 +292,6 @@ public class SignedStateManager implements SignedStateFinder {
 
             addSignature(reservedState.get(), signerId, transaction.getStateSignature());
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized @NonNull ReservedSignedState find(
-            @NonNull final Predicate<SignedState> criteria, @NonNull final String reason) {
-
-        Objects.requireNonNull(criteria);
-        Objects.requireNonNull(reason);
-
-        final List<SignedState> allStates = new ArrayList<>();
-
-        completeStates.atomicIteration(it -> it.forEachRemaining(allStates::add));
-        incompleteStates.atomicIteration(it -> it.forEachRemaining(allStates::add));
-
-        // Sort the list from the highest round to the lowest round
-        allStates.sort((a, b) -> Long.compare(b.getRound(), a.getRound()));
-
-        for (final SignedState signedState : allStates) {
-            if (criteria.test(signedState)) {
-                return signedState.reserve(reason);
-            }
-        }
-
-        return createNullReservation();
     }
 
     /**
