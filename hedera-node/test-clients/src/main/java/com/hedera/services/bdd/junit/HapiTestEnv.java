@@ -18,6 +18,8 @@ package com.hedera.services.bdd.junit;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HapiTestEnv {
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
@@ -41,54 +45,80 @@ public class HapiTestEnv {
     public HapiTestEnv(@NonNull final String testName, final boolean cluster, final boolean useInProcessAlice) {
         final var numNodes = cluster ? CLUSTER_SIZE : 1;
         try {
-            final var sb = new StringBuilder();
-            sb.append("swirld, ")
-                    .append(testName)
-                    .append("\n")
-                    .append("\n# This next line is, hopefully, ignored.\n")
-                    .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
-            for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-                final var nodeName = NODE_NAMES[nodeId];
-                final var firstChar = nodeName.charAt(0);
-                final var account = "0.0." + (3 + nodeId);
-                sb.append("address, ")
-                        .append(nodeId)
-                        .append(", ")
-                        .append(firstChar)
-                        .append(", ")
-                        .append(nodeName)
-                        .append(", 1, 127.0.0.1, ")
-                        .append(FIRST_GOSSIP_PORT + (nodeId * 2))
-                        .append(", 127.0.0.1, ")
-                        .append(FIRST_GOSSIP_TLS_PORT + (nodeId * 2))
-                        .append(", ")
-                        .append(account)
-                        .append("\n");
-                nodeHosts.add("127.0.0.1:" + (FIRST_GRPC_PORT + (nodeId * 2)) + ":" + account);
-            }
-            sb.append("\nnextNodeId, ").append(numNodes).append("\n");
-            final String configText = sb.toString();
+            final String configText = createAddressBook(testName, numNodes);
+            setupNodes(useInProcessAlice, numNodes, configText);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-            for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-                final Path workingDir =
-                        Path.of("./build/hapi-test/node" + nodeId).normalize();
-                setupWorkingDirectory(workingDir, configText);
-                final String nodeName = NODE_NAMES[nodeId];
-                final AccountID acct =
-                        AccountID.newBuilder().accountNum(3L + nodeId).build();
-                if (useInProcessAlice && nodeId == 0) {
-                    nodes.add(new InProcessHapiTestNode(
-                            nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT, FIRST_GOSSIP_PORT));
-                } else {
-                    nodes.add(new SubProcessHapiTestNode(
-                            nodeName,
-                            nodeId,
-                            acct,
-                            workingDir,
-                            FIRST_GRPC_PORT + (nodeId * 2),
-                            FIRST_GOSSIP_PORT + (nodeId * 2)));
-                }
+    private void setupNodes(final boolean useInProcessAlice, final int numNodes, final String configText) {
+        for (int nodeId = 0; nodeId < numNodes; nodeId++) {
+            final Path workingDir =
+                    Path.of("./build/hapi-test/node" + nodeId).normalize();
+            setupWorkingDirectory(workingDir, configText);
+            final String nodeName = NODE_NAMES[nodeId];
+            final AccountID acct =
+                    AccountID.newBuilder().accountNum(3L + nodeId).build();
+            if (useInProcessAlice && nodeId == 0) {
+                nodes.add(new InProcessHapiTestNode(
+                        nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT, FIRST_GOSSIP_PORT));
+            } else {
+                nodes.add(new SubProcessHapiTestNode(
+                        nodeName,
+                        nodeId,
+                        acct,
+                        workingDir,
+                        FIRST_GRPC_PORT + (nodeId * 2),
+                        FIRST_GOSSIP_PORT + (nodeId * 2)));
             }
+        }
+    }
+
+    @NotNull
+    private String createAddressBook(final @NotNull String testName, final int numNodes) {
+        final var sb = new StringBuilder();
+        sb.append("swirld, ")
+                .append(testName)
+                .append("\n")
+                .append("\n# This next line is, hopefully, ignored.\n")
+                .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
+        for (int nodeId = 0; nodeId < numNodes; nodeId++) {
+            final var nodeName = NODE_NAMES[nodeId];
+            final var firstChar = nodeName.charAt(0);
+            final var account = "0.0." + (3 + nodeId);
+            final var networkAliasSuffix = nodeId + 1;
+            final var networkAlias = "127.0.1." + networkAliasSuffix;
+            setupNetworkAlias(networkAlias);
+            sb.append("address, ")
+                    .append(nodeId)
+                    .append(", ")
+                    .append(firstChar)
+                    .append(", ")
+                    .append(nodeName)
+                    .append(", 1, ")
+                    .append(networkAlias)
+                    .append(", ")
+                    .append(FIRST_GOSSIP_PORT + (nodeId * 2))
+                    .append(", ")
+                    .append(networkAlias)
+                    .append(", ")
+                    .append(FIRST_GOSSIP_TLS_PORT + (nodeId * 2))
+                    .append(", ")
+                    .append(account)
+                    .append("\n");
+            nodeHosts.add(networkAlias + ":" + (FIRST_GRPC_PORT + (nodeId * 2)) + ":" + account);
+        }
+        return sb.append("\nnextNodeId, ").append(numNodes).append("\n").toString();
+    }
+
+    private void setupNetworkAlias(@NonNull final String aliasAddress){
+        final ProcessBuilder pb = new ProcessBuilder();
+        pb.command("/usr/bin/env", "bash", "-c", "sudo ifconfig lo0 alias " + aliasAddress);
+        pb.inheritIO();
+        try {
+            final Process process = pb.start();
+            process.waitFor(60L, SECONDS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

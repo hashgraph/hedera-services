@@ -111,12 +111,12 @@
 
   </Appenders>
   <Loggers>
-    <Root level="FATAL">
+    <Root level="TRACE">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="INFO" additivity="false">
+    <Logger name="com.swirlds" level="TRACE" additivity="false">
       <AppenderRef ref="fileLog">
         <Filters>
           <!-- MerkleDb & Virtual Merkle -->
@@ -161,7 +161,7 @@
         <MarkerFilter marker="EXCEPTION"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="TESTING_EXCEPTIONS"     onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SOCKET_EXCEPTIONS"      onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
 
         <!-- Errors -->
         <MarkerFilter marker="INVALID_EVENT_ERROR"    onMatch="ACCEPT" onMismatch="NEUTRAL"/>
@@ -170,8 +170,8 @@
         <MarkerFilter marker="SYNC_START"             onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SYNC_DONE"              onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SYNC_ERROR"             onMatch="DENY"   onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="SYNC"                   onMatch="DENY"   onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="HEARTBEAT"              onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SYNC"                   onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="HEARTBEAT"              onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
 
         <!-- Platform Events (Debug) -->
         <MarkerFilter marker="CREATE_EVENT"           onMatch="DENY"   onMismatch="NEUTRAL"/>
