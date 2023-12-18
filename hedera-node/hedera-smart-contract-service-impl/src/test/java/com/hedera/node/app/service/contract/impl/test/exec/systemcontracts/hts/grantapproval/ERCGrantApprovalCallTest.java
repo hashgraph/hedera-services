@@ -42,7 +42,9 @@ import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.H
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -125,6 +127,31 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
                         .getOutputs()
                         .encodeElements()),
+                result.getOutput());
+    }
+
+    @Test
+    void erc721approveFailsWithInvalidSpenderAllowance() {
+        subject = new ERCGrantApprovalCall(
+                mockEnhancement(),
+                systemContractGasCalculator,
+                verificationStrategy,
+                OWNER_ID,
+                NON_FUNGIBLE_TOKEN_ID,
+                UNAUTHORIZED_SPENDER_ID,
+                BigInteger.valueOf(100L),
+                TokenType.NON_FUNGIBLE_UNIQUE);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
+        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
+        given(token.treasuryAccountId()).willReturn(OWNER_ID);
+        given(nativeOperations.getAccount(anyLong())).willReturn(null).willReturn(account);
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(State.REVERT, result.getState());
+        assertEquals(
+                Bytes.wrap(ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID
+                        .protoName()
+                        .getBytes()),
                 result.getOutput());
     }
 
