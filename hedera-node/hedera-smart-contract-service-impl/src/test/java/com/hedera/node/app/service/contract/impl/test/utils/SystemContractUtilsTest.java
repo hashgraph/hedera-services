@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.contract.impl.test.utils;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -35,12 +37,20 @@ class SystemContractUtilsTest {
 
     @Test
     void validateSuccessfulContractResults() {
+        final var gas = 100L;
+        final var inputData = org.apache.tuweni.bytes.Bytes.EMPTY;
+        final var senderId = AccountID.newBuilder().build();
+
         final var expected = ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .contractCallResult(tuweniToPbjBytes(result))
-                .contractID(contractID)
+                .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                .gas(gas)
+                .senderId(senderId)
+                .functionParameters(tuweniToPbjBytes(inputData))
                 .build();
-        final var actual = SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, contractID);
+        final var actual =
+                SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, gas, inputData, senderId);
         assertThat(actual).isEqualTo(expected);
     }
 

@@ -18,15 +18,29 @@ package com.hedera.node.app.service.contract.impl.utils;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
+import com.google.common.primitives.Longs;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Utilities for system contracts.
  */
 public final class SystemContractUtils {
+
+    /*
+    The contractFunctionResultSuccessFor is called from Prgn contract and we are setting the HTS address - this is done
+    to mirror the current mono behaviour(PrngSystemPrecompiledContract.computePrecompile > createSuccessfulChildRecord >
+    addContractCallResultToRecord > PrecompileUtils.addContractCallResultToRecord). This will be
+    fixed after the differential testing in this story https://github.com/hashgraph/hedera-services/issues/10552
+     */
+    public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
+            Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
 
     private SystemContractUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -41,16 +55,21 @@ public final class SystemContractUtils {
      * Create a successful contract function result.
      * @param gasUsed       Report the gas used.
      * @param result        The result of the contract call.
-     * @param contractID    The contract ID.
+     * @param gas           The remaining gas.
+     * @param inputData     The input data.
+     * @param senderId      The sender id.
      * @return              The created contract function result for a successful call.
      */
     @NonNull
     public static ContractFunctionResult contractFunctionResultSuccessFor(
-            final long gasUsed, final Bytes result, final ContractID contractID) {
+            final long gasUsed, final Bytes result, long gas, Bytes inputData, AccountID senderId) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
+                .gas(gas)
                 .contractCallResult(tuweniToPbjBytes(result))
-                .contractID(contractID)
+                .functionParameters(tuweniToPbjBytes(inputData))
+                .senderId(senderId)
+                .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .build();
     }
 
@@ -68,6 +87,12 @@ public final class SystemContractUtils {
                 .gasUsed(gasUsed)
                 .errorMessage(errorMsg)
                 .contractID(contractID)
+                .build();
+    }
+
+    private static ContractID contractIdFromEvmAddress(final byte[] bytes) {
+        return ContractID.newBuilder()
+                .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
     }
 }
