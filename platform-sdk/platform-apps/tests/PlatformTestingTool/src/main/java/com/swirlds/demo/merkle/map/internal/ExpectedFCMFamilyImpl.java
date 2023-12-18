@@ -761,12 +761,6 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
                         transactionType,
                         expectedValue.getEntityType());
             } else {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "ERROR CreateOnExistingEntities, " + "MapKey: {}, TransactionType: {},  EntityType: {}",
-                        mapKey,
-                        transactionType,
-                        expectedValue.getEntityType());
                 expectedValue.setErrored(true);
             }
             return true;
