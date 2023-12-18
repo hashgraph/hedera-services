@@ -41,10 +41,7 @@ class ConfigUtilsTest {
         // then
         Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(ConsensusConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(OSHealthCheckConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(WiringConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(CryptoConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(TemporaryFileConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(ReconnectConfig.class));

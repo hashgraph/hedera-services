@@ -85,6 +85,7 @@ class CustomGasChargingTest {
 
     @Test
     void staticCallsDoNotChargeGas() {
+        givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
@@ -92,23 +93,16 @@ class CustomGasChargingTest {
                 worldUpdater,
                 wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator, worldUpdater);
+        verifyNoInteractions(worldUpdater);
     }
 
     @Test
-    void zeroPriceGasDoesNoChargingWork() {
+    void zeroPriceGasDoesNoChargingWorkButDoesReturnIntrinsicGas() {
         final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
+        givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator, worldUpdater);
-    }
-
-    @Test
-    void zeroPriceGasReturnsImmediately() {
-        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
-        final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
-        assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator);
+        assertEquals(TestHelpers.INTRINSIC_GAS, chargingResult.intrinsicGas());
     }
 
     @Test
@@ -326,7 +320,7 @@ class CustomGasChargingTest {
     }
 
     @Test
-    void failsIfGasAllownaceLessThanRemainingGasCost() {
+    void failsIfGasAllowanceLessThanRemainingGasCost() {
         givenWellKnownIntrinsicGasCost();
         final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE / 2, 0);
         assertFailsWith(

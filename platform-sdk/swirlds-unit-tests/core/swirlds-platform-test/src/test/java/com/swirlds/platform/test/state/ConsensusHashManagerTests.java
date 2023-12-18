@@ -34,12 +34,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;

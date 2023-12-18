@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metric;
@@ -81,7 +81,7 @@ public final class MetricsDocUtils {
         try (final OutputStream outputStream = new FileOutputStream(filePath)) {
             outputStream.write(metricsContents.getBytes(StandardCharsets.UTF_8));
         } catch (final Exception e) {
-            logger.error(STARTUP.getMarker(), "Failed to write metrics information to file {}", filePath, e);
+            logger.error(EXCEPTION.getMarker(), "Failed to write metrics information to file {}", filePath, e);
         }
     }
 
