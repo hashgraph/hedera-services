@@ -422,7 +422,6 @@ public class HapiSpecRegistry {
         return hasVia(this::getKey, name);
     }
 
-
     public void saveLockKey(String name, Key key) {
         put(name + "Lock", key, Key.class);
     }
@@ -438,7 +437,6 @@ public class HapiSpecRegistry {
     public void forgetLockKey(String name) {
         remove(name + "Lock", Key.class);
     }
-
 
     public void savePartitionKey(String name, Key key) {
         put(name + "Partition", key, Key.class);
@@ -456,7 +454,6 @@ public class HapiSpecRegistry {
         remove(name + "Partition", Key.class);
     }
 
-
     public void savePartitionMoveKey(String name, Key key) {
         put(name + "PartitionMove", key, Key.class);
     }
@@ -472,7 +469,6 @@ public class HapiSpecRegistry {
     public void forgetPartitionMoveKey(String name) {
         remove(name + "PartitionMove", Key.class);
     }
-
 
     public void removeKey(String name) {
         try {
