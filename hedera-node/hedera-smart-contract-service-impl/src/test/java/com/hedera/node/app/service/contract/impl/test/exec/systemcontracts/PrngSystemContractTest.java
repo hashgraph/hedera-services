@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -142,6 +143,8 @@ class PrngSystemContractTest {
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
+        when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
+                .thenReturn(mock(ContractCallRecordBuilder.class));
 
         // when:
         var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame)
@@ -156,6 +159,9 @@ class PrngSystemContractTest {
         // given:
         commonMocks();
         givenCommon();
+
+        when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
+                .thenReturn(mock(ContractCallRecordBuilder.class));
 
         // when:
         var actual = subject.computeFully(EXPECTED_RANDOM_NUMBER, messageFrame).result();
