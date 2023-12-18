@@ -83,11 +83,6 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
 
-        assertNull(manager.getFirstStateTimestamp());
-        assertEquals(-1, manager.getFirstStateRound());
-        Instant firstTimestamp = null;
-        final long firstRound = 0;
-
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
         final int count = 100;
         for (int round = 0; round < count; round++) {
@@ -101,12 +96,6 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             highestRound.set(round);
 
             manager.addState(signedState);
-
-            if (round == 0) {
-                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
-            }
-            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
-            assertEquals(firstRound, manager.getFirstStateRound());
 
             try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");

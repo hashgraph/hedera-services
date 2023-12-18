@@ -129,11 +129,6 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
 
         long lastExpectedCompletedRound = -1;
 
-        assertNull(manager.getFirstStateTimestamp());
-        assertEquals(-1, manager.getFirstStateRound());
-        Instant firstTimestamp = null;
-        final long firstRound = 0;
-
         for (int round = 0; round < count; round++) {
             final SignedState signedState = states.get(round);
 
@@ -141,12 +136,6 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
             highestRound.set(round);
 
             manager.addState(signedState);
-
-            if (round == 0) {
-                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
-            }
-            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
-            assertEquals(firstRound, manager.getFirstStateRound());
 
             // Add some signatures to one of the previous states, but only if that round need signatures.
             final long roundToSign = round - roundAgeToSign;

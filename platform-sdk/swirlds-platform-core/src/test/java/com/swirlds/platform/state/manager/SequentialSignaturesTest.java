@@ -84,11 +84,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
 
-        assertNull(manager.getFirstStateTimestamp());
-        assertEquals(-1, manager.getFirstStateRound());
-        Instant firstTimestamp = null;
-        final long firstRound = 0;
-
         // Create a series of signed states.
         final int count = 100;
         for (int round = 0; round < count; round++) {
@@ -102,12 +97,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             highestRound.set(round);
 
             manager.addState(signedState);
-
-            if (round == 0) {
-                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
-            }
-            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
-            assertEquals(firstRound, manager.getFirstStateRound());
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;

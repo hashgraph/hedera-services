@@ -106,15 +106,8 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         final Hash stateHash = randomHash();
         stateFromDisk.getState().setHash(stateHash);
 
-        assertNull(manager.getFirstStateTimestamp());
-        assertEquals(-1, manager.getFirstStateRound());
-
         // The manager should store this state but not assigned it to the last complete signed state
         manager.addState(stateFromDisk);
-
-        assertEquals(
-                stateFromDisk.getState().getPlatformState().getConsensusTimestamp(), manager.getFirstStateTimestamp());
-        assertEquals(stateFromDisk.getState().getPlatformState().getRound(), manager.getFirstStateRound());
 
         assertNull(manager.getLatestSignedState("test"));
         assertEquals(-1, manager.getLastCompleteRound());
