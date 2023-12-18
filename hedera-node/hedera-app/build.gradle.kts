@@ -141,32 +141,6 @@ tasks.jar {
     }
 }
 
-// Define build directory
-val buildDir = layout.projectDirectory.dir("./build/node")
-
-// Copy everything from hedera-node/data
-val copyNodeData =
-    tasks.register<Sync>("copyNodeData") {
-        dependsOn(copyLib)
-        dependsOn(copyApp)
-        from(layout.projectDirectory.dir("../data/keys")) { into("data/keys") }
-        from(layout.projectDirectory.dir("../data"))
-        into(buildDir)
-        exclude("config", "keys") // Exclude config directory
-        shouldRunAfter(tasks.named("copyApp"))
-        shouldRunAfter(tasks.named("copyLib"))
-    }
-
-//// Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
-val copyConfig =
-    tasks.register<Copy>("copyConfig") {
-        from(layout.projectDirectory.dir("../configuration/dev")) { into("data/config") }
-        from(layout.projectDirectory.file("../config.txt"))
-        from(layout.projectDirectory.file("../log4j2.xml"))
-        into(buildDir)
-        shouldRunAfter(tasks.named("copyNodeData"))
-    }
-
 // Copy dependencies into `data/lib`
 val copyLib =
     tasks.register<Sync>("copyLib") {
@@ -183,27 +157,46 @@ val copyApp =
         shouldRunAfter(tasks.named("copyLib"))
     }
 
+// Working directory for 'run' tasks
+val nodeWorkingDir = layout.buildDirectory.dir("node")
+
+val copyNodeData =
+    tasks.register<Sync>("copyNodeDataAndConfig") {
+        into(nodeWorkingDir)
+
+        // Copy things from hedera-node/data
+        into("data/lib") { from(copyLib) }
+        into("data/apps") { from(copyApp) }
+        into("data/onboard") { from(layout.projectDirectory.dir("../data/onboard")) }
+        into("data/keys") { from(layout.projectDirectory.dir("../data/keys")) }
+
+        // Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
+        from(layout.projectDirectory.dir("../configuration/dev")) { into("data/config") }
+        from(layout.projectDirectory.file("../config.txt"))
+        from(layout.projectDirectory.file("../log4j2.xml"))
+        from(layout.projectDirectory.file("../configuration/dev/settings.txt"))
+    }
+
 tasks.assemble {
     dependsOn(copyLib)
     dependsOn(copyApp)
     dependsOn(copyNodeData)
-    dependsOn(copyConfig)
 }
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("./build/node").asFile
-    jvmArgs = listOf("-cp", "lib/*")
+    workingDir = nodeWorkingDir.get().asFile
+    jvmArgs = listOf("-cp", "data/lib/*")
     mainClass.set("com.swirlds.platform.Browser")
 }
 
 tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("./build/node").asFile
-    jvmArgs = listOf("-cp", "lib/*:apps/*", "-Dhedera.workflows.enabled=true")
+    workingDir = nodeWorkingDir.get().asFile
+    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }
 
