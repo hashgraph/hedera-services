@@ -28,12 +28,7 @@ import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -124,40 +119,6 @@ public class SignedStateManager {
 
         this.savedSignatures =
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
-    }
-
-    /**
-     * <p>
-     * Get the latest signed states stored by this manager.
-     * </p>
-     *
-     * <p>
-     * This method is not thread safe. Do not use it for any new use cases.
-     * </p>
-     *
-     * @return the latest signed states
-     * @deprecated this method is not thread safe
-     */
-    @Deprecated
-    public @NonNull List<SignedStateInfo> getSignedStateInfo() {
-        // Since this method is not synchronized, it's possible we may add a state multiple times to this collection.
-        // The map makes sure that duplicates are not returned to the caller.
-        final Map<Long, SignedState> stateMap = new HashMap<>();
-
-        incompleteStates.atomicIteration(iterator ->
-                iterator.forEachRemaining(signedState -> stateMap.put(signedState.getRound(), signedState)));
-        completeStates.atomicIteration(iterator ->
-                iterator.forEachRemaining(signedState -> stateMap.put(signedState.getRound(), signedState)));
-
-        // Sort the states based on round number
-        final List<Long> rounds = new ArrayList<>(stateMap.keySet());
-        Collections.sort(rounds);
-        final List<SignedStateInfo> sortedStates = new ArrayList<>(rounds.size());
-        for (final long round : rounds) {
-            sortedStates.add(stateMap.get(round));
-        }
-
-        return sortedStates;
     }
 
     /**
