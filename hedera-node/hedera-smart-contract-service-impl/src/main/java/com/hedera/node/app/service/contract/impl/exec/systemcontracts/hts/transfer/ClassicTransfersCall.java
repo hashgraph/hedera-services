@@ -65,6 +65,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class ClassicTransfersCall extends AbstractHtsCall {
     private final byte[] selector;
     private final AccountID spenderId;
+    private final ResponseCodeEnum preemptingFailureStatus;
     private final TransactionBody syntheticTransfer;
     private final Configuration configuration;
 
@@ -83,6 +84,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final byte[] selector,
             @NonNull final AccountID spenderId,
+            @Nullable final ResponseCodeEnum preemptingFailureStatus,
             @NonNull final TransactionBody syntheticTransfer,
             @NonNull final Configuration configuration,
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
@@ -92,6 +94,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
         this.spenderId = requireNonNull(spenderId);
+        this.preemptingFailureStatus = preemptingFailureStatus;
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
         this.configuration = requireNonNull(configuration);
         this.approvalSwitchHelper = approvalSwitchHelper;
@@ -106,6 +109,9 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
+        if (preemptingFailureStatus != null) {
+            return reversionWith(preemptingFailureStatus, gasRequirement);
+        }
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             return reversionWith(
                     gasRequirement,

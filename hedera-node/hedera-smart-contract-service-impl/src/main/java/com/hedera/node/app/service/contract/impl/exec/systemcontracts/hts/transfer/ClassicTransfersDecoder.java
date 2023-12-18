@@ -25,12 +25,14 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -208,6 +210,16 @@ public class ClassicTransfersDecoder {
                 addressIdConverter.convertCredit(call.get(2)),
                 exactLongValueOrThrow(call.get(3)),
                 IsApproval.TRUE)));
+    }
+
+    public ResponseCodeEnum checkForFailureStatus(@NonNull HtsCallAttempt attempt) {
+        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
+            final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
+            if ((long) call.get(3) < 0) {
+                return ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+            }
+        }
+        return null;
     }
 
     private TokenTransferList[] convertTokenTransfers(

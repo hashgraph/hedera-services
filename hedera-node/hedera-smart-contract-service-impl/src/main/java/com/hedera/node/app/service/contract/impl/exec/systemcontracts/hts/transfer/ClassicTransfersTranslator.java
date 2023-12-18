@@ -80,6 +80,7 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.enhancement(),
                 selector,
                 attempt.senderId(),
+                decoder.checkForFailureStatus(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
                 isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
