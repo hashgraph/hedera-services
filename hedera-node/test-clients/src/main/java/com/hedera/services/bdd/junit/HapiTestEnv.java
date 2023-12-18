@@ -16,10 +16,10 @@
 
 package com.hedera.services.bdd.junit;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,8 +28,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.jetbrains.annotations.NotNull;
 
 public class HapiTestEnv {
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
@@ -54,8 +53,7 @@ public class HapiTestEnv {
 
     private void setupNodes(final boolean useInProcessAlice, final int numNodes, final String configText) {
         for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-            final Path workingDir =
-                    Path.of("./build/hapi-test/node" + nodeId).normalize();
+            final Path workingDir = Path.of("./build/hapi-test/node" + nodeId).normalize();
             setupWorkingDirectory(workingDir, configText);
             final String nodeName = NODE_NAMES[nodeId];
             final AccountID acct =
@@ -70,7 +68,7 @@ public class HapiTestEnv {
                         acct,
                         workingDir,
                         FIRST_GRPC_PORT + (nodeId * 2),
-                        FIRST_GOSSIP_PORT + (nodeId * 2)));
+                        FIRST_GOSSIP_PORT));
             }
         }
     }
@@ -99,11 +97,11 @@ public class HapiTestEnv {
                     .append(", 1, ")
                     .append(networkAlias)
                     .append(", ")
-                    .append(FIRST_GOSSIP_PORT + (nodeId * 2))
+                    .append(FIRST_GOSSIP_PORT)
                     .append(", ")
                     .append(networkAlias)
                     .append(", ")
-                    .append(FIRST_GOSSIP_TLS_PORT + (nodeId * 2))
+                    .append(FIRST_GOSSIP_PORT)
                     .append(", ")
                     .append(account)
                     .append("\n");
@@ -112,7 +110,7 @@ public class HapiTestEnv {
         return sb.append("\nnextNodeId, ").append(numNodes).append("\n").toString();
     }
 
-    private void setupNetworkAlias(@NonNull final String aliasAddress){
+    private void setupNetworkAlias(@NonNull final String aliasAddress) {
         final ProcessBuilder pb = new ProcessBuilder();
         pb.command("/usr/bin/env", "bash", "-c", "sudo ifconfig lo0 alias " + aliasAddress);
         pb.inheritIO();

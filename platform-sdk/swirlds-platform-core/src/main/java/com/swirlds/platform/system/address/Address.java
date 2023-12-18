@@ -24,9 +24,14 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.UnknownHostException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
@@ -279,7 +284,14 @@ public class Address implements SelfSerializable {
      */
     @NonNull
     public byte[] getListenAddressIpv4() {
-        return ALL_INTERFACES;
+        try {
+            InetAddress address = Inet4Address.getByName(hostnameInternal);
+            final byte[] addr = address.getAddress();
+            System.err.println("BOOTSTRAP: Listen Address IPv4: " + ipString(addr));
+            return addr;
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

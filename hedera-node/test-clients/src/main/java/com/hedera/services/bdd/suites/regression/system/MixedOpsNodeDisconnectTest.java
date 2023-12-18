@@ -20,14 +20,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.disconnectNode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reviveNode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToFinishReconnect;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
@@ -77,7 +70,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec reconnectMixedOps() {
+    public HapiSpec reconnectMixedOps() {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         Random r = new Random(38582L);
@@ -85,6 +78,8 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                 new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, scheduleId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
+                        // Block network port on node 2
+                        disconnectNode("Bob", 75),
                         newKeyNamed(SUBMIT_KEY),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(ADMIN_KEY),
@@ -94,34 +89,33 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER).via("creation"),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY)
-                        // Block network port on node 2
-//                        disconnectNode("Alice", 75)
-                )
+                        )
                 .when(
                         // submit operations when node 2 is down
-//                        inParallel(mixedOpsBurst.get())
+                        //                        inParallel(mixedOpsBurst.get())
                         // Unblock network port on  node 2
-//                        reviveNode("Alice", 75)
+                        //                        reviveNode("Alice", 75)
                         // wait for node 2 to go to BEHIND
-//                        waitForNodeToBeBehind("Carol", 60),
-//                        // Allow node 2 to reconnect to other nodes and goes to RECONNECT_COMPLETE
-//                        waitForNodeToFinishReconnect("Carol", 60),
-//                        // Once node 2 reconnects successfully it goes to ACTIVE
-//                        waitForNodeToBecomeActive("Carol", 60)
-                )
+                        //                        waitForNodeToBeBehind("Carol", 60),
+                        //                        // Allow node 2 to reconnect to other nodes and goes to
+                        // RECONNECT_COMPLETE
+                        //                        waitForNodeToFinishReconnect("Carol", 60),
+                        //                        // Once node 2 reconnects successfully it goes to ACTIVE
+                        //                        waitForNodeToBecomeActive("Carol", 60)
+                        )
                 .then(
-                        sleepFor(350000),
+                        sleepFor(100_000),
                         getReceipt("creation").setNodeFrom(() -> "0.0.3").logged(),
                         getReceipt("creation").setNodeFrom(() -> "0.0.4").logged(),
                         getReceipt("creation").setNodeFrom(() -> "0.0.5").logged(),
                         getReceipt("creation").setNodeFrom(() -> "0.0.6").logged()
 
                         //                         Once nodes come back ACTIVE, submit some operations again
-//                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
-//                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
-//                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
-//                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY)
-//                        inParallel(mixedOpsBurst.get())
-                );
+                        //                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
+                        //                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
+                        //                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
+                        //                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY)
+                        //                        inParallel(mixedOpsBurst.get())
+                        );
     }
 }

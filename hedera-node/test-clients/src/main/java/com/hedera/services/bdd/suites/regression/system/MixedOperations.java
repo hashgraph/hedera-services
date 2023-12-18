@@ -103,12 +103,10 @@ public class MixedOperations {
                             .adminKey(SENDER)
                             .logging())
                     .toArray(HapiSpecOperation[]::new)),
-                sleepFor(10000),
-                inParallel(IntStream.range(0, numSubmissions)
-                        .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
-                                .logging()
-                                .signedBy(SENDER, DEFAULT_PAYER))
-                        .toArray(HapiSpecOperation[]::new)),
+            sleepFor(10000),
+            inParallel(IntStream.range(0, numSubmissions)
+                    .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i).logging().signedBy(SENDER, DEFAULT_PAYER))
+                    .toArray(HapiSpecOperation[]::new)),
         };
     }
 }

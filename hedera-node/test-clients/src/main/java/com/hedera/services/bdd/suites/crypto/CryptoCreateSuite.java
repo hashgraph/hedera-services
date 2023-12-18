@@ -122,7 +122,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createAnAccountWithStakingFields() {
+    public HapiSpec createAnAccountWithStakingFields() {
         return defaultHapiSpec("createAnAccountWithStakingFields")
                 .given(
                         cryptoCreate("civilianWORewardStakingNode")

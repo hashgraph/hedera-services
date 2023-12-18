@@ -246,35 +246,12 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             final var os = getOperatingSystem();
             String[] cmd;
             if (os.contains("Mac")) {
+                String tmp = "printf \"%s\\n%s\\n%s\\n%s\\n\" \"$(sudo pfctl -sr 2>/dev/null)\" \"pass quick proto tcp from any to 127.0.1." + (nodeId + 1) + " port = 50213\" \"block drop quick proto tcp from any to 127.0.1." + (nodeId + 1) + "\" \"block drop quick proto tcp from 127.0.1." + (nodeId + 1) + " to any port != 50213\" | sudo pfctl -e -f - 2>/dev/null";
                 cmd = new String[] {
-                    "sudo",
-                    "pfctl",
-                    "-sr",
-                    "2>/dev/null;",
-                    "echo",
-                    "\"",
-                    "block",
-                    "drop",
-                    "quick",
-                    "on",
-                    "lo0",
-                    "proto",
-                    "tcp",
-                    "from",
-                    "any",
-                    "to",
-                    "{127.0.0.1}",
-                    "port",
-                    "=",
-                    String.valueOf(gossipPort),
-                    "\"",
-                    "|",
-                    "sudo",
-                    "pfctl",
-                    "-e",
-                    "-f",
-                    "-",
-                    "2>/dev/null"
+                        "/usr/bin/env",
+                        "bash",
+                        "-c",
+                        tmp
                 };
             } else {
                 cmd = new String[] {
@@ -303,14 +280,19 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 };
             }
             try {
-                final Process process = Runtime.getRuntime().exec(cmd);
-                final var isSuccess = process.waitFor(75, TimeUnit.SECONDS);
-                logger.info("Blocking Network port {} for node {} running with OS {} running command {} is {}",
+                final ProcessBuilder pb = new ProcessBuilder();
+                pb.command(cmd);
+                pb.inheritIO();
+
+                final Process process = pb.start();
+                final var noTimeOut = process.waitFor(75, TimeUnit.SECONDS);
+                logger.info(
+                        "Blocking Network port {} for node {} running with OS {} running command {} is {}",
                         gossipPort,
                         nodeId,
                         os,
                         cmd,
-                        isSuccess ? "successful" : "failed");
+                        noTimeOut ? (process.exitValue() <= 1 ? "successful" : "failed") : "timed out");
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
