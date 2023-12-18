@@ -309,7 +309,10 @@ public class HandleHederaOperations implements HederaOperations {
                 ContractID.newBuilder().evmAddress(evmAddress).build();
 
         tokenServiceApi.deleteContract(contractId);
-        addContractDeleteChildRecord(contractId);
+        //Externalize only on ethereum calls
+        if(context.body().hasEthereumTransaction()) {
+            addContractDeleteChildRecord(contractId);
+        }
     }
 
     /**
@@ -322,7 +325,6 @@ public class HandleHederaOperations implements HederaOperations {
                 ContractID.newBuilder().contractNum(number).build();
 
         tokenServiceApi.deleteContract(contractId);
-        addContractDeleteChildRecord(contractId);
     }
 
     /**
