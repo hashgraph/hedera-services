@@ -1410,7 +1410,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
     }
 
-    @HapiTest
     private HapiSpec accountDeleteResetsTheAliasNonce() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -1488,7 +1487,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             spec.registry().saveKey(ercUser, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
                         }),
                         // delete the account currently holding the alias
-                        cryptoDelete(ercUser).payingWith(ercUser).via("deleteTx"))
+                        cryptoDelete(ercUser))
                 .then(
                         // try to create a new account with the same alias
                         withOpContext((spec, opLog) -> {
