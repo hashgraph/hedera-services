@@ -64,22 +64,17 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         final var spenderAccount = enhancement.nativeOperations().getAccount(spender.accountNum());
         final var body = callGrantApproval();
         if (spenderAccount == null) {
-            final var result = gasOnly(
-                    FullResult.revertResult(
-                            INVALID_ALLOWANCE_SPENDER_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE)),
-                    INVALID_ALLOWANCE_SPENDER_ID,
-                    false);
-            final var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultFailedForProto(
-                                    gasCalculator.canonicalGasRequirement(DispatchType.APPROVE),
-                                    INVALID_ALLOWANCE_SPENDER_ID.protoName(),
-                                    contractID,
-                                    Bytes.wrap(ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID)
-                                            .array())),
-                            INVALID_ALLOWANCE_SPENDER_ID);
+            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
+            var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
+            var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);
+
+            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+            var encodedRc = ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
+            var contractFunctionResult = contractFunctionResultFailedForProto(gasRequirement,
+                    INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID, Bytes.wrap(encodedRc));
+
+            enhancement.systemOperations().externalizeResult(contractFunctionResult, INVALID_ALLOWANCE_SPENDER_ID);
+
             return result;
         }
         final var recordBuilder = systemContractOperations()
