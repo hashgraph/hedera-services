@@ -24,7 +24,7 @@ import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
     /**
      * Used to push events onto the handle queue.
      */
-    private final BlockingQueueInserter<EventImpl> eventInserter;
+    private final BlockingQueueInserter<GossipEvent> eventInserter;
 
     /**
      * This class is used as a flag to indicate where in the queue events start being new (as opposed to being events
@@ -130,7 +130,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
                 .setThreadName("event-writer")
                 .setCapacity(config.writeQueueCapacity())
                 .addHandler(Long.class, this::setMinimumGenerationNonAncientHandler)
-                .addHandler(EventImpl.class, this::addEventHandler)
+                .addHandler(GossipEvent.class, this::addEventHandler)
                 .addHandler(BeginStreamingNewEvents.class, this::beginStreamingNewEventsHandler)
                 .addHandler(FlushRequested.class, this::flushRequestedHandler)
                 .addHandler(Discontinuity.class, this::discontinuityHandler)
@@ -141,7 +141,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
                 .build();
 
         minimumGenerationNonAncientInserter = handleThread.getInserter(Long.class);
-        eventInserter = handleThread.getInserter(EventImpl.class);
+        eventInserter = handleThread.getInserter(GossipEvent.class);
         beginStreamingNewEventsInserter = handleThread.getInserter(BeginStreamingNewEvents.class);
         flushRequestedInserter = handleThread.getInserter(FlushRequested.class);
         discontinuityInserter = handleThread.getInserter(Discontinuity.class);
@@ -178,9 +178,9 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void writeEvent(@NonNull final EventImpl event) throws InterruptedException {
-        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
-                || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+    public void writeEvent(@NonNull final GossipEvent event) throws InterruptedException {
+        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER
+                || event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
         eventInserter.put(event);
@@ -222,7 +222,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEventDurable(@NonNull final EventImpl event) {
+    public boolean isEventDurable(@NonNull final GossipEvent event) {
         return writer.isEventDurable(event);
     }
 
@@ -230,7 +230,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void waitUntilDurable(@NonNull final EventImpl event) throws InterruptedException {
+    public void waitUntilDurable(@NonNull final GossipEvent event) throws InterruptedException {
         writer.waitUntilDurable(event);
     }
 
@@ -238,7 +238,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public boolean waitUntilDurable(@NonNull final EventImpl event, @NonNull final Duration timeToWait)
+    public boolean waitUntilDurable(@NonNull final GossipEvent event, @NonNull final Duration timeToWait)
             throws InterruptedException {
         return writer.waitUntilDurable(event, timeToWait);
     }
@@ -263,7 +263,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
     /**
      * Pass an event to the wrapped writer.
      */
-    private void addEventHandler(@NonNull final EventImpl event) {
+    private void addEventHandler(@NonNull final GossipEvent event) {
         try {
             writer.writeEvent(event);
         } catch (final InterruptedException e) {
