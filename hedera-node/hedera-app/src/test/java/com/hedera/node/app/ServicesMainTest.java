@@ -17,13 +17,16 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.status.PlatformStatus.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesApp;
@@ -43,27 +46,39 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.config.legacy.ConfigurationException;
+import com.swirlds.platform.config.legacy.LegacyConfigProperties;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
+import com.swirlds.platform.util.BootstrapUtils;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class ServicesMainTest {
+    private static final MockedStatic<LegacyConfigPropertiesLoader> legacyConfigPropertiesLoaderMockedStatic =
+            mockStatic(LegacyConfigPropertiesLoader.class);
+    private static final MockedStatic<BootstrapUtils> bootstrapUtilsMockedStatic = mockStatic(BootstrapUtils.class);
+
     private final NodeId selfId = new NodeId(123L);
     private final NodeId unselfId = new NodeId(666L);
 
@@ -130,12 +145,57 @@ final class ServicesMainTest {
     @Mock
     private RecordStreamManager recordStreamManager;
 
+    @Mock
+    private LegacyConfigProperties legacyConfigProperties;
+
     private final ServicesMain subject = new ServicesMain();
 
     @Test
     void throwsErrorOnMissingApp() {
         // expect:
         Assertions.assertThrows(AssertionError.class, () -> subject.init(platform, unselfId));
+    }
+
+    // no local nodes specified but more than one match in address book
+    @Test
+    void hardExitOnTooManyLocalNodes() {
+        withBadCommandLineArgs();
+        String[] args = {};
+
+        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
+            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
+
+            systemExitUtilsMockedStatic.verify(() -> SystemExitUtils.exitSystem(NODE_ADDRESS_MISMATCH));
+        }
+    }
+
+    // local node specified which does not match the address book
+    @Test
+    void hardExitOnNonMatchingNodeId() {
+        withBadCommandLineArgs();
+        String[] args = {"-local", "1234"}; // 1234 does not match anything in address book
+
+        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
+            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
+
+            systemExitUtilsMockedStatic.verify(() -> SystemExitUtils.exitSystem(NODE_ADDRESS_MISMATCH));
+        }
+    }
+
+    // more than one local node specified which matches the address book
+    @Test
+    void hardExitOnTooManyMatchingNodes() {
+        withBadCommandLineArgs();
+        String[] args = {"-local", "1", "2"}; // both "1" and "2" match entries in address book
+
+        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
+            systemExitUtilsMockedStatic
+                    .when(() -> SystemExitUtils.exitSystem(any()))
+                    .thenThrow(new UnsupportedOperationException());
+            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(UnsupportedOperationException.class);
+
+            systemExitUtilsMockedStatic.verify(() -> SystemExitUtils.exitSystem(NODE_ADDRESS_MISMATCH));
+        }
     }
 
     @Test
@@ -255,6 +315,20 @@ final class ServicesMainTest {
 
         // then:
         verify(systemExits).fail(1);
+    }
+
+    private void withBadCommandLineArgs() {
+        legacyConfigPropertiesLoaderMockedStatic
+                .when(() -> LegacyConfigPropertiesLoader.loadConfigFile(any()))
+                .thenReturn(legacyConfigProperties);
+
+        List<NodeId> nodeIds = new ArrayList<>();
+        nodeIds.add(new NodeId(1));
+        nodeIds.add(new NodeId(2));
+
+        bootstrapUtilsMockedStatic
+                .when(() -> BootstrapUtils.getNodesToRun(any(), any()))
+                .thenReturn(nodeIds);
     }
 
     private void withDoomedApp() {
