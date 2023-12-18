@@ -69,7 +69,7 @@ public record FullResult(
                 null);
     }
 
-    public static FullResult revertResult(@NonNull final Bytes reason, final long gasRequirement) {
+    public static FullResult revertResult(@NonNull Bytes reason, final long gasRequirement) {
         requireNonNull(reason);
         return new FullResult(PrecompiledContract.PrecompileContractResult.revert(reason), gasRequirement, null);
     }
