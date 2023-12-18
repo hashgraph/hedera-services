@@ -36,8 +36,7 @@ public class MultiFileRunningHashIterator implements IOIterator<DetailedConsensu
      * @throws NullPointerException in case {@code iterator} parameter is {@code null}
      */
     public MultiFileRunningHashIterator(final EventStreamMultiFileIterator iterator) {
-        Objects.requireNonNull(iterator, "iterator must not be null");
-        this.iterator = iterator;
+        this.iterator = Objects.requireNonNull(iterator, "iterator must not be null");
         this.runningHashCalculator = new RunningHashCalculatorForStream<>();
 
         runningHashCalculator.setRunningHash(iterator.getStartHash());
