@@ -39,6 +39,7 @@ import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -51,6 +52,7 @@ import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
+import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -74,6 +76,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final PcesWriterWiring pcesWriterWiring;
+    private final PcesSequencerWiring pcesSequencerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -103,6 +106,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
             eventCreationManagerWiring =
                     EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
+            pcesSequencerWiring = PcesSequencerWiring.create(schedulers.pcesSequencerScheduler());
             platformCoordinator = new PlatformCoordinator(
                     internalEventValidatorWiring,
                     eventDeduplicatorWiring,
@@ -119,6 +123,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             inOrderLinkerWiring = null;
             linkedEventIntakeWiring = null;
             eventCreationManagerWiring = null;
+            pcesSequencerWiring = null;
             platformCoordinator = null;
         }
 
@@ -173,8 +178,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
             eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
             eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
-            orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
-            orphanBufferWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
+            orphanBufferWiring.eventOutput().solderTo(pcesSequencerWiring.eventInput());
+            pcesSequencerWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+            pcesSequencerWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
             eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
@@ -243,6 +249,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
      * @param eventCreationManager    the event creation manager to bind
+     * @param pcesSequencer           the PCES sequencer to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -251,7 +258,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake,
-            @NonNull final EventCreationManager eventCreationManager) {
+            @NonNull final EventCreationManager eventCreationManager,
+            @NonNull final PcesSequencer pcesSequencer) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -260,6 +268,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
         eventCreationManagerWiring.bind(eventCreationManager);
+        pcesSequencerWiring.bind(pcesSequencer);
     }
 
     /**

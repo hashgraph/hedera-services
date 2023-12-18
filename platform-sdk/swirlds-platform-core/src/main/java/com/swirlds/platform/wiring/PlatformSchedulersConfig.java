@@ -76,4 +76,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
-        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType pcesSequencerSchedulerType,
+        @ConfigProperty(defaultValue = "-1") int pcesSequencerUnhandledTaskCapacity) {}

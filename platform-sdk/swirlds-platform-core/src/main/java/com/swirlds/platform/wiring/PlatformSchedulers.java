@@ -26,6 +26,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 
 /**
@@ -41,6 +42,9 @@ import java.util.List;
  * @param eventCreationManagerScheduler    the scheduler for the event creation manager
  * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
  * @param stateSignerScheduler             the scheduler for the state signer
+ * @param pcesReplayerScheduler            the scheduler for the pces replayer
+ * @param pcesWriterScheduler              the scheduler for the pces writer
+ * @param pcesSequencerScheduler           the scheduler for the pces sequencer
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -54,7 +58,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
         @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
-        @NonNull TaskScheduler<Void> pcesWriterScheduler) {
+        @NonNull TaskScheduler<Void> pcesWriterScheduler,
+        @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -142,6 +147,12 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("pcesWriter")
                         .withType(config.pcesWriterSchedulerType())
                         .withUnhandledTaskCapacity(config.pcesWriterUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("pcesSequencer")
+                        .withType(config.pcesSequencerSchedulerType())
+                        .withUnhandledTaskCapacity(config.pcesSequencerUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());

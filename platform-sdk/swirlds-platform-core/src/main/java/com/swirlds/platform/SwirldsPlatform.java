@@ -820,7 +820,8 @@ public class SwirldsPlatform implements Platform {
                     orphanBuffer,
                     inOrderLinker,
                     linkedEventIntake,
-                    eventCreationManager);
+                    eventCreationManager,
+                    sequencer);
 
             intakeHandler = platformWiring.getEventInput()::put;
         }

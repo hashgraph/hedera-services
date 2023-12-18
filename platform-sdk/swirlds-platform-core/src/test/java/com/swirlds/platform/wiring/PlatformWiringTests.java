@@ -30,6 +30,7 @@ import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -82,7 +83,8 @@ class PlatformWiringTests {
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
-                mock(EventCreationManager.class));
+                mock(EventCreationManager.class),
+                mock(PcesSequencer.class));
         wiring.bind(
                 mock(EventHasher.class),
                 mock(SignedStateFileManager.class),
