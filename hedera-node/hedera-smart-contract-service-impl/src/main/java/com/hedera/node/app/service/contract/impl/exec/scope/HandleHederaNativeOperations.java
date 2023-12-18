@@ -105,7 +105,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         // signing requirements enforced for this synthetic transaction
         try {
             final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
-                            synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
+                    synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
             return childRecordBuilder.status();
         } catch (final HandleException e) {
