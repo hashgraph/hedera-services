@@ -18,14 +18,13 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -339,7 +338,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             // this may block until the queue isn't full
             queueThread.put(consensusRound);
         } catch (final InterruptedException e) {
-            logger.error(RECONNECT.getMarker(), "addEvent interrupted");
+            logger.error(EXCEPTION.getMarker(), "addEvent interrupted");
             Thread.currentThread().interrupt();
         }
     }

@@ -55,14 +55,14 @@ public class MixedOpsTransactionsSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec triggerSavedScheduleTxn() {
+    final HapiSpec triggerSavedScheduleTxn() {
         return HapiSpec.defaultHapiSpec("triggerSavedScheduleTxn")
                 .given(getAccountBalance("0.0.1002").hasTinyBars(0L))
                 .when(scheduleSign("0.0.1016").logged().alsoSigningWith(GENESIS))
                 .then(getAccountBalance("0.0.1002").hasTinyBars(1L));
     }
     // Used to generate state with mixed operations
-    private HapiSpec createStateWithMixedOps() {
+    final HapiSpec createStateWithMixedOps() {
         long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
         int numScheduledTxns = 10;
         return HapiSpec.defaultHapiSpec("createStateWithMixedOps")

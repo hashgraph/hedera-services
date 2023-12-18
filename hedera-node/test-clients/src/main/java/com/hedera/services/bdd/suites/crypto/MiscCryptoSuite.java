@@ -75,7 +75,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    final HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.977";
         String randomAccountA = "randomAccountA";
         String randomAccountB = "randomAccountB";
@@ -106,7 +106,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec reduceTransferFee() {
+    final HapiSpec reduceTransferFee() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
         final long REDUCED_SERVICE_FEE = 3L;
@@ -131,7 +131,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getsGenesisBalance() {
+    final HapiSpec getsGenesisBalance() {
         return defaultHapiSpec("GetsGenesisBalance")
                 .given()
                 .when()
@@ -139,7 +139,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferChangesBalance() {
+    final HapiSpec transferChangesBalance() {
         return defaultHapiSpec("TransferChangesBalance")
                 .given(cryptoCreate("newPayee").balance(0L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)))
@@ -147,7 +147,7 @@ public class MiscCryptoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateWithOutOfDateKeyFails() {
+    final HapiSpec updateWithOutOfDateKeyFails() {
         return defaultHapiSpec("UpdateWithOutOfDateKeyFails")
                 .given(
                         newKeyNamed("originalKey"),

@@ -59,7 +59,7 @@ public class PerpetualTransfers extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canTransferBackAndForthForever() {
+    final HapiSpec canTransferBackAndForthForever() {
         return HapiSpec.defaultHapiSpec("CanTransferBackAndForthForever")
                 .given()
                 .when()

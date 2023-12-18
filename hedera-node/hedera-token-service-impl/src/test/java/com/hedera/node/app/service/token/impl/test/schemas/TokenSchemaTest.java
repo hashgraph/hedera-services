@@ -35,6 +35,7 @@ import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccou
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.TREASURY_ACCOUNT_NUM;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.buildConfig;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.configBuilder;
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -266,7 +267,8 @@ final class TokenSchemaTest {
                 this::allStakingAccts,
                 this::allMiscAccts,
                 this::allTreasuryClones,
-                this::allBlocklistAccts);
+                this::allBlocklistAccts,
+                RELEASE_045_VERSION);
 
         // We'll only configure 4 system accounts, half of which will already exist
         config = buildConfig(4, true);
@@ -495,7 +497,8 @@ final class TokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                Collections::emptySortedSet);
+                Collections::emptySortedSet,
+                RELEASE_045_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -524,7 +527,8 @@ final class TokenSchemaTest {
                 this::allStakingAccts,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                Collections::emptySortedSet);
+                Collections::emptySortedSet,
+                RELEASE_045_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -555,7 +559,8 @@ final class TokenSchemaTest {
                 Collections::emptySortedSet,
                 this::allTreasuryClones,
                 Collections::emptySortedSet,
-                Collections::emptySortedSet);
+                Collections::emptySortedSet,
+                RELEASE_045_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -584,7 +589,8 @@ final class TokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 this::allMiscAccts,
-                Collections::emptySortedSet);
+                Collections::emptySortedSet,
+                RELEASE_045_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -612,7 +618,8 @@ final class TokenSchemaTest {
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
-                this::allBlocklistAccts);
+                this::allBlocklistAccts,
+                RELEASE_045_VERSION);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -736,7 +743,8 @@ final class TokenSchemaTest {
                 this::allStakingAccts,
                 this::allMiscAccts,
                 this::allTreasuryClones,
-                this::allBlocklistAccts);
+                this::allBlocklistAccts,
+                RELEASE_045_VERSION);
     }
 
     /**
