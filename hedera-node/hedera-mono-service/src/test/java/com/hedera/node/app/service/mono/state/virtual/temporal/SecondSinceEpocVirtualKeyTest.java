@@ -75,7 +75,7 @@ class SecondSinceEpocVirtualKeyTest {
     void deserializeWorks() throws IOException {
         final ByteBuffer buffer = ByteBuffer.allocate(100);
         buffer.putLong(longKey);
-        buffer.flip();
+        buffer.rewind();
 
         SecondSinceEpocVirtualKey key = new SecondSinceEpocVirtualKey();
 

@@ -21,9 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.IOException;
@@ -50,7 +47,7 @@ class SecondSinceEpocVirtualKeySerializerTest {
     @Test
     void deserializeWorks() throws IOException {
         final ByteBuffer bin = ByteBuffer.allocate(100);
-        bin.putLong(longKey).clear();
+        bin.putLong(longKey).rewind();
         final var expectedKey = new SecondSinceEpocVirtualKey(longKey);
 
         assertEquals(expectedKey, subject.deserialize(bin, 1));
@@ -73,11 +70,11 @@ class SecondSinceEpocVirtualKeySerializerTest {
         final var diffNum = new SecondSinceEpocVirtualKey(otherLongKey);
 
         final ByteBuffer bin = ByteBuffer.allocate(Long.SIZE);
-        bin.putLong(someKey.getKeyAsLong()).clear();
+        bin.putLong(someKey.getKeyAsLong()).rewind();
 
         assertTrue(subject.equals(bin, 1, someKey));
 
-        bin.clear();
+        bin.rewind();
         assertFalse(subject.equals(bin, 1, diffNum));
     }
 

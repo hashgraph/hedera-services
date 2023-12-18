@@ -182,7 +182,7 @@ class ContractValueTest {
     void serializeUsingByteBufferWorks() throws IOException {
         final ByteBuffer out = ByteBuffer.allocate(bytesValue.length);
         subject.serialize(out);
-        out.clear();
+        out.rewind();
         assertArrayEquals(out.array(), subject.getValue());
     }
 
@@ -215,7 +215,7 @@ class ContractValueTest {
     void deserializeWithByteBufferWorks() throws IOException {
         subject = new ContractValue();
         final ByteBuffer byteBuffer = ByteBuffer.allocate(bytesValue.length);
-        byteBuffer.put(bytesValue).clear();
+        byteBuffer.put(bytesValue).rewind();
 
         subject.deserialize(byteBuffer, MERKLE_VERSION);
 

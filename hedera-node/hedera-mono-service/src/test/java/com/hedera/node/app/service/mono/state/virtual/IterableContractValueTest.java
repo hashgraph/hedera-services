@@ -365,7 +365,7 @@ class IterableContractValueTest {
         byteBuffer.put(bytesValue);     // for read uint256Value
         byteBuffer.put(new byte[8]);    // for read prevUint256Key
         byteBuffer.put(new byte[8]);    // for red nextUint256Key
-        byteBuffer.clear();
+        byteBuffer.rewind();
 
         subject.deserialize(byteBuffer, ITERABLE_VERSION);
 

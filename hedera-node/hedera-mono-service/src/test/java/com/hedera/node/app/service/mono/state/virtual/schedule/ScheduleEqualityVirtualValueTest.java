@@ -167,7 +167,7 @@ class ScheduleEqualityVirtualValueTest {
         buffer.putLong(2L);
         buffer.putLong(3L);
         buffer.limit(buffer.position());
-        buffer.clear();
+        buffer.rewind();
 
         defaultSubject.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 

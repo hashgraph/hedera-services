@@ -25,9 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.IOException;
@@ -57,7 +55,7 @@ class VirtualBlobKeySerializerTest {
         final var expectedKey = new VirtualBlobKey(FILE_DATA, entityNum);
         bin.put((byte) FILE_DATA.ordinal());
         bin.putInt(entityNum);
-        bin.clear();
+        bin.rewind();
 
         assertEquals(expectedKey, subject.deserialize(bin, 1));
     }
@@ -79,12 +77,12 @@ class VirtualBlobKeySerializerTest {
         final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
         bin.put((byte) someKey.getType().ordinal());
         bin.putInt(someKey.getEntityNumCode());
-        bin.clear();
+        bin.rewind();
 
         assertTrue(subject.equals(bin, 1, someKey));
-        bin.clear();
+        bin.rewind();
         assertFalse(subject.equals(bin, 1, sameTypeDiffNum));
-        bin.clear();
+        bin.rewind();
         assertFalse(subject.equals(bin, 1, diffTypeSameNum));
     }
 

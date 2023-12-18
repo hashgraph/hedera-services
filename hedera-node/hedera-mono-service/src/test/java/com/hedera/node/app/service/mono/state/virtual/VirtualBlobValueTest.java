@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
@@ -32,9 +31,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 class VirtualBlobValueTest {
     private VirtualBlobValue subject;
@@ -93,12 +89,11 @@ class VirtualBlobValueTest {
         final ByteBuffer inOrder = ByteBuffer.allocate(10);
 
         subject.serialize(buffer);
-        buffer.clear();
+        buffer.rewind();
 
         inOrder.putInt(data.length);
         inOrder.put(data);
-        inOrder.limit(inOrder.position());
-        inOrder.clear();
+        inOrder.rewind();
 
         assertEquals(buffer, inOrder);
     }
@@ -111,12 +106,12 @@ class VirtualBlobValueTest {
         final ByteBuffer inOrder = ByteBuffer.allocate(10);
 
         subject.serialize(buffer);
-        buffer.clear();
+        buffer.rewind();
 
         inOrder.putInt(data.length);
         inOrder.put(data);
         inOrder.limit(inOrder.position());
-        inOrder.clear();
+        inOrder.rewind();
 
         defaultSubject.deserialize(buffer, VirtualBlobValue.CURRENT_VERSION);
 

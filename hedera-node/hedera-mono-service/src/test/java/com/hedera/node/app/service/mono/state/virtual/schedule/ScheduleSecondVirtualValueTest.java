@@ -167,7 +167,7 @@ class ScheduleSecondVirtualValueTest {
         buffer.putLong(30L);
         buffer.putInt(40);
         buffer.putLong(3L);
-        buffer.clear();
+        buffer.rewind();
 
         final var defaultSubject = new ScheduleSecondVirtualValue();
 
