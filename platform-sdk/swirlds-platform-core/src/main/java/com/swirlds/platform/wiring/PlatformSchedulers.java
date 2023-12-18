@@ -26,7 +26,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 
 /**
@@ -45,6 +44,7 @@ import java.util.List;
  * @param pcesReplayerScheduler            the scheduler for the pces replayer
  * @param pcesWriterScheduler              the scheduler for the pces writer
  * @param pcesSequencerScheduler           the scheduler for the pces sequencer
+ * @param eventDurabilityNexusScheduler    the scheduler for the event durability nexus
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -58,8 +58,9 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
         @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
-        @NonNull TaskScheduler<Void> pcesWriterScheduler,
-        @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler) {
+        @NonNull TaskScheduler<Long> pcesWriterScheduler,
+        @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler,
+        @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -153,6 +154,12 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("pcesSequencer")
                         .withType(config.pcesSequencerSchedulerType())
                         .withUnhandledTaskCapacity(config.pcesSequencerUnhandledTaskCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("eventDurabilityNexus")
+                        .withType(config.eventDurabilityNexusSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventDurabilityNexusUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());

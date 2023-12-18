@@ -32,13 +32,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param pcesIteratorInputWire       the input wire for the iterator of events to replay
  * @param doneStreamingPcesOutputWire the output wire which indicates that PCES replay is complete
- * @param eventOutputWire             the secondary output wire, for events to be passed into the intake pipeline during
+ * @param eventOutput                 the secondary output wire, for events to be passed into the intake pipeline during
  *                                    replay
  */
 public record PcesReplayerWiring(
         @NonNull InputWire<IOIterator<GossipEvent>> pcesIteratorInputWire,
         @NonNull OutputWire<DoneStreamingPcesTrigger> doneStreamingPcesOutputWire,
-        @NonNull StandardOutputWire<GossipEvent> eventOutputWire) {
+        @NonNull StandardOutputWire<GossipEvent> eventOutput) {
 
     /**
      * Create a new instance of this wiring.

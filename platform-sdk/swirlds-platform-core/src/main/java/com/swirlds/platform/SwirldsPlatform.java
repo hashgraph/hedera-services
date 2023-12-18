@@ -95,6 +95,7 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFiles;
@@ -591,7 +592,8 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
                 () -> latestImmutableState.getState("PCES replay"));
-        platformWiring.bind(eventHasher, signedStateFileManager, stateSigner, pcesReplayer);
+        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
+        platformWiring.bind(eventHasher, signedStateFileManager, stateSigner, pcesReplayer, eventDurabilityNexus);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -691,7 +693,7 @@ public class SwirldsPlatform implements Platform {
                 new ConsensusHandlingMetrics(metrics, time),
                 eventStreamManager,
                 stateHashSignQueue,
-                preconsensusEventWriter::waitUntilDurable,
+                eventDurabilityNexus::waitUntilDurable,
                 platformStatusManager,
                 consensusHashManager::roundCompleted,
                 appVersion));

@@ -20,13 +20,12 @@ import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -36,7 +35,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This object is responsible for writing events to the database.
  */
-public class PcesWriter implements Stoppable {
+public class PcesWriter {
 
     private static final Logger logger = LogManager.getLogger(PcesWriter.class);
 
@@ -117,11 +116,6 @@ public class PcesWriter implements Stoppable {
     private long lastWrittenEvent = -1;
 
     /**
-     * The highest event sequence number that has been flushed.
-     */
-    private final CountUpLatch lastFlushedEvent = new CountUpLatch(-1);
-
-    /**
      * If true then all added events are new and need to be written to the stream. If false then all added events
      * are already durable and do not need to be written to the stream.
      */
@@ -171,24 +165,29 @@ public class PcesWriter implements Stoppable {
      * Write an event to the stream.
      *
      * @param event the event to be written
+     * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
+     * result in any additional events being durably written to the stream
      */
-    public void writeEvent(@NonNull final GossipEvent event) {
+    @Nullable
+    public Long writeEvent(@NonNull final GossipEvent event) {
         validateSequenceNumber(event);
 
         if (!streamingNewEvents) {
             lastWrittenEvent = event.getStreamSequenceNumber();
-            return;
+            return lastWrittenEvent;
         }
 
         if (event.getGeneration() < minimumGenerationNonAncient) {
             event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
-            return;
+            return null;
         }
 
         try {
-            prepareOutputStream(event);
+            final Long latestDurableSequenceNumberUpdate = prepareOutputStream(event);
             currentMutableFile.writeEvent(event);
             lastWrittenEvent = event.getStreamSequenceNumber();
+
+            return latestDurableSequenceNumberUpdate;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -198,13 +197,20 @@ public class PcesWriter implements Stoppable {
      * Inform the preconsensus event writer that a discontinuity has occurred in the preconsensus event stream.
      *
      * @param newOriginRound the round of the state that the new stream will be starting from
+     * @return the sequence number of the last event written to the stream, or null if this method call didn't result
+     * in any additional events being durably written to the stream
      */
-    public void registerDiscontinuity(final long newOriginRound) {
+    @Nullable
+    public Long registerDiscontinuity(final long newOriginRound) {
+        Long lastWrittenEvent = null;
         if (currentMutableFile != null) {
             closeFile();
+            lastWrittenEvent = this.lastWrittenEvent;
         }
 
         fileManager.registerDiscontinuity(newOriginRound);
+
+        return lastWrittenEvent;
     }
 
     /**
@@ -222,14 +228,28 @@ public class PcesWriter implements Stoppable {
      * to the event writer.
      *
      * @param minimumGenerationNonAncient the minimum generation of a non-ancient event
+     * @return the sequence number of the last event written to the stream if this method call resulted in any
+     * additional events being durably written to the stream, otherwise null
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+    @Nullable
+    public Long setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
             throw new IllegalArgumentException("Minimum generation non-ancient cannot be decreased. Current = "
                     + this.minimumGenerationNonAncient + ", requested = " + minimumGenerationNonAncient);
         }
 
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+
+        if (!streamingNewEvents || currentMutableFile == null) {
+            return null;
+        }
+
+        try {
+            currentMutableFile.flush();
+            return lastWrittenEvent;
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to flush", e);
+        }
     }
 
     /**
@@ -240,37 +260,6 @@ public class PcesWriter implements Stoppable {
     public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
         this.minimumGenerationToStore = minimumGenerationToStore;
         pruneOldFiles();
-    }
-
-    /**
-     * Check if an event is guaranteed to be durable, i.e. flushed to disk.
-     *
-     * @param event the event in question
-     * @return true if the event can is guaranteed to be durable
-     */
-    public boolean isEventDurable(@NonNull final GossipEvent event) {
-        Objects.requireNonNull(event, "event must not be null");
-        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            // Stale events are not written to disk.
-            return false;
-        }
-        return event.getStreamSequenceNumber() <= lastFlushedEvent.getCount();
-    }
-
-    /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method, the
-     * event in question should have been passed to {@link #writeEvent} and {@link #requestFlush()} should
-     * have been called. Otherwise, this method may block indefinitely.
-     *
-     * @param event the event in question
-     * @throws InterruptedException if interrupted while waiting
-     */
-    public void waitUntilDurable(@NonNull final GossipEvent event) throws InterruptedException {
-        Objects.requireNonNull(event);
-        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event is stale and will never be durable");
-        }
-        lastFlushedEvent.await(event.getStreamSequenceNumber());
     }
 
     /**
@@ -292,35 +281,7 @@ public class PcesWriter implements Stoppable {
     }
 
     /**
-     * Mark all unflushed events as durable.
-     */
-    private void markEventsAsFlushed() {
-        lastFlushedEvent.set(lastWrittenEvent);
-    }
-
-    /**
-     * Request that the event writer perform a flush as soon as all events currently added have been written.
-     */
-    public void requestFlush() {
-        if (!streamingNewEvents) {
-            markEventsAsFlushed();
-            return;
-        }
-
-        if (currentMutableFile == null) {
-            return;
-        }
-
-        try {
-            currentMutableFile.flush();
-            markEventsAsFlushed();
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to flush", e);
-        }
-    }
-
-    /**
-     * Close the output file.
+     * Close the output file
      */
     private void closeFile() {
         try {
@@ -331,7 +292,6 @@ public class PcesWriter implements Stoppable {
             currentMutableFile.close();
 
             fileManager.finishedWritingFile(currentMutableFile);
-            markEventsAsFlushed();
             currentMutableFile = null;
 
             // Not strictly required here, but not a bad place to ensure we delete
@@ -365,8 +325,11 @@ public class PcesWriter implements Stoppable {
      * Prepare the output stream for a particular event. May create a new file/stream if needed.
      *
      * @param eventToWrite the event that is about to be written
+     * @return the latest sequence number durably written to disk, if preparing the output stream caused a file to be
+     * closed. Otherwise, null.
      */
-    private void prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
+    private Long prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
+        Long latestDurableSequenceNumberUpdate = null;
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
             final boolean fileIsFull =
@@ -374,6 +337,7 @@ public class PcesWriter implements Stoppable {
 
             if (!fileCanContainEvent || fileIsFull) {
                 closeFile();
+                latestDurableSequenceNumberUpdate = lastWrittenEvent;
             }
 
             if (fileIsFull) {
@@ -389,16 +353,7 @@ public class PcesWriter implements Stoppable {
                     .getNextFileDescriptor(minimumGenerationNonAncient, maximumGeneration)
                     .getMutableFile();
         }
-    }
 
-    public void stop() {
-        if (currentMutableFile != null) {
-            try {
-                currentMutableFile.close();
-                markEventsAsFlushed();
-            } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
+        return latestDurableSequenceNumberUpdate;
     }
 }

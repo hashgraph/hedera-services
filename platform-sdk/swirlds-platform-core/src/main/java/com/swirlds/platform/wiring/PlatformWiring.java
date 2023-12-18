@@ -38,6 +38,7 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -50,6 +51,7 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
@@ -77,6 +79,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PcesReplayerWiring pcesReplayerWiring;
     private final PcesWriterWiring pcesWriterWiring;
     private final PcesSequencerWiring pcesSequencerWiring;
+    private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -133,6 +136,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
+        eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
         wire();
     }
@@ -192,7 +196,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         }
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
-        pcesReplayerWiring.eventOutputWire().solderTo(eventHasherWiring.eventInput());
+        pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        pcesWriterWiring.latestDurableSequenceNumberOutput().solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
@@ -278,16 +283,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param signedStateFileManager the signed state file manager to bind
      * @param stateSigner            the state signer to bind
      * @param pcesReplayer           the PCES replayer to bind
+     * @param eventDurabilityNexus   the event durability nexus to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
             @NonNull final SignedStateFileManager signedStateFileManager,
             @NonNull final StateSigner stateSigner,
-            @NonNull final PcesReplayer pcesReplayer) {
+            @NonNull final PcesReplayer pcesReplayer,
+            @NonNull final EventDurabilityNexus eventDurabilityNexus) {
+
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
+        eventDurabilityNexusWiring.bind(eventDurabilityNexus);
 
         // FUTURE WORK: bind all the things!
     }
@@ -371,7 +380,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @return the output wire that the replayer uses to pass events from file into the intake pipeline
      */
     public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
-        return pcesReplayerWiring.eventOutputWire();
+        return pcesReplayerWiring.eventOutput();
     }
 
     /**
