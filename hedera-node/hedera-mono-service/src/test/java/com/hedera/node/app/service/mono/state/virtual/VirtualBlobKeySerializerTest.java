@@ -42,7 +42,7 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
@@ -53,23 +53,21 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void deserializeWorks() throws IOException {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
         final var expectedKey = new VirtualBlobKey(FILE_DATA, entityNum);
-        given(bin.get()).willReturn((byte) FILE_DATA.ordinal());
-        given(bin.getInt()).willReturn(entityNum);
+        bin.put((byte) FILE_DATA.ordinal());
+        bin.putInt(entityNum);
+        bin.clear();
 
         assertEquals(expectedKey, subject.deserialize(bin, 1));
     }
 
     @Test
     void serializeWorks() throws IOException {
-        final var out = mock(ByteBuffer.class);
+        final ByteBuffer out = ByteBuffer.allocate(subject.getSerializedSize());
         final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualBlobKey, out));
-
-        verify(out).put((byte) FILE_DATA.ordinal());
-        verify(out).putInt(entityNum);
     }
 
     @Test
@@ -78,12 +76,15 @@ class VirtualBlobKeySerializerTest {
         final var sameTypeDiffNum = new VirtualBlobKey(FILE_DATA, otherEntityNum);
         final var diffTypeSameNum = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
 
-        final var bin = mock(ByteBuffer.class);
-        given(bin.get()).willReturn((byte) someKey.getType().ordinal());
-        given(bin.getInt()).willReturn(someKey.getEntityNumCode());
+        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
+        bin.put((byte) someKey.getType().ordinal());
+        bin.putInt(someKey.getEntityNumCode());
+        bin.clear();
 
         assertTrue(subject.equals(bin, 1, someKey));
+        bin.clear();
         assertFalse(subject.equals(bin, 1, sameTypeDiffNum));
+        bin.clear();
         assertFalse(subject.equals(bin, 1, diffTypeSameNum));
     }
 

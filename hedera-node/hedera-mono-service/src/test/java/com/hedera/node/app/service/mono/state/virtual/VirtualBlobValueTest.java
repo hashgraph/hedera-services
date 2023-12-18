@@ -89,30 +89,34 @@ class VirtualBlobValueTest {
 
     @Test
     void serializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-        final var inOrder = inOrder(buffer);
-        subject.serialize(buffer);
+        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final ByteBuffer inOrder = ByteBuffer.allocate(10);
 
-        inOrder.verify(buffer).putInt(data.length);
-        inOrder.verify(buffer).put(data);
+        subject.serialize(buffer);
+        buffer.clear();
+
+        inOrder.putInt(data.length);
+        inOrder.put(data);
+        inOrder.limit(inOrder.position());
+        inOrder.clear();
+
+        assertEquals(buffer, inOrder);
     }
 
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(10);
         final var defaultSubject = new VirtualBlobValue();
-        int len = data.length;
 
-        given(buffer.getInt()).willReturn(len);
-        doAnswer(new Answer() {
-                    @Override
-                    public Object answer(final InvocationOnMock invocationOnMock) {
-                        defaultSubject.setData(data);
-                        return null;
-                    }
-                })
-                .when(buffer)
-                .get(ArgumentMatchers.any());
+        final ByteBuffer inOrder = ByteBuffer.allocate(10);
+
+        subject.serialize(buffer);
+        buffer.clear();
+
+        inOrder.putInt(data.length);
+        inOrder.put(data);
+        inOrder.limit(inOrder.position());
+        inOrder.clear();
 
         defaultSubject.deserialize(buffer, VirtualBlobValue.CURRENT_VERSION);
 

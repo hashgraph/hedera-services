@@ -75,19 +75,26 @@ class EntityNumVirtualKeyTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(1024);
+        final ByteBuffer verify = ByteBuffer.allocate(1024);
+
+        verify.putLong(longKey);
+        verify.limit(verify.position());
+        verify.clear();
 
         subject.serialize(buffer);
+        buffer.clear();
 
-        verify(buffer).putLong(longKey);
+        assertEquals(buffer, verify);
     }
 
     @Test
     void deserializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-
-        given(buffer.getLong()).willReturn(longKey);
-
+        final ByteBuffer buffer = ByteBuffer.allocate(1024);
+        buffer.putLong(longKey);
+        buffer.limit(buffer.position());
+        buffer.clear();
+        
         EntityNumVirtualKey key = new EntityNumVirtualKey();
 
         key.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);

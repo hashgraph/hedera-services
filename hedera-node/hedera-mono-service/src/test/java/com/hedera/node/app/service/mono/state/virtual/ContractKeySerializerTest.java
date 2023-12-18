@@ -54,12 +54,12 @@ class ContractKeySerializerTest {
 
     @Test
     void deserializerWorks() throws IOException {
-        final var bin = mock(ByteBuffer.class);
-        given(bin.get())
-                .willReturn(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .willReturn((byte) (contractKey.getContractId() >> 8))
-                .willReturn((byte) (contractKey.getContractId()))
-                .willReturn(contractKey.getUint256Byte(0));
+        final ByteBuffer bin = ByteBuffer.allocate(4);
+        bin.put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.put((byte) (contractKey.getContractId() >> 8));
+        bin.put((byte) (contractKey.getContractId()));
+        bin.put(contractKey.getUint256Byte(0));
+        bin.clear();
 
         assertEquals(contractKey, subject.deserialize(bin, 1));
     }
@@ -69,27 +69,31 @@ class ContractKeySerializerTest {
         final var contractIdNonZeroBytes = contractKey.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
 
-        final var out = mock(ByteBuffer.class);
-        final var inOrder = inOrder(out);
+        final ByteBuffer out = ByteBuffer.allocate(4);
 
         subject.serialize(contractKey, out);
+        out.clear();
 
-        inOrder.verify(out).put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+
+        byteBuffer.put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.verify(out).put((byte) (contractKey.getContractId() >> (b * 8)));
+            byteBuffer.put((byte) (contractKey.getContractId() >> (b * 8)));
         }
         for (int b = uint256KeyNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.verify(out).put(contractKey.getUint256Byte(b));
+            byteBuffer.put(contractKey.getUint256Byte(b));
         }
+        byteBuffer.clear();
+
+        assertEquals(out, byteBuffer);
     }
 
     @Test
     void deserializeKeySizeWorks() {
         final var contractIdNonZeroBytes = contractKey.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
-        final var bin = mock(ByteBuffer.class);
-
-        given(bin.get()).willReturn(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        final ByteBuffer bin = ByteBuffer.allocate(1);
+        bin.put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes()).flip();
 
         assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.deserializeKeySize(bin));
     }
@@ -98,12 +102,11 @@ class ContractKeySerializerTest {
     void equalsUsingByteBufferWorks() throws IOException {
         final var someKey = new ContractKey(0L, key);
         final var anIdenticalKey = new ContractKey(0L, key);
-        final var bin = mock(ByteBuffer.class);
-
-        given(bin.get())
-                .willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .willReturn((byte) (someKey.getContractId()))
-                .willReturn(someKey.getUint256Byte(0));
+        final ByteBuffer bin = ByteBuffer.allocate(3);
+        bin.put(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.put((byte)someKey.getContractId());
+        bin.put(someKey.getUint256Byte(0));
+        bin.flip();
 
         assertTrue(subject.equals(bin, 1, anIdenticalKey));
     }
@@ -114,27 +117,31 @@ class ContractKeySerializerTest {
         final var someKeyForDiffContractButSameNonZeroBytes = new ContractKey(otherContractNum, key);
         final var someKeyForDiffContract = new ContractKey(Long.MAX_VALUE, key);
         final var someDiffKeyForSameContract = new ContractKey(contractNum, largeKey.toArray());
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(4);
 
-        given(bin.get())
-                .willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .willReturn((byte) (someKey.getContractId() >> 8))
-                .willReturn((byte) (someKey.getContractId()))
-                .willReturn(someKey.getUint256Byte(0));
+        bin.put(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.put((byte) (someKey.getContractId() >> 8));
+        bin.put((byte) (someKey.getContractId()));
+        bin.put(someKey.getUint256Byte(0));
+        bin.clear();
         assertFalse(subject.equals(bin, 1, someKeyForDiffContract));
 
-        given(bin.get())
-                .willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .willReturn((byte) (someKey.getContractId() >> 8))
-                .willReturn((byte) (someKey.getContractId()))
-                .willReturn(someKey.getUint256Byte(0));
+        bin.clear();
+        bin.put(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.put((byte) (someKey.getContractId() >> 8));
+        bin.put((byte) (someKey.getContractId()));
+        bin.put(someKey.getUint256Byte(0));
+        bin.clear();
         assertFalse(subject.equals(bin, 1, someKeyForDiffContractButSameNonZeroBytes));
 
-        given(bin.get())
-                .willReturn(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .willReturn((byte) (someKey.getContractId() >> 8))
-                .willReturn((byte) (someKey.getContractId()))
-                .willReturn(someKey.getUint256Byte(0));
+        bin.clear();
+
+        bin.put(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.put((byte) (someKey.getContractId() >> 8));
+        bin.put((byte) (someKey.getContractId()));
+        bin.put(someKey.getUint256Byte(0));
+        bin.clear();
+
         assertFalse(subject.equals(bin, 1, someDiffKeyForSameContract));
     }
 }

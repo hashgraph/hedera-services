@@ -38,7 +38,7 @@ class SecondSinceEpocVirtualKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
@@ -50,7 +50,7 @@ class SecondSinceEpocVirtualKeySerializerTest {
     @Test
     void deserializeWorks() throws IOException {
         final ByteBuffer bin = ByteBuffer.allocate(100);
-        bin.putLong(longKey).flip();
+        bin.putLong(longKey).clear();
         final var expectedKey = new SecondSinceEpocVirtualKey(longKey);
 
         assertEquals(expectedKey, subject.deserialize(bin, 1));
@@ -72,10 +72,12 @@ class SecondSinceEpocVirtualKeySerializerTest {
         final var someKey = new SecondSinceEpocVirtualKey(longKey);
         final var diffNum = new SecondSinceEpocVirtualKey(otherLongKey);
 
-        final var bin = mock(ByteBuffer.class);
-        given(bin.getLong()).willReturn(someKey.getKeyAsLong());
+        final ByteBuffer bin = ByteBuffer.allocate(Long.SIZE);
+        bin.putLong(someKey.getKeyAsLong()).clear();
 
         assertTrue(subject.equals(bin, 1, someKey));
+
+        bin.clear();
         assertFalse(subject.equals(bin, 1, diffNum));
     }
 
