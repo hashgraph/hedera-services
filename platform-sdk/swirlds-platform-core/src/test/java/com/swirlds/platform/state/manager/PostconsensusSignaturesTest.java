@@ -106,9 +106,6 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
                                 states.get(round).getState().getHash()));
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 assertSame(signedStates.get((long) round), lastCompletedState.get(), "unexpected last completed state");
             }

@@ -161,9 +161,6 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
                 lastExpectedCompletedRound = Math.max(lastExpectedCompletedRound, roundToSign);
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test get lastState")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState =
                     manager.getLatestSignedState("test get lastCompletedState")) {
                 assertSame(

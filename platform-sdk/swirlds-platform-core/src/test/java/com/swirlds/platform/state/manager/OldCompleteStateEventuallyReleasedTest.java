@@ -113,9 +113,6 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
 
             manager.addState(signedState);
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
 
                 if (round >= roundsToKeepForSigning) {

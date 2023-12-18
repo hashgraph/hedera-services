@@ -127,18 +127,6 @@ public class SignedStateManager {
     }
 
     /**
-     * Get the latest immutable signed state. May be unhashed, may or may not have all required signatures. State is
-     * returned with a reservation.
-     *
-     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
-     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @return the latest signed state, or a null reservation if none are complete
-     */
-    public @NonNull ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
-        return lastState.getAndReserve(reason);
-    }
-
-    /**
      * <p>
      * Get the latest signed states stored by this manager.
      * </p>

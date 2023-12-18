@@ -97,9 +97,6 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
 
             manager.addState(signedState);
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 assertNull(lastCompletedState, "no states should be completed in this test");
             }

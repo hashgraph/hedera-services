@@ -108,9 +108,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                 addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 if (roundToSign >= 0) {
                     assertSame(
