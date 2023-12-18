@@ -86,15 +86,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      * {@inheritDoc}
      */
     @Override
-    public void externalizeUtilPrngFailedResult(
-            @NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {
-        // no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     @NonNull
     public ExchangeRate currentExchangeRate() {
         return context.exchangeRateInfo().activeRate(Instant.now());

@@ -26,18 +26,11 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 
@@ -106,38 +99,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 .contractID(result.contractID())
                 .status(responseStatus)
                 .contractCallResult(result);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void externalizeUtilPrngFailedResult(
-            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
-        final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
-
-        final var body = TransactionBody.newBuilder()
-                .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                .build();
-        final var signedTransaction = SignedTransaction.newBuilder()
-                .bodyBytes(asBytes(TransactionBody.PROTOBUF, body))
-                .build();
-        final var transaction = Transaction.DEFAULT
-                .copyBuilder()
-                .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTransaction))
-                .build();
-
-        childRecordBuilder.transaction(transaction).status(responseStatus).contractCallResult(result);
-    }
-
-    private <R extends Record> Bytes asBytes(@NonNull final Codec<R> codec, @NonNull final R r) {
-        try {
-            final var byteStream = new ByteArrayOutputStream();
-            codec.write(r, new WritableStreamingData(byteStream));
-            return Bytes.wrap(byteStream.toByteArray());
-        } catch (IOException ex) {
-            throw new AssertionError(ex);
-        }
     }
 
     /**

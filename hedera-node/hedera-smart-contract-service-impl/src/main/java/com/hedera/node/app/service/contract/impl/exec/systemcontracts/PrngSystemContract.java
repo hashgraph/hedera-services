@@ -137,12 +137,6 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         }
     }
 
-    private TransactionBody synthBody() {
-        return TransactionBody.newBuilder()
-                .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                .build();
-    }
-
     void createFailedRecord(
             @NonNull MessageFrame frame,
             @NonNull final ResponseCodeEnum responseCode,
@@ -165,8 +159,15 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
 
             updater.enhancement()
                     .systemOperations()
-                    .externalizeUtilPrngFailedResult(contractResult, PbjConverter.toPbj(responseCode));
+                    .externalizePreemptedDispatch(synthBody(), PbjConverter.toPbj(responseCode))
+                    .contractCallResult(contractResult);
         }
+    }
+
+    private TransactionBody synthBody() {
+        return TransactionBody.newBuilder()
+                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                .build();
     }
 
     Bytes generatePseudoRandomData(@NonNull final Bytes input, @NonNull final MessageFrame frame) {

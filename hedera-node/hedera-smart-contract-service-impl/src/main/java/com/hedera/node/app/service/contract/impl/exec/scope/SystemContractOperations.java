@@ -78,16 +78,6 @@ public interface SystemContractOperations {
             @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus);
 
     /**
-     * Attempts to create a child record for a failed prng contract. When we have a failing prng contract we do want to
-     * have an empty prng_bytes field but if we dispatch it - it's populated. That's why we have this method to just
-     * add an empty prng_bytes field
-     * @param result
-     * @param responseStatus
-     */
-    void externalizeUtilPrngFailedResult(
-            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus);
-
-    /**
      * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
      * to dollars
      *
