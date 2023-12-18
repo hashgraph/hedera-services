@@ -33,13 +33,10 @@ import org.hyperledger.besu.datatypes.Address;
 public final class SystemContractUtils {
 
     /*
-    TODO: here is how contractId is set in mono:
-    PrngSystemPrecompiledContract.computePrecompile > createSuccessfulChildRecord >
-    addContractCallResultToRecord > PrecompileUtils.addContractCallResultToRecord.
-    For the contractId in EvmFnResult is passed HTS_PRECOMPILE_MIRROR_ENTITY_ID - which is using the
-    HTC contract address(0x167). This seems like a bug to me.
-    Is this how it's suppose to work? Should I fix it in mono or should I just mimic it here and
-    create a story to later fix it?
+    The contractFunctionResultSuccessFor is called from Prgn contract and we are setting the HTS address - this is done
+    to mirror the current mono behaviour(PrngSystemPrecompiledContract.computePrecompile > createSuccessfulChildRecord >
+    addContractCallResultToRecord > PrecompileUtils.addContractCallResultToRecord). This will be
+    fixed after the differential testing in this story https://github.com/hashgraph/hedera-services/issues/10552
      */
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
     public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
