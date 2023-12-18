@@ -24,12 +24,20 @@ public class FakeNodeStakeUpdateRecordBuilder {
 
     public NodeStakeUpdateRecordBuilder create() {
         return new NodeStakeUpdateRecordBuilder() {
+            private String memo;
             private Transaction txn;
 
             @NotNull
             @Override
             public NodeStakeUpdateRecordBuilder transaction(@NotNull final Transaction txn) {
                 this.txn = txn;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public NodeStakeUpdateRecordBuilder memo(@NotNull String memo) {
+                this.memo = memo;
                 return this;
             }
         };

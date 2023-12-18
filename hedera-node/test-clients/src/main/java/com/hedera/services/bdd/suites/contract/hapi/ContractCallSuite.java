@@ -257,6 +257,7 @@ public class ContractCallSuite extends HapiSuite {
                 repeatedCreate2FailsWithInterpretableActionSidecars());
     }
 
+    @HapiTest
     final HapiSpec repeatedCreate2FailsWithInterpretableActionSidecars() {
         final var contract = "Create2PrecompileUser";
         final var salt = unhex(SALT);
@@ -280,6 +281,7 @@ public class ContractCallSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     final HapiSpec hollowCreationFailsCleanly() {
         final var contract = "HollowAccountCreator";
         return defaultHapiSpec("HollowCreationFailsCleanly")

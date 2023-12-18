@@ -225,25 +225,26 @@ public class EndOfStakingPeriodUpdater {
         final long reservedStakingRewards = stakingRewardsStore.pendingRewards();
         final long unreservedStakingRewardBalance = rewardAccountBalance - reservedStakingRewards;
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
-                        lastInstantOfPreviousPeriodFor(consensusTime),
-                        finalNodeStakes,
-                        stakingConfig,
-                        totalStakedRewardStart,
-                        perHbarRate,
-                        reservedStakingRewards,
-                        unreservedStakingRewardBalance,
-                        stakingConfig.rewardBalanceThreshold(),
-                        stakingConfig.maxStakeRewarded())
-                .memo("End of staking period calculation record");
+                lastInstantOfPreviousPeriodFor(consensusTime),
+                finalNodeStakes,
+                stakingConfig,
+                totalStakedRewardStart,
+                perHbarRate,
+                reservedStakingRewards,
+                unreservedStakingRewardBalance,
+                stakingConfig.rewardBalanceThreshold(),
+                stakingConfig.maxStakeRewarded());
         log.info("Exporting:\n{}", finalNodeStakes);
         // We don't want to fail adding the preceding child record for the node stake update that happens every
         // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
         // MAX_CHILD_RECORDS_EXCEEDED
         final var nodeStakeUpdateBuilder =
                 context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
-        nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
-                .body(syntheticNodeStakeUpdateTxn.build())
-                .build());
+        nodeStakeUpdateBuilder
+                .transaction(Transaction.newBuilder()
+                        .body(syntheticNodeStakeUpdateTxn.build())
+                        .build())
+                .memo("End of staking period calculation record");
     }
 
     /**
