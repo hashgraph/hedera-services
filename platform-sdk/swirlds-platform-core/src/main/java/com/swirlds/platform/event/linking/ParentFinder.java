@@ -42,12 +42,12 @@ public class ParentFinder {
             final GossipEvent event, final boolean selfParent, final long minGenerationNonAncient) {
         throw new UnsupportedOperationException("This code pathway is no longer supported. "
                 + "New intake pipeline is expected to take over this functionality.");
-//        final long parentGeneration = selfParent
-//                ? event.getHashedData().getSelfParentGen()
-//                : event.getHashedData().getOtherParentGen();
+        //        final long parentGeneration = selfParent
+        //                ? event.getHashedData().getSelfParentGen()
+        //                : event.getHashedData().getOtherParentGen();
         // if an event does not have a parent, its generation will be EventConstants.GENERATION_UNDEFINED,
         // which is always smaller than minGenerationNonAncient
-//        return parentGeneration >= minGenerationNonAncient;
+        //        return parentGeneration >= minGenerationNonAncient;
     }
 
     private EventImpl getParent(final GossipEvent event, final boolean selfParent) {

@@ -25,11 +25,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * A class that stores temporary data that is used while calculating consensus inside the platform.
- * This data is not relevant after consensus has been calculated.
+ * A class that stores temporary data that is used while calculating consensus inside the platform. This data is not
+ * relevant after consensus has been calculated.
  */
 public class EventMetadata implements Clearable {
     /** the self parent of this */
@@ -55,23 +56,19 @@ public class EventMetadata implements Clearable {
     /** lastSee[m] is the last ancestor created by m (memoizes function from Swirlds-TR-2020-01) */
     private EventImpl[] lastSee;
     /**
-     * stronglySeeP[m] is strongly-seen witness in parent round by m (memoizes function from
-     * Swirlds-TR-2020-01)
+     * stronglySeeP[m] is strongly-seen witness in parent round by m (memoizes function from Swirlds-TR-2020-01)
      */
     private EventImpl[] stronglySeeP;
     /**
-     * The first witness that's a self-ancestor in the self round (memoizes function from
-     * Swirlds-TR-2020-01)
+     * The first witness that's a self-ancestor in the self round (memoizes function from Swirlds-TR-2020-01)
      */
     private EventImpl firstSelfWitnessS;
     /**
-     * the first witness that's an ancestor in the self round (memoizes function from
-     * Swirlds-TR-2020-01)
+     * the first witness that's an ancestor in the self round (memoizes function from Swirlds-TR-2020-01)
      */
     private EventImpl firstWitnessS;
     /**
-     * temporarily used during any graph algorithm that needs to mark vertices (events) already
-     * visited
+     * temporarily used during any graph algorithm that needs to mark vertices (events) already visited
      */
     private int mark;
     /**
@@ -79,15 +76,14 @@ public class EventMetadata implements Clearable {
      */
     private List<Instant> recTimes;
     /**
-     * the created round of this event (max of parents', plus either 0 or 1. 1 if no parents. 0 if
-     * neg infinity)
+     * the created round of this event (max of parents', plus either 0 or 1. 1 if no parents. 0 if neg infinity)
      */
     private long roundCreated = ConsensusConstants.ROUND_UNDEFINED;
     /** is there a consensus that this event is stale (no order, transactions ignored) */
     private boolean stale;
     /**
-     * an array that holds votes for witness elections. the index for each vote matches the index of
-     * the witness in the current election
+     * an array that holds votes for witness elections. the index for each vote matches the index of the witness in the
+     * current election
      */
     private boolean[] votes;
 
@@ -109,10 +105,10 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * Erase all references to other events within this event. This can be used so other events can
-     * be garbage collected, even if this one still has things pointing to it. The numEventsInMemory
-     * count is decremented here, and incremented when the event is instantiated, so it is important
-     * to ensure that this is eventually called on every event.
+     * Erase all references to other events within this event. This can be used so other events can be garbage
+     * collected, even if this one still has things pointing to it. The numEventsInMemory count is decremented here, and
+     * incremented when the event is instantiated, so it is important to ensure that this is eventually called on every
+     * event.
      */
     @Override
     public void clear() {
@@ -145,6 +141,16 @@ public class EventMetadata implements Clearable {
     }
 
     /**
+     * Get the other parents of this event.
+     *
+     * @return the other parents of this event.
+     */
+    @NonNull
+    public List<EventImpl> getOtherParents() {
+        return otherParents;
+    }
+
+    /**
      * @return the other parent of this
      */
     public @Nullable EventImpl getOtherParent() {
@@ -156,11 +162,6 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @param otherParent the other parent of this
-     */
-    public void setOtherParent(@Nullable final EventImpl otherParent) {}
-
-    /**
      * @return an estimate of what the consensus timestamp will be (could be a very bad guess)
      */
     public @NonNull Instant getEstimatedTime() {
@@ -168,8 +169,7 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @param estimatedTime an estimate of what the consensus timestamp will be (could be a very bad
-     *     guess)
+     * @param estimatedTime an estimate of what the consensus timestamp will be (could be a very bad guess)
      */
     public void setEstimatedTime(@NonNull final Instant estimatedTime) {
         this.estimatedTime = estimatedTime;
@@ -239,8 +239,7 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @param reachedConsTimestamp the local time (not consensus time) at which the event reached
-     *     consensus
+     * @param reachedConsTimestamp the local time (not consensus time) at which the event reached consensus
      */
     public void setReachedConsTimestamp(@NonNull final Instant reachedConsTimestamp) {
         this.reachedConsTimestamp = reachedConsTimestamp;
@@ -255,10 +254,9 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * remember event, the last ancestor created by m (memoizes lastSee function from
-     * Swirlds-TR-2020-01)
+     * remember event, the last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
      *
-     * @param m the member ID
+     * @param m     the member ID
      * @param event the last seen {@link EventImpl} object created by m
      */
     public void setLastSee(final int m, @Nullable final EventImpl event) {
@@ -266,8 +264,8 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * Initialize the lastSee array to hold n elements (for n &ge; 0) (memoizes lastSee function
-     * from Swirlds-TR-2020-01)
+     * Initialize the lastSee array to hold n elements (for n &ge; 0) (memoizes lastSee function from
+     * Swirlds-TR-2020-01)
      *
      * @param n number of members in the initial address book
      */
@@ -276,8 +274,7 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @return the number of elements lastSee holds (memoizes lastSee function from
-     *     Swirlds-TR-2020-01)
+     * @return the number of elements lastSee holds (memoizes lastSee function from Swirlds-TR-2020-01)
      */
     public int sizeLastSee() {
         return lastSee == null ? 0 : lastSee.length;
@@ -285,18 +282,17 @@ public class EventMetadata implements Clearable {
 
     /**
      * @param m the member ID
-     * @return strongly-seen witness in parent round by m (memoizes stronglySeeP function from
-     *     Swirlds-TR-2020-01)
+     * @return strongly-seen witness in parent round by m (memoizes stronglySeeP function from Swirlds-TR-2020-01)
      */
     public @Nullable EventImpl getStronglySeeP(final int m) {
         return stronglySeeP[m];
     }
 
     /**
-     * remember event, the strongly-seen witness in parent round by m (memoizes stronglySeeP
-     * function from Swirlds-TR-2020-01)
+     * remember event, the strongly-seen witness in parent round by m (memoizes stronglySeeP function from
+     * Swirlds-TR-2020-01)
      *
-     * @param m the member ID
+     * @param m     the member ID
      * @param event the strongly-seen witness in parent round created by m
      */
     public void setStronglySeeP(final int m, @Nullable final EventImpl event) {
@@ -304,8 +300,8 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * Initialize the stronglySeeP array to hold n elements (for n &ge; 0) (memoizes stronglySeeP
-     * function from Swirlds-TR-2020-01)
+     * Initialize the stronglySeeP array to hold n elements (for n &ge; 0) (memoizes stronglySeeP function from
+     * Swirlds-TR-2020-01)
      *
      * @param n number of members in AddressBook
      */
@@ -314,72 +310,65 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @return the number of elements stronglySeeP holds (memoizes stronglySeeP function from
-     *     Swirlds-TR-2020-01)
+     * @return the number of elements stronglySeeP holds (memoizes stronglySeeP function from Swirlds-TR-2020-01)
      */
     public int sizeStronglySeeP() {
         return stronglySeeP == null ? 0 : stronglySeeP.length;
     }
 
     /**
-     * @return The first witness that's a self-ancestor in the self round (memoizes function from
-     *     Swirlds-TR-2020-01)
+     * @return The first witness that's a self-ancestor in the self round (memoizes function from Swirlds-TR-2020-01)
      */
     public @Nullable EventImpl getFirstSelfWitnessS() {
         return firstSelfWitnessS;
     }
 
     /**
-     * @param firstSelfWitnessS The first witness that's a self-ancestor in the self round (memoizes
-     *     function from Swirlds-TR-2020-01)
+     * @param firstSelfWitnessS The first witness that's a self-ancestor in the self round (memoizes function from
+     *                          Swirlds-TR-2020-01)
      */
     public void setFirstSelfWitnessS(@Nullable final EventImpl firstSelfWitnessS) {
         this.firstSelfWitnessS = firstSelfWitnessS;
     }
 
     /**
-     * @return the first witness that's an ancestor in the self round (memoizes function from
-     *     Swirlds-TR-2020-01)
+     * @return the first witness that's an ancestor in the self round (memoizes function from Swirlds-TR-2020-01)
      */
     public @Nullable EventImpl getFirstWitnessS() {
         return firstWitnessS;
     }
 
     /**
-     * @param firstWitnessS the first witness that's an ancestor in the self round (memoizes
-     *     function from Swirlds-TR-2020-01)
+     * @param firstWitnessS the first witness that's an ancestor in the self round (memoizes function from
+     *                      Swirlds-TR-2020-01)
      */
     public void setFirstWitnessS(@Nullable final EventImpl firstWitnessS) {
         this.firstWitnessS = firstWitnessS;
     }
 
     /**
-     * @return temporarily used during any graph algorithm that needs to mark vertices (events)
-     *     already visited
+     * @return temporarily used during any graph algorithm that needs to mark vertices (events) already visited
      */
     public int getMark() {
         return mark;
     }
 
     /**
-     * @param mark temporarily used during any graph algorithm that needs to mark vertices (events)
-     *     already visited
+     * @param mark temporarily used during any graph algorithm that needs to mark vertices (events) already visited
      */
     public void setMark(final int mark) {
         this.mark = mark;
     }
 
     /**
-     * @return the time at which each unique famous witness in the received round first received
-     *     this event
+     * @return the time at which each unique famous witness in the received round first received this event
      */
     public @Nullable List<Instant> getRecTimes() {
         return recTimes;
     }
 
     /**
-     * @param recTimes the time at which each unique famous witness in the received round first
-     *     received this event
+     * @param recTimes the time at which each unique famous witness in the received round first received this event
      */
     public void setRecTimes(@Nullable final List<Instant> recTimes) {
         this.recTimes = recTimes;
@@ -428,7 +417,7 @@ public class EventMetadata implements Clearable {
      * Set this witness' vote on the witness provided
      *
      * @param witness the witness being voted on
-     * @param vote true if it's a YES vote, false if it's a NO vote
+     * @param vote    true if it's a YES vote, false if it's a NO vote
      */
     public void setVote(@NonNull final CandidateWitness witness, final boolean vote) {
         this.votes[witness.getElectionIndex()] = vote;

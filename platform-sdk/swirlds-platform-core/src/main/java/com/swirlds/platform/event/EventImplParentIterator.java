@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
@@ -24,11 +25,11 @@ import java.util.Objects;
 // TODO unit test this
 
 /**
- * Iterates over the parents of a {@link GossipEvent}.
+ * Iterates over the parents of an {@link EventImpl}.
  */
-public class GossipEventParentIterator implements Iterator<EventDescriptor> {
+public class EventImplParentIterator implements Iterator<EventImpl> {
 
-    private final GossipEvent event;
+    private final EventImpl event;
     private final int eventCount;
     private final boolean returnSelfParent;
     private int returnedCount = 0;
@@ -39,7 +40,7 @@ public class GossipEventParentIterator implements Iterator<EventDescriptor> {
      *
      * @param event          the event whose parents we want to iterate over
      */
-    public GossipEventParentIterator(@NonNull final GossipEvent event) {
+    public EventImplParentIterator(@NonNull final EventImpl event) {
         this.event = Objects.requireNonNull(event);
         returnSelfParent = event.getHashedData().getSelfParent() != null;
         eventCount = (returnSelfParent ? 1 : 0)
@@ -59,21 +60,21 @@ public class GossipEventParentIterator implements Iterator<EventDescriptor> {
      */
     @NonNull
     @Override
-    public EventDescriptor next() {
+    public EventImpl next() {
         if (!hasNext()) {
             throw new IllegalStateException("No more parents");
         }
 
-        final EventDescriptor parent;
+        final EventImpl parent;
         if (returnedCount == 0) {
             if (returnSelfParent) {
-                parent = event.getHashedData().getSelfParent();
+                parent = event.getSelfParent();
             } else {
-                parent = event.getHashedData().getOtherParents().get(0);
+                parent = event.getOtherParents().get(0);
             }
         } else {
             final int index = returnedCount - (returnSelfParent ? 1 : 0);
-            parent = event.getHashedData().getOtherParents().get(index);
+            parent = event.getOtherParents().get(index);
         }
 
         returnedCount++;

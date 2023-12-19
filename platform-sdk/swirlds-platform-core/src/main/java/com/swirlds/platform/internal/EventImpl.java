@@ -31,6 +31,7 @@ import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.EventCounter;
+import com.swirlds.platform.event.EventImplParentIterator;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -67,13 +68,14 @@ import java.util.concurrent.CountDownLatch;
 @ConstructableIgnored
 public class EventImpl extends EventMetadata
         implements BaseEvent,
-                Comparable<EventImpl>,
-                PlatformEvent,
-                SerializableHashable,
-                OptionalSelfSerializable<EventSerializationOptions>,
-                RunningHashable,
-                StreamAligned,
-                Timestamped {
+        Comparable<EventImpl>,
+        PlatformEvent,
+        SerializableHashable,
+        OptionalSelfSerializable<EventSerializationOptions>,
+        RunningHashable,
+        StreamAligned,
+        Timestamped,
+        Iterable<EventImpl> {
     /**
      * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
      * the transaction immediately before it in consensus order, and to be a multiple of this (must be positive and a
@@ -175,6 +177,19 @@ public class EventImpl extends EventMetadata
     }
 
     /**
+     * Get an iterator that walks over all parents of this event. First the self parent is returned, followed by events
+     * in the order they appear in the serialized event. If a parent is missing because it is not in memory, then it is
+     * skipped.
+     *
+     * @return an iterator that walks over all parents of this event.
+     */
+    @NonNull
+    @Override
+    public Iterator<EventImpl> iterator() {
+        return new EventImplParentIterator(this);
+    }
+
+    /**
      * Signal that all transactions have been prehandled for this event.
      */
     public void signalPrehandleCompletion() {
@@ -196,18 +211,16 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Set the consensusTimestamp to an estimate of what it will be when consensus is reached even
-     * if it has already reached consensus. Callers are responsible for checking the consensus
-     * systemIndicesStatus of this event and using the consensus time or estimated time
-     * appropriately.
+     * Set the consensusTimestamp to an estimate of what it will be when consensus is reached even if it has already
+     * reached consensus. Callers are responsible for checking the consensus systemIndicesStatus of this event and using
+     * the consensus time or estimated time appropriately.
      *
      * <p>Estimated consensus times are predicted only here and in Platform.estimateTime().
      *
-     * @param selfId the ID of this platform
-     * @param avgSelfCreatedTimestamp self event consensus timestamp minus time created
+     * @param selfId                    the ID of this platform
+     * @param avgSelfCreatedTimestamp   self event consensus timestamp minus time created
      * @param avgOtherReceivedTimestamp other event consensus timestamp minus time received
-     * @deprecated this is only used for SwirldState1 which we no longer support, and it did not do
-     *     any estimates
+     * @deprecated this is only used for SwirldState1 which we no longer support, and it did not do any estimates
      */
     @SuppressWarnings("unused")
     @Deprecated(forRemoval = true)
@@ -543,8 +556,8 @@ public class EventImpl extends EventMetadata
      * is this event the last in consensus order of all those with the same received round
      *
      * @return is this event the last in consensus order of all those with the same received round
-     * @deprecated consensus events are part of {@link ConsensusRound}s, whether it's the last one
-     *     can be determined by looking at its position within the round
+     * @deprecated consensus events are part of {@link ConsensusRound}s, whether it's the last one can be determined by
+     * looking at its position within the round
      */
     @Deprecated(forRemoval = true)
     public boolean isLastInRoundReceived() {
