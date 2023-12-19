@@ -861,52 +861,52 @@ public final class Hedera implements SwirldMain {
     }
 
     private void init(
-        @NonNull final MerkleHederaState state,
-        @Nullable final HederaSoftwareVersion deserializedVersion,
-        @NonNull final InitTrigger trigger) {
-            logger.debug(trigger + " Initialization");
+            @NonNull final MerkleHederaState state,
+            @Nullable final HederaSoftwareVersion deserializedVersion,
+            @NonNull final InitTrigger trigger) {
+        logger.debug(trigger + " Initialization");
 
-            // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
-            if (deserializedVersion == null) {
-                logger.fatal("Fatal error, previous software version not found in saved state!");
-                System.exit(1);
-            }
+        // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
+        if (deserializedVersion == null) {
+            logger.fatal("Fatal error, previous software version not found in saved state!");
+            System.exit(1);
+        }
 
-            // Initialize the configuration from disk (restart case). We must do this BEFORE we run migration, because
-            // the various migration methods may depend on configuration to do their work
-            logger.info("Initializing Reconnect configuration");
-            this.configProvider = new ConfigProviderImpl(false);
-            logConfiguration();
+        // Initialize the configuration from disk (restart case). We must do this BEFORE we run migration, because
+        // the various migration methods may depend on configuration to do their work
+        logger.info("Initializing Reconnect configuration");
+        this.configProvider = new ConfigProviderImpl(false);
+        logConfiguration();
 
-            logger.info("Initializing ThrottleManager");
-            this.throttleManager = new ThrottleManager();
+        logger.info("Initializing ThrottleManager");
+        this.throttleManager = new ThrottleManager();
 
-            this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
-            this.frontendThrottle =
-                    new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
-            this.congestionMultipliers = createCongestionMultipliers(state);
+        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
+        this.frontendThrottle =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
+        this.congestionMultipliers = createCongestionMultipliers(state);
 
-            logger.info("Initializing ExchangeRateManager");
-            exchangeRateManager = new ExchangeRateManager(configProvider);
+        logger.info("Initializing ExchangeRateManager");
+        exchangeRateManager = new ExchangeRateManager(configProvider);
 
-            logger.info("Initializing FeeManager");
-            feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
-            // Create all the nodes in the merkle tree for all the services
-            // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
-            //       the config provider to the migration code and let it get the right version of config as it goes.
-            onMigrate(state, deserializedVersion, trigger);
+        // Create all the nodes in the merkle tree for all the services
+        // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
+        //       the config provider to the migration code and let it get the right version of config as it goes.
+        onMigrate(state, deserializedVersion, trigger);
 
-            // Now that we have the state created, we are ready to create the dependency graph with Dagger
-            initializeDagger(state, trigger);
+        // Now that we have the state created, we are ready to create the dependency graph with Dagger
+        initializeDagger(state, trigger);
 
-            // And now that the entire dependency graph has been initialized, and we have config, and all migration has
-            // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
-            // from information held in state (especially those in special files).
-            initializeExchangeRateManager(state);
-            initializeFeeManager(state);
-            initializeThrottles(state);
-            // TODO We may need to update the config with the latest version in file 121
+        // And now that the entire dependency graph has been initialized, and we have config, and all migration has
+        // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
+        // from information held in state (especially those in special files).
+        initializeExchangeRateManager(state);
+        initializeFeeManager(state);
+        initializeThrottles(state);
+        // TODO We may need to update the config with the latest version in file 121
     }
 
     /*==================================================================================================================

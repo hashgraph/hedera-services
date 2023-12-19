@@ -187,7 +187,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             final boolean useInProcessAlice = Boolean.parseBoolean(debugEnv);
             // For now, switching to non-in process servers, because in process doesn't work for the
             // restart and reconnect testing.
-            env = new HapiTestEnv("HAPI Tests", true, useInProcessAlice);
+//            env = new StandardHapiTestEnv("HAPI Tests", true, useInProcessAlice);
+            env = new VlanNetworkHapiTestEnv("HAPI Tests", true, useInProcessAlice);
             context.setEnv(env);
 
             final var tmpDir = Path.of("data");

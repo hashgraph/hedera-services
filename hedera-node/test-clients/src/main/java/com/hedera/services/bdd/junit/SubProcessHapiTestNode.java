@@ -73,9 +73,10 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     private final AccountID accountId;
     /** The directory in which the config.txt, settings.txt, and other files live. */
     private final Path workingDir;
+    /** The IP address of the node */
+    private final String nodeAddress;
     /** The port on which the grpc server will be listening */
     private final int grpcPort;
-
     /** The port on which the gossip is happening */
     private final int gossipPort;
     /** The HTTP Request to use for accessing prometheus to get the current node status (ACTIVE, CHECKING, etc) */
@@ -98,12 +99,14 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             final long nodeId,
             @NonNull final AccountID accountId,
             @NonNull final Path workingDir,
+            @NonNull final String nodeAddress,
             final int grpcPort,
             final int gossipPort) {
         this.name = requireNonNull(name);
         this.nodeId = nodeId;
         this.accountId = requireNonNull(accountId);
         this.workingDir = requireNonNull(workingDir);
+        this.nodeAddress = nodeAddress;
         this.grpcPort = grpcPort;
         this.gossipPort = gossipPort;
 
@@ -246,13 +249,12 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             final var os = getOperatingSystem();
             String[] cmd;
             if (os.contains("Mac")) {
-                String tmp = "printf \"%s\\n%s\\n%s\\n%s\\n\" \"$(sudo pfctl -sr 2>/dev/null)\" \"pass quick proto tcp from any to 127.0.1." + (nodeId + 1) + " port = 50213\" \"block drop quick proto tcp from any to 127.0.1." + (nodeId + 1) + "\" \"block drop quick proto tcp from 127.0.1." + (nodeId + 1) + " to any port != 50213\" | sudo pfctl -e -f - 2>/dev/null";
-                cmd = new String[] {
-                        "/usr/bin/env",
-                        "bash",
-                        "-c",
-                        tmp
-                };
+                String tmp =
+                        "printf \"%s\\n%s\\n%s\\n%s\\n\" \"$(sudo pfctl -sr 2>/dev/null)\" \"pass quick proto tcp from any to 127.0.1."
+                                + (nodeId + 1) + " port = 50213\" \"block drop quick proto tcp from any to 127.0.1."
+                                + (nodeId + 1) + "\" \"block drop quick proto tcp from 127.0.1." + (nodeId + 1)
+                                + " to any port != 50213\" | sudo pfctl -e -f - 2>/dev/null";
+                cmd = new String[] {"/usr/bin/env", "bash", "-c", tmp};
             } else {
                 cmd = new String[] {
                     "sudo",

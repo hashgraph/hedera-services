@@ -88,8 +88,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         cryptoCreate(TREASURY),
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER).via("creation"),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY)
-                        )
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY))
                 .when(
                         // submit operations when node 2 is down
                         //                        inParallel(mixedOpsBurst.get())

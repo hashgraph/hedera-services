@@ -30,14 +30,14 @@ public class HapiTestEngineExecutionContext implements EngineExecutionContext {
     private HapiTestEnv env;
 
     /**
-     * Set the {@link HapiTestEnv} associated with this test run.
+     * Set the {@link StandardHapiTestEnv} associated with this test run.
      */
     public void setEnv(HapiTestEnv env) {
         this.env = env;
     }
 
     /**
-     * Get the {@link HapiTestEnv} associated with this test run.
+     * Get the {@link StandardHapiTestEnv} associated with this test run.
      */
     public HapiTestEnv getEnv() {
         return env;
