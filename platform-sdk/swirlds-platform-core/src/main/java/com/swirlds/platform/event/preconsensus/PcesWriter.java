@@ -197,20 +197,26 @@ public class PcesWriter {
      * Inform the preconsensus event writer that a discontinuity has occurred in the preconsensus event stream.
      *
      * @param newOriginRound the round of the state that the new stream will be starting from
-     * @return the sequence number of the last event written to the stream, or null if this method call didn't result
-     * in any additional events being durably written to the stream
+     * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
+     * result in any additional events being durably written to the stream
      */
     @Nullable
     public Long registerDiscontinuity(final long newOriginRound) {
-        Long lastWrittenEvent = null;
+        if (!streamingNewEvents) {
+            logger.error(EXCEPTION.getMarker(), "registerDiscontinuity() called while replaying events");
+        }
+
+        final Long latestDurableSequenceNumberUpdate;
         if (currentMutableFile != null) {
             closeFile();
-            lastWrittenEvent = this.lastWrittenEvent;
+            latestDurableSequenceNumberUpdate = lastWrittenEvent;
+        } else {
+            latestDurableSequenceNumberUpdate = null;
         }
 
         fileManager.registerDiscontinuity(newOriginRound);
 
-        return lastWrittenEvent;
+        return latestDurableSequenceNumberUpdate;
     }
 
     /**
@@ -228,7 +234,7 @@ public class PcesWriter {
      * to the event writer.
      *
      * @param minimumGenerationNonAncient the minimum generation of a non-ancient event
-     * @return the sequence number of the last event written to the stream if this method call resulted in any
+     * @return the sequence number of the last event durably written to the stream if this method call resulted in any
      * additional events being durably written to the stream, otherwise null
      */
     @Nullable
@@ -281,7 +287,9 @@ public class PcesWriter {
     }
 
     /**
-     * Close the output file
+     * Close the output file.
+     * <p>
+     * Should only be called if {@link #currentMutableFile} is not null.
      */
     private void closeFile() {
         try {
