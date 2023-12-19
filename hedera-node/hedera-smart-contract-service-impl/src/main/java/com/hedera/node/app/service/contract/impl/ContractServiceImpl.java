@@ -69,15 +69,14 @@ public enum ContractServiceImpl implements ContractService {
 
            @Override
            public void migrate(MigrationContext ctx) {
-               System.out.println("BBM:hey from contract service bbm");
+               System.out.println("BBM: migrating contract service");
 
-               // currently works: 1dec23 @ 11:36
                var result = ContractStateMigrator.migrateFromContractStorageVirtualMap(fromState, toState, flusher);
 
                fromState = null;
                toState = null;
 
-               System.out.println("BBM:migrate result: " + result);
+               System.out.println("BBM: contract migration result: " + result);
            }
         });
     }
