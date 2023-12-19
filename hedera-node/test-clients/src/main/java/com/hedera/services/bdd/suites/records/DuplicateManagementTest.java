@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
@@ -29,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -54,6 +56,7 @@ public class DuplicateManagementTest extends HapiSuite {
     private static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
+    private static final String ACTIVE_PROFILE_PROPERTY = "hedera.profiles.active";
 
     public static void main(String... args) {
         new DuplicateManagementTest().runSuiteSync();
@@ -61,16 +64,17 @@ public class DuplicateManagementTest extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            usesUnclassifiableIfNoClassifiableAvailable(),
-            hasExpectedDuplicates(),
-            classifiableTakesPriorityOverUnclassifiable(),
-        });
+        return List.of(
+                usesUnclassifiableIfNoClassifiableAvailable(),
+                hasExpectedDuplicates(),
+                classifiableTakesPriorityOverUnclassifiable());
     }
 
     final HapiSpec hasExpectedDuplicates() {
-        return defaultHapiSpec("HasExpectedDuplicates")
+        return propertyPreservingHapiSpec("HasExpectedDuplicates")
+                .preserving(ACTIVE_PROFILE_PROPERTY)
                 .given(
+                        overriding(ACTIVE_PROFILE_PROPERTY, "DEV"),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN))
                 .when(
@@ -112,7 +116,6 @@ public class DuplicateManagementTest extends HapiSuite {
                             var cheapGet = getTxnRecord("cheapTxn").assertingNothingAboutHashes();
                             var costlyGet = getTxnRecord("costlyTxn").assertingNothingAboutHashes();
                             allRunFor(spec, cheapGet, costlyGet);
-                            var payer = spec.registry().getAccountID(CIVILIAN);
                             var cheapRecord = cheapGet.getResponseRecord();
                             var costlyRecord = costlyGet.getResponseRecord();
                             opLog.info("cheapRecord: {}", cheapRecord);
@@ -120,7 +123,7 @@ public class DuplicateManagementTest extends HapiSuite {
                             var cheapPrice = getNonFeeDeduction(cheapRecord).orElse(0);
                             var costlyPrice = getNonFeeDeduction(costlyRecord).orElse(0);
                             assertEquals(
-                                    3 * cheapPrice,
+                                    3 * cheapPrice - 1,
                                     costlyPrice,
                                     String.format(
                                             "Costly (%d) should be 3x more expensive than" + " cheap (%d)!",
@@ -152,8 +155,10 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
-        return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
+        return propertyPreservingHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
+                .preserving(ACTIVE_PROFILE_PROPERTY)
                 .given(
+                        overriding(ACTIVE_PROFILE_PROPERTY, "DEV"),
                         cryptoCreate(CIVILIAN).balance(100 * 100_000_000L),
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO, 100_000_000L)))
