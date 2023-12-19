@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -29,6 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
@@ -125,7 +125,10 @@ class OrphanEventsIntakeTest {
                     .limit(numEvents)
                     .collect(Collectors.toList());
             Collections.shuffle(generatedList, r);
-            generatedList.forEach(intake::addUnlinkedEvent);
+            generatedList.forEach(event -> {
+                event.buildDescriptor();
+                intake.addUnlinkedEvent(event);
+            });
         }
 
         public List<EventImpl> getConsensusEvents() {

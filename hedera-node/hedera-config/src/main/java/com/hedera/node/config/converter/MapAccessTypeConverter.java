@@ -18,6 +18,7 @@ package com.hedera.node.config.converter;
 
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.swirlds.config.api.converter.ConfigConverter;
+import com.swirlds.config.extensions.converters.AbstractEnumConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

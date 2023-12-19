@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
@@ -177,6 +177,7 @@ class OrphanBufferingLinkerTest {
         final OrphanBufferTester orphanBuffer = new OrphanBufferTester(pf ->
                 new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED, mock(IntakeEventCounter.class)));
         for (final GossipEvent event : generatedList) {
+            event.buildDescriptor();
             orphanBuffer.linkEvent(event);
             while (orphanBuffer.hasLinkedEvents()) {
                 returnedList.add(orphanBuffer.pollLinkedEvent().getBaseEvent());

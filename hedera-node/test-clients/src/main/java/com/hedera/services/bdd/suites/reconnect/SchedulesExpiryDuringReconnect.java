@@ -65,7 +65,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
         return List.of(runTransfersBeforeReconnect(), suiteSetup(), expireSchedulesDuringReconnect());
     }
 
-    private HapiSpec expireSchedulesDuringReconnect() {
+    final HapiSpec expireSchedulesDuringReconnect() {
         String soonToBeExpiredSchedule = "schedule-1";
         String longLastingSchedule = "schedule-2";
         String oneOtherSchedule = "schedule-3";
@@ -169,7 +169,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    private HapiSpec suiteSetup() {
+    final HapiSpec suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()

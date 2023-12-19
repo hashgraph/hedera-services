@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.services;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,6 +28,7 @@ import com.hedera.node.app.spi.fixtures.TestService;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.junit.jupiter.api.DisplayName;
@@ -62,13 +64,15 @@ final class ServicesRegistryImplTest {
     @Test
     void registerCallsTheConstructableRegistry() throws ConstructableRegistryException {
         final var registry = new ServicesRegistryImpl(cr, genesisRecords);
-        registry.register(TestService.newBuilder()
-                .name("registerCallsTheConstructableRegistryTest")
-                .schema(TestSchema.newBuilder()
-                        .minorVersion(1)
-                        .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON))
-                        .build())
-                .build());
+        registry.register(
+                TestService.newBuilder()
+                        .name("registerCallsTheConstructableRegistryTest")
+                        .schema(TestSchema.newBuilder()
+                                .minorVersion(1)
+                                .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON))
+                                .build())
+                        .build(),
+                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
         //noinspection removal
         verify(cr, atLeastOnce()).registerConstructable(any());
     }
@@ -76,9 +80,15 @@ final class ServicesRegistryImplTest {
     @Test
     void registrationsAreSortedByName() {
         final var registry = new ServicesRegistryImpl(cr, genesisRecords);
-        registry.register(TestService.newBuilder().name("B").build());
-        registry.register(TestService.newBuilder().name("C").build());
-        registry.register(TestService.newBuilder().name("A").build());
+        registry.register(
+                TestService.newBuilder().name("B").build(),
+                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
+        registry.register(
+                TestService.newBuilder().name("C").build(),
+                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
+        registry.register(
+                TestService.newBuilder().name("A").build(),
+                new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION));
 
         final var registrations = registry.registrations();
         assertThat(registrations.stream().map(r -> r.service().getServiceName()))

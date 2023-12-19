@@ -44,6 +44,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -52,6 +53,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -88,6 +90,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private ContractCreateRecordBuilder contractCreateRecordBuilder;
+
+    @Mock
+    private ContractDeleteRecordBuilder contractDeleteRecordBuilder;
 
     @Mock
     private TinybarValues tinybarValues;
@@ -192,6 +197,20 @@ class HandleHederaOperationsTest {
     void useNumberUsesContext() {
         given(context.newEntityNum()).willReturn(123L);
         assertEquals(123L, subject.useNextEntityNumber());
+    }
+
+    @Test
+    void createRecordListCheckPointUsesContext() {
+        var recordListCheckPoint = new RecordListCheckPoint(null, null);
+        given(context.createRecordListCheckPoint()).willReturn(recordListCheckPoint);
+        assertEquals(recordListCheckPoint, subject.createRecordListCheckPoint());
+    }
+
+    @Test
+    void revertRecordsFromUsesContext() {
+        var recordListCheckPoint = new RecordListCheckPoint(null, null);
+        subject.revertRecordsFrom(recordListCheckPoint);
+        verify(context).revertRecordsFrom(recordListCheckPoint);
     }
 
     @Test
@@ -423,6 +442,9 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteUnaliasedContractUsesApi() {
+        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
+        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
+        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
         verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID);
@@ -430,6 +452,9 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteAliasedContractUsesApi() {
+        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
+        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
+        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteAliasedContract(CANONICAL_ALIAS);
         verify(tokenServiceApi)
