@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -91,4 +92,7 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
      * @return new total supply of a token
      */
     long getNewTotalSupply();
+
+    @NonNull
+    ContractCallRecordBuilder entropyBytes(@NonNull final Bytes prngBytes);
 }

@@ -37,8 +37,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -59,7 +59,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
-    private CryptoCreateRecordBuilder recordBuilder;
+    private ContractCallRecordBuilder recordBuilder;
 
     private static final TransactionBody PRETEND_CREATE_TOKEN = TransactionBody.newBuilder()
             .tokenCreation(TokenCreateTransactionBody.newBuilder()
@@ -280,7 +280,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(CryptoCreateRecordBuilder.class)))
+                        eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
     }
 }
