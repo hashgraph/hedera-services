@@ -34,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.annotations.NodeSelfId;
@@ -237,9 +238,9 @@ public final class IngestChecker {
         } else {
             // If the payer is hollow, then we need to expand the signature for the payer
             final var originals = txInfo.signatureMap().sigPairOrElse(emptyList()).stream()
-                    .filter(k -> k.ecdsaSecp256k1OrElse(Bytes.EMPTY).length() == 20)
-                    .filter(k -> Bytes.wrap(EthSigsUtils.recoverAddressFromPubKey(
-                                    k.ecdsaSecp256k1OrElse(Bytes.EMPTY).toByteArray()))
+                    .filter(SignaturePair::hasEcdsaSecp256k1)
+                    .filter(pair -> Bytes.wrap(EthSigsUtils.recoverAddressFromPubKey(
+                                    pair.pubKeyPrefix().toByteArray()))
                             .equals(payer.alias()))
                     .findFirst();
             validateTruePreCheck(originals.isPresent(), INVALID_SIGNATURE);

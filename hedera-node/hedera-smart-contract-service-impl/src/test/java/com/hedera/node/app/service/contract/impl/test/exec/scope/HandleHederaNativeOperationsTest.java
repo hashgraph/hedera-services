@@ -34,7 +34,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYS
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PARANOID_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -149,7 +148,6 @@ class HandleHederaNativeOperationsTest {
     @Test
     void createsHollowAccountByDispatching() {
         final var synthTxn = TransactionBody.newBuilder()
-                .memo(LAZY_CREATION_MEMO)
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -166,7 +164,6 @@ class HandleHederaNativeOperationsTest {
     @Test
     void createsHollowAccountByDispatchingDoesNotThrowErrors() {
         final var synthTxn = TransactionBody.newBuilder()
-                .memo(LAZY_CREATION_MEMO)
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
