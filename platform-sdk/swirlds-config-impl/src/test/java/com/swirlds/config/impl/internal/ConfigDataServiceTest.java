@@ -20,6 +20,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
+import com.swirlds.config.impl.converters.EnumConverter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,8 +42,10 @@ class ConfigDataServiceTest {
         // given
         final ConverterService cs = converterService;
 
+        ConfigConverter<NumberEnum> converterForType = cs.getConverterForType(NumberEnum.class);
         // then:
-        Assertions.assertNotNull(cs.getConverterForType(NumberEnum.class));
+        Assertions.assertNotNull(converterForType);
+        Assertions.assertInstanceOf(EnumConverter.class, converterForType);
     }
 
     @Test
@@ -124,11 +127,13 @@ class ConfigDataServiceTest {
         Assertions.assertEquals(NumberAndValueEnum.ONE, cs.convert("ONE", NumberAndValueEnum.class));
         Assertions.assertEquals(NumberAndValueEnum.ONE, cs.convert("", NumberAndValueEnum.class));
         Assertions.assertEquals(NumberAndValueEnum.ONE, cs.convert("DOS", NumberAndValueEnum.class));
+        Assertions.assertInstanceOf(FakeEnumConverter.class, cs.getConverterForType(NumberAndValueEnum.class));
         // and:
         // NumberEnum stills gets converted with defaultEnumConverter
         Assertions.assertEquals(NumberEnum.ONE, cs.convert("ONE", NumberEnum.class));
         Assertions.assertThrows(IllegalArgumentException.class, () -> cs.convert("", NumberEnum.class));
         Assertions.assertThrows(IllegalArgumentException.class, () -> cs.convert("DOS", NumberEnum.class));
+        Assertions.assertInstanceOf(EnumConverter.class, cs.getConverterForType(NumberEnum.class));
     }
 
     @Test

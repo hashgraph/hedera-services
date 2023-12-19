@@ -210,12 +210,22 @@ class ConverterService implements ConfigLifecycle {
         return getOrAdConverter(valueType);
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> ConfigConverter<T> getOrAdConverter(Class<T> valueType) {
+    /**
+     * @param valueType type to convert to
+     * @return
+     *     <ul>
+     *       <li>the previously configured {@code ConfigConverter} if exist for {@code valueType}</li>
+     *       <li>a new instance of {@code EnumConverter} if {@code valueType} is an enum
+     *       and no {@code ConfigConverter} was found</li>
+     *       <li>{@code null} otherwise</li>
+     *     </ul>
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private <T> ConfigConverter<T> getOrAdConverter(@NonNull Class<T> valueType) {
         ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(valueType);
 
         if (converter == null && valueType.isEnum()) {
-            return (ConfigConverter<T>) converters.computeIfAbsent(valueType, EnumConverter::new);
+            return (ConfigConverter<T>) converters.computeIfAbsent(valueType, c -> new EnumConverter(c));
         }
         return converter;
     }
