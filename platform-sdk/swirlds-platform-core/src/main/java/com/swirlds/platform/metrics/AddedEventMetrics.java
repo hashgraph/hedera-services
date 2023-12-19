@@ -162,9 +162,9 @@ public class AddedEventMetrics implements EventAddedObserver {
             eventsCreatedPerSecond.cycle();
 
             // TODO update this metric for multiple other parents
-//            if (event.getBaseEventHashedData().hasOtherParent()) {
-//                averageOtherParentAgeDiff.update(event.getGeneration() - event.getOtherParentGen());
-//            }
+            //            if (event.getBaseEventHashedData().hasOtherParent()) {
+            //                averageOtherParentAgeDiff.update(event.getGeneration() - event.getOtherParentGen());
+            //            }
         } else {
             avgCreatedReceivedTime.update(
                     event.getTimeCreated().until(event.getBaseEvent().getTimeReceived(), ChronoUnit.NANOS)

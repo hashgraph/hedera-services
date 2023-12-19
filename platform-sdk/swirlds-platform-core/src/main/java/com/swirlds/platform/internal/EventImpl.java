@@ -138,7 +138,8 @@ public class EventImpl extends EventMetadata
         this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), selfParent, otherParents);
     }
 
-    public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, @NonNull final List<EventImpl> otherParents) {
+    public EventImpl(
+            final GossipEvent gossipEvent, final EventImpl selfParent, @NonNull final List<EventImpl> otherParents) {
         this(gossipEvent, new ConsensusData(), selfParent, otherParents);
     }
 
@@ -487,16 +488,8 @@ public class EventImpl extends EventMetadata
         return baseEvent.getHashedData().getTimeCreated();
     }
 
-    public long getOtherParentGen() {
-        return baseEvent.getHashedData().getOtherParentGen();
-    }
-
     public Hash getSelfParentHash() {
         return baseEvent.getHashedData().getSelfParentHash();
-    }
-
-    public Hash getOtherParentHash() {
-        return baseEvent.getHashedData().getOtherParentHash();
     }
 
     public Hash getBaseHash() {

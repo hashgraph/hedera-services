@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A class that stores temporary data that is used while calculating consensus inside the platform.
@@ -159,9 +158,7 @@ public class EventMetadata implements Clearable {
     /**
      * @param otherParent the other parent of this
      */
-    public void setOtherParent(@Nullable final EventImpl otherParent) {
-
-    }
+    public void setOtherParent(@Nullable final EventImpl otherParent) {}
 
     /**
      * @return an estimate of what the consensus timestamp will be (could be a very bad guess)

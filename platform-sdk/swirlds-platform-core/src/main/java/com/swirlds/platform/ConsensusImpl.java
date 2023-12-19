@@ -1048,7 +1048,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         //
         // if this event has no parents, then it's the first round
         //
-        if (!x.getHashedData().hasSelfParent() && x.getHashedData().getOtherParents().isEmpty()) {
+        if (!x.getHashedData().hasSelfParent()
+                && x.getHashedData().getOtherParents().isEmpty()) {
             x.setRoundCreated(ConsensusConstants.ROUND_FIRST);
             return x.getRoundCreated();
         }

@@ -105,7 +105,15 @@ class ShadowGraphTest {
             IndexedEvent event = emitter.emitEvent();
 
             Hash hash = event.getBaseHash();
-            ancestorsMap.put(hash, ancestorsOf(event.getSelfParentHash(), event.getOtherParentHash()));
+            ancestorsMap.put(
+                    hash,
+                    ancestorsOf(
+                            event.getSelfParentHash(),
+                            event.getBaseEvent()
+                                    .getHashedData()
+                                    .getOtherParents()
+                                    .get(0)
+                                    .getHash()));
             assertDoesNotThrow(() -> shadowGraph.addEvent(event), "Unable to insert event into shadow graph.");
             assertTrue(
                     shadowGraph.isHashInGraph(hash),
@@ -122,13 +130,10 @@ class ShadowGraphTest {
     }
 
     /**
-     * Tests that the {@link ShadowGraph#findAncestors(Iterable, Predicate)} returns the correct set of
-     * ancestors.
+     * Tests that the {@link ShadowGraph#findAncestors(Iterable, Predicate)} returns the correct set of ancestors.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -210,12 +215,9 @@ class ShadowGraphTest {
     /**
      * This test verifies a single reservation can be made and closed without any event expiry.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -244,12 +246,9 @@ class ShadowGraphTest {
     /**
      * This test verifies multiple reservations of the same generation without any event expiry.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -293,12 +292,9 @@ class ShadowGraphTest {
     /**
      * This test verifies multiple reservations of the same generation with event expiry.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -359,12 +355,9 @@ class ShadowGraphTest {
     /**
      * This test verifies that event expiry works correctly when there are no reservations.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -401,12 +394,9 @@ class ShadowGraphTest {
     /**
      * Tests that event expiry works correctly when there are reservations for generations that should be expired.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")

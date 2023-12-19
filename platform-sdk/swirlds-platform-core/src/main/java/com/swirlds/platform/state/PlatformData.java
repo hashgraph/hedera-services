@@ -196,7 +196,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
 
         if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
             // TODO fully deprectate this version
-            throw new IOException("unsupported version " + version );
+            throw new IOException("unsupported version " + version);
         }
 
         consensusTimestamp = in.readInstant();

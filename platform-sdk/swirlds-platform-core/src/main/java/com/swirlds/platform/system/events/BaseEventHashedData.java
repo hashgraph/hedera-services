@@ -389,26 +389,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
-     * Get the hash of the other parent with the maximum generation.
-     *
-     * @return the hash of the other parent with the maximum generation
-     * @deprecated
-     */
-    @Nullable
-    public Hash getOtherParentHash() {
-        if (otherParents == null || otherParents.isEmpty()) {
-            return null;
-        }
-        if (otherParents.size() == 1) {
-            return otherParents.get(0).getHash();
-        }
-        // 0.46.0 adds support for multiple other parents in the serialization scheme, but not yet in the
-        // implementation. This exception should never be reached unless we have multiple parents and need to
-        // update the implementation.
-        throw new UnsupportedOperationException("Multiple other parents is not supported yet");
-    }
-
-    /**
      *  Check if the event has a self parent.
      * @return true if the event has a self parent
      */

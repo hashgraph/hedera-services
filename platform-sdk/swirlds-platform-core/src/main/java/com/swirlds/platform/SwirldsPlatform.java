@@ -751,8 +751,8 @@ public class SwirldsPlatform implements Platform {
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
         } else {
-            final InternalEventValidator internalEventValidator = new InternalEventValidator(
-                    platformContext, time,  intakeEventCounter);
+            final InternalEventValidator internalEventValidator =
+                    new InternalEventValidator(platformContext, time, intakeEventCounter);
             final EventDeduplicator eventDeduplicator =
                     new EventDeduplicator(platformContext, intakeEventCounter, eventIntakeMetrics);
             final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(

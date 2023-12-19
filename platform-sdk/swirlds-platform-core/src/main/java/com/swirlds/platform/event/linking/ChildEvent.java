@@ -49,12 +49,11 @@ public final class ChildEvent {
             final boolean missingOtherParent,
             final EventImpl selfParent,
             final EventImpl otherParent) {
-        throw new UnsupportedOperationException(
-                "This code pathway is no longer supported. "
-                        + "New intake pipeline is expected to take over this functionality.");
-//        this.child = new EventImpl(child, selfParent, otherParent);
-//        this.missingSelfParent = missingSelfParent;
-//        this.missingOtherParent = missingOtherParent;
+        throw new UnsupportedOperationException("This code pathway is no longer supported. "
+                + "New intake pipeline is expected to take over this functionality.");
+        //        this.child = new EventImpl(child, selfParent, otherParent);
+        //        this.missingSelfParent = missingSelfParent;
+        //        this.missingOtherParent = missingOtherParent;
     }
 
     /**
@@ -83,22 +82,21 @@ public final class ChildEvent {
      * 		in case the supplied parent is not missing, or not a parent of this event at all
      */
     public void parentNoLongerMissing(final Hash hash, final EventImpl parent) {
-        throw new UnsupportedOperationException(
-                "This code pathway is no longer supported. "
-                        + "New intake pipeline is expected to take over this functionality.");
-//        if (missingSelfParent && hash.equals(child.getHashedData().getSelfParentHash())) {
-//            this.child.setSelfParent(parent);
-//            this.missingSelfParent = false;
-//            return;
-//        }
-//
-//        if (missingOtherParent && hash.equals(child.getHashedData().getOtherParentHash())) {
-//            this.child.setOtherParent(parent);
-//            this.missingOtherParent = false;
-//            return;
-//        }
-//        throw new IllegalArgumentException(
-//                String.format("%s is not a missing parent of %s", hash.toShortString(), this));
+        throw new UnsupportedOperationException("This code pathway is no longer supported. "
+                + "New intake pipeline is expected to take over this functionality.");
+        //        if (missingSelfParent && hash.equals(child.getHashedData().getSelfParentHash())) {
+        //            this.child.setSelfParent(parent);
+        //            this.missingSelfParent = false;
+        //            return;
+        //        }
+        //
+        //        if (missingOtherParent && hash.equals(child.getHashedData().getOtherParentHash())) {
+        //            this.child.setOtherParent(parent);
+        //            this.missingOtherParent = false;
+        //            return;
+        //        }
+        //        throw new IllegalArgumentException(
+        //                String.format("%s is not a missing parent of %s", hash.toShortString(), this));
     }
 
     /**
@@ -113,11 +111,10 @@ public final class ChildEvent {
      * @return a new instance that describes this child's other-parent
      */
     public ParentDescriptor buildOtherParentDescriptor() {
-        throw new UnsupportedOperationException(
-                "This code pathway is no longer supported. "
-                        + "New intake pipeline is expected to take over this functionality.");
-//        return new ParentDescriptor(
-//                child.getHashedData().getOtherParentGen(), child.getHashedData().getOtherParentHash());
+        throw new UnsupportedOperationException("This code pathway is no longer supported. "
+                + "New intake pipeline is expected to take over this functionality.");
+        //        return new ParentDescriptor(
+        //                child.getHashedData().getOtherParentGen(), child.getHashedData().getOtherParentHash());
     }
 
     /**
