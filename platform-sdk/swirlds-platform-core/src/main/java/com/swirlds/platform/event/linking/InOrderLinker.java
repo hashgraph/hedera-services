@@ -237,9 +237,7 @@ public class InOrderLinker {
         // TODO unit test linking of multiple other parents
 
         final List<EventImpl> otherParents = new ArrayList<>();
-        final Iterator<EventDescriptor> otherParentIterator = event.iterator(true);
-        while (otherParentIterator.hasNext()) {
-            final EventDescriptor otherParentDescriptor = otherParentIterator.next();
+        for (final EventDescriptor otherParentDescriptor : event.getHashedData().getOtherParents()) {
             final EventImpl otherParent =
                     getParentToLink(event, otherParentDescriptor.getHash(), otherParentDescriptor.getGeneration());
 

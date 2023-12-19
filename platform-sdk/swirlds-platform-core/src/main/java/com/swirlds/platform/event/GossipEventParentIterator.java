@@ -37,24 +37,12 @@ public class GossipEventParentIterator implements Iterator<EventDescriptor> {
      * Iterate over the parents of an event. Iteration order is self parent followed by other parents in the order they
      * appear in the serialized event.
      *
-     * @param event the event whose parents we want to iterate over
+     * @param event          the event whose parents we want to iterate over
      */
     public GossipEventParentIterator(@NonNull final GossipEvent event) {
-        this(event, false);
-    }
-
-    /**
-     * Iterate over the parents of an event. Iteration order is self parent followed by other parents in the order they
-     * appear in the serialized event.
-     *
-     * @param event          the event whose parents we want to iterate over
-     * @param skipSelfParent whether to skip the self parent. If true, will only iterate over other parents.
-     */
-    public GossipEventParentIterator(@NonNull final GossipEvent event, final boolean skipSelfParent) {
         this.event = Objects.requireNonNull(event);
-        returnSelfParent = !skipSelfParent && event.getHashedData().getSelfParent() != null;
-        eventCount = (returnSelfParent ? 1 : 0)
-                + event.getHashedData().getOtherParents().size();
+        returnSelfParent = event.getHashedData().getSelfParent() != null;
+        eventCount = (returnSelfParent ? 1 : 0) + event.getHashedData().getOtherParents().size();
     }
 
     /**

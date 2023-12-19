@@ -236,18 +236,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent, Iterable<EventDescr
     }
 
     /**
-     * Get an iterator over this event's parents. Iteration order is self parent (if present) followed by other parents
-     * in the order they appear in the serialized event.
-     *
-     * @param skipSelfParent whether to skip the self parent. If true, will only iterate over other parents.
-     * @return an iterator over this event's parents
-     */
-    @NonNull
-    public Iterator<EventDescriptor> iterator(final boolean skipSelfParent) {
-        return new GossipEventParentIterator(this, skipSelfParent);
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
