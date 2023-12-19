@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
@@ -70,11 +71,10 @@ public class DuplicateManagementTest extends HapiSuite {
                 classifiableTakesPriorityOverUnclassifiable());
     }
 
+    @HapiTest
     final HapiSpec hasExpectedDuplicates() {
-        return propertyPreservingHapiSpec("HasExpectedDuplicates")
-                .preserving(ACTIVE_PROFILE_PROPERTY)
+        return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
-                        overriding(ACTIVE_PROFILE_PROPERTY, "DEV"),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN))
                 .when(
@@ -83,7 +83,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                         .txnId(TXN_ID))
                                 .payingWith(CIVILIAN)
                                 .fee(ONE_HBAR)
-                                .hasPrecheck(NOT_SUPPORTED),
+                                .hasPrecheckFrom(NOT_SUPPORTED, BUSY),
                         uncheckedSubmit(
                                 cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
                         uncheckedSubmit(
