@@ -125,7 +125,6 @@ public class ConcurrentSuites {
             SubmitMessageSuite::new,
             ChunkingSuite::new,
             CryptoTransferSuite::new,
-            CannotDeleteSystemEntitiesSuite::new,
             CryptoUpdateSuite::new,
             SelfDestructSuite::new,
             // contract.hapi

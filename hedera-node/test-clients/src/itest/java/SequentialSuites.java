@@ -23,6 +23,7 @@ import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakySecurityModelV1Suite;
+import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
 import java.util.function.Supplier;
@@ -48,6 +49,7 @@ public class SequentialSuites {
             LeakyCryptoTestsSuite::new,
             LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
+            CannotDeleteSystemEntitiesSuite::new,
             Evm38ValidationSuite::new
         };
     }
