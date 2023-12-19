@@ -22,10 +22,10 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createCli
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
@@ -47,7 +47,16 @@ import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -58,8 +67,7 @@ public final class ConsensusTestDefinitions {
     private ConsensusTestDefinitions() {}
 
     /**
-     * Changing the order of events (without breaking topological order) should result in the same
-     * consensus events.
+     * Changing the order of events (without breaking topological order) should result in the same consensus events.
      */
     public static void orderInvarianceTests(@NonNull final TestInput input) {
         OrchestratorBuilder.builder()
@@ -370,8 +378,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * A quorum of nodes stop producing events, thus preventing consensus and round created
-     * advancement
+     * A quorum of nodes stop producing events, thus preventing consensus and round created advancement
      */
     public static void quorumOfNodesGoDown(@NonNull final TestInput input) {
         // Test setup
@@ -460,8 +467,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * There should be no problems when the probability of events landing on the same timestamp is
-     * higher than usual.
+     * There should be no problems when the probability of events landing on the same timestamp is higher than usual.
      */
     public static void repeatedTimestampTest(@NonNull final TestInput input) {
         OrchestratorBuilder.builder()
@@ -497,8 +503,8 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * Simulates a consensus restart. The number of nodes and number of events is chosen randomly
-     * between the supplied bounds
+     * Simulates a consensus restart. The number of nodes and number of events is chosen randomly between the supplied
+     * bounds
      */
     public static void restart(@NonNull final TestInput input) {
 

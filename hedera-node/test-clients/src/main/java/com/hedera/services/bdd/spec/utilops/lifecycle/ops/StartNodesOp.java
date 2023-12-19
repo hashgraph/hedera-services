@@ -29,17 +29,13 @@ import org.apache.logging.log4j.Logger;
 public class StartNodesOp extends LifecycleOp {
     private static final Logger logger = LogManager.getLogger(StartNodesOp.class);
 
-    /** The number of seconds to wait for the node(s) to become active */
-    private final int waitSeconds;
-
-    public StartNodesOp(@NonNull final NodeSelector selector, int waitSeconds) {
+    public StartNodesOp(@NonNull final NodeSelector selector) {
         super(selector);
-        this.waitSeconds = waitSeconds;
     }
 
     @Override
     protected boolean run(@NonNull final HapiTestNode node) {
-        logger.info("Starting all nodes, waiting up to {}s...", node, waitSeconds);
+        logger.info("Starting node {}...", node);
         node.start();
         return false;
     }

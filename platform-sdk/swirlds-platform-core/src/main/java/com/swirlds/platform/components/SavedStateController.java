@@ -16,14 +16,12 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
 import static com.swirlds.platform.state.signed.StateToDiskReason.RECONNECT;
 
-import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -47,45 +45,44 @@ public class SavedStateController {
     private Instant previousSavedStateTimestamp;
     /** the state config */
     private final StateConfig stateConfig;
-    /** a function that writes a signed state to disk asynchronously */
-    private final BooleanFunction<ReservedSignedState> stateWrite;
 
     /**
      * Create a new SavedStateController
      *
      * @param stateConfig the state config
-     * @param stateWrite  a function that writes a signed state to disk asynchronously
      */
-    public SavedStateController(
-            @NonNull final StateConfig stateConfig, @NonNull final BooleanFunction<ReservedSignedState> stateWrite) {
+    public SavedStateController(@NonNull final StateConfig stateConfig) {
         this.stateConfig = Objects.requireNonNull(stateConfig);
-        this.stateWrite = Objects.requireNonNull(stateWrite);
     }
 
     /**
-     * Determine if a signed state should be written to disk. If the state should be written, the state will be passed
-     * on to the writer to be written asynchronously.
+     * Determine if a signed state should be written to disk. If the state should be written, the state will be marked
+     * and then written to disk outside the scope of this class.
      *
-     * @param signedState the signed state in question
+     * @param reservedSignedState the signed state in question
      */
-    public synchronized void maybeSaveState(@NonNull final SignedState signedState) {
+    public synchronized void markSavedState(@NonNull final ReservedSignedState reservedSignedState) {
+        try (reservedSignedState) {
+            final SignedState signedState = reservedSignedState.get();
+            final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
 
-        final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
-
-        if (reason != null) {
-            saveToDisk(signedState.reserve("saving to disk"), reason);
+            if (reason != null) {
+                markSavingToDisk(reservedSignedState, reason);
+            }
+            // if a null reason is returned, then there isn't anything to do, since the state shouldn't be saved
         }
-        // if a null reason is returned, then there isn't anything to do, since the state shouldn't be saved
     }
 
     /**
      * Notifies the controller that a signed state was received from another node during reconnect. The controller saves
-     * its timestamp and pass it on to be written to disk.
+     * its timestamp and marks it to be written to disk.
      *
-     * @param signedState the signed state that was received from another node during reconnect
+     * @param reservedSignedState the signed state that was received from another node during reconnect
      */
-    public synchronized void reconnectStateReceived(@NonNull final SignedState signedState) {
-        saveToDisk(signedState.reserve("saving to disk after reconnect"), RECONNECT);
+    public synchronized void reconnectStateReceived(@NonNull final ReservedSignedState reservedSignedState) {
+        try (reservedSignedState) {
+            markSavingToDisk(reservedSignedState, RECONNECT);
+        }
     }
 
     /**
@@ -97,7 +94,7 @@ public class SavedStateController {
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
     }
 
-    private void saveToDisk(@NonNull final ReservedSignedState state, @NonNull final StateToDiskReason reason) {
+    private void markSavingToDisk(@NonNull final ReservedSignedState state, @NonNull final StateToDiskReason reason) {
         final SignedState signedState = state.get();
         logger.info(
                 STATE_TO_DISK.getMarker(),
@@ -107,17 +104,6 @@ public class SavedStateController {
 
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
         signedState.markAsStateToSave(reason);
-        final boolean accepted = stateWrite.apply(state);
-
-        if (!accepted) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Unable to save signed state to disk for round {} due to backlog of "
-                            + "operations in the SignedStateManager task queue.",
-                    signedState.getRound());
-
-            state.close();
-        }
     }
 
     /**
