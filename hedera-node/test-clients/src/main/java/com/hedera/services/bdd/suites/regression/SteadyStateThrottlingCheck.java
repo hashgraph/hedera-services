@@ -154,18 +154,21 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     }
 
     //    @HapiTest - This test fails
+    @HapiTest
     @Order(4)
     final HapiSpec checkContractCallsTps() {
         return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
     }
 
     //    @HapiTest - This test fails
+    @HapiTest
     @Order(5)
     final HapiSpec checkCryptoCreatesTps() {
         return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
     }
 
     //    @HapiTest - This test hangs
+    @HapiTest
     @Order(6)
     final HapiSpec checkBalanceQps() {
         return checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS);
