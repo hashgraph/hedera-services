@@ -18,8 +18,6 @@ package com.hedera.services.bdd.junit;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +27,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class HapiTestEnvBase implements HapiTestEnv {
 
@@ -50,9 +49,10 @@ public abstract class HapiTestEnvBase implements HapiTestEnv {
         this(null, null, null);
     }
 
-    protected HapiTestEnvBase(@Nullable final IPAllocator ipAllocator,
-                              @Nullable final PortAllocator gossipPortAllocator,
-                              @Nullable final PortAllocator grpcPortAllocator) {
+    protected HapiTestEnvBase(
+            @Nullable final IPAllocator ipAllocator,
+            @Nullable final PortAllocator gossipPortAllocator,
+            @Nullable final PortAllocator grpcPortAllocator) {
         this.ipAllocator = Objects.requireNonNullElse(ipAllocator, DEFAULT_IP_ALLOCATOR);
         this.gossipPortAllocator = Objects.requireNonNullElse(gossipPortAllocator, DEFAULT_GOSSIP_PORT_ALLOC);
         this.grpcPortAllocator = Objects.requireNonNullElse(grpcPortAllocator, DEFAULT_GRPC_PORT_ALLOC);
@@ -62,7 +62,11 @@ public abstract class HapiTestEnvBase implements HapiTestEnv {
         final var numNodes = cluster ? CLUSTER_SIZE : 1;
         try {
             for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-                setupNetwork(nodeId, ipAllocator.apply(nodeId), gossipPortAllocator.apply(nodeId), grpcPortAllocator.apply(nodeId));
+                setupNetwork(
+                        nodeId,
+                        ipAllocator.apply(nodeId),
+                        gossipPortAllocator.apply(nodeId),
+                        grpcPortAllocator.apply(nodeId));
             }
 
             final String configText = createAddressBook(testName, numNodes);
@@ -95,7 +99,7 @@ public abstract class HapiTestEnvBase implements HapiTestEnv {
             node.terminate();
         }
         for (final var node : getNodes()) {
-            teardownNetwork((int)node.getId(), ipAllocator.apply((int)node.getId()));
+            teardownNetwork((int) node.getId(), ipAllocator.apply((int) node.getId()));
         }
         started = false;
     }
