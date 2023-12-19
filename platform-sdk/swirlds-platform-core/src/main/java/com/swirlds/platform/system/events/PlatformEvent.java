@@ -64,14 +64,6 @@ public interface PlatformEvent extends ConsensusEvent {
     Instant getConsensusTimestamp();
 
     /**
-     * Node ID of the otherParent. null if otherParent doesn't exist.
-     *
-     * @return Other parent event's ID
-     */
-    @Nullable
-    NodeId getOtherId();
-
-    /**
      * This event's parent event. null if none exists.
      *
      * @return The parent event of this event
