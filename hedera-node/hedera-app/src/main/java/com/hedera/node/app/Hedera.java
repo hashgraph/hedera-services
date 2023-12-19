@@ -156,13 +156,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.IntSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -323,6 +320,7 @@ public final class Hedera implements SwirldMain {
                 recordsGenerator::treasuryAcctRecords,
                 recordsGenerator::multiUseAcctRecords,
                 recordsGenerator::blocklistAcctRecords);
+        RECORD_SERVICE = new RecordCacheService();
         BLOCK_SERVICE = new BlockRecordService();
         FEE_SERVICE = new FeeService();
 
@@ -337,7 +335,7 @@ public final class Hedera implements SwirldMain {
                         SCHEDULE_SERVICE,
                         TOKEN_SERVICE,
                         new UtilServiceImpl(),
-                        new RecordCacheService(),
+                        RECORD_SERVICE,
                         BLOCK_SERVICE,
                         FEE_SERVICE,
                         new CongestionThrottleService())
@@ -360,6 +358,7 @@ public final class Hedera implements SwirldMain {
     private static FileServiceImpl FILE_SERVICE;
     private static ScheduleServiceImpl SCHEDULE_SERVICE;
     private static TokenServiceImpl TOKEN_SERVICE;
+    private static RecordCacheService RECORD_SERVICE;
     private static BlockRecordService BLOCK_SERVICE;
     private static FeeService FEE_SERVICE;
 
@@ -570,7 +569,7 @@ public final class Hedera implements SwirldMain {
 
         //--------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)
         FCQueue<ExpirableTxnRecord> n = state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ);
-        // TODO: Need to discuss if this will migrate!
+        RECORD_SERVICE.setFromState(new ArrayList<>(n));
 
         //--------------------- Midnight Rates (separate service in modular code - fee service)
         FEE_SERVICE.setFs(fromNetworkContext.getMidnightRates());

@@ -17,12 +17,21 @@
 package com.hedera.node.app.state.recordcache;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableQueueStateBase;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -36,11 +45,17 @@ public class RecordCacheService implements Service {
     /** The name of the queue that stores the transaction records */
     static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
 
+    private List<ExpirableTxnRecord> fromRecs;
+
     /** {@inheritDoc} */
     @NonNull
     @Override
     public String getServiceName() {
         return NAME;
+    }
+
+    public void setFromState(List<ExpirableTxnRecord> fromRecs) {
+        this.fromRecs = fromRecs;
     }
 
     /** {@inheritDoc} */
@@ -60,6 +75,32 @@ public class RecordCacheService implements Service {
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(StateDefinition.queue(TXN_RECORD_QUEUE, TransactionRecordEntry.PROTOBUF));
+            }
+        });
+
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
+            @Override
+            public void migrate(@NonNull MigrationContext ctx) {
+                System.out.println("BBM: running expirable record (cache) migration...");
+
+                var toState = ctx.newStates().<TransactionRecordEntry>getQueue(TXN_RECORD_QUEUE);
+
+                for (ExpirableTxnRecord fromRec : fromRecs) {
+                    var fromTxnId = fromRec.getTxnId();
+                    var fromTransactionValidStart = fromTxnId.getValidStart();
+
+//                    fromRec.getExpiry();  //??? where should this go? is it needed?
+                    var toTxnValidStart = Timestamp.newBuilder().seconds(fromTransactionValidStart.getSeconds()).nanos(fromTransactionValidStart.getNanos());
+                    var toTxnId = TransactionID.newBuilder().accountID(fromTxnId.getPayerAccount().toPbjAccountId()).transactionValidStart(toTxnValidStart).build();
+                    var toConsensusTime = Timestamp.newBuilder().seconds(fromRec.getConsensusTime().getSeconds()).nanos(fromRec.getConsensusTime().getNanos()).build();
+                    var toRec = TransactionRecordEntry.newBuilder().transactionRecord(TransactionRecord.newBuilder().consensusTimestamp(toConsensusTime).transactionID(toTxnId).build()).nodeId(fromRec.getSubmittingMember()).payerAccountId(fromTxnId.getPayerAccount().toPbjAccountId()).build();
+                    toState.add(toRec);
+                }
+                ((WritableQueueStateBase) toState).commit();
+
+                fromRecs = null;
+
+                System.out.println("BBM: finished expirable record (cache) migration");
             }
         });
     }

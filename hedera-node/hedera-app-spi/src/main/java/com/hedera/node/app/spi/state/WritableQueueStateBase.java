@@ -157,6 +157,12 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
                 }
                 return dsIterator.hasNext() ? dsIterator.next() : addedElementsIterator.next();
             }
+
+            @Override
+            public void remove() {
+                // Removes the element at the head of the queue
+                removeFromDataSource();
+            }
         };
     }
 
