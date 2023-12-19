@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.roster.legacy;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -23,6 +24,7 @@ import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterEntry;
 import com.swirlds.platform.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
@@ -133,14 +135,14 @@ public class AddressRosterEntry implements RosterEntry {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AddressRosterEntry that = (AddressRosterEntry) o;
+        final AddressRosterEntry that = (AddressRosterEntry) o;
         return Objects.equals(address, that.address) && Objects.equals(sigCert, that.sigCert);
     }
 
@@ -151,6 +153,10 @@ public class AddressRosterEntry implements RosterEntry {
 
     @Override
     public String toString() {
-        return "AddressRosterEntry{" + "address=" + address + ", sigCert=" + sigCert + '}';
+
+        return new ToStringBuilder(this)
+                .append("address", address)
+                .append("sigCert", sigCert)
+                .toString();
     }
 }
