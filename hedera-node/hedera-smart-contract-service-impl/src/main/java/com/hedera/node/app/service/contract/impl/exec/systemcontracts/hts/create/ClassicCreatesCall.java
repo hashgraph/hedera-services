@@ -40,7 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -95,14 +95,14 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         }
 
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticCreate, verificationStrategy, spenderId, CryptoCreateRecordBuilder.class);
+                .dispatch(syntheticCreate, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
         final var customFees =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
         final var tokenType =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, MINIMUM_TINYBAR_PRICE), status, false);
+            return gasOnly(revertResult(recordBuilder, MINIMUM_TINYBAR_PRICE), status, false);
         } else {
             final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
