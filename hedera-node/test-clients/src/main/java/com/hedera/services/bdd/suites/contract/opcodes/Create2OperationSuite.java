@@ -67,10 +67,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -258,7 +256,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
                                 // diff mono/hapi
-                                // ?NONDETERMINISTIC_TRANSACTION_FEES,
                                 ALLOW_SKIPPED_ENTITY_IDS),
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -357,9 +354,7 @@ public class Create2OperationSuite extends HapiSuite {
                         snapshotMode(
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                // diff mono/hapi
-                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
+                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         uploadInitCode(contract),
                         tokenCreate(token)
                                 .exposingCreatedIdTo(
@@ -423,8 +418,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
                                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                                 // diff mono/hapi
-                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
-                                HIGHLY_NON_DETERMINISTIC_FEES,
                                 SKIP_LOG_INFO_CONTAINING_ADDRESSES),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
@@ -835,10 +828,7 @@ public class Create2OperationSuite extends HapiSuite {
                         snapshotMode(
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                // diff mono/hapi
-                                HIGHLY_NON_DETERMINISTIC_FEES,
-                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
+                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         newKeyNamed(SWISS),
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(ercContract, pc2User),
@@ -1145,11 +1135,7 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("CanDeleteViaAlias")
                 .given(
-                        snapshotMode(
-                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                // diff mono/hapi
-                                NONDETERMINISTIC_TRANSACTION_FEES,
-                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         newKeyNamed(adminKey),
                         uploadInitCode(contract),
                         contractCreate(contract).adminKey(adminKey).payingWith(GENESIS),
@@ -1356,9 +1342,7 @@ public class Create2OperationSuite extends HapiSuite {
                         snapshotMode(
                                 FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                // diff mono/hapi
-                                NONDETERMINISTIC_TRANSACTION_FEES),
+                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
                         contractCall(contract, "createReturner", salt)
