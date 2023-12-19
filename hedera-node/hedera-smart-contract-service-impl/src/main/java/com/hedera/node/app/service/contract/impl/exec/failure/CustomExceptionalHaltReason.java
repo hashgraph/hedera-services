@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
@@ -76,6 +77,7 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
 
     public static String errorMessageFor(@NonNull final ExceptionalHaltReason reason) {
         requireNonNull(reason);
-        return reason.toString();
+        var status = statusFor(reason);
+        return Bytes.of(status.name().getBytes()).toHexString();
     }
 }
