@@ -49,10 +49,13 @@ public class ParentFinder {
     }
 
     private EventImpl getParent(final GossipEvent event, final boolean selfParent) {
-        final Hash parentHash = selfParent
-                ? event.getHashedData().getSelfParentHash()
-                : event.getHashedData().getOtherParentHash();
-        return eventByHash.apply(parentHash);
+        throw new UnsupportedOperationException(
+                "This code pathway is no longer supported. "
+                        + "New intake pipeline is expected to take over this functionality.");
+//        final Hash parentHash = selfParent
+//                ? event.getHashedData().getSelfParentHash()
+//                : event.getHashedData().getOtherParentHash();
+//        return eventByHash.apply(parentHash);
     }
 
     /**

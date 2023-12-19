@@ -80,18 +80,22 @@ public final class ChildEvent {
      * 		in case the supplied parent is not missing, or not a parent of this event at all
      */
     public void parentNoLongerMissing(final Hash hash, final EventImpl parent) {
-        if (missingSelfParent && hash.equals(child.getHashedData().getSelfParentHash())) {
-            this.child.setSelfParent(parent);
-            this.missingSelfParent = false;
-            return;
-        }
-        if (missingOtherParent && hash.equals(child.getHashedData().getOtherParentHash())) {
-            this.child.setOtherParent(parent);
-            this.missingOtherParent = false;
-            return;
-        }
-        throw new IllegalArgumentException(
-                String.format("%s is not a missing parent of %s", hash.toShortString(), this));
+        throw new UnsupportedOperationException(
+                "This code pathway is no longer supported. "
+                        + "New intake pipeline is expected to take over this functionality.");
+//        if (missingSelfParent && hash.equals(child.getHashedData().getSelfParentHash())) {
+//            this.child.setSelfParent(parent);
+//            this.missingSelfParent = false;
+//            return;
+//        }
+//
+//        if (missingOtherParent && hash.equals(child.getHashedData().getOtherParentHash())) {
+//            this.child.setOtherParent(parent);
+//            this.missingOtherParent = false;
+//            return;
+//        }
+//        throw new IllegalArgumentException(
+//                String.format("%s is not a missing parent of %s", hash.toShortString(), this));
     }
 
     /**
@@ -106,8 +110,11 @@ public final class ChildEvent {
      * @return a new instance that describes this child's other-parent
      */
     public ParentDescriptor buildOtherParentDescriptor() {
-        return new ParentDescriptor(
-                child.getHashedData().getOtherParentGen(), child.getHashedData().getOtherParentHash());
+        throw new UnsupportedOperationException(
+                "This code pathway is no longer supported. "
+                        + "New intake pipeline is expected to take over this functionality.");
+//        return new ParentDescriptor(
+//                child.getHashedData().getOtherParentGen(), child.getHashedData().getOtherParentHash());
     }
 
     /**
