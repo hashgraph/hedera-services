@@ -371,8 +371,8 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
-    void throwsIfAccountMissing() {
-        assertThrows(IllegalArgumentException.class, () -> subject.getAddress(ACCOUNT_NUM));
+    void returnNullIfAccountMissing() {
+        assertNull(subject.getAddress(ACCOUNT_NUM));
     }
 
     @Test

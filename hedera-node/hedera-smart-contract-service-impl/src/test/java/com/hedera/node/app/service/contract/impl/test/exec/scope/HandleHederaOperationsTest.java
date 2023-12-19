@@ -446,9 +446,6 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteUnaliasedContractUsesApi() {
-        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
-        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
-        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
         verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID);
