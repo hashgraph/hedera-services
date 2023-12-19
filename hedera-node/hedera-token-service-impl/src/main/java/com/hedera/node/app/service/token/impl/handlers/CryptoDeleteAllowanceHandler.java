@@ -97,7 +97,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
                                 && approveForAll.spenderId().equals(context.payer()));
                 if (approvedForAll) {
                     context.requireKeyOrThrow(context.payerKey(), INVALID_DELEGATING_SPENDER);
-                } else {
+                } else if (!context.payer().equals(ownerId) && !approvedForAll) {
                     context.requireKeyOrThrow(ownerId, INVALID_ALLOWANCE_OWNER_ID);
                 }
             }

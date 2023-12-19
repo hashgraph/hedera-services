@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -141,7 +143,8 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
 
     private AccountID getOwnerId() {
         final var nft = enhancement.nativeOperations().getNft(token.tokenNum(), amount.longValue());
-        return nft != null && nft.hasOwnerId()
+        requireNonNull(nft);
+        return nft.hasOwnerId()
                 ? nft.ownerId()
                 : enhancement.nativeOperations().getToken(token.tokenNum()).treasuryAccountId();
     }
