@@ -476,13 +476,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                ERC_20_CONTRACT,
-                                TRANSFER,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                BigInteger.TWO)
+                                        ERC_20_CONTRACT,
+                                        TRANSFER,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        BigInteger.TWO)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .via(TRANSFER_TXN)
@@ -521,42 +521,42 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(nestedContract, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(TokenMovement.moving(20, FUNGIBLE_TOKEN)
-                                .between(TOKEN_TREASURY, ERC_20_CONTRACT))
+                                        .between(TOKEN_TREASURY, ERC_20_CONTRACT))
                                 .payingWith(ACCOUNT),
                         contractCall(
-                                ERC_20_CONTRACT,
-                                APPROVE,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                BigInteger.valueOf(20))
+                                        ERC_20_CONTRACT,
+                                        APPROVE,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        BigInteger.valueOf(20))
                                 .gas(1_000_000)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME),
                         contractCall(
-                                ERC_20_CONTRACT,
-                                TRANSFER_FROM,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(nestedContract))),
-                                BigInteger.valueOf(5))
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(nestedContract))),
+                                        BigInteger.valueOf(5))
                                 .via(TRANSFER_TXN)
                                 .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                ERC_20_CONTRACT,
-                                TRANSFER_FROM,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(nestedContract))),
-                                BigInteger.valueOf(5))
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(nestedContract))),
+                                        BigInteger.valueOf(5))
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
                                 .via(transferFromOtherContractWithSignaturesTxn))))
@@ -583,7 +583,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     .andAllChildRecords();
 
                             var transferFromOtherContractWithSignaturesTxnRecord = getTxnRecord(
-                                    transferFromOtherContractWithSignaturesTxn)
+                                            transferFromOtherContractWithSignaturesTxn)
                                     .hasPriority(recordWith()
                                             .contractCallResult(resultWith()
                                                     .logs(inOrder(logWith()
@@ -684,48 +684,48 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             allRunFor(
                                     spec,
                                     contractCall(
-                                            contract,
-                                            TRANSFER_TOKEN_PUBLIC,
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(VANILLA_TOKEN))),
-                                            sender,
-                                            receiver1,
-                                            amount)
+                                                    contract,
+                                                    TRANSFER_TOKEN_PUBLIC,
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    amount)
                                             .payingWith(ACCOUNT)
                                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                             .gas(GAS_TO_OFFER)
                                             .via(transferTokenTxn),
                                     contractCall(
-                                            contract,
-                                            "transferTokensPublic",
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(VANILLA_TOKEN))),
-                                            accounts,
-                                            amounts)
+                                                    contract,
+                                                    "transferTokensPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    accounts,
+                                                    amounts)
                                             .payingWith(ACCOUNT)
                                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                             .gas(GAS_TO_OFFER)
                                             .via(transferTokensTxn),
                                     contractCall(
-                                            contract,
-                                            "transferNFTPublic",
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(KNOWABLE_TOKEN))),
-                                            sender,
-                                            receiver1,
-                                            serial)
+                                                    contract,
+                                                    "transferNFTPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    serial)
                                             .payingWith(ACCOUNT)
                                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                             .gas(GAS_TO_OFFER)
                                             .via(transferNFTTxn),
                                     contractCall(
-                                            contract,
-                                            "transferNFTsPublic",
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(KNOWABLE_TOKEN))),
-                                            new Address[] {sender, sender},
-                                            new Address[] {receiver2, receiver2},
-                                            serials)
+                                                    contract,
+                                                    "transferNFTsPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    new Address[] {sender, sender},
+                                                    new Address[] {receiver2, receiver2},
+                                                    serials)
                                             .payingWith(ACCOUNT)
                                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                             .gas(GAS_TO_OFFER)
@@ -828,45 +828,45 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             allRunFor(
                                     spec,
                                     contractCall(
-                                            contract,
-                                            TRANSFER_TOKEN_PUBLIC,
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(VANILLA_TOKEN))),
-                                            sender,
-                                            receiver1,
-                                            amount)
+                                                    contract,
+                                                    TRANSFER_TOKEN_PUBLIC,
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    amount)
                                             .payingWith(ACCOUNT)
                                             .gas(GAS_TO_OFFER)
                                             .via(transferTokenTxn),
                                     contractCall(
-                                            contract,
-                                            "transferTokensPublic",
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(VANILLA_TOKEN))),
-                                            accounts,
-                                            amounts)
+                                                    contract,
+                                                    "transferTokensPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    accounts,
+                                                    amounts)
                                             .payingWith(ACCOUNT)
                                             .gas(GAS_TO_OFFER)
                                             .via(transferTokensTxn),
                                     contractCall(
-                                            contract,
-                                            "transferNFTPublic",
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(KNOWABLE_TOKEN))),
-                                            sender,
-                                            receiver1,
-                                            serial)
+                                                    contract,
+                                                    "transferNFTPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    serial)
                                             .payingWith(ACCOUNT)
                                             .gas(GAS_TO_OFFER)
                                             .via(transferNFTTxn),
                                     contractCall(
-                                            contract,
-                                            "transferNFTsPublic",
-                                            HapiParserUtil.asHeadlongAddress(asAddress(
-                                                    spec.registry().getTokenID(KNOWABLE_TOKEN))),
-                                            new Address[] {sender, sender},
-                                            new Address[] {receiver2, receiver2},
-                                            serials)
+                                                    contract,
+                                                    "transferNFTsPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    new Address[] {sender, sender},
+                                                    new Address[] {receiver2, receiver2},
+                                                    serials)
                                             .payingWith(ACCOUNT)
                                             .gas(GAS_TO_OFFER)
                                             .via(transferNFTsTxn));
@@ -957,13 +957,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             spec,
                             // Call tokenTransfer with a negative amount
                             contractCall(
-                                    contract,
-                                    TRANSFER_TOKEN_PUBLIC,
-                                    HapiParserUtil.asHeadlongAddress(
-                                            asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
-                                    sender,
-                                    receiver1,
-                                    -1L)
+                                            contract,
+                                            TRANSFER_TOKEN_PUBLIC,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            sender,
+                                            receiver1,
+                                            -1L)
                                     .payingWith(ACCOUNT)
                                     .gas(GAS_TO_OFFER)
                                     .via(transferTokenWithNegativeAmountTxn)
@@ -1005,11 +1005,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCall(
-                                        ERC_20_CONTRACT,
-                                        "nameNTimes",
-                                        asHeadlongAddress(asHexedAddress(
-                                                spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        BigInteger.valueOf(51))
+                                                ERC_20_CONTRACT,
+                                                "nameNTimes",
+                                                asHeadlongAddress(asHexedAddress(
+                                                        spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                                BigInteger.valueOf(51))
                                         .payingWith(ACCOUNT)
                                         .via(NAME_TXN)
                                         .gas(4_000_000)
@@ -1021,8 +1021,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith()
                                                 .error(Bytes.of(MAX_CHILD_RECORDS_EXCEEDED
-                                                        .name()
-                                                        .getBytes())
+                                                                .name()
+                                                                .getBytes())
                                                         .toHexString())
                                                 .gasUsed(4_000_000))),
                         getAccountDetails(ACCOUNT)
@@ -1050,10 +1050,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
                         usableTxnIdNamed(uncheckedCC).payerId(overAmbitiousPayer),
                         uncheckedSubmit(contractCall(
-                                PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(overdraftAmount))
-                                .txnId(uncheckedCC)
-                                .payingWith(overAmbitiousPayer)
-                                .sending(overdraftAmount))
+                                                PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(overdraftAmount))
+                                        .txnId(uncheckedCC)
+                                        .payingWith(overAmbitiousPayer)
+                                        .sending(overdraftAmount))
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(1_000),
@@ -1078,19 +1078,19 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_CREATE_CONTRACT,
-                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        (byte[]) ArrayUtils.toPrimitive(Utils.asSolidityAddress(0, 0, 15252L))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                AUTO_RENEW_PERIOD)
+                                        TOKEN_CREATE_CONTRACT,
+                                        CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                (byte[]) ArrayUtils.toPrimitive(Utils.asSolidityAddress(0, 0, 15252L))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD)
                                 .via(FIRST_CREATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1133,19 +1133,19 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_CREATE_CONTRACT,
-                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(feeCollector))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(someARAccount))),
-                                AUTO_RENEW_PERIOD)
+                                        TOKEN_CREATE_CONTRACT,
+                                        CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(someARAccount))),
+                                        AUTO_RENEW_PERIOD)
                                 .via(FIRST_CREATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1191,21 +1191,21 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_CREATE_CONTRACT,
-                                "createNonFungibleTokenWithInvalidRoyaltyFee",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(feeCollector))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                AUTO_RENEW_PERIOD,
-                                spec.registry()
-                                        .getKey(ED25519KEY)
-                                        .getEd25519()
-                                        .toByteArray())
+                                        TOKEN_CREATE_CONTRACT,
+                                        "createNonFungibleTokenWithInvalidRoyaltyFee",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD,
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray())
                                 .via(FIRST_CREATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1251,21 +1251,21 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_CREATE_CONTRACT,
-                                "createNonFungibleTokenWithCustomFees",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(feeCollector))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                AUTO_RENEW_PERIOD,
-                                spec.registry()
-                                        .getKey(ED25519KEY)
-                                        .getEd25519()
-                                        .toByteArray())
+                                        TOKEN_CREATE_CONTRACT,
+                                        "createNonFungibleTokenWithCustomFees",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD,
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray())
                                 .via(FIRST_CREATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1337,19 +1337,19 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_CREATE_CONTRACT,
-                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
-                                spec.registry()
-                                        .getKey(ECDSA_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray(),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(feeCollector))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(initialAutoRenewAccount))),
-                                AUTO_RENEW_PERIOD)
+                                        TOKEN_CREATE_CONTRACT,
+                                        CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(initialAutoRenewAccount))),
+                                        AUTO_RENEW_PERIOD)
                                 .via(FIRST_CREATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1523,7 +1523,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         // Verify that we are still charged a "typical" amount despite the payer and
                         // the original sender contract having extremely long expiry dates
                         sourcing(() -> contractCall(
-                                createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
+                                        createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
                                 .payingWith(longLivedPayer)))
                 .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
@@ -1739,7 +1739,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             final var parentNum = spec.registry().getContractId(contract);
 
                             final var expectedParentContractAddress = asHeadlongAddress(
-                                    asEvmAddress(parentNum.getContractNum()))
+                                            asEvmAddress(parentNum.getContractNum()))
                                     .toString()
                                     .toLowerCase()
                                     .substring(2);
@@ -1927,16 +1927,16 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, CONTRACT))),
                             cryptoUpdate(SENDER).key(DELEGATE_KEY),
                             contractCall(
-                                    CONTRACT,
-                                    "transferMultipleTokens",
-                                    tokenTransferLists()
-                                            .withTokenTransferList(tokenTransferList()
-                                                    .forToken(token)
-                                                    .withAccountAmounts(
-                                                            accountAmount(sender, -amountToBeSent),
-                                                            accountAmountAlias(addressBytes, amountToBeSent))
+                                            CONTRACT,
+                                            "transferMultipleTokens",
+                                            tokenTransferLists()
+                                                    .withTokenTransferList(tokenTransferList()
+                                                            .forToken(token)
+                                                            .withAccountAmounts(
+                                                                    accountAmount(sender, -amountToBeSent),
+                                                                    accountAmountAlias(addressBytes, amountToBeSent))
+                                                            .build())
                                                     .build())
-                                            .build())
                                     .payingWith(GENESIS)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .via(NOT_SUPPORTED_TXN)
@@ -1991,9 +1991,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     .gas(6_000_000),
                             emptyChildRecordsCheck(mirrorTxn, CONTRACT_REVERT_EXECUTED),
                             contractCall(
-                                    LAZY_CREATE_CONTRACT,
-                                    revertingCallLazyCreateFunction,
-                                    asHeadlongAddress(addressBytes))
+                                            LAZY_CREATE_CONTRACT,
+                                            revertingCallLazyCreateFunction,
+                                            asHeadlongAddress(addressBytes))
                                     .sending(depositAmount)
                                     .via(REVERTING_TXN)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -2052,13 +2052,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(
                         // Then, try to transfer tokens using a top-level signature
                         sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
-                                tokenTransferList()
-                                        .forTokenAddress(tokenAddress.get())
-                                        .withAccountAmounts(
-                                                accountAmount(senderAddress.get(), -amountPerTransfer),
-                                                accountAmount(receiverAddress.get(), +amountPerTransfer))
-                                        .build()
-                        })
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
                                 .alsoSigningWithFullPrefix(SENDER)
                                 .via(ignoredTopLevelSigTransfer)
                                 .gas(GAS_TO_OFFER)
@@ -2067,13 +2067,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
                         // Validate now the top-level signature works
                         sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
-                                tokenTransferList()
-                                        .forTokenAddress(tokenAddress.get())
-                                        .withAccountAmounts(
-                                                accountAmount(senderAddress.get(), -amountPerTransfer),
-                                                accountAmount(receiverAddress.get(), +amountPerTransfer))
-                                        .build()
-                        })
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
                                 .alsoSigningWithFullPrefix(SENDER)
                                 .gas(GAS_TO_OFFER)),
                         // And validate that ONLY top-level signatures work here (i.e. approvals are
@@ -2084,13 +2084,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .payingWith(SENDER)
                                 .addTokenAllowance(SENDER, FUNGIBLE_TOKEN, TRANSFER_CONTRACT, 4 * amountPerTransfer),
                         sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
-                                tokenTransferList()
-                                        .forTokenAddress(tokenAddress.get())
-                                        .withAccountAmounts(
-                                                accountAmount(senderAddress.get(), -amountPerTransfer),
-                                                accountAmount(receiverAddress.get(), +amountPerTransfer))
-                                        .build()
-                        })
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
                                 .gas(GAS_TO_OFFER)
                                 .via(ignoredApprovalTransfer)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2101,13 +2101,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         // Validate the approval is used automatically (although not specified in
                         // the contract)
                         sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
-                                tokenTransferList()
-                                        .forTokenAddress(tokenAddress.get())
-                                        .withAccountAmounts(
-                                                accountAmount(senderAddress.get(), -amountPerTransfer),
-                                                accountAmount(receiverAddress.get(), +amountPerTransfer))
-                                        .build()
-                        })
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
                                 .via(approvedTransfer)
                                 .gas(GAS_TO_OFFER)),
                         // Two successful transfers - one with a top-level signature, one with an
@@ -2175,7 +2175,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCall(LAZY_CREATE_CONTRACT, createTooManyHollowAccounts, (Object)
-                                    asHeadlongAddressArray(addressBytes, addressBytes2))
+                                            asHeadlongAddressArray(addressBytes, addressBytes2))
                                     .sending(depositAmount)
                                     .via(TRANSFER_TXN)
                                     .gas(6_000_000)
@@ -2235,15 +2235,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                ERC_20_CONTRACT,
-                                TRANSFER_FROM,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(OWNER))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                BigInteger.TWO)
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        BigInteger.TWO)
                                 .gas(500_000L)
                                 .via(TRANSFER_FROM_ACCOUNT_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
@@ -2288,11 +2288,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                                 String.valueOf(whitelistedCalleeMirrorNum.get()))),
                         sourcing(() -> contractCall(
-                                PRETEND_PAIR,
-                                CALL_TO,
-                                asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                asHeadlongAddress(attackerMirrorAddr.get()))
+                                        PRETEND_PAIR,
+                                        CALL_TO,
+                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
+                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                        asHeadlongAddress(attackerMirrorAddr.get()))
                                 .via(ATTACK_CALL)
                                 .gas(5_000_000L)
                                 .hasKnownStatus(SUCCESS)))
@@ -2349,11 +2349,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                                 String.valueOf(whitelistedCalleeMirrorNum.get()))),
                         sourcing(() -> contractCall(
-                                PRETEND_PAIR,
-                                CALL_TO,
-                                asHeadlongAddress(unListedCalleeMirrorAddr.get()),
-                                asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                asHeadlongAddress(attackerMirrorAddr.get()))
+                                        PRETEND_PAIR,
+                                        CALL_TO,
+                                        asHeadlongAddress(unListedCalleeMirrorAddr.get()),
+                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                        asHeadlongAddress(attackerMirrorAddr.get()))
                                 .gas(5_000_000L)
                                 .hasKnownStatus(SUCCESS)),
                         // Because this callee isn't on the whitelist, the pair won't have an
@@ -2363,11 +2363,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
                                 .has(accountDetailsWith().tokenAllowancesCount(0)),
                         sourcing(() -> contractCall(
-                                PRETEND_PAIR,
-                                CALL_TO,
-                                asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                asHeadlongAddress(attackerMirrorAddr.get()))
+                                        PRETEND_PAIR,
+                                        CALL_TO,
+                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
+                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                        asHeadlongAddress(attackerMirrorAddr.get()))
                                 .gas(5_000_000L)
                                 .hasKnownStatus(SUCCESS)))
                 .then(
@@ -2507,7 +2507,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
                     /** 4. Tries to deploy child from parent and reverts. Asserts contract_nonces entries are null. */
                     final var deployChildAndRevert = contractCall(
-                            contract, deployChildAndRevertFromParentContractFn, BigInteger.ONE)
+                                    contract, deployChildAndRevertFromParentContractFn, BigInteger.ONE)
                             .gas(GAS_TO_OFFER)
                             .via(revertedInnerCreationTx);
                     final var deployChildAndRevertTxnRecord = getTxnRecord(revertedInnerCreationTx);
@@ -2627,51 +2627,51 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     TokenID.newBuilder().setTokenNum(666_666L).build()));
                         }),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_APPROVED,
-                                asHeadlongAddress(zTokenMirrorAddr.get()),
-                                BigInteger.ONE)
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(zTokenMirrorAddr.get()),
+                                        BigInteger.ONE)
                                 .via(MISSING_TOKEN)
                                 .gas(1_000_000)
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                DO_SPECIFIC_APPROVAL,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                BigInteger.ONE)
+                                        SOME_ERC_721_SCENARIOS,
+                                        DO_SPECIFIC_APPROVAL,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                        BigInteger.ONE)
                                 .gas(1_000_000)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_APPROVED,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                BigInteger.valueOf(55))
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.valueOf(55))
                                 .via("MISSING_SERIAL")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         getTokenNftInfo(NF_TOKEN, 1L).logged(),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_APPROVED,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                BigInteger.TWO)
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.TWO)
                                 .via("MISSING_SPENDER")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_APPROVED,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                BigInteger.ONE)
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.ONE)
                                 .via(WITH_SPENDER)
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         getTxnRecord(WITH_SPENDER).andAllChildRecords().logged(),
                         sourcing(() -> contractCallLocal(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_APPROVED,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                BigInteger.ONE)
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_APPROVED,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.ONE)
                                 .logged()
                                 .gas(1_000_000)
                                 .has(resultWith().contractCallResult(hexedAddress(aCivilianMirrorAddr.get())))))
@@ -2737,26 +2737,26 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> zTokenMirrorAddr.set(asHexedSolidityAddress(
                                 TokenID.newBuilder().setTokenNum(666_666L).build()))),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_BALANCE_OF,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_BALANCE_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via("BALANCE_OF")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_BALANCE_OF,
-                                asHeadlongAddress(zTokenMirrorAddr.get()),
-                                asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_BALANCE_OF,
+                                        asHeadlongAddress(zTokenMirrorAddr.get()),
+                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via(MISSING_TOKEN)
                                 .gas(1_000_000)
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_BALANCE_OF,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                asHeadlongAddress(bCivilianMirrorAddr.get()))
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_BALANCE_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        asHeadlongAddress(bCivilianMirrorAddr.get()))
                                 .via("NOT_ASSOCIATED")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)))
@@ -2822,34 +2822,34 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     TokenID.newBuilder().setTokenNum(666_666L).build()));
                         }),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_OWNER_OF,
-                                asHeadlongAddress(zTokenMirrorAddr.get()),
-                                BigInteger.ONE)
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(zTokenMirrorAddr.get()),
+                                        BigInteger.ONE)
                                 .via(MISSING_TOKEN)
                                 .gas(1_000_000)
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_OWNER_OF,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                BigInteger.valueOf(55))
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.valueOf(55))
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_OWNER_OF,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                BigInteger.TWO)
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.TWO)
                                 .via("TREASURY_OWNER")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         cryptoTransfer(movingUnique(NF_TOKEN, 1L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
                         sourcing(() -> contractCall(
-                                SOME_ERC_721_SCENARIOS,
-                                GET_OWNER_OF,
-                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                BigInteger.ONE)
+                                        SOME_ERC_721_SCENARIOS,
+                                        GET_OWNER_OF,
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        BigInteger.ONE)
                                 .via("CIVILIAN_OWNER")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)))
@@ -2893,9 +2893,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
-                                false,
-                                "invalid",
-                                getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
+                                        false,
+                                        "invalid",
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -2910,8 +2910,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith()
                                                 .error(Bytes.of(INVALID_CONTRACT_ID
-                                                        .name()
-                                                        .getBytes())
+                                                                .name()
+                                                                .getBytes())
                                                         .toHexString())
                                                 .senderId(spec.registry()
                                                         .getAccountID(spec.registry()
