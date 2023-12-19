@@ -195,9 +195,7 @@ public class OrphanBuffer {
     private List<EventDescriptor> getMissingParents(@NonNull final GossipEvent event) {
         final List<EventDescriptor> missingParents = new ArrayList<>();
 
-        final Iterator<EventDescriptor> parentIterator = new ParentIterator(event);
-        while (parentIterator.hasNext()) {
-            final EventDescriptor parent = parentIterator.next();
+        for (final EventDescriptor parent : event) {
             if (!eventsWithParents.contains(parent) && parent.getGeneration() >= minimumGenerationNonAncient) {
                 missingParents.add(parent);
             }

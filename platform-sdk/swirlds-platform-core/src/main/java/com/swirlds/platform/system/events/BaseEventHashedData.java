@@ -416,32 +416,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         return selfParent != null;
     }
 
-    /**
-     * Check if the event has other parents.
-     * @return true if the event has other parents
-     */
-    public boolean hasOtherParent() {
-        return otherParents != null && !otherParents.isEmpty();
-    }
-
-    /**
-     * Get the hash value of the parent event.
-     * @return the hash value of the parent event
-     */
-    @Nullable
-    public byte[] getSelfParentHashValue() {
-        return selfParent == null ? null : getSelfParentHash().getValue();
-    }
-
-    /**
-     * Get the hash value of the other parent with the maximum generation.
-     * @return  the hash value of the other parent with the maximum generation
-     */
-    @Nullable
-    public byte[] getOtherParentHashValue() {
-        return otherParents.isEmpty() ? null : getOtherParentHash().getValue();
-    }
-
     @NonNull
     public Instant getTimeCreated() {
         return timeCreated;

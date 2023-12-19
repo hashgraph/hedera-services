@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -319,7 +320,7 @@ class OrphanBufferTests {
         when(eventBase.getOtherParents()).thenReturn(otherParents);
         when(event.getHashedData()).thenReturn(eventBase);
 
-        final ParentIterator iterator = new ParentIterator(event);
+        final Iterator<EventDescriptor> iterator = event.iterator();
 
         assertEquals(selfParent, iterator.next(), "The first parent should be the self parent");
         int index = 0;

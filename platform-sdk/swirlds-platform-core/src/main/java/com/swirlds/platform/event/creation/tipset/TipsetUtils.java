@@ -75,9 +75,7 @@ public final class TipsetUtils {
         if (hashedData.hasSelfParent()) {
             parentDescriptors.add(event.getHashedData().getSelfParent());
         }
-        if (hashedData.hasOtherParent()) {
-            hashedData.getOtherParents().forEach(parentDescriptors::add);
-        }
+        hashedData.getOtherParents().forEach(parentDescriptors::add);
 
         return parentDescriptors;
     }
