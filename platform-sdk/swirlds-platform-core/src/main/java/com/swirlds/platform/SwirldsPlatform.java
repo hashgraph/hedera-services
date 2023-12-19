@@ -752,7 +752,7 @@ public class SwirldsPlatform implements Platform {
             intakeHandler = eventValidator::validateEvent;
         } else {
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
-                    platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
+                    platformContext, time,  intakeEventCounter);
             final EventDeduplicator eventDeduplicator =
                     new EventDeduplicator(platformContext, intakeEventCounter, eventIntakeMetrics);
             final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(

@@ -19,6 +19,7 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.TransactionConfig;
@@ -29,6 +30,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -49,11 +51,6 @@ public class InternalEventValidator {
     private static final Duration MINIMUM_LOG_PERIOD = Duration.ofMinutes(1);
 
     /**
-     * Whether this node is in a single-node network.
-     */
-    private final boolean singleNodeNetwork;
-
-    /**
      * Keeps track of the number of events in the intake pipeline from each peer
      */
     private final IntakeEventCounter intakeEventCounter;
@@ -64,16 +61,12 @@ public class InternalEventValidator {
     private final RateLimitedLogger nullUnhashedDataLogger;
     private final RateLimitedLogger tooManyTransactionBytesLogger;
     private final RateLimitedLogger inconsistentSelfParentLogger;
-    private final RateLimitedLogger inconsistentOtherParentLogger;
-    private final RateLimitedLogger identicalParentsLogger;
     private final RateLimitedLogger invalidGenerationLogger;
 
     private final LongAccumulator nullHashedDataAccumulator;
     private final LongAccumulator nullUnhashedDataAccumulator;
     private final LongAccumulator tooManyTransactionBytesAccumulator;
     private final LongAccumulator inconsistentSelfParentAccumulator;
-    private final LongAccumulator inconsistentOtherParentAccumulator;
-    private final LongAccumulator identicalParentsAccumulator;
     private final LongAccumulator invalidGenerationAccumulator;
 
     /**
@@ -81,18 +74,15 @@ public class InternalEventValidator {
      *
      * @param platformContext    the platform context
      * @param time               a time object, for rate limiting logging
-     * @param singleNodeNetwork  true if this node is in a single-node network, otherwise false
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public InternalEventValidator(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
-            final boolean singleNodeNetwork,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         Objects.requireNonNull(time);
 
-        this.singleNodeNetwork = singleNodeNetwork;
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.transactionConfig = platformContext.getConfiguration().getConfigData(TransactionConfig.class);
@@ -101,8 +91,6 @@ public class InternalEventValidator {
         this.nullUnhashedDataLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.tooManyTransactionBytesLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.inconsistentSelfParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.inconsistentOtherParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.identicalParentsLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.invalidGenerationLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
         this.nullHashedDataAccumulator = platformContext
@@ -124,16 +112,6 @@ public class InternalEventValidator {
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInconsistentSelfParent")
                         .withDescription("Events that had an internal self-parent inconsistency")
-                        .withUnit("events"));
-        this.inconsistentOtherParentAccumulator = platformContext
-                .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInconsistentOtherParent")
-                        .withDescription("Events that had an internal other-parent inconsistency")
-                        .withUnit("events"));
-        this.identicalParentsAccumulator = platformContext
-                .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithIdenticalParents")
-                        .withDescription("Events with identical self-parent and other-parent hash")
                         .withUnit("events"));
         this.invalidGenerationAccumulator = platformContext
                 .getMetrics()
@@ -213,26 +191,6 @@ public class InternalEventValidator {
             return false;
         }
 
-        final Hash otherParentHash = hashedData.getOtherParentHash();
-        final long otherParentGeneration = hashedData.getOtherParentGen();
-        if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
-            inconsistentOtherParentLogger.error(
-                    EXCEPTION.getMarker(),
-                    "Event %s has inconsistent other-parent hash and generation. Other-parent hash: %s, other-parent generation: %s"
-                            .formatted(event, otherParentHash, otherParentGeneration));
-            inconsistentOtherParentAccumulator.update(1);
-            return false;
-        }
-
-        // single node networks are allowed to have identical self-parent and other-parent hashes
-        if (!singleNodeNetwork && selfParentHash != null && selfParentHash.equals(otherParentHash)) {
-            identicalParentsLogger.error(
-                    EXCEPTION.getMarker(),
-                    "Event %s has identical self-parent and other-parent hash: %s".formatted(event, selfParentHash));
-            identicalParentsAccumulator.update(1);
-            return false;
-        }
-
         return true;
     }
 
@@ -245,14 +203,17 @@ public class InternalEventValidator {
      */
     private boolean isEventGenerationValid(@NonNull final GossipEvent event) {
         final long eventGeneration = event.getGeneration();
-        final long selfParentGeneration = event.getHashedData().getSelfParentGen();
-        final long otherParentGeneration = event.getHashedData().getOtherParentGen();
 
-        if (eventGeneration != Math.max(selfParentGeneration, otherParentGeneration) + 1) {
+        long maxParentGeneration = GENERATION_UNDEFINED;
+        for (final EventDescriptor parent : event) {
+            maxParentGeneration = Math.max(maxParentGeneration, parent.getGeneration());
+        }
+
+        if (eventGeneration != maxParentGeneration + 1) {
             invalidGenerationLogger.error(
                     EXCEPTION.getMarker(),
-                    "Event %s has an invalid generation. Event generation: %s, self-parent generation: %s, other-parent generation: %s"
-                            .formatted(event, eventGeneration, selfParentGeneration, otherParentGeneration));
+                    "Event %s has an invalid generation. Event generation: %s, expected generation: %s"
+                            .formatted(event, eventGeneration, maxParentGeneration + 1));
             invalidGenerationAccumulator.update(1);
             return false;
         }
