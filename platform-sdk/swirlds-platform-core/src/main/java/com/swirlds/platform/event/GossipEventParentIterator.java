@@ -6,6 +6,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;
 
+// TODO unit test this
+
 /**
  * Iterates over the parents of a {@link GossipEvent}.
  */
