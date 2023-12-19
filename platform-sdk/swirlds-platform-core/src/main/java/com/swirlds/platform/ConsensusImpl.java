@@ -37,7 +37,7 @@ import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.signed.SignedState;

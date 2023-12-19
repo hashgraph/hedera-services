@@ -37,7 +37,7 @@ import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;

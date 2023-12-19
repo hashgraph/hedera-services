@@ -19,7 +19,7 @@ package com.swirlds.platform;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.RoundNumberProvider;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

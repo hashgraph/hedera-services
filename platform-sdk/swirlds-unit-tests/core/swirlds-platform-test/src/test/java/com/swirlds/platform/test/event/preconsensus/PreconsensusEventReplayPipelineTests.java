@@ -38,7 +38,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayPipeline;
 import com.swirlds.platform.event.validation.EventValidator;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;

@@ -25,7 +25,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;

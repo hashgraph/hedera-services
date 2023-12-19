@@ -23,7 +23,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

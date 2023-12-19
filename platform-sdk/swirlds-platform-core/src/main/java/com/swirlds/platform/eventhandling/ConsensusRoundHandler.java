@@ -45,7 +45,7 @@ import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.state.State;

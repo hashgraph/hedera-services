@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;

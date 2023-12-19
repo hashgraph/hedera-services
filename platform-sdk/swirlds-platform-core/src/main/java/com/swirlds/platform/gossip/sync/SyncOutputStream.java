@@ -23,7 +23,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;

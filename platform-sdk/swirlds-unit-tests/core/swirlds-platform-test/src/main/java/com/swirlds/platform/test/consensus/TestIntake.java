@@ -36,7 +36,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;

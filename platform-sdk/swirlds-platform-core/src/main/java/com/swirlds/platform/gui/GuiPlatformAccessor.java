@@ -21,7 +21,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;

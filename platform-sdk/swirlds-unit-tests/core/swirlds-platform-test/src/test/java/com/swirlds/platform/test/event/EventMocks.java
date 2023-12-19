@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 
 public class EventMocks {

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;

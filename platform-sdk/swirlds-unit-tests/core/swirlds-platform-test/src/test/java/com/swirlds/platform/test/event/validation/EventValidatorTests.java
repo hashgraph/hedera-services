@@ -36,7 +36,7 @@ import com.swirlds.platform.event.validation.GossipEventValidators;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;

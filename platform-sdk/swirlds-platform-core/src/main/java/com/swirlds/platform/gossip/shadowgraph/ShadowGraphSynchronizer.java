@@ -42,7 +42,7 @@ import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import edu.umd.cs.findbugs.annotations.NonNull;

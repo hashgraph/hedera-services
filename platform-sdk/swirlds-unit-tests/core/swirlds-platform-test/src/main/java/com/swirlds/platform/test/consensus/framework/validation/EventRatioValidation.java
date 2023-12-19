@@ -18,7 +18,7 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

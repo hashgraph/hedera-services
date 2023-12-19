@@ -42,7 +42,7 @@ import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;

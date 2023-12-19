@@ -22,7 +22,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

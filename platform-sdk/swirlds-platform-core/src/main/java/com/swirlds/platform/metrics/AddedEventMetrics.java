@@ -32,7 +32,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;

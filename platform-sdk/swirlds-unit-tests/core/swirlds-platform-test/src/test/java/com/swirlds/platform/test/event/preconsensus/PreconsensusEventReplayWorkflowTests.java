@@ -40,7 +40,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterato
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;

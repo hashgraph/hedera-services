@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.SystemTransaction;

@@ -27,7 +27,7 @@ import com.swirlds.platform.gossip.chatter.ChatterNotifier;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import java.util.List;
 import org.junit.jupiter.api.Tag;

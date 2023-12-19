@@ -31,7 +31,7 @@ import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import java.time.Duration;
 import java.util.List;

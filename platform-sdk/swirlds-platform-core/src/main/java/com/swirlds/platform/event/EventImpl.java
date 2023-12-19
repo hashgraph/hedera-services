@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.internal;
+package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
@@ -30,10 +30,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.EventImplParentIterator;
-import com.swirlds.platform.event.EventMetadata;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;

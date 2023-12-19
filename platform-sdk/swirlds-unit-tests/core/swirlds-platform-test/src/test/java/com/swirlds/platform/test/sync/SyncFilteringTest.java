@@ -32,7 +32,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
