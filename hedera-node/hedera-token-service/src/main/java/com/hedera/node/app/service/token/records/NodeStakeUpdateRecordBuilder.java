@@ -31,4 +31,13 @@ public interface NodeStakeUpdateRecordBuilder {
      */
     @NonNull
     NodeStakeUpdateRecordBuilder transaction(@NonNull final Transaction transaction);
+
+    /**
+     * Sets the record's memo.
+     *
+     * @param memo the memo
+     * @return the builder
+     */
+    @NonNull
+    NodeStakeUpdateRecordBuilder memo(@NonNull final String memo);
 }

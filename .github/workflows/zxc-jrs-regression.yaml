@@ -160,6 +160,7 @@ env:
   JAVA_OPTS: -Xmx28g -XX:ActiveProcessorCount=16
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+  CG_EXEC: cgexec -g cpu,memory:gradle-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
 
 defaults:
   run:
@@ -305,6 +306,43 @@ jobs:
           sudo apt install -y ./rclone-v1.58.1-linux-amd64.deb
           rm -rf rclone-v1.58.1-linux-amd64.deb
 
+      - name: Setup Control Groups
+        run: |
+          echo "::group::Get System Configuration"
+            USR_ID="$(id -un)"
+            GRP_ID="$(id -gn)"
+            GRADLE_MEM_LIMIT="30064771072"
+            AGENT_MEM_LIMIT="2147483648"
+            GRADLE_GROUP_NAME="gradle-${{ github.run_id }}"
+            AGENT_GROUP_NAME="agent-${{ github.run_id }}"
+          echo "::endgroup::"
+
+          echo "::group::Install Control Group Tools"
+            if ! command -v cgcreate >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y cgroup-tools
+            fi
+          echo "::endgroup::"
+
+          echo "::group::Create Control Groups"
+            sudo cgcreate -g cpu,memory:${GRADLE_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+            sudo cgcreate -g cpu,memory:${AGENT_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+          echo "::endgroup::"
+
+          echo "::group::Set Control Group Limits"
+            cgset -r cpu.shares=768 ${GRADLE_GROUP_NAME}
+            cgset -r cpu.shares=500 ${AGENT_GROUP_NAME}
+            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
+            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
+            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
+            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
+          echo "::endgroup::"
+
+          echo "::group::Move Runner Processes to Control Groups"
+            sudo cgclassify --sticky -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Listener' | tr '\n' ' ')
+            sudo cgclassify -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Worker' | tr '\n' ' ')
+          echo "::endgroup::"
+
       - name: Configure RClone Authentication
         id: rclone-auth
         env:
@@ -441,7 +479,7 @@ jobs:
             JAVA_OPTS="-Xmx8g"
           fi
 
-          java ${JAVA_OPTS} \
+          ${CG_EXEC} java ${JAVA_OPTS} \
           -cp "lib/*:regression.jar" \
           -Dlog4j.configurationFile="log4j2-fsts-enhanced.xml" \
           -Dspring.output.ansi.enabled=ALWAYS \
