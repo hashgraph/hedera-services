@@ -909,10 +909,10 @@ public class Create2OperationSuite extends HapiSuite {
         return defaultHapiSpec("canUseAliasesInPrecompilesAndContractKeys")
                 .given(
                         // todo: we add admin key on child records produced by contract created with omitAdminKey()
-//                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-//                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
-//                                NONDETERMINISTIC_TRANSACTION_FEES,
-//                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                        //                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        //                                NONDETERMINISTIC_TRANSACTION_FEES,
+                        //                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(contract),

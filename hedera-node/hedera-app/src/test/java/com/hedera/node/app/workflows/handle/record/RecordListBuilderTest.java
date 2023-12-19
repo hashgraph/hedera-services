@@ -934,24 +934,24 @@ class RecordListBuilderTest extends AppTestBase {
                 .nanosBefore(2, result.userTransactionRecord())
                 .hasNonce(2)
                 .hasNoParent()
-                .hasTransaction(first);
+                .hasSignedTransaction(first);
         assertCreatedRecord(records.get(1))
                 .nanosBefore(1, result.userTransactionRecord())
                 .hasNonce(1)
                 .hasNoParent()
-                .hasTransaction(second);
+                .hasSignedTransaction(second);
         assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(3))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(3)
                 .hasParent(result.userTransactionRecord())
-                .hasTransaction(third);
+                .hasSignedTransaction(third);
         assertCreatedRecord(records.get(4))
                 .nanosAfter(2, result.userTransactionRecord())
                 .hasNonce(4)
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasParent(result.userTransactionRecord())
-                .hasTransaction(fourth);
+                .hasSignedTransaction(fourth);
     }
 
     @Test
@@ -1045,18 +1045,18 @@ class RecordListBuilderTest extends AppTestBase {
                 .hasNonce(2)
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasNoParent()
-                .hasTransaction(first);
+                .hasSignedTransaction(first);
         assertCreatedRecord(records.get(1))
                 .nanosBefore(1, result.userTransactionRecord())
                 .hasNonce(1)
                 .hasNoParent()
-                .hasTransaction(second);
+                .hasSignedTransaction(second);
         assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(3))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(3)
                 .hasParent(result.userTransactionRecord())
-                .hasTransaction(third);
+                .hasSignedTransaction(third);
     }
 
     private SingleTransactionRecordBuilderImpl addUserTransaction(final RecordListBuilder builder) {

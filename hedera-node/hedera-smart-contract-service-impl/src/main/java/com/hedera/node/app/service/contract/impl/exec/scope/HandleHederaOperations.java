@@ -309,8 +309,8 @@ public class HandleHederaOperations implements HederaOperations {
                 ContractID.newBuilder().evmAddress(evmAddress).build();
 
         tokenServiceApi.deleteContract(contractId);
-        //Externalize only on ethereum calls
-        if(context.body().hasEthereumTransaction()) {
+        // Externalize only on ethereum calls
+        if (context.body().hasEthereumTransaction()) {
             addContractDeleteChildRecord(contractId);
         }
     }

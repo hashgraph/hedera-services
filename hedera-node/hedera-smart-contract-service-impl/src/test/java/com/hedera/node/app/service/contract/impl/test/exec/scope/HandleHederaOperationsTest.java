@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
@@ -455,10 +456,14 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteAliasedContractUsesApi() {
+        var txnBody = TransactionBody.newBuilder()
+                .ethereumTransaction(EthereumTransactionBody.DEFAULT)
+                .build();
         given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
         given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
         given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.body()).willReturn(txnBody);
         subject.deleteAliasedContract(CANONICAL_ALIAS);
         verify(tokenServiceApi)
                 .deleteContract(
