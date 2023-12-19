@@ -28,6 +28,8 @@ import java.util.function.Predicate;
 
 /**
  * Filters out data, allowing some objects to pass and blocking others.
+ *
+ * @param <T> the type of data being filtered
  */
 public class WireFilter<T> {
 

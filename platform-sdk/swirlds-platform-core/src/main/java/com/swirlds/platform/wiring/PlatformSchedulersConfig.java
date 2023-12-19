@@ -53,9 +53,9 @@ import com.swirlds.config.api.ConfigProperty;
  * @param applicationTransactionPrehandlerSchedulerType     the application transaction prehandler scheduler type
  * @param applicationTransactionPrehandlerUnhandledCapacity number of unhandled tasks allowed for the application
  *                                                          transaction prehandler
- * @param systemTransactionPrehandlerSchedulerType          the system transaction prehandler scheduler type
- * @param systemTransactionPrehandlerUnhandledCapacity      number of unhandled tasks allowed for the system transaction
- *                                                          prehandler
+ * @param stateSignatureCollectorSchedulerType              the state signature collector scheduler type
+ * @param stateSignatureCollectorUnhandledCapacity          number of unhandled tasks allowed for the state signature
+ *                                                          collector
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -79,5 +79,5 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType systemTransactionPrehandlerSchedulerType,
-        @ConfigProperty(defaultValue = "500") int systemTransactionPrehandlerUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
+        @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity) {}

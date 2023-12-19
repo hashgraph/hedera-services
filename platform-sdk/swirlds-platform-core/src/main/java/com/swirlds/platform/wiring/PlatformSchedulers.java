@@ -136,8 +136,8 @@ public record PlatformSchedulers(
                         .build()
                         .cast(),
                 model.schedulerBuilder("stateSignatureCollector")
-                        .withType(config.systemTransactionPrehandlerSchedulerType())
-                        .withUnhandledTaskCapacity(config.systemTransactionPrehandlerUnhandledCapacity())
+                        .withType(config.stateSignatureCollectorSchedulerType())
+                        .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
                         .build()

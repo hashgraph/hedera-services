@@ -46,10 +46,8 @@ public class PlatformCoordinator {
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param linkedEventIntakeWiring                the linked event intake wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
-     * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring, null if legacy
-     *                                               prehandle is enabled
-     * @param stateSignatureCollectorWiring      the system transaction prehandler wiring, null if legacy prehandle
-     *                                               is enabled
+     * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
+     * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
      */
     public PlatformCoordinator(
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,

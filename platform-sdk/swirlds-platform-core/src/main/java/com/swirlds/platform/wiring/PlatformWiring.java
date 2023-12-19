@@ -226,6 +226,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param linkedEventIntake       the linked event intake to bind
      * @param eventCreationManager    the event creation manager to bind
      * @param swirldStateManager      the swirld state manager to bind
+     * @param signedStateManager      the signed state manager to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,

@@ -44,6 +44,7 @@ public class StateSignatureCollectorWiring {
     /**
      * Constructor.
      *
+     * @param model         the wiring model for the platform
      * @param taskScheduler the task scheduler that will perform the prehandling
      */
     private StateSignatureCollectorWiring(

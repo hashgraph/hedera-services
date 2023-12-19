@@ -29,6 +29,8 @@ import java.util.List;
 /**
  * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
  * collection.
+ *
+ * @param <T> the type of data in the list that is being split
  */
 public class WireListSplitter<T> {
 
