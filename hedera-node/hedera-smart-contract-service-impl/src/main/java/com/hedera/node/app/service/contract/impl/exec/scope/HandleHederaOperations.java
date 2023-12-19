@@ -292,7 +292,7 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
-                null,
+                context.getFunctionality().equals(HederaFunctionality.ETHEREUM_TRANSACTION) ? body : null,
                 body.autoRenewAccountId(),
                 evmAddress);
     }

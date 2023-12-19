@@ -879,4 +879,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private boolean dispatchNeedsHapiPayerChecks(@NonNull final TransactionCategory category) {
         return category == SCHEDULED;
     }
+
+    public HederaFunctionality getFunctionality() {
+        return this.functionality;
+    }
 }

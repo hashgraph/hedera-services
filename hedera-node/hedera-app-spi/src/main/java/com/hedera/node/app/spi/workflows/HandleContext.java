@@ -61,6 +61,8 @@ import java.util.function.Predicate;
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface HandleContext {
+    HederaFunctionality getFunctionality();
+
     /**
      * Category of the current transaction.
      */
