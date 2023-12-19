@@ -886,8 +886,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     private @Nullable EventImpl lastSee(@Nullable final EventImpl x, final long m) {
         final int numMembers;
-        final EventImpl sp;
-        final EventImpl op;
 
         if (x == null) {
             return null;
@@ -902,23 +900,28 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         numMembers = addressBook.getSize();
         x.initLastSee(numMembers);
 
-        op = otherParent(x);
-        sp = selfParent(x);
-
         for (int mm = 0; mm < numMembers; mm++) {
             if (creatorIndexEquals(x, mm)) {
                 x.setLastSee(mm, x);
-            } else if (sp == null && op == null) {
-                x.setLastSee(mm, null);
             } else {
-                final EventImpl lsop = lastSee(op, mm);
-                final EventImpl lssp = lastSee(sp, mm);
-                final long lsopGen = lsop == null ? 0 : lsop.getGeneration();
-                final long lsspGen = lssp == null ? 0 : lssp.getGeneration();
-                if ((round(lsop) > round(lssp)) || ((lsopGen > lsspGen) && (firstSee(op, mm) == firstSee(sp, mm)))) {
-                    x.setLastSee(mm, lsop);
+
+                // TODO this needs to be refactored for multiple other parents!!!
+
+                final EventImpl op = otherParent(x);
+                final EventImpl sp = selfParent(x);
+
+                if (sp == null && op == null) {
+                    x.setLastSee(mm, null);
                 } else {
-                    x.setLastSee(mm, lssp);
+                    final EventImpl lsop = lastSee(op, mm);
+                    final EventImpl lssp = lastSee(sp, mm);
+                    final long lsopGen = lsop == null ? 0 : lsop.getGeneration();
+                    final long lsspGen = lssp == null ? 0 : lssp.getGeneration();
+                    if ((round(lsop) > round(lssp)) || ((lsopGen > lsspGen) && (firstSee(op, mm) == firstSee(sp, mm)))) {
+                        x.setLastSee(mm, lsop);
+                    } else {
+                        x.setLastSee(mm, lssp);
+                    }
                 }
             }
         }
