@@ -99,6 +99,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
+        recordBuilder.withTinybarGasFee(outcome.tinybarGasCost());
         throwIfUnsuccessful(outcome.status());
     }
 
