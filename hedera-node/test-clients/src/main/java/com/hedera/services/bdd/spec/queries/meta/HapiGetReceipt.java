@@ -30,7 +30,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -48,6 +52,10 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     Optional<String> expectedScheduledTxnId = Optional.empty();
     Optional<TransactionID> explicitTxnId = Optional.empty();
     Optional<ResponseCodeEnum> expectedPriorityStatus = Optional.empty();
+
+    @Nullable
+    Set<ResponseCodeEnum> expectedPriorityStatuses = null;
+
     Optional<ResponseCodeEnum[]> expectedDuplicateStatuses = Optional.empty();
     Optional<Integer> hasChildAutoAccountCreations = Optional.empty();
 
@@ -99,6 +107,14 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
         return this;
     }
 
+    public HapiGetReceipt hasPriorityStatusFrom(ResponseCodeEnum... statuses) {
+        if (statuses.length == 0) {
+            throw new IllegalArgumentException("Must specify at least one status");
+        }
+        expectedPriorityStatuses = EnumSet.copyOf(Arrays.asList(statuses));
+        return this;
+    }
+
     public HapiGetReceipt hasDuplicateStatuses(ResponseCodeEnum... statuses) {
         expectedDuplicateStatuses = Optional.of(statuses);
         return this;
@@ -137,8 +153,11 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) {
         var receipt = response.getTransactionGetReceipt().getReceipt();
+        ResponseCodeEnum actualStatus = receipt.getStatus();
+        if (expectedPriorityStatuses != null && expectedPriorityStatuses.contains(actualStatus)) {
+            expectedPriorityStatus = Optional.of(actualStatus);
+        }
         if (expectedPriorityStatus.isPresent()) {
-            ResponseCodeEnum actualStatus = receipt.getStatus();
             assertEquals(expectedPriorityStatus.get(), actualStatus);
         }
         if (expectedDuplicateStatuses.isPresent()) {
