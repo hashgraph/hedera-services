@@ -72,11 +72,11 @@ class EventStringsTest {
         BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(new NodeId(opId), new byte[0]);
         printAssert(
                 EventStrings.toShortString(new EventImpl(hashedData, unhashedData)),
-                String.format("%d,%d", id, BaseEventHashedData.calculateGeneration(spGen, opGen)),
+                String.format("%d,%d", id, hashedData.getGeneration()),
                 "should have creator and generation");
         printAssert(
                 EventStrings.toShortString(new GossipEvent(hashedData, unhashedData)),
-                String.format("%d,%d", id, BaseEventHashedData.calculateGeneration(spGen, opGen)),
+                String.format("%d,%d", id, hashedData.getGeneration()),
                 "should have creator and generation");
         printAssert(
                 EventStrings.toMediumString(new EventImpl(hashedData, unhashedData)),
