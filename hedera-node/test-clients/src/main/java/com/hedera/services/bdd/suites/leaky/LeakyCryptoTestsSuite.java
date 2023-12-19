@@ -698,10 +698,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .addCryptoAllowance(OWNER, SECOND_SPENDER, 100L)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
                                 .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
+                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
                                 .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
                         cryptoApproveAllowance()
                                 .payingWith(OWNER)
                                 .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 1L, 1L, 1L, 1L))
+                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
                                 .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
                         cryptoApproveAllowance()
                                 .payingWith(OWNER)
@@ -710,6 +712,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .addCryptoAllowance(OWNER, SPENDER, 100L)
                                 .addCryptoAllowance(OWNER, SPENDER, 200L)
                                 .addCryptoAllowance(OWNER, SPENDER, 200L)
+                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
                                 .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
                         cryptoApproveAllowance()
                                 .payingWith(OWNER)
@@ -718,6 +721,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
                                 .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED))
                 .then(
                         // reset
