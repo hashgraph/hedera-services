@@ -37,7 +37,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -226,13 +228,19 @@ public class InOrderLinker {
             return null;
         }
 
+        // TODO make this work for MOP
+
         final BaseEventHashedData hashedData = event.getHashedData();
         final EventImpl selfParent =
                 getParentToLink(event, hashedData.getSelfParentHash(), hashedData.getSelfParentGen());
         final EventImpl otherParent =
                 getParentToLink(event, hashedData.getOtherParentHash(), hashedData.getOtherParentGen());
 
-        final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
+        final List<EventImpl> otherParents = new ArrayList<>();
+        if (otherParent != null) {
+            otherParents.add(otherParent);
+        }
+        final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParents);
 
         final EventDescriptor eventDescriptor = event.getDescriptor();
         parentDescriptorMap.put(eventDescriptor, linkedEvent);

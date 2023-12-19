@@ -43,7 +43,7 @@ public final class EqualsVerifier {
 
     private static EventImpl randomEventImpl(
             final RandomGenerator r, final EventImpl selfParent, final EventImpl otherParent) {
-        return new EventImpl(randomGossipEvent(r), randomConsensusData(r), selfParent, otherParent);
+        return new EventImpl(randomGossipEvent(r), randomConsensusData(r), selfParent, List.of(otherParent));
     }
 
     public static EventImpl randomEventImpl(final RandomGenerator r) {

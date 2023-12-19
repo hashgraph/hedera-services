@@ -28,6 +28,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * A simple, deterministic factory for Event instances
@@ -73,7 +74,7 @@ public class EventFactory {
         final BaseEventUnhashedData unhashedEventData =
                 new BaseEventUnhashedData(otherId, HashGenerator.random().getValue());
 
-        final EventImpl e = new EventImpl(hashedEventData, unhashedEventData, selfParent, otherParent);
+        final EventImpl e = new EventImpl(hashedEventData, unhashedEventData, selfParent, List.of(otherParent));
         e.getBaseEventHashedData().setHash(HashGenerator.random());
 
         assertNotNull(e.getBaseHash(), "null base hash");

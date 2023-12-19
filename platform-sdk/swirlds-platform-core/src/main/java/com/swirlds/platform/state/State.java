@@ -214,16 +214,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         return new State(this);
     }
 
-    // Perhaps this belongs in a different file
-    public static void linkParents(final EventImpl[] events) {
-        final HashMap<Hash, EventImpl> eventsByHash = new HashMap<>();
-        for (final EventImpl event : events) {
-            eventsByHash.put(event.getBaseHash(), event);
-            event.setSelfParent(eventsByHash.get(event.getSelfParentHash()));
-            event.setOtherParent(eventsByHash.get(event.getOtherParentHash()));
-        }
-    }
-
     /**
      * {@inheritDoc}
      */

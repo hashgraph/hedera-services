@@ -65,13 +65,16 @@ public abstract class EventUtils {
      * @param signedState the state where events are stored
      */
     public static void convertEvents(final SignedState signedState) {
-        final EventImpl[] events =
-                signedState.getState().getPlatformState().getPlatformData().getEvents();
-        for (int i = 0; i < events.length; i++) {
-            final IndexedEvent ie = new IndexedEvent(events[i]);
-            events[i] = ie;
-        }
-        State.linkParents(events);
+        throw new UnsupportedOperationException(
+                "This code pathway is no longer supported. "
+                        + "New intake pipeline is expected to take over this functionality.");
+//        final EventImpl[] events =
+//                signedState.getState().getPlatformState().getPlatformData().getEvents();
+//        for (int i = 0; i < events.length; i++) {
+//            final IndexedEvent ie = new IndexedEvent(events[i]);
+//            events[i] = ie;
+//        }
+//        State.linkParents(events);
     }
 
     /**

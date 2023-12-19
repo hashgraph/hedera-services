@@ -49,9 +49,12 @@ public final class ChildEvent {
             final boolean missingOtherParent,
             final EventImpl selfParent,
             final EventImpl otherParent) {
-        this.child = new EventImpl(child, selfParent, otherParent);
-        this.missingSelfParent = missingSelfParent;
-        this.missingOtherParent = missingOtherParent;
+        throw new UnsupportedOperationException(
+                "This code pathway is no longer supported. "
+                        + "New intake pipeline is expected to take over this functionality.");
+//        this.child = new EventImpl(child, selfParent, otherParent);
+//        this.missingSelfParent = missingSelfParent;
+//        this.missingOtherParent = missingOtherParent;
     }
 
     /**

@@ -23,8 +23,10 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A class that stores temporary data that is used while calculating consensus inside the platform.
@@ -33,8 +35,8 @@ import java.util.List;
 public class EventMetadata implements Clearable {
     /** the self parent of this */
     private EventImpl selfParent;
-    /** the other parent of this */
-    private EventImpl otherParent;
+    /** the other parents of this */
+    private final List<EventImpl> otherParents;
     /** an estimate of what the consensus timestamp will be (could be a very bad guess) */
     private Instant estimatedTime;
     /** has this event been cleared (because it was old and should be discarded)? */
@@ -95,12 +97,16 @@ public class EventMetadata implements Clearable {
         // ConsensusImpl.currMark starts at 1 and counts up, so all events initially count as
         // unmarked
         this.mark = ConsensusConstants.EVENT_UNMARKED;
+        this.otherParents = new ArrayList<>();
     }
 
-    public EventMetadata(@Nullable final EventImpl selfParent, @Nullable final EventImpl otherParent) {
-        this();
+    public EventMetadata(@Nullable final EventImpl selfParent, @NonNull final List<EventImpl> otherParents) {
+        this.estimatedTime = Instant.now(); // until a better estimate is found, just guess the time it is now
+        // ConsensusImpl.currMark starts at 1 and counts up, so all events initially count as
+        // unmarked
+        this.mark = ConsensusConstants.EVENT_UNMARKED;
         this.selfParent = selfParent;
-        this.otherParent = otherParent;
+        this.otherParents = otherParents;
     }
 
     /**
@@ -117,7 +123,7 @@ public class EventMetadata implements Clearable {
         cleared = true;
         EventCounter.eventCleared();
         selfParent = null;
-        otherParent = null;
+        otherParents.clear();
         clearMetadata();
     }
 
@@ -143,14 +149,18 @@ public class EventMetadata implements Clearable {
      * @return the other parent of this
      */
     public @Nullable EventImpl getOtherParent() {
-        return otherParent;
+        // TODO temporary
+        if (otherParents.isEmpty()) {
+            return null;
+        }
+        return otherParents.get(0);
     }
 
     /**
      * @param otherParent the other parent of this
      */
     public void setOtherParent(@Nullable final EventImpl otherParent) {
-        this.otherParent = otherParent;
+
     }
 
     /**

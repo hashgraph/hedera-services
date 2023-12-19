@@ -134,12 +134,12 @@ public class EventImpl extends EventMetadata
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
             final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), selfParent, otherParent);
+            @NonNull final List<EventImpl> otherParents) {
+        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), selfParent, otherParents);
     }
 
-    public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
-        this(gossipEvent, new ConsensusData(), selfParent, otherParent);
+    public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, @NonNull final List<EventImpl> otherParents) {
+        this(gossipEvent, new ConsensusData(), selfParent, otherParents);
     }
 
     public EventImpl(
@@ -147,16 +147,17 @@ public class EventImpl extends EventMetadata
             final BaseEventUnhashedData baseEventUnhashedData,
             final ConsensusData consensusData,
             final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(new GossipEvent(baseEventHashedData, baseEventUnhashedData), consensusData, selfParent, otherParent);
+            @NonNull final List<EventImpl> otherParents) {
+        this(new GossipEvent(baseEventHashedData, baseEventUnhashedData), consensusData, selfParent, otherParents);
     }
 
     public EventImpl(
             final GossipEvent baseEvent,
             final ConsensusData consensusData,
             final EventImpl selfParent,
-            final EventImpl otherParent) {
-        super(selfParent, otherParent);
+            @NonNull final List<EventImpl> otherParents) {
+
+        super(selfParent, otherParents);
         Objects.requireNonNull(baseEvent, "baseEvent");
         Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
         Objects.requireNonNull(baseEvent.getUnhashedData(), "baseEventDataNotHashed");

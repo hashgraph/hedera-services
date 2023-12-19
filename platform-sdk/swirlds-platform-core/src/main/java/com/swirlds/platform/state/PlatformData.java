@@ -195,14 +195,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         hashEventsCons = in.readSerializable(false, Hash::new);
 
         if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
-            int eventNum = in.readInt();
-            events = new EventImpl[eventNum];
-            for (int i = 0; i < eventNum; i++) {
-                events[i] = in.readSerializable(false, EventImpl::new);
-                events[i].getBaseEventHashedData().setHash(in.readSerializable(false, Hash::new));
-                events[i].markAsSignedStateEvent();
-            }
-            State.linkParents(events);
+            // TODO fully deprectate this version
+            throw new IOException("unsupported version " + version );
         }
 
         consensusTimestamp = in.readInstant();

@@ -245,7 +245,7 @@ class TipsetEventCreatorTests {
         final EventImpl selfParent = events.get(event.getHashedData().getSelfParentHash());
         final EventImpl otherParent = events.get(event.getHashedData().getOtherParentHash());
 
-        final EventImpl eventImpl = new EventImpl(event, new ConsensusData(), selfParent, otherParent);
+        final EventImpl eventImpl = new EventImpl(event, new ConsensusData(), selfParent, List.of(otherParent));
         events.put(event.getHashedData().getHash(), eventImpl);
 
         return eventImpl;

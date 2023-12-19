@@ -21,6 +21,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
+import java.util.List;
 
 /**
  * An event with the same behavior as a standard event but with the addition of some debugging
@@ -53,8 +54,8 @@ public class IndexedEvent extends EventImpl {
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
             final EventImpl selfParent,
-            final EventImpl otherParent) {
-        super(baseEventHashedData, baseEventUnhashedData, selfParent, otherParent);
+            final List<EventImpl> otherParents) {
+        super(baseEventHashedData, baseEventUnhashedData, selfParent, otherParents);
     }
 
     public IndexedEvent(final EventImpl event) {
@@ -63,7 +64,7 @@ public class IndexedEvent extends EventImpl {
                 event.getBaseEventUnhashedData(),
                 event.getConsensusData(),
                 event.getSelfParent(),
-                event.getOtherParent());
+                List.of(event.getOtherParent()));
     }
 
     /**
@@ -75,7 +76,7 @@ public class IndexedEvent extends EventImpl {
                 getBaseEventUnhashedData(),
                 getConsensusData(),
                 getSelfParent(),
-                getOtherParent());
+                List.of(getOtherParent()));
         CryptographyHolder.get().digestSync(event);
         return event;
     }

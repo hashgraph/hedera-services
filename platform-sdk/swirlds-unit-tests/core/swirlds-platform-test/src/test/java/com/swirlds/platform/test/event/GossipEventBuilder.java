@@ -32,6 +32,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 public class GossipEventBuilder {
@@ -239,7 +240,7 @@ public class GossipEventBuilder {
     }
 
     public EventImpl buildEventImpl() {
-        final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), getOtherParentImpl());
+        final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), List.of(getOtherParentImpl()));
         event.setConsensus(consensus);
         return event;
     }

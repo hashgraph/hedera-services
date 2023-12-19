@@ -554,17 +554,6 @@ class ShadowGraphTest {
     }
 
     @Test
-    void testAddEventWithUnknownOtherParent() {
-        initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
-
-        IndexedEvent newEvent = emitter.emitEvent();
-        newEvent.setOtherParent(emitter.emitEvent());
-
-        assertDoesNotThrow(
-                () -> shadowGraph.addEvent(newEvent), "Events with an unknown other parent should be added.");
-    }
-
-    @Test
     void testAddEventWithUnknownSelfParent() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
