@@ -37,8 +37,6 @@ import java.util.function.Function;
  */
 public class AdvancedWireTransformer<A, B> implements Consumer<A> {
 
-    // TODO give this a makeover so it can stand alone
-
     private final ForwardingOutputWire<A, B> outputWire;
 
     /**

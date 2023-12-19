@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SystemTransaction;
@@ -32,10 +31,6 @@ import java.util.List;
 public final class SystemTransactionExtractor {
 
     private SystemTransactionExtractor() {}
-
-    // TODO javadoc
-    public record ScopedSystemTransaction<T extends SystemTransaction>(
-            @NonNull NodeId submitterId, @NonNull T transaction) {}
 
     /**
      * Extract all system transactions from the given event.

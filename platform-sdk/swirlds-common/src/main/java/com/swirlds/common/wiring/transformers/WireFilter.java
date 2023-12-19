@@ -26,8 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-// TODO make it so this can be directly instantiated. Also, consider if we should support auto-soldering. Possibly not.
-
 /**
  * Filters out data, allowing some objects to pass and blocking others.
  */
@@ -58,8 +56,6 @@ public class WireFilter<T> {
                 .withType(TaskSchedulerType.DIRECT_STATELESS)
                 .build()
                 .cast();
-
-        // TODO should the caller be able to name the input wire?
 
         inputWire = taskScheduler.buildInputWire(filterInputName);
         inputWire.bind(t -> {
