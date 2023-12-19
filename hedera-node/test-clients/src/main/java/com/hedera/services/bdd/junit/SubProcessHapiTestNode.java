@@ -250,11 +250,12 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             String[] cmd;
             if (os.contains("Mac")) {
                 String tmp =
-                        "printf \"%s\\n%s\\n%s\\n%s\\n\" \"$(sudo pfctl -sr 2>/dev/null)\" \"pass quick proto tcp from any to "
-                                + nodeAddress
-                                + " port = " + grpcPort + "\" \"block drop quick proto tcp from any to " + nodeAddress
-                                + "\" \"block drop quick proto tcp from " + nodeAddress
-                                + " to any port != " + grpcPort + "\" | sudo pfctl -e -f - 2>/dev/null";
+                        "printf \"%s\\n%s\\n%s\\n%s\\n%s\\n\" \"$(sudo pfctl -sr 2>/dev/null)\" \"pass in quick proto tcp from any to "
+                                + nodeAddress + " port = " + grpcPort
+                                + "\" \"pass out quick proto tcp from any to " + nodeAddress + " port = " + grpcPort + "\" "
+                                + "\"block out quick proto tcp from any to " + nodeAddress
+                                + "\" \"block in quick proto tcp from " + nodeAddress
+                                + " to any\" | sudo pfctl -e -f - 2>/dev/null";
                 cmd = new String[] {"/usr/bin/env", "bash", "-c", tmp};
             } else {
                 cmd = new String[] {
