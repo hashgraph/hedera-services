@@ -92,7 +92,8 @@ public class TestIntake implements LoadableFromSignedState {
             @NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
         output = new ConsensusOutput(time);
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph = new ShadowGraph(
+                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
         linker = new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));

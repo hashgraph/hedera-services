@@ -129,17 +129,22 @@ public class ShadowGraph implements Clearable {
     private Tipset latestSelfEventTipset;
 
     /**
-     * Constructs a new instance.
+     * Constructor.
+     *
+     * @param time              provides wall clock time
+     * @param syncMetrics       metrics for sync gossip
+     * @param addressBook       the address book
+     * @param selfId            the id of this node
+     * @param trackEventTipsets whether to track tipsets of events
      */
-    public ShadowGraph(final SyncMetrics syncMetrics) {
-        this(syncMetrics, null, null); // TODO this breaks tests
-    }
-
-    // TODO javadoc
     public ShadowGraph(
+            @NonNull final Time time,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final AddressBook addressBook,
-            @NonNull final NodeId selfId) {
+            @NonNull final NodeId selfId,
+            final boolean trackEventTipsets) {
+
+        Objects.requireNonNull(time);
 
         this.syncMetrics = syncMetrics;
         this.numberOfNodes = addressBook.getSize();
@@ -151,7 +156,11 @@ public class ShadowGraph implements Clearable {
         generationToShadowEvent = new HashMap<>();
         reservationList = new LinkedList<>();
 
-        tipsetTracker = new TipsetTracker(Time.getCurrent(), addressBook); // TODO pass in time
+        if (trackEventTipsets) {
+            tipsetTracker = new TipsetTracker(time, addressBook);
+        } else {
+            tipsetTracker = null;
+        }
     }
 
     /**
@@ -532,21 +541,22 @@ public class ShadowGraph implements Clearable {
         return new ArrayList<>(tips);
     }
 
-    // TODO document thread safety
-
     /**
      * Update the minimum generation non-ancient.
      *
      * @param minimumGenerationNonAncient the new minimum generation non-ancient
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+    public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        if (tipsetTracker != null) {
+            tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+        }
     }
 
     /**
      * Get the tipset of the latest self event, or null if there have been no self events.
      *
-     * @return the tipset of the latest self event, or null if there have been no self events
+     * @return the tipset of the latest self event, or null if there have been no self events or if tipset tracking is
+     * disabled
      */
     @Nullable
     public synchronized Tipset getLatestSelfEventTipset() {
@@ -564,19 +574,7 @@ public class ShadowGraph implements Clearable {
         final InsertableStatus status = insertable(e);
 
         if (status == InsertableStatus.INSERTABLE) {
-
-            // TODO encapsulate maybe?
-            final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
-            if (e.getSelfParent() != null) {
-                parentDescriptors.add(e.getSelfParent().getBaseEvent().getDescriptor());
-            }
-            if (e.getOtherParent() != null) {
-                parentDescriptors.add(e.getOtherParent().getBaseEvent().getDescriptor());
-            }
-            final Tipset tipset = tipsetTracker.addEvent(e.getBaseEvent().getDescriptor(), parentDescriptors);
-            if (e.getCreatorId().equals(selfId)) {
-                latestSelfEventTipset = tipset;
-            }
+            registerWithTipsetTracker(e);
 
             final int tipsBefore = tips.size();
             final ShadowEvent s = insert(e);
@@ -621,6 +619,28 @@ public class ShadowGraph implements Clearable {
                                 status, EventStrings.toMediumString(e), oldestGeneration),
                         status);
             }
+        }
+    }
+
+    /**
+     * Register an event with the tipset tracker.
+     *
+     * @param event the event to register
+     */
+    private void registerWithTipsetTracker(@NonNull final EventImpl event) {
+        if (tipsetTracker == null) {
+            return;
+        }
+        final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
+        if (event.getSelfParent() != null) {
+            parentDescriptors.add(event.getSelfParent().getBaseEvent().getDescriptor());
+        }
+        if (event.getOtherParent() != null) {
+            parentDescriptors.add(event.getOtherParent().getBaseEvent().getDescriptor());
+        }
+        final Tipset tipset = tipsetTracker.addEvent(event.getBaseEvent().getDescriptor(), parentDescriptors);
+        if (event.getCreatorId().equals(selfId)) {
+            latestSelfEventTipset = tipset;
         }
     }
 

@@ -341,8 +341,8 @@ public class SwirldsPlatform implements Platform {
     private final AsyncEventCreationManager eventCreator;
 
     /**
-     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND}
-     * if no reconnect state has been received since startup.
+     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
+     * been received since startup.
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
@@ -440,7 +440,11 @@ public class SwirldsPlatform implements Platform {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(syncMetrics, currentAddressBook, selfId);
+        final boolean trackTipsetInShadowgraph = platformContext
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .filterLikelyDuplicates();
+        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId, trackTipsetInShadowgraph);
 
         this.keysAndCerts = keysAndCerts;
 
