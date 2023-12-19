@@ -53,6 +53,7 @@ public class PcesFileReader {
             @NonNull final Path databaseDirectory,
             final boolean permitGaps)
             throws IOException {
+
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(databaseDirectory);
 

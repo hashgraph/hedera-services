@@ -26,7 +26,6 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -95,7 +94,7 @@ public class PcesFileManager {
     private final PcesFiles files;
 
     /**
-     * Instantiate an event file collection. Loads all event files in the specified directory.
+     * Constructor
      *
      * @param platformContext the platform context for this node
      * @param time            provides wall clock time
@@ -336,6 +335,7 @@ public class PcesFileManager {
      * @param minimumGeneration the minimum generation that we need to keep in the database. It's possible that this
      *                          operation won't delete all files with events older than this value, but this operation
      *                          is guaranteed not to delete any files that may contain events with a higher generation.
+     * @throws IOException if there is an error deleting files
      */
     public void pruneOldFiles(final long minimumGeneration) throws IOException {
         final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
@@ -355,30 +355,8 @@ public class PcesFileManager {
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }
-        updateFileSizeMetrics();
-    }
 
-    /**
-     * Delete all files in the preconsensus event stream. If this method is called, it must be called before a
-     * {@link PcesFileManager} is instantiated. Any manager open when this method is called will be
-     * corrupted.
-     *
-     * @param platformContext the platform context for this node
-     * @param recycleBin      can remove files in a way that allows them to be possibly recovered for debugging
-     * @param selfId          the ID of this node
-     */
-    public static void clear(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final NodeId selfId) {
-        try {
-            final Path path = getDatabaseDirectory(platformContext, selfId);
-            if (Files.exists(path)) {
-                recycleBin.recycle(path);
-            }
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to recycle preconsensus event files", e);
-        }
+        updateFileSizeMetrics();
     }
 
     /**
@@ -386,7 +364,6 @@ public class PcesFileManager {
      */
     private void updateFileSizeMetrics() {
         metrics.getPreconsensusEventFileCount().set(files.getFileCount());
-
         metrics.getPreconsensusEventFileTotalSizeGB().set(totalFileByteCount * UnitConstants.BYTES_TO_GIBIBYTES);
 
         if (files.getFileCount() > 0) {

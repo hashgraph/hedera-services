@@ -164,12 +164,12 @@ public class PcesFiles {
      *
      * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
      *                          contain events with a generation greater or equal to this value. A value of
-     *                          {@link PcesFileManager ::NO_MINIMUM_GENERATION} will cause the returned
+     *                          {@link PcesFileManager#NO_MINIMUM_GENERATION} will cause the returned
      *                          iterator to walk over all available event files.
      * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
+    private @NonNull Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
         final int firstFileIndex = getFirstFileIndex(startingRound);
 
         // Edge case: we want all events regardless of generation

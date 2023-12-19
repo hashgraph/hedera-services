@@ -41,6 +41,7 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -197,7 +198,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
-        pcesWriterWiring.latestDurableSequenceNumberOutput().solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
+        pcesWriterWiring
+                .latestDurableSequenceNumberOutput()
+                .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
@@ -283,6 +286,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param signedStateFileManager the signed state file manager to bind
      * @param stateSigner            the state signer to bind
      * @param pcesReplayer           the PCES replayer to bind
+     * @param pcesWriter             the PCES writer to bind
      * @param eventDurabilityNexus   the event durability nexus to bind
      */
     public void bind(
@@ -290,12 +294,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SignedStateFileManager signedStateFileManager,
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
+            @NonNull final PcesWriter pcesWriter,
             @NonNull final EventDurabilityNexus eventDurabilityNexus) {
 
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
+        pcesWriterWiring.bind(pcesWriter);
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
 
         // FUTURE WORK: bind all the things!

@@ -236,8 +236,6 @@ public class SwirldsPlatform implements Platform {
 
     private final Metrics metrics;
 
-    private final ConsensusMetrics consensusMetrics;
-
     /** the object that contains all key pairs and CSPRNG state for this member */
     private final KeysAndCerts keysAndCerts;
     /**
@@ -252,8 +250,6 @@ public class SwirldsPlatform implements Platform {
     private final long startingRound;
 
     private final StateManagementComponent stateManagementComponent;
-    /** Manages the pipeline of signed states to be written to disk */
-    private final SignedStateFileManager signedStateFileManager;
 
     /**
      * Holds the latest state that is immutable. May be unhashed (in the future), may or may not have all required
@@ -265,13 +261,7 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateNexus latestImmutableState = new SignedStateNexus();
 
     private final QueueThread<GossipEvent> intakeQueue;
-    private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
-
-    /**
-     * Validates events and passes valid events further down the intake pipeline.
-     */
-    private final InterruptableConsumer<GossipEvent> intakeHandler;
 
     /** Contains all validators for events */
     private final GossipEventValidators eventValidators;
@@ -286,11 +276,6 @@ public class SwirldsPlatform implements Platform {
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
     private final Clearable clearAllPipelines;
-
-    /**
-     * Responsible for managing the lifecycle of threads on this platform.
-     */
-    private final ThreadManager threadManager;
 
     /**
      * All components that need to be started or that have dispatch observers.
@@ -321,11 +306,9 @@ public class SwirldsPlatform implements Platform {
     private final PlatformContext platformContext;
 
     /**
-     * Writes preconsensus events to disk.
+     * The initial preconsensus event files read from disk.
      */
-    private final PcesWriter preconsensusEventWriter;
-
-    private final PcesFiles initialPreconsensusEventFiles;
+    private final PcesFiles initialPcesFiles;
 
     /**
      * Manages the status of the platform.
@@ -336,11 +319,6 @@ public class SwirldsPlatform implements Platform {
      * Responsible for transmitting and receiving events from the network.
      */
     private final Gossip gossip;
-
-    /**
-     * Allows files to be deleted, and potentially recovered later for debugging.
-     */
-    private final RecycleBin recycleBin;
 
     /**
      * Creates new events.
@@ -400,7 +378,7 @@ public class SwirldsPlatform implements Platform {
         components = new PlatformComponents(dispatchBuilder);
 
         // FUTURE WORK: use a real thread manager here
-        threadManager = getStaticThreadManager();
+        final ThreadManager threadManager = getStaticThreadManager();
 
         notificationEngine = NotificationEngine.buildEngine(threadManager);
 
@@ -439,9 +417,9 @@ public class SwirldsPlatform implements Platform {
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
-        this.recycleBin = components.add(Objects.requireNonNull(recycleBin));
+        components.add(Objects.requireNonNull(recycleBin));
 
-        this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
+        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
         final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, selfId);
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
@@ -484,21 +462,16 @@ public class SwirldsPlatform implements Platform {
         try {
             final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
-            initialPreconsensusEventFiles = PcesFileReader.readFilesFromDisk(
+            initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext, databaseDirectory, preconsensusEventStreamConfig.permitGaps());
 
             preconsensusEventFileManager = new PcesFileManager(
-                    platformContext,
-                    Time.getCurrent(),
-                    initialPreconsensusEventFiles,
-                    recycleBin,
-                    selfId,
-                    initialState.getRound());
+                    platformContext, Time.getCurrent(), initialPcesFiles, recycleBin, selfId, initialState.getRound());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        preconsensusEventWriter = new PcesWriter(platformContext, preconsensusEventFileManager);
+        final PcesWriter pcesWriter = new PcesWriter(platformContext, preconsensusEventFileManager);
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
         // ISS round == null means we haven't observed an ISS yet.
@@ -549,7 +522,7 @@ public class SwirldsPlatform implements Platform {
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
-        signedStateFileManager = new SignedStateFileManager(
+        final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 new SignedStateMetrics(platformContext.getMetrics()),
                 Time.getCurrent(),
@@ -593,7 +566,8 @@ public class SwirldsPlatform implements Platform {
                 platformWiring::flushIntakePipeline,
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
-        platformWiring.bind(eventHasher, signedStateFileManager, stateSigner, pcesReplayer, eventDurabilityNexus);
+        platformWiring.bind(
+                eventHasher, signedStateFileManager, stateSigner, pcesReplayer, pcesWriter, eventDurabilityNexus);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -672,14 +646,15 @@ public class SwirldsPlatform implements Platform {
             stateManagementComponent.newSignedStateFromTransactions(rs);
         };
 
-        stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
-                .setNodeId(selfId)
-                .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setThreadName("state-hash-sign")
-                .setHandler(newSignedStateFromTransactionsConsumer)
-                .setCapacity(1)
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
-                .build());
+        final QueueThread<ReservedSignedState> stateHashSignQueue =
+                components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
+                        .setNodeId(selfId)
+                        .setComponent(PLATFORM_THREAD_POOL_NAME)
+                        .setThreadName("state-hash-sign")
+                        .setHandler(newSignedStateFromTransactionsConsumer)
+                        .setCapacity(1)
+                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
+                        .build());
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
@@ -777,6 +752,7 @@ public class SwirldsPlatform implements Platform {
         final EventValidator eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
+        final InterruptableConsumer<GossipEvent> intakeHandler;
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
         } else {
@@ -1335,7 +1311,7 @@ public class SwirldsPlatform implements Platform {
         // minimum generation non-ancient is reversed to a smaller value, so we skip it
         if (!emergencyRecoveryNeeded) {
             final IOIterator<GossipEvent> iterator =
-                    initialPreconsensusEventFiles.getEventIterator(initialMinimumGenerationNonAncient, startingRound);
+                    initialPcesFiles.getEventIterator(initialMinimumGenerationNonAncient, startingRound);
 
             logger.info(
                     STARTUP.getMarker(),
