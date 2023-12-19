@@ -362,9 +362,9 @@ class IterableContractValueTest {
     void deserializeWithByteBufferWorks() throws IOException {
         subject = new IterableContractValue();
         final ByteBuffer byteBuffer = ByteBuffer.allocate(48);
-        byteBuffer.put(bytesValue);     // for read uint256Value
-        byteBuffer.put(new byte[8]);    // for read prevUint256Key
-        byteBuffer.put(new byte[8]);    // for red nextUint256Key
+        byteBuffer.put(bytesValue); // for read uint256Value
+        byteBuffer.put(new byte[8]); // for read prevUint256Key
+        byteBuffer.put(new byte[8]); // for red nextUint256Key
         byteBuffer.rewind();
 
         subject.deserialize(byteBuffer, ITERABLE_VERSION);

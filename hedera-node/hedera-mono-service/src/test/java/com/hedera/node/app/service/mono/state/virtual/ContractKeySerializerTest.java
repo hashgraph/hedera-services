@@ -23,9 +23,6 @@ import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -93,7 +90,8 @@ class ContractKeySerializerTest {
         final var contractIdNonZeroBytes = contractKey.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
         final ByteBuffer bin = ByteBuffer.allocate(1);
-        bin.put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes()).rewind();
+        bin.put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
+                .rewind();
 
         assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.deserializeKeySize(bin));
     }
@@ -104,7 +102,7 @@ class ContractKeySerializerTest {
         final var anIdenticalKey = new ContractKey(0L, key);
         final ByteBuffer bin = ByteBuffer.allocate(3);
         bin.put(someKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
-        bin.put((byte)someKey.getContractId());
+        bin.put((byte) someKey.getContractId());
         bin.put(someKey.getUint256Byte(0));
         bin.rewind();
 
