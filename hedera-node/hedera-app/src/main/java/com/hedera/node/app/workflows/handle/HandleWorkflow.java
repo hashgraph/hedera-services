@@ -43,7 +43,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
@@ -62,11 +61,7 @@ import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.signature.SignatureExpander;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
-import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -91,25 +86,20 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -128,8 +118,6 @@ public class HandleWorkflow {
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
     private final BlockRecordManager blockRecordManager;
-    private final SignatureExpander signatureExpander;
-    private final SignatureVerifier signatureVerifier;
     private final TransactionChecker checker;
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
@@ -152,8 +140,6 @@ public class HandleWorkflow {
             @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final SignatureExpander signatureExpander,
-            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final TransactionChecker checker,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
@@ -173,8 +159,6 @@ public class HandleWorkflow {
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
-        this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
-        this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
         this.checker = requireNonNull(checker, "checker must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
@@ -292,12 +276,11 @@ public class HandleWorkflow {
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
-            stakingPeriodTimeHook.process(tokenServiceContext);
+            stakingPeriodTimeHook.process(stack, tokenServiceContext);
         } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
         }
-        // @future('7836'): update the exchange rate and call from here
 
         // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
         // the user transaction
@@ -307,8 +290,7 @@ public class HandleWorkflow {
         AccountID payer = null;
         Fees fees = null;
         try {
-            final var preHandleResult =
-                    getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn, configuration);
+            final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
             final var transactionInfo = preHandleResult.txInfo();
 
@@ -339,7 +321,7 @@ public class HandleWorkflow {
                     preHandleResult.status(),
                     preHandleResult.responseCode());
             logStartUserTransactionPreHandleResultP3(
-                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.verificationResults());
+                    preHandleResult.txInfo(), preHandleResult.requiredKeys(), preHandleResult.getVerificationResults());
 
             // Initialize record builder list
             recordBuilder
@@ -354,7 +336,7 @@ public class HandleWorkflow {
             final var legacyFeeCalcNetworkVpt =
                     transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
             final var verifier = new DefaultKeyVerifier(
-                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.verificationResults());
+                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.getVerificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
@@ -732,152 +714,28 @@ public class HandleWorkflow {
     private PreHandleResult getCurrentPreHandleResult(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final VersionedConfiguration configuration)
-            throws PreCheckException {
+            @NonNull final ConsensusTransaction platformTxn) {
         final var metadata = platformTxn.getMetadata();
+        final PreHandleResult previousResult;
+        if (metadata instanceof PreHandleResult result) {
+            previousResult = result;
+        } else {
+            // This should be impossible since the Platform contract guarantees that SwirldState.preHandle()
+            // is always called before SwirldState.handleTransaction(); and our preHandle() implementation
+            // always sets the metadata to a PreHandleResult
+            logger.error(
+                    "Received transaction without PreHandleResult metadata from node {} (was {})",
+                    creator.nodeId(),
+                    metadata);
+            previousResult = null;
+        }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
-
-        // First check if pre-handle was run before (in which case metadata is a PreHandleResult)
-        if (preHandleStillValid(configuration, metadata)) {
-            final var preHandleResult = (PreHandleResult) metadata;
-
-            // In case of due diligence error, we prepare a CryptoTransfer to charge the node and return immediately.
-            if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                return preHandleResult;
-            }
-
-            // If pre-handle was successful, we need to add signatures that were not known at the time of pre-handle.
-            if (preHandleResult.status() == SO_FAR_SO_GOOD) {
-                return addMissingSignatures(storeFactory, preHandleResult, configuration);
-            }
-        }
-
-        // If we reach this point, either pre-handle was not run or it failed but may succeed now.
-        // Therefore, we simply rerun pre-handle.
-        final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
-        return preHandleWorkflow.preHandleTransaction(creator.accountId(), storeFactory, accountStore, platformTxn);
-    }
-
-    private boolean preHandleStillValid(
-            @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
-        if (metadata instanceof final PreHandleResult preHandleResult) {
-            return preHandleResult.configVersion() == configuration.getVersion();
-        }
-        return false;
-    }
-
-    /*
-     * This method is called when a previous run of pre-handle was successful. We gather the keys again and check if
-     * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
-     * results.
-     */
-    @NonNull
-    private PreHandleResult addMissingSignatures(
-            @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final PreHandleResult previousResult,
-            @NonNull final Configuration configuration)
-            throws PreCheckException {
-        final var txInfo = previousResult.txInfo();
-        final var txBody = txInfo.txBody();
-        final var sigPairs = txInfo.signatureMap().sigPairOrElse(emptyList());
-        final var signedBytes = txInfo.signedBytes();
-
-        // extract keys and hollow accounts again
-        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
-        // Need to add payer key first in the list of required hollow accounts here, because this order
-        // determines the order of hollow account finalization records. The payer key must be finalized first.
-        // to easily compare results in differential testing
-        try {
-            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
-            final var payerKey = payer.key();
-            if (isHollow(payer)) {
-                context.requireSignatureForHollowAccount(payer);
-            }
-
-            dispatcher.dispatchPreHandle(context);
-            // re-expand keys only if any of the keys have changed
-            final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
-            final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
-            final var anyKeyChanged = haveKeyChanges(previousResult, context);
-            // If none of the keys changed then non need to re-expand all signatures.
-            if (!anyKeyChanged) {
-                return previousResult;
-            }
-            // prepare signature verification
-            final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-
-            // expand all keys
-            final var expanded = new HashSet<ExpandedSignaturePair>();
-            signatureExpander.expand(sigPairs, expanded);
-            if (payerKey != null && !isHollow(payer)) {
-                signatureExpander.expand(payerKey, sigPairs, expanded);
-            }
-
-            signatureExpander.expand(currentRequiredNonPayerKeys, sigPairs, expanded);
-            signatureExpander.expand(currentOptionalNonPayerKeys, sigPairs, expanded);
-
-            // remove all keys that were already verified
-            for (final var it = expanded.iterator(); it.hasNext(); ) {
-                final var entry = it.next();
-                final var oldVerification = previousResult.verificationResults().get(entry.key());
-                if (oldVerification != null) {
-                    verifications.put(oldVerification.key(), oldVerification);
-                    it.remove();
-                }
-            }
-
-            // start verification for remaining keys
-            if (!expanded.isEmpty()) {
-                verifications.putAll(signatureVerifier.verify(signedBytes, expanded));
-            }
-
-            return new PreHandleResult(
-                    previousResult.payer(),
-                    payerKey,
-                    previousResult.status(),
-                    previousResult.responseCode(),
-                    previousResult.txInfo(),
-                    context.requiredNonPayerKeys(),
-                    context.optionalNonPayerKeys(),
-                    context.requiredHollowAccounts(),
-                    verifications,
-                    previousResult.innerResult(),
-                    previousResult.configVersion());
-        } catch (final PreCheckException e) {
-            return previousResult;
-        }
-    }
-
-    /**
-     * Checks if any of the keys changed from previous result to current result.
-     * Only if keys changed we need to re-expand and re-verify the signatures.
-     *
-     * @param previousResult previous pre-handle result
-     * @param context current context
-     * @return true if any of the keys changed
-     */
-    private boolean haveKeyChanges(final PreHandleResult previousResult, final PreHandleContextImpl context) {
-        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
-        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
-        final var currentPayerKey = context.payerKey();
-
-        // keys from previous pre-handle result
-        final var previousResultRequiredKeys = previousResult.getRequiredKeys();
-        final var previousResultOptionalKeys = previousResult.getOptionalKeys();
-        final var previousResultPayerKey = previousResult.getPayerKey();
-
-        for (final var key : currentRequiredNonPayerKeys) {
-            if (!previousResultRequiredKeys.contains(key)) {
-                return true;
-            }
-        }
-        for (final var key : currentOptionalNonPayerKeys) {
-            if (!previousResultOptionalKeys.contains(key)) {
-                return true;
-            }
-        }
-        return !previousResultPayerKey.equals(currentPayerKey);
+        return preHandleWorkflow.preHandleTransaction(
+                creator.accountId(),
+                storeFactory,
+                storeFactory.getStore(ReadableAccountStore.class),
+                platformTxn,
+                previousResult);
     }
 }

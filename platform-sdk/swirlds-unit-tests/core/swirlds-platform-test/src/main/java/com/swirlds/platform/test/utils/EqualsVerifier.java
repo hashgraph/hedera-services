@@ -18,16 +18,19 @@ package com.swirlds.platform.test.utils;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
@@ -71,13 +74,18 @@ public final class EqualsVerifier {
             transactions[i] = randomSwirldTransaction(r);
         }
 
+        final NodeId selfId = new NodeId(r.nextLong(Long.MAX_VALUE));
+        final EventDescriptor selfParent = new EventDescriptor(
+                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherParent = new EventDescriptor(
+                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.BIRTH_ROUND_UNDEFINED);
+
         final BaseEventHashedData data = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                new NodeId(r.nextLong(Long.MAX_VALUE)),
-                r.nextLong(Long.MAX_VALUE),
-                r.nextLong(Long.MAX_VALUE),
-                randomHash(r),
-                randomHash(r),
+                selfId,
+                selfParent,
+                Collections.singletonList(otherParent),
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 randomInstant(r),
                 transactions);
         data.setHash(randomHash(r));

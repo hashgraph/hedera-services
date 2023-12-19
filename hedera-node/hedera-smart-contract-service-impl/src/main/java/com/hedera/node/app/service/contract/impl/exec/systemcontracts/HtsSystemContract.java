@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.unqualifiedDelegateDetected;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
@@ -31,6 +30,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,6 +47,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
 public class HtsSystemContract extends AbstractFullContract implements HederaSystemContract {
+
     private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
@@ -72,8 +74,9 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             attempt = callFactory.createCallAttemptFrom(input, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
-                return revertResult(
-                        STATIC_CALL_REVERT_REASON, contractsConfigOf(frame).precompileHtsDefaultGasCost());
+                // FUTURE - we should really set an explicit halt reason here; instead we just halt the frame
+                // without setting a halt reason to simulate mono-service for differential testing
+                return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
         } catch (final RuntimeException e) {
             log.debug("Failed to create HTS call from input {}", input, e);
@@ -83,6 +86,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         return resultOfExecuting(attempt, call, input, frame);
     }
 
+    @SuppressWarnings({"java:S2637", "java:S2259"}) // this function is going to be refactored soon.
     private static FullResult resultOfExecuting(
             @NonNull final HtsCallAttempt attempt,
             @NonNull final HtsCall call,
@@ -106,11 +110,18 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
 
                 if (responseCode == SUCCESS) {
                     final var output = pricedResult.fullResult().result().getOutput();
+                    var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+                    final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
+
                     enhancement
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID),
+                                            pricedResult.fullResult().gasRequirement(),
+                                            output,
+                                            frame.getRemainingGas(),
+                                            frame.getInputData(),
+                                            senderId),
                                     responseCode);
                 } else {
                     enhancement
@@ -124,6 +135,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 }
             }
         } catch (final HandleException handleException) {
+            // TODO - this is almost certainly not the right way to handle this!
             throw handleException;
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);

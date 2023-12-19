@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.info;
 
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 

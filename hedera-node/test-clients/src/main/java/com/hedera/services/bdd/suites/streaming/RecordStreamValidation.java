@@ -44,7 +44,7 @@ public class RecordStreamValidation extends HapiSuite {
         });
     }
 
-    private HapiSpec recordStreamSanityChecks() {
+    final HapiSpec recordStreamSanityChecks() {
         AtomicReference<String> pathToStreams = new AtomicReference<>(PATH_TO_LOCAL_STREAMS);
 
         return defaultHapiSpec("RecordStreamSanityChecks")

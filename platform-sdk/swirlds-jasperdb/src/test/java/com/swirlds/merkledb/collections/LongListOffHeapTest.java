@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

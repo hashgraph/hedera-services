@@ -29,12 +29,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param eventInput                       the input wire for events to be deduplicated
  * @param minimumGenerationNonAncientInput the input wire for the minimum generation non-ancient
+ * @param clearInput                       the input wire to clear the internal state of the deduplicator
  * @param eventOutput                      the output wire for deduplicated events
  * @param flushRunnable                    the runnable to flush the deduplicator
  */
 public record EventDeduplicatorWiring(
         @NonNull InputWire<GossipEvent> eventInput,
         @NonNull InputWire<Long> minimumGenerationNonAncientInput,
+        @NonNull InputWire<ClearTrigger> clearInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -48,6 +50,7 @@ public record EventDeduplicatorWiring(
         return new EventDeduplicatorWiring(
                 taskScheduler.buildInputWire("non-deduplicated events"),
                 taskScheduler.buildInputWire("minimum generation non ancient"),
+                taskScheduler.buildInputWire("clear"),
                 taskScheduler.getOutputWire(),
                 taskScheduler::flush);
     }
@@ -61,5 +64,6 @@ public record EventDeduplicatorWiring(
         ((BindableInputWire<GossipEvent, GossipEvent>) eventInput).bind(deduplicator::handleEvent);
         ((BindableInputWire<Long, GossipEvent>) minimumGenerationNonAncientInput)
                 .bind(deduplicator::setMinimumGenerationNonAncient);
+        ((BindableInputWire<ClearTrigger, GossipEvent>) clearInput).bind(deduplicator::clear);
     }
 }

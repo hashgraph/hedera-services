@@ -18,12 +18,12 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.ConsensusConfig_;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.ConsensusConfig_;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;

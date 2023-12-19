@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.gui.GuiUtils.wrap;
+import static com.swirlds.platform.gui.GuiUtils.wrap;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.gui.GuiUtils;
+import com.swirlds.platform.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.address.Address;
 import javax.swing.JTextArea;
 
 /**

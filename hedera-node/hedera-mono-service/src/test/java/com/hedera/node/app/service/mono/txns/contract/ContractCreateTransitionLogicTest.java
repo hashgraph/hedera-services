@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.create1ContractAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -1257,6 +1258,17 @@ class ContractCreateTransitionLogicTest {
                 InvalidTransactionException.class, () -> subject.prepareCodeWithConstructorArguments(transactionBody));
         // then:
         assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
+    }
+
+    @Test
+    void throwsErrorOnEmptyInitcode() {
+        given(transactionBody.getInitcodeSourceCase()).willReturn(INITCODE);
+        given(transactionBody.getInitcode()).willReturn(ByteString.EMPTY);
+        // when:
+        Exception exception = assertThrows(
+                InvalidTransactionException.class, () -> subject.prepareCodeWithConstructorArguments(transactionBody));
+        // then:
+        assertEquals("CONTRACT_BYTECODE_EMPTY", exception.getMessage());
     }
 
     @Test

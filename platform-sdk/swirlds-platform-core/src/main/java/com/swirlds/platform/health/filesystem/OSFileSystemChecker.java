@@ -19,8 +19,8 @@ package com.swirlds.platform.health.filesystem;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
-import com.swirlds.common.config.OSHealthCheckConfig;
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.units.UnitConstants;
+import com.swirlds.platform.health.OSHealthCheckConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;

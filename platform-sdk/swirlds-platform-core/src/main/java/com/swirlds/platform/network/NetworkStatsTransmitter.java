@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.components.common.query.SystemTransactionSubmitter;
+import com.swirlds.platform.system.transaction.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransactionPing;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;

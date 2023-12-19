@@ -38,9 +38,13 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -49,6 +53,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -87,16 +92,28 @@ class HandleHederaOperationsTest {
     private ContractCreateRecordBuilder contractCreateRecordBuilder;
 
     @Mock
+    private ContractDeleteRecordBuilder contractDeleteRecordBuilder;
+
+    @Mock
     private TinybarValues tinybarValues;
 
     @Mock
     private FeeCalculator feeCalculator;
 
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
+
     private HandleHederaOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, DEFAULT_CONTRACTS_CONFIG, context, tinybarValues);
+        subject = new HandleHederaOperations(
+                DEFAULT_LEDGER_CONFIG,
+                DEFAULT_CONTRACTS_CONFIG,
+                context,
+                tinybarValues,
+                gasCalculator,
+                DEFAULT_HEDERA_CONFIG);
     }
 
     @Test
@@ -104,6 +121,32 @@ class HandleHederaOperationsTest {
         given(context.writableStore(WritableContractStateStore.class)).willReturn(stateStore);
 
         assertSame(stateStore, subject.getStore());
+    }
+
+    @Test
+    void validatesShard() {
+        assertSame(
+                HederaOperations.MISSING_CONTRACT_ID,
+                subject.shardAndRealmValidated(
+                        ContractID.newBuilder().shardNum(1).contractNum(2L).build()));
+    }
+
+    @Test
+    void validatesRealm() {
+        assertSame(
+                HederaOperations.MISSING_CONTRACT_ID,
+                subject.shardAndRealmValidated(
+                        ContractID.newBuilder().realmNum(1).contractNum(2L).build()));
+    }
+
+    @Test
+    void returnsUnchangedWithMatchingShardRealm() {
+        final var plausibleId = ContractID.newBuilder()
+                .shardNum(0)
+                .realmNum(0)
+                .contractNum(3456L)
+                .build();
+        assertSame(plausibleId, subject.shardAndRealmValidated(plausibleId));
     }
 
     @Test
@@ -157,6 +200,20 @@ class HandleHederaOperationsTest {
     }
 
     @Test
+    void createRecordListCheckPointUsesContext() {
+        var recordListCheckPoint = new RecordListCheckPoint(null, null);
+        given(context.createRecordListCheckPoint()).willReturn(recordListCheckPoint);
+        assertEquals(recordListCheckPoint, subject.createRecordListCheckPoint());
+    }
+
+    @Test
+    void revertRecordsFromUsesContext() {
+        var recordListCheckPoint = new RecordListCheckPoint(null, null);
+        subject.revertRecordsFrom(recordListCheckPoint);
+        verify(context).revertRecordsFrom(recordListCheckPoint);
+    }
+
+    @Test
     void commitIsNoopUntilSavepointExposesIt() {
         given(context.savepointStack()).willReturn(savepointStack);
 
@@ -166,8 +223,13 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void lazyCreationCostInGasHardcoded() {
-        assertEquals(1L, subject.lazyCreationCostInGas());
+    void lazyCreationCostInGasTest() {
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(gasCalculator.gasRequirement(any(), eq(DispatchType.CRYPTO_CREATE), eq(A_NEW_ACCOUNT_ID)))
+                .willReturn(6L);
+        given(gasCalculator.gasRequirement(any(), eq(DispatchType.CRYPTO_UPDATE), eq(A_NEW_ACCOUNT_ID)))
+                .willReturn(5L);
+        assertEquals(11L, subject.lazyCreationCostInGas(NON_SYSTEM_LONG_ZERO_ADDRESS));
     }
 
     @Test
@@ -380,6 +442,9 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteUnaliasedContractUsesApi() {
+        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
+        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
+        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
         verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID);
@@ -387,6 +452,9 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteAliasedContractUsesApi() {
+        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
+        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
+        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteAliasedContract(CANONICAL_ALIAS);
         verify(tokenServiceApi)

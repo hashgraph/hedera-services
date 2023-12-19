@@ -22,16 +22,16 @@ import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.EventDescriptor;
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayDeque;
@@ -742,7 +742,7 @@ public class ShadowGraph implements Clearable {
             final boolean knownOP = shadow(e.getOtherParent()) != null;
             final boolean expiredOP = expired(e.getOtherParent());
             if (!knownOP && !expiredOP) {
-                logger.error(EXCEPTION.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
+                logger.warn(STARTUP.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
             }
         }
 
@@ -750,7 +750,7 @@ public class ShadowGraph implements Clearable {
             final boolean knownSP = shadow(e.getSelfParent()) != null;
             final boolean expiredSP = expired(e.getSelfParent());
             if (!knownSP && !expiredSP) {
-                logger.error(EXCEPTION.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
+                logger.warn(STARTUP.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
             }
         }
 
