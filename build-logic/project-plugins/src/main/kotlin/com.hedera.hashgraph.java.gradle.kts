@@ -172,7 +172,7 @@ testing {
                     includeTags("TIME_CONSUMING", "AT_SCALE", "REMOTE_ONLY", "PERFORMANCE")
                 }
 
-                setForkEvery(1)
+                forkEvery = 1
                 minHeapSize = "2g"
                 maxHeapSize = "16g"
                 jvmArgs("-XX:ActiveProcessorCount=7", "-XX:+UseZGC")
