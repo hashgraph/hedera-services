@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.ethereum;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.ONE_TINYBAR_AS_WEIBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,15 +97,16 @@ class EthTxDataTest {
     @Test
     void effectiveValueIsNominalWhenReasonable() {
         final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
-        final var nominal = subject.value().divide(WEIBARS_TO_TINYBARS).longValueExact();
+        final var nominal = subject.value().divide(ONE_TINYBAR_AS_WEIBARS).longValueExact();
         assertEquals(nominal, subject.effectiveTinybarValue());
     }
 
     @Test
     void effectiveOfferedGasPriceIsNominalWhenReasonable() {
         final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
-        final var nominal =
-                subject.getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS).longValueExact();
+        final var nominal = subject.getMaxGasPriceAsBigInteger()
+                .divide(ONE_TINYBAR_AS_WEIBARS)
+                .longValueExact();
         assertEquals(nominal, subject.effectiveOfferedGasPriceInTinybars());
     }
 
@@ -113,7 +114,7 @@ class EthTxDataTest {
     void effectiveOfferedGasPriceAvoidsOverflow() {
         final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0))
                 .replaceValue(
-                        BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE).multiply(WEIBARS_TO_TINYBARS));
+                        BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE).multiply(ONE_TINYBAR_AS_WEIBARS));
         final var expected = Long.MAX_VALUE;
         assertEquals(expected, subject.effectiveTinybarValue());
     }
@@ -129,8 +130,8 @@ class EthTxDataTest {
         assertFalse(frontierTx.matchesChainId(CommonUtils.unhex("a210")));
         assertEquals(1, frontierTx.nonce());
         assertEquals("2f", Hex.toHexString(frontierTx.gasPrice()));
-        assertNull(frontierTx.maxPriorityGas());
-        assertNull(frontierTx.maxGas());
+        assertNull(frontierTx.maxPriorityGasPrice());
+        assertNull(frontierTx.maxGasPrice());
         assertEquals(98_304L, frontierTx.gasLimit());
         assertEquals("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181", Hex.toHexString(frontierTx.to()));
         assertEquals(BigInteger.ZERO, frontierTx.value());
@@ -162,8 +163,8 @@ class EthTxDataTest {
         assertEquals("01", Hex.toHexString(eip155Tx.chainId()));
         assertEquals(9, eip155Tx.nonce());
         assertEquals("04a817c800", Hex.toHexString(eip155Tx.gasPrice()));
-        assertNull(eip155Tx.maxPriorityGas());
-        assertNull(eip155Tx.maxGas());
+        assertNull(eip155Tx.maxPriorityGasPrice());
+        assertNull(eip155Tx.maxGasPrice());
         assertEquals(21_000L, eip155Tx.gasLimit());
         assertEquals("3535353535353535353535353535353535353535", Hex.toHexString(eip155Tx.to()));
         assertEquals(new BigInteger("0de0b6b3a7640000", 16), eip155Tx.value());
@@ -189,8 +190,8 @@ class EthTxDataTest {
         assertEquals("012a", Hex.toHexString(berlinTx.chainId()));
         assertEquals(5644, berlinTx.nonce());
         assertEquals("a54f4c3c00", Hex.toHexString(berlinTx.gasPrice()));
-        assertNull(berlinTx.maxPriorityGas());
-        assertNull(berlinTx.maxGas());
+        assertNull(berlinTx.maxPriorityGasPrice());
+        assertNull(berlinTx.maxGasPrice());
         assertEquals(3_000_000L, berlinTx.gasLimit());
         assertEquals("000000000000000000000000000000000000052d", Hex.toHexString(berlinTx.to()));
         assertEquals(new BigInteger("2540be400", 16), berlinTx.value());
@@ -216,8 +217,8 @@ class EthTxDataTest {
         assertEquals("012a", Hex.toHexString(londonTx.chainId()));
         assertEquals(2, londonTx.nonce());
         assertNull(londonTx.gasPrice());
-        assertEquals("2f", Hex.toHexString(londonTx.maxPriorityGas()));
-        assertEquals("2f", Hex.toHexString(londonTx.maxGas()));
+        assertEquals("2f", Hex.toHexString(londonTx.maxPriorityGasPrice()));
+        assertEquals("2f", Hex.toHexString(londonTx.maxGasPrice()));
         assertEquals(98_304L, londonTx.gasLimit());
         assertEquals("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181", Hex.toHexString(londonTx.to()));
         assertEquals(new BigInteger("0de0b6b3a7640000", 16), londonTx.value());
@@ -443,7 +444,7 @@ class EthTxDataTest {
                 oneByte,
                 1,
                 oneByte,
-                WEIBARS_TO_TINYBARS,
+                ONE_TINYBAR_AS_WEIBARS,
                 oneByte,
                 null,
                 1,
@@ -516,7 +517,7 @@ class EthTxDataTest {
                         oneByte,
                         oneByte,
                         oneByte);
-                assertTrue(testTransaction.getMaxGasAsBigInteger().compareTo(BigInteger.ZERO) > 0);
+                assertTrue(testTransaction.getMaxGasPriceAsBigInteger().compareTo(BigInteger.ZERO) > 0);
             }
         }
     }

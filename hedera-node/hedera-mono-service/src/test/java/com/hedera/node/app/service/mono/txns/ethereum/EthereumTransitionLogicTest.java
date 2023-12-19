@@ -239,7 +239,7 @@ class EthereumTransitionLogicTest {
     }
 
     private void givenOfferedPrice() {
-        given(ethTxData.getMaxGasAsBigInteger()).willReturn(BigInteger.valueOf(offeredGasPrice));
+        given(ethTxData.getMaxGasPriceAsBigInteger()).willReturn(BigInteger.valueOf(offeredGasPrice));
     }
 
     @Test

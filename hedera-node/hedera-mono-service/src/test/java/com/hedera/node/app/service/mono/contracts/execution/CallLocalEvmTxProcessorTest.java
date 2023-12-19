@@ -193,6 +193,25 @@ class CallLocalEvmTxProcessorTest {
         assertEquals(oneWei, buildMessageFrame.getApparentValue());
     }
 
+    @Test
+    void succeedsEvenWithVeryHighGasLimitBecauseItCannotOverflowAndItIsntChargedAnyway() {
+        givenValidMock();
+
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        final var receiverAddress = receiver.getId().asEvmAddress();
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(updater.aliases()).willReturn(aliasManager);
+
+        final var wrappedSenderAccount = mock(MutableAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
+
+        final long gasLimitToOverflowWith = 0x7FFF_FFFF_FFFF_FFFFL;
+
+        var result =
+                callLocalEvmTxProcessor.execute(sender, receiverAddress, gasLimitToOverflowWith, 1234L, Bytes.EMPTY);
+        assertTrue(result.isSuccessful());
+    }
+
     private void givenValidMock() {
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(stackedUpdater);
