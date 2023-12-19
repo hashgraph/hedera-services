@@ -864,7 +864,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         if (x == null) {
             return ConsensusConstants.ROUND_NEGATIVE_INFINITY;
         }
-        return Math.max(round(selfParent(x)), round(otherParent(x)));
+
+        long maxRound = ConsensusConstants.ROUND_NEGATIVE_INFINITY;
+        for (final EventImpl parent : x) {
+            if (ancient(parent)) {
+                continue;
+            }
+            maxRound = Math.max(maxRound, round(parent));
+        }
+        return maxRound;
     }
 
     /**
