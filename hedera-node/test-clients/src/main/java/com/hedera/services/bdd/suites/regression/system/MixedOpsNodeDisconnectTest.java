@@ -79,7 +79,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         // Block network port on node 2
-                        //disconnectNode("Alice", 75),
+                        disconnectNode("Bob", 90),
                         sleepFor(10_000),
                         newKeyNamed(SUBMIT_KEY),
                         newKeyNamed(SUPPLY_KEY),

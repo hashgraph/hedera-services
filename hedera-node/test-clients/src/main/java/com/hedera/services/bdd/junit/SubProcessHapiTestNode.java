@@ -254,33 +254,16 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                                 + nodeAddress + " port = " + grpcPort
                                 + "\" \"pass out quick proto tcp from any to " + nodeAddress + " port = " + grpcPort + "\" "
                                 + "\"block out quick proto tcp from any to " + nodeAddress
-                                + "\" \"block in quick proto tcp from " + nodeAddress
+                                + "\" \"block out quick proto tcp from " + nodeAddress
                                 + " to any\" | sudo pfctl -e -f - 2>/dev/null";
                 cmd = new String[] {"/usr/bin/env", "bash", "-c", tmp};
             } else {
                 cmd = new String[] {
-                    "sudo",
-                    "-n",
-                    "iptables",
-                    "-A",
-                    "INPUT",
-                    "-p",
-                    "tcp",
-                    "--dport",
-                    format("%d:%d", gossipPort, gossipPort),
-                    "-j",
-                    "DROP;",
-                    "sudo",
-                    "-n",
-                    "iptables",
-                    "-A",
-                    "OUTPUT",
-                    "-p",
-                    "tcp",
-                    "--sport",
-                    format("%d:%d", gossipPort, gossipPort),
-                    "-j",
-                    "DROP;"
+                        "/usr/bin/env",
+                        "sudo",
+                        "bash",
+                        "-c",
+                    "iptables -A INPUT -p tcp --dport " + format("%d:%d", gossipPort, gossipPort) + " -j DROP; iptables -A OUTPUT -p tcp --sport " + format("%d:%d", gossipPort, gossipPort) + " -j DROP;"
                 };
             }
             try {

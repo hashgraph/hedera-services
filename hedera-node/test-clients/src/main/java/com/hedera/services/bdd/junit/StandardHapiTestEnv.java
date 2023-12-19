@@ -25,16 +25,4 @@ public class StandardHapiTestEnv extends HapiTestEnvBase implements HapiTestEnv 
         initialize(testName, cluster, useInProcessAlice);
     }
 
-    //    private void setupNetworkAlias(@NonNull final String aliasAddress) {
-    //        final ProcessBuilder pb = new ProcessBuilder();
-    //        pb.command("/usr/bin/env", "bash", "-c", "sudo ifconfig lo0 alias " + aliasAddress);
-    //        pb.inheritIO();
-    //        try {
-    //            final Process process = pb.start();
-    //            process.waitFor(60L, SECONDS);
-    //        } catch (Exception e) {
-    //            throw new RuntimeException(e);
-    //        }
-    //    }
-
 }
