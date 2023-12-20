@@ -102,6 +102,7 @@ public class HtmlGenerator {
 
     public static final String SELECT_MANY_BUTTON_LABEL = "select-many-button";
     public static final String DESELECT_MANY_BUTTON_LABEL = "deselect-many-button";
+    public static final String SECLECT_COLUMN_BUTTON_LABEL = "select-column-button";
 
     /**
      * Signifies filter radio buttons
@@ -174,7 +175,7 @@ public class HtmlGenerator {
 
                     // each radio button has 3 classes, "filter-radio", the type of radio button this is, and the name of the class to be hidden
                     for (const element of radioClasses) {
-                        if (element === "filter-radio") {
+                        if (element === "filter-radio" || element.endsWith("filter-section")) {
                             continue;
                         }
 
@@ -394,6 +395,40 @@ public class HtmlGenerator {
                 });
             }
 
+            let columnSelectButtons = document.getElementsByClassName("select-column-button");
+            for (const columnSelectButton of columnSelectButtons) {
+                // get the other class name of the button
+                let columnSelectButtonClasses = columnSelectButton.classList;
+
+                // the name of the section
+                let sectionClass;
+                let radioTypeClass;
+
+                for (const buttonClass of columnSelectButtonClasses) {
+                    if (buttonClass === "select-column-button") {
+                        continue;
+                    }
+
+                    if (buttonClass.endsWith("-radio")) {
+                        radioTypeClass = buttonClass;
+                        continue;
+                    }
+
+                    sectionClass = buttonClass;
+                }
+
+                let sectionButtons = document.getElementsByClassName(sectionClass + " " + radioTypeClass);
+
+                columnSelectButton.addEventListener("click", function() {
+                    for (const button of sectionButtons) {
+                        if ($(button).hasClass("select-column-button")) {
+                            continue;
+                        }
+                        button.click()
+                    }
+                });
+            }
+
             let defaultHidden = document.getElementsByClassName("default-hidden");
             for (const element of defaultHidden) {
                 element.click();
@@ -475,12 +510,14 @@ public class HtmlGenerator {
      * <p>
      * This method creates 3 radio buttons, whitelist, blacklist, and neutral
      *
+     * @param sectionName the name of the filter section this radio button is in
      * @param elementName the name of the element to hide
      * @return the radio filter group
      */
     @NonNull
-    private static String createStandardRadioFilterWithoutLabelClass(@NonNull final String elementName) {
-        return createStandardRadioFilter(elementName, null);
+    private static String createStandardRadioFilterWithoutLabelClass(
+            @NonNull final String sectionName, @NonNull final String elementName) {
+        return createStandardRadioFilter(sectionName, elementName, null);
     }
 
     /**
@@ -488,19 +525,22 @@ public class HtmlGenerator {
      * <p>
      * This method creates 3 radio buttons, whitelist, blacklist, and neutral
      *
+     * @param sectionName the name of the filter section this radio button is in
      * @param elementName the name of the element to hide
      * @param labelClass  the class to apply to the label, for styling
      * @return the radio filter group
      */
     @NonNull
-    private static String createStandardRadioFilter(@NonNull final String elementName, @Nullable String labelClass) {
+    private static String createStandardRadioFilter(
+            @NonNull final String sectionName, @NonNull final String elementName, @Nullable String labelClass) {
         final String commonRadioLabel = elementName + "-radio";
 
         final StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder
                 .append(new HtmlTagFactory("input")
-                        .addClasses(List.of(FILTER_RADIO_LABEL, WHITELIST_LABEL, WHITELIST_RADIO_LABEL, elementName))
+                        .addClasses(List.of(
+                                FILTER_RADIO_LABEL, WHITELIST_LABEL, WHITELIST_RADIO_LABEL, elementName, sectionName))
                         .addAttribute("type", "radio")
                         .addAttribute("name", commonRadioLabel)
                         .addAttribute("value", "1")
@@ -508,7 +548,7 @@ public class HtmlGenerator {
                 .append("\n");
         stringBuilder
                 .append(new HtmlTagFactory("input")
-                        .addClasses(List.of(FILTER_RADIO_LABEL, NEUTRALLIST_RADIO_LABEL, elementName))
+                        .addClasses(List.of(FILTER_RADIO_LABEL, NEUTRALLIST_RADIO_LABEL, elementName, sectionName))
                         .addAttribute("type", "radio")
                         .addAttribute("name", commonRadioLabel)
                         .addAttribute("checked", "checked")
@@ -517,7 +557,8 @@ public class HtmlGenerator {
                 .append("\n");
         stringBuilder
                 .append(new HtmlTagFactory("input")
-                        .addClasses(List.of(FILTER_RADIO_LABEL, BLACKLIST_LABEL, BLACKLIST_RADIO_LABEL, elementName))
+                        .addClasses(List.of(
+                                FILTER_RADIO_LABEL, BLACKLIST_LABEL, BLACKLIST_RADIO_LABEL, elementName, sectionName))
                         .addAttribute("type", "radio")
                         .addAttribute("name", commonRadioLabel)
                         .addAttribute("value", "3")
@@ -616,23 +657,58 @@ public class HtmlGenerator {
         return createInputDiv("Columns", elements);
     }
 
+    @NonNull
+    private static String createRadioColumnSelectorButtons(@NonNull final String sectionName) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(new HtmlTagFactory("input")
+                .addClass(SECLECT_COLUMN_BUTTON_LABEL)
+                .addClass(WHITELIST_RADIO_LABEL)
+                .addClass(sectionName)
+                .addAttribute("type", "button")
+                .addAttribute("value", "↓")
+                .generateTag());
+        stringBuilder.append(new HtmlTagFactory("input")
+                .addClass(SECLECT_COLUMN_BUTTON_LABEL)
+                .addClass(NEUTRALLIST_RADIO_LABEL)
+                .addClass(sectionName)
+                .addAttribute("type", "button")
+                .addAttribute("value", "↓")
+                .generateTag());
+        stringBuilder.append(new HtmlTagFactory("input")
+                .addClass(SECLECT_COLUMN_BUTTON_LABEL)
+                .addClass(BLACKLIST_RADIO_LABEL)
+                .addClass(sectionName)
+                .addAttribute("type", "button")
+                .addAttribute("value", "↓")
+                .generateTag());
+        stringBuilder.append(new HtmlTagFactory("br").generateTag()).append("\n");
+
+        return stringBuilder.toString();
+    }
+
     /**
      * Create a standard 3 radio filter div for the given filter name and values
      * <p>
      * The filter div has a heading, and a series of radio buttons that can hide elements with the given names
      *
+     * @param sectionName  the name of the filter section
      * @param filterName   the filter name
      * @param filterValues the filter values
      * @return the filter div
      */
     @NonNull
     private static String createStandardFilterDivWithoutLabelClasses(
-            @NonNull final String filterName, @NonNull final List<String> filterValues) {
+            @NonNull final String sectionName,
+            @NonNull final String filterName,
+            @NonNull final List<String> filterValues) {
 
-        final List<String> filterRadios = filterValues.stream()
-                .map(HtmlGenerator::createStandardRadioFilterWithoutLabelClass)
-                .toList();
-        return createInputDiv(filterName, filterRadios);
+        final List<String> elements = new ArrayList<>();
+        elements.add(createRadioColumnSelectorButtons(sectionName));
+
+        filterValues.forEach(
+                filterValue -> elements.add(createStandardRadioFilterWithoutLabelClass(sectionName, filterValue)));
+        ;
+        return createInputDiv(filterName, elements);
     }
 
     /**
@@ -642,20 +718,24 @@ public class HtmlGenerator {
      * <p>
      * The radio labels will have the classes defined in labelClasses.
      *
+     * @param sectionName  the name of the filter section
      * @param filterName   the filter name
      * @param filterValues the filter values
      * @param labelClasses the classes to apply to the radio labels
      * @return the filter div
      */
     private static String createStandardFilterDivWithLabelClasses(
+            @NonNull final String sectionName,
             @NonNull final String filterName,
             @NonNull final List<String> filterValues,
             @NonNull final Map<String, String> labelClasses) {
 
-        final List<String> filterRadios = filterValues.stream()
-                .map(filterValue -> createStandardRadioFilter(filterValue, labelClasses.get(filterValue)))
-                .toList();
-        return createInputDiv(filterName, filterRadios);
+        final List<String> elements = new ArrayList<>();
+        elements.add(createRadioColumnSelectorButtons(sectionName));
+
+        filterValues.forEach(filterValue ->
+                elements.add(createStandardRadioFilter(sectionName, filterValue, labelClasses.get(filterValue))));
+        return createInputDiv(filterName, elements);
     }
 
     /**
@@ -732,8 +812,11 @@ public class HtmlGenerator {
         cssFactory.addRule("." + LOG_LINE_LABEL + ":hover td", new CssDeclaration("background-color", HIGHLIGHT_COLOR));
 
         cssFactory.addRule(
-                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL,
+                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL + ", ."
+                        + SECLECT_COLUMN_BUTTON_LABEL,
                 new CssDeclaration("background-color", getHtmlColor(TextEffect.GRAY)));
+
+        cssFactory.addRule("." + SECLECT_COLUMN_BUTTON_LABEL, new CssDeclaration("margin", "0.2em"));
 
         // create color rules for each log level
         logLines.stream()
@@ -824,6 +907,7 @@ public class HtmlGenerator {
                 "." + labelClass, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
         filterDivBuilder
                 .append(createStandardFilterDivWithLabelClasses(
+                        "log-level-filter-section",
                         "Log Level",
                         logLines.stream()
                                 .map(LogLine::getLogLevel)
@@ -835,12 +919,14 @@ public class HtmlGenerator {
 
         filterDivBuilder
                 .append(createStandardFilterDivWithoutLabelClasses(
+                        "log-marker-filter-section",
                         "Log Marker",
                         logLines.stream().map(LogLine::getMarker).distinct().toList()))
                 .append("\n");
 
         filterDivBuilder
                 .append(createStandardFilterDivWithoutLabelClasses(
+                        "class-filter-section",
                         "Class",
                         logLines.stream().map(LogLine::getClassName).distinct().toList()))
                 .append("\n");
