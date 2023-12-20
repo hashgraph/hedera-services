@@ -106,7 +106,7 @@ class MerkleDbStatisticsTest {
 
     @Test
     void testConstructorWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> new MerkleDbStatistics(null));
+        assertThrows(NullPointerException.class, () -> new MerkleDbStatistics(null));
     }
 
     @Test
@@ -115,7 +115,7 @@ class MerkleDbStatisticsTest {
         final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
 
         // then
-        assertThrows(IllegalArgumentException.class, () -> statistics.registerMetrics(null));
+        assertThrows(NullPointerException.class, () -> statistics.registerMetrics(null));
     }
 
     private Metric getMetric(final String section, final String suffix) {
