@@ -240,7 +240,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
         // Do some sanity checking in advance to ensure that the target is a valid contract
-        // Missing entity num are is a valid target for lazy create.  Tokens are also valid targets
+        // Missing entity num is a valid target for lazy create.  Tokens are also valid targets
         final var target = targetOf(op);
         if (!target.equals(EntityNum.MISSING_NUM)
                 && !entityAccess.isTokenAccount(target.toId().asEvmAddress())) {
