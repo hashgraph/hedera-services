@@ -152,7 +152,8 @@ public class LinkedEventIntake {
 
             dispatcher.preConsensusEvent(event);
 
-            final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
+            final long minimumGenerationNonAncientBeforeAdding =
+                    consensusSupplier.get().getMinGenerationNonAncient();
 
             // Prehandle transactions on the thread pool.
             prehandlePool.submit(buildPrehandleTask(event));
@@ -166,10 +167,13 @@ public class LinkedEventIntake {
                 consensusRounds.forEach(this::handleConsensus);
             }
 
-            if (consensusSupplier.get().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+            final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
+
+            if (minimumGenerationNonAncient > minimumGenerationNonAncientBeforeAdding) {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
-                handleStale(minGenNonAncientBeforeAdding);
+                handleStale(minimumGenerationNonAncientBeforeAdding);
+                shadowGraph.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
             }
 
             return Objects.requireNonNullElseGet(consensusRounds, List::of);

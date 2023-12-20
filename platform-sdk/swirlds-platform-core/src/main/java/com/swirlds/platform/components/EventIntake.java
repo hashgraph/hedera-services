@@ -190,8 +190,6 @@ public class EventIntake {
             phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
             final List<ConsensusRound> consRounds = consensus().addEvent(event);
 
-            shadowGraph.setMinimumGenerationNonAncient(consensus().getMinGenerationNonAncient());
-
             phaseTimer.activatePhase(EventIntakePhase.EVENT_ADDED_DISPATCH);
             dispatcher.eventAdded(event);
 
@@ -200,11 +198,14 @@ public class EventIntake {
                 consRounds.forEach(this::handleConsensus);
             }
 
-            if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+            final long minimumGenerationNonAncient = consensus().getMinGenerationNonAncient();
+
+            if (minimumGenerationNonAncient > minGenNonAncientBeforeAdding) {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
                 phaseTimer.activatePhase(EventIntakePhase.HANDLING_STALE_EVENTS);
                 handleStale(minGenNonAncientBeforeAdding);
+                shadowGraph.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
             }
         } finally {
             phaseTimer.activatePhase(EventIntakePhase.IDLE);

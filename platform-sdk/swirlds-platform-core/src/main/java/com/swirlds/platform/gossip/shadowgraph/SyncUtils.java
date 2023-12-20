@@ -432,7 +432,21 @@ public final class SyncUtils {
                 continue;
             }
 
-            // TODO make sure this doesn't break when AB size changes
+            // FUTURE WORK: make sure this doesn't break when AB size changes
+
+            // We want to answer the question: "Is this event an ancestor of my latest self event?"
+            // The latest self event's tipset makes this easy to answer. A tipset is basically just
+            // an array containing the latest generations of each event creator in our ancestry.
+            // If we compare the generation of the event we're looking at to the generation of the
+            // latest ancestor from the same creator, we can tell if this is an ancestor. If the event's
+            // generation is less than or equal to the latest ancestor's generation, then it is an ancestor.
+            // If it is greater than the latest ancestor's generation, then it is not an ancestor.
+            //
+            // Note: there is an edge case where this breaks down a little. If this event's creator is branching,
+            // then we may falsely conclude that this event is in our ancestry when it is not. But this is not
+            // harmful. The purpose of this method is to reduce the number of events we send to the peer, and so
+            // the worst that can happen is that we send a few extra events and get a slightly higher duplication rate.
+
             final boolean isAncestor = latestSelfEventTipset != null
                     && latestSelfEventTipset.getTipGenerationForNode(event.getCreatorId()) >= event.getGeneration();
             if (isAncestor) {
