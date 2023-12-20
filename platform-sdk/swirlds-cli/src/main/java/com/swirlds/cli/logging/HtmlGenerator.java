@@ -25,6 +25,7 @@ import static com.swirlds.cli.logging.LogLine.TIMESTAMP_COLOR;
 import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.logging.PlatformStatusLog.STATUS_HTML_CLASS;
 
+import com.swirlds.common.formatting.TextEffect;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -98,6 +99,9 @@ public class HtmlGenerator {
     public static final String CLASS_NAME_COLUMN_LABEL = "class-name";
     public static final String REMAINDER_OF_LINE_COLUMN_LABEL = "remainder";
     public static final String NON_STANDARD_LABEL = "non-standard";
+
+    public static final String SELECT_MANY_BUTTON_LABEL = "select-many-button";
+    public static final String DESELECT_MANY_BUTTON_LABEL = "deselect-many-button";
 
     /**
      * Signifies filter radio buttons
@@ -248,7 +252,7 @@ public class HtmlGenerator {
                     let toggleClass;
 
                     for (const element of checkboxClasses) {
-                        if (element === "filter-checkbox" || element === "default-hidden") {
+                        if (element === "filter-checkbox" || element === "default-hidden" || element.endsWith("filter-section")) {
                             continue;
                         }
 
@@ -287,7 +291,7 @@ public class HtmlGenerator {
                     let toggleClass;
 
                     for (const element of checkboxClasses) {
-                        if (element === "no-show-checkbox") {
+                        if (element === "no-show-checkbox" || element.endsWith("filter-section")) {
                             continue;
                         }
 
@@ -329,6 +333,67 @@ public class HtmlGenerator {
                     }
                 });
             }
+
+            let selectManyButtons = document.getElementsByClassName("select-many-button");
+            for (const selectManyButton of selectManyButtons) {
+                // get the other class name of the button
+                let selectManyButtonClasses = selectManyButton.classList;
+
+                // the name of the section
+                let sectionClass;
+
+                for (const buttonClass of selectManyButtonClasses) {
+                    if (buttonClass === "select-many-button") {
+                        continue;
+                    }
+
+                    sectionClass = buttonClass;
+                }
+
+                let sectionButtons = document.getElementsByClassName(sectionClass);
+
+                selectManyButton.addEventListener("click", function() {
+                    for (const button of sectionButtons) {
+                        if ($(button).hasClass("select-many-button")) {
+                            continue;
+                        }
+                        if (!$(button).is(":checked")) {
+                            button.click()
+                        }
+                    }
+                });
+            }
+
+            let deselectManyButtons = document.getElementsByClassName("deselect-many-button");
+            for (const deselectManyButton of deselectManyButtons) {
+                // get the other class name of the button
+                let deselectManyButtonClasses = deselectManyButton.classList;
+
+                // the name of the section
+                let sectionClass;
+
+                for (const buttonClass of deselectManyButtonClasses) {
+                    if (buttonClass === "deselect-many-button") {
+                        continue;
+                    }
+
+                    sectionClass = buttonClass;
+                }
+
+                let sectionButtons = document.getElementsByClassName(sectionClass);
+
+                deselectManyButton.addEventListener("click", function() {
+                    for (const button of sectionButtons) {
+                        if ($(button).hasClass("deselect-many-button")) {
+                            continue;
+                        }
+                        if ($(button).is(":checked")) {
+                            button.click()
+                        }
+                    }
+                });
+            }
+
             let defaultHidden = document.getElementsByClassName("default-hidden");
             for (const element of defaultHidden) {
                 element.click();
@@ -343,11 +408,12 @@ public class HtmlGenerator {
     /**
      * Create show / hide checkboxes for node IDs
      *
-     * @param nodeId the node ID
+     * @param sectionName the name of the filter section this checkbox is in
+     * @param nodeId      the node ID
      * @return the radio buttons
      */
     @NonNull
-    private static String createNodeIdCheckbox(@NonNull final String nodeId) {
+    private static String createNodeIdCheckbox(@NonNull final String sectionName, @NonNull final String nodeId) {
         // label used for filtering by node ID
         final String nodeLogicLabel = "node" + nodeId;
         // label used for colorizing by node ID
@@ -357,7 +423,7 @@ public class HtmlGenerator {
 
         stringBuilder
                 .append(new HtmlTagFactory("input")
-                        .addClasses(List.of(NO_SHOW_CHECKBOX_LABEL, nodeLogicLabel))
+                        .addClasses(List.of(NO_SHOW_CHECKBOX_LABEL, nodeLogicLabel, sectionName))
                         .addAttribute("type", "checkbox")
                         .addAttribute("checked", "checked")
                         .generateTag())
@@ -376,14 +442,16 @@ public class HtmlGenerator {
     /**
      * Create a single checkbox filter
      *
-     * @param elementName    the name of the element to hide / show
+     * @param elementName   the name of the element to hide / show
+     * @param sectionName   the name of the filter section this checkbox is in
      * @param defaultHidden the initial state of the checkbox
      * @return the checkbox
      */
     @NonNull
-    private static String createCheckboxFilter(@NonNull final String elementName, final boolean defaultHidden) {
+    private static String createCheckboxFilter(
+            @NonNull final String elementName, @NonNull final String sectionName, final boolean defaultHidden) {
         final HtmlTagFactory tagFactory = new HtmlTagFactory("input")
-                .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
+                .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName, sectionName))
                 .addAttribute("type", "checkbox")
                 .addAttribute("checked", "checked");
 
@@ -497,9 +565,26 @@ public class HtmlGenerator {
      */
     @NonNull
     private static String createNodeIdFilterDiv(@NonNull final List<String> filterValues) {
-        final List<String> filterRadios =
-                filterValues.stream().map(HtmlGenerator::createNodeIdCheckbox).toList();
-        return createInputDiv("Node ID", filterRadios);
+        final List<String> elements = new ArrayList<>();
+
+        final String sectionName = "node-filter-section";
+        elements.add(new HtmlTagFactory("input")
+                .addClass(sectionName)
+                .addClass(SELECT_MANY_BUTTON_LABEL)
+                .addAttribute("type", "button")
+                .addAttribute("value", "All")
+                .generateTag());
+        elements.add(new HtmlTagFactory("input")
+                .addClass(sectionName)
+                .addClass(DESELECT_MANY_BUTTON_LABEL)
+                .addAttribute("type", "button")
+                .addAttribute("value", "None")
+                .generateTag());
+        elements.add(new HtmlTagFactory("br").generateTag());
+
+        filterValues.forEach(filterValue -> elements.add(createNodeIdCheckbox(sectionName, filterValue)));
+
+        return createInputDiv("Node ID", elements);
     }
 
     /**
@@ -513,12 +598,22 @@ public class HtmlGenerator {
     private static String createColumnFilterDiv(
             @NonNull final List<String> filterValues, @NonNull final List<Boolean> initialStates) {
 
-        final List<String> filterCheckboxes = new ArrayList<>();
+        final String sectionName = "column-filter-section";
+
+        final List<String> elements = new ArrayList<>();
+        elements.add(new HtmlTagFactory("input")
+                .addClass(sectionName)
+                .addClass(SELECT_MANY_BUTTON_LABEL)
+                .addAttribute("type", "button")
+                .addAttribute("value", "All")
+                .generateTag());
+        elements.add(new HtmlTagFactory("br").generateTag());
+
         for (int i = 0; i < filterValues.size(); i++) {
-            filterCheckboxes.add(createCheckboxFilter(filterValues.get(i), initialStates.get(i)));
+            elements.add(createCheckboxFilter(filterValues.get(i), sectionName, initialStates.get(i)));
         }
 
-        return createInputDiv("Columns", filterCheckboxes);
+        return createInputDiv("Columns", elements);
     }
 
     /**
@@ -635,6 +730,10 @@ public class HtmlGenerator {
 
         // highlight log lines when you hover over them with your mouse
         cssFactory.addRule("." + LOG_LINE_LABEL + ":hover td", new CssDeclaration("background-color", HIGHLIGHT_COLOR));
+
+        cssFactory.addRule(
+                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL,
+                new CssDeclaration("background-color", getHtmlColor(TextEffect.GRAY)));
 
         // create color rules for each log level
         logLines.stream()
