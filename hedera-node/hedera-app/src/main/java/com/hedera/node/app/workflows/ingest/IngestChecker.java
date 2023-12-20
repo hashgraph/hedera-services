@@ -29,22 +29,26 @@ import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.INTR
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
@@ -55,6 +59,8 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LazyCreationConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -229,16 +235,32 @@ public final class IngestChecker {
         signatureExpander.expand(sigPairs, expandedSigs);
         if (!isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expandedSigs);
+        } else {
+            // If the payer is hollow, then we need to expand the signature for the payer
+            final var originals = txInfo.signatureMap().sigPairOrElse(emptyList()).stream()
+                    .filter(SignaturePair::hasEcdsaSecp256k1)
+                    .filter(pair -> Bytes.wrap(EthSigsUtils.recoverAddressFromPubKey(
+                                    pair.pubKeyPrefix().toByteArray()))
+                            .equals(payer.alias()))
+                    .findFirst();
+            validateTruePreCheck(originals.isPresent(), INVALID_SIGNATURE);
+            validateTruePreCheck(
+                    configuration.getConfigData(LazyCreationConfig.class).enabled(), INVALID_SIGNATURE);
+            signatureExpander.expand(List.of(originals.get()), expandedSigs);
+        }
 
-            // Verify the signatures
-            final var results = signatureVerifier.verify(txInfo.signedBytes(), expandedSigs);
-            final var verifier = new DefaultKeyVerifier(sigPairs.size(), hederaConfig, results);
-            final var payerKeyVerification = verifier.verificationFor(payerKey);
-
-            // This can happen if the signature map was missing a signature for the payer account.
-            if (payerKeyVerification.failed()) {
-                throw new PreCheckException(INVALID_SIGNATURE);
-            }
+        // Verify the signatures
+        final var results = signatureVerifier.verify(txInfo.signedBytes(), expandedSigs);
+        final var verifier = new DefaultKeyVerifier(sigPairs.size(), hederaConfig, results);
+        final SignatureVerification payerKeyVerification;
+        if (!isHollow(payer)) {
+            payerKeyVerification = verifier.verificationFor(payerKey);
+        } else {
+            payerKeyVerification = verifier.verificationFor(payer.alias());
+        }
+        // This can happen if the signature map was missing a signature for the payer account.
+        if (payerKeyVerification.failed()) {
+            throw new PreCheckException(INVALID_SIGNATURE);
         }
     }
 }
