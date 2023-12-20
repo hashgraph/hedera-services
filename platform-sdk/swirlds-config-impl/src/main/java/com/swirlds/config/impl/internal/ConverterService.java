@@ -119,10 +119,6 @@ class ConverterService implements ConfigLifecycle {
     }
 
     <T> void addConverter(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
-        add(converterType, converter);
-    }
-
-    private <T> void add(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         throwIfInitialized();
         Objects.requireNonNull(converterType, "converterType must not be null");
         Objects.requireNonNull(converter, "converter must not be null");
@@ -141,31 +137,31 @@ class ConverterService implements ConfigLifecycle {
     public void init() {
         throwIfInitialized();
         // Primitives
-        add(Integer.TYPE, INTEGER_CONVERTER);
-        add(Long.TYPE, LONG_CONVERTER);
-        add(Double.TYPE, DOUBLE_CONVERTER);
-        add(Float.TYPE, FLOAT_CONVERTER);
-        add(Short.TYPE, SHORT_CONVERTER);
-        add(Byte.TYPE, BYTE_CONVERTER);
-        add(Boolean.TYPE, BOOLEAN_CONVERTER);
+        addConverter(Integer.TYPE, INTEGER_CONVERTER);
+        addConverter(Long.TYPE, LONG_CONVERTER);
+        addConverter(Double.TYPE, DOUBLE_CONVERTER);
+        addConverter(Float.TYPE, FLOAT_CONVERTER);
+        addConverter(Short.TYPE, SHORT_CONVERTER);
+        addConverter(Byte.TYPE, BYTE_CONVERTER);
+        addConverter(Boolean.TYPE, BOOLEAN_CONVERTER);
 
-        add(String.class, STRING_CONVERTER);
-        add(Integer.class, INTEGER_CONVERTER);
-        add(Long.class, LONG_CONVERTER);
-        add(Double.class, DOUBLE_CONVERTER);
-        add(Float.class, FLOAT_CONVERTER);
-        add(Short.class, SHORT_CONVERTER);
-        add(Byte.class, BYTE_CONVERTER);
-        add(Boolean.class, BOOLEAN_CONVERTER);
-        add(BigDecimal.class, BIG_DECIMAL_CONVERTER);
-        add(BigInteger.class, BIG_INTEGER_CONVERTER);
-        add(URL.class, URL_CONVERTER);
-        add(URI.class, URI_CONVERTER);
-        add(Path.class, PATH_CONVERTER);
-        add(File.class, FILE_CONVERTER);
-        add(ZonedDateTime.class, ZONED_DATE_TIME_CONVERTER);
-        add(Duration.class, DURATION_CONVERTER);
-        add(ChronoUnit.class, CHRONO_UNIT_CONVERTER);
+        addConverter(String.class, STRING_CONVERTER);
+        addConverter(Integer.class, INTEGER_CONVERTER);
+        addConverter(Long.class, LONG_CONVERTER);
+        addConverter(Double.class, DOUBLE_CONVERTER);
+        addConverter(Float.class, FLOAT_CONVERTER);
+        addConverter(Short.class, SHORT_CONVERTER);
+        addConverter(Byte.class, BYTE_CONVERTER);
+        addConverter(Boolean.class, BOOLEAN_CONVERTER);
+        addConverter(BigDecimal.class, BIG_DECIMAL_CONVERTER);
+        addConverter(BigInteger.class, BIG_INTEGER_CONVERTER);
+        addConverter(URL.class, URL_CONVERTER);
+        addConverter(URI.class, URI_CONVERTER);
+        addConverter(Path.class, PATH_CONVERTER);
+        addConverter(File.class, FILE_CONVERTER);
+        addConverter(ZonedDateTime.class, ZONED_DATE_TIME_CONVERTER);
+        addConverter(Duration.class, DURATION_CONVERTER);
+        addConverter(ChronoUnit.class, CHRONO_UNIT_CONVERTER);
         initialized = true;
     }
 
