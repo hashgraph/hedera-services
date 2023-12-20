@@ -64,7 +64,7 @@ public class EnumConverterTest {
     @Test
     void itSuccessfullyConvertsValidEnumValueWithSpecialChar() {
         // given
-        final EnumConverter<NumberEnum> converter = new EnumConverter<>(NumberEnum.class);
+        final EnumConverter<SpecialCharacterEnum> converter = new EnumConverter<>(SpecialCharacterEnum.class);
 
         // then:
         Assertions.assertEquals(SpecialCharacterEnum.Ñ, converter.convert("Ñ"));
