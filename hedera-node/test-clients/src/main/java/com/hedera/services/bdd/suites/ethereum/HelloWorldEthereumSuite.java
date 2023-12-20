@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -50,7 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -84,7 +82,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
-    private static final long depositAmount = 20_000L;
+    public static final long depositAmount = 20_000L;
 
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
@@ -108,7 +106,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     List<HapiSpec> ethereumCalls() {
         return List.of(
-                relayerFeeAsExpectedIfSenderCoversGas(),
                 depositSuccess(),
                 badRelayClient(),
                 topLevelBurnToZeroAddressReverts(),
@@ -189,39 +186,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         ? Optional.of("Malicious" + " EOA balance" + " increased")
                                         : Optional.empty())),
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
-    }
-
-    @HapiTest
-    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
-        final var canonicalTxn = "canonical";
-
-        return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
-                .given(
-                        uploadDefaultFeeSchedules(GENESIS),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        // The cost to the relayer to transmit a simple call with sufficient gas
-                        // allowance is ≈ $0.0001
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via(canonicalTxn)
-                                .nonce(0)
-                                .gasPrice(100L)
-                                .maxFeePerGas(100L)
-                                .maxPriorityGas(2_000_000L)
-                                .gasLimit(1_000_000L)
-                                .sending(depositAmount))
-                .then(getAccountInfo(RELAYER)
-                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                        .logged());
     }
 
     @HapiTest
