@@ -2766,8 +2766,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
     HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
-        return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
+        return propertyPreservingHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
+                        overriding(CHAIN_ID_PROP, "298"),
                         uploadDefaultFeeSchedules(GENESIS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
