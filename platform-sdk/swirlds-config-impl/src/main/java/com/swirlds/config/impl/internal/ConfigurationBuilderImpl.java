@@ -139,13 +139,6 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         return this;
     }
 
-    @NonNull
-    @Override
-    public ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) {
-        Arrays.stream(converters).forEach(this::addConverter);
-        return this;
-    }
-
     private void addConverter(@NonNull final ConfigConverter<?> converter) {
         Objects.requireNonNull(converter, "converter must not be null");
         if (initialized.get()) {
