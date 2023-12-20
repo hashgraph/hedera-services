@@ -67,7 +67,7 @@ public interface ConfigurationBuilder {
      * @throws IllegalStateException if this method is called after the config has been created
      */
     @NonNull
-    ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) throws IllegalStateException;
+    <T> ConfigurationBuilder withConverter(@NonNull final ConfigConverter<T> converter) throws IllegalStateException;
 
     /**
      * Adds a validator (see {@link ConfigValidator}). If this method is called after the config has been created (see

@@ -134,7 +134,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
 
     @NonNull
     @Override
-    public ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) {
+    public <T> ConfigurationBuilder withConverter(@NonNull final ConfigConverter<T> converter) {
         addConverter(converter);
         return this;
     }
