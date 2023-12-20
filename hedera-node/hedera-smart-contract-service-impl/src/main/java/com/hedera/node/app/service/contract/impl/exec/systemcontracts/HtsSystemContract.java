@@ -32,8 +32,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -112,9 +110,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
 
                 if (responseCode == SUCCESS) {
                     final var output = pricedResult.fullResult().result().getOutput();
-                    var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-                    final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
-
                     enhancement
                             .systemOperations()
                             .externalizeResult(
@@ -123,7 +118,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                                             output,
                                             frame.getRemainingGas(),
                                             frame.getInputData(),
-                                            senderId),
+                                            attempt.senderId()),
                                     responseCode);
                 } else {
                     enhancement
