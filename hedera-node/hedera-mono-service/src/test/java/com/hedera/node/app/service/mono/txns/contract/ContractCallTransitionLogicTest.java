@@ -724,6 +724,17 @@ class ContractCallTransitionLogicTest {
     }
 
     @Test
+    void failsIfNotSmartContractSyntax() {
+        givenValidTxnCtx();
+        given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+                .willReturn(contractAccount);
+        contractAccount.setSmartContract(false);
+        // expect:
+        assertEquals(INVALID_CONTRACT_ID, subject.semanticCheck().apply(contractCallTxn));
+    }
+
+    @Test
     void providingGasOverLimitReturnsCorrectPrecheck() {
         givenValidTxnCtx();
         given(properties.maxGasPerSec()).willReturn(gas - 1);
