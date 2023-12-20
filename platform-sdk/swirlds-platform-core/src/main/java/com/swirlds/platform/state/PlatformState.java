@@ -53,7 +53,14 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         public static final int ORIGINAL = 1;
     }
 
+    /**
+     * The address book for this round.
+     */
     private AddressBook addressBook;
+
+    /**
+     * The previous address book. A temporary workaround until dynamic address books are supported.
+     */
     private AddressBook previousAddressBook;
 
     /**
@@ -101,7 +108,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private int roundsNonAncient;
 
-    /** A snapshot of the consensus state at the end of the round, used for restart/reconnect */
+    /**
+     * A snapshot of the consensus state at the end of the round, used for restart/reconnect
+     */
     private ConsensusSnapshot snapshot;
 
     /**

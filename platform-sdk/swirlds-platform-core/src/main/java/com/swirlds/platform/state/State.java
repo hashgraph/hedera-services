@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
@@ -31,12 +33,16 @@ import com.swirlds.platform.system.SwirldState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The root of the merkle tree holding the state of the Swirlds ledger. Contains two children: the state used by the
  * application and the state used by the platform.
  */
 public class State extends PartialNaryMerkleInternal implements MerkleInternal {
+
+    private static final Logger logger = LogManager.getLogger(State.class);
 
     private static final long CLASS_ID = 0x2971b4ba7dd84402L;
 
@@ -93,6 +99,12 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     @Override
     public MerkleNode migrate(final int version) {
         if (version < ClassVersion.REMOVE_DUAL_STATE) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Migrating legacy platform state to new platform state at version (State version {} -> {}).",
+                    version,
+                    getVersion());
+
             final State newState = new State();
 
             final PlatformState newPlatformState = new PlatformState();
@@ -103,6 +115,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
 
             newPlatformState.setAddressBook(platformState.getAddressBook());
             newPlatformState.setPreviousAddressBook(platformState.getPreviousAddressBook());
+            newPlatformState.setRound(platformData.getRound());
             newPlatformState.setHashEventsCons(platformData.getHashEventsCons());
             newPlatformState.setConsensusTimestamp(platformData.getConsensusTimestamp());
             newPlatformState.setCreationSoftwareVersion(platformData.getCreationSoftwareVersion());
