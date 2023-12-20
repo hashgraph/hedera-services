@@ -24,10 +24,8 @@ import com.swirlds.config.impl.converters.EnumConverter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
-class ConfigDataServiceTest {
+class ConverterServiceTest {
 
     private ConverterService converterService;
 
@@ -49,44 +47,6 @@ class ConfigDataServiceTest {
     }
 
     @Test
-    void itSuccessfullyConvertsValueToRequestedEnum() {
-        // given
-        final ConverterService cs = converterService;
-
-        // then:
-        Assertions.assertEquals(NumberEnum.ONE, cs.convert("ONE", NumberEnum.class));
-    }
-
-    @Test
-    void itSuccessfullyConvertsValueToRequestedEnum2() {
-        // given
-        final ConverterService cs = converterService;
-
-        // then:
-        Assertions.assertEquals(NumberAndValueEnum.ONE, cs.convert("ONE", NumberAndValueEnum.class));
-    }
-
-    @Test
-    void itSuccessfullyConvertsValueToRequestedEnum3() {
-        // given
-        final ConverterService cs = converterService;
-
-        // then:
-        Assertions.assertEquals(SpecialCharacterEnum.Ñ, cs.convert("Ñ", SpecialCharacterEnum.class));
-    }
-
-    @Test
-    void itSuccessfullyConvertsEnumWithSameConstantName() {
-        // given
-        final ConverterService cs = converterService;
-        // pre-call this enum has the same constants as the next call, should not interfere
-        cs.getConverterForType(NumberEnum.class);
-
-        // then:
-        Assertions.assertEquals(NumberAndValueEnum.ONE, cs.convert("ONE", NumberAndValueEnum.class));
-    }
-
-    @Test
     void itDoesNotCreateANewInstanceForAlreadyCachedConverters() {
         // given
         final ConverterService cs = converterService;
@@ -94,23 +54,6 @@ class ConfigDataServiceTest {
 
         // then:
         Assertions.assertSame(converter, cs.getConverterForType(NumberEnum.class));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"One", "one", "onE", "oNe", " ONE", "ONE ", "DOS", "", "OnE", "null"})
-    void itFailsConvertingInvalidEnumValues(final String param) {
-        // given
-        final ConverterService cs = converterService;
-        // then
-        Assertions.assertThrows(IllegalArgumentException.class, () -> cs.convert(param, NumberEnum.class));
-    }
-
-    @Test
-    void itReturnsNullForNullValues() {
-        // given
-        final ConverterService cs = converterService;
-        // then:
-        Assertions.assertNull(cs.convert(null, NumberAndValueEnum.class));
     }
 
     @Test
@@ -183,9 +126,5 @@ class ConfigDataServiceTest {
         NumberAndValueEnum(int value) {
             this.value = value;
         }
-    }
-
-    private enum SpecialCharacterEnum {
-        Ñ,
     }
 }

@@ -19,6 +19,8 @@ package com.swirlds.config.impl.converters;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class EnumConverterTest {
 
@@ -59,7 +61,29 @@ public class EnumConverterTest {
         Assertions.assertThrows(IllegalArgumentException.class, () -> converter.convert(""));
     }
 
+    @Test
+    void itSuccessfullyConvertsValidEnumValueWithSpecialChar() {
+        // given
+        final EnumConverter<NumberEnum> converter = new EnumConverter<>(NumberEnum.class);
+
+        // then:
+        Assertions.assertEquals(SpecialCharacterEnum.Ñ, converter.convert("Ñ"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"One", "one", "onE", "oNe", " ONE", "ONE ", "DOS", "", "OnE", "null"})
+    void itFailsConvertingInvalidEnumValues(final String param) {
+        // given
+        final EnumConverter<NumberEnum> converter = new EnumConverter<>(NumberEnum.class);
+        // then
+        Assertions.assertThrows(IllegalArgumentException.class, () -> converter.convert(param));
+    }
+
     private enum NumberEnum {
         ONE
+    }
+
+    private enum SpecialCharacterEnum {
+        Ñ,
     }
 }
