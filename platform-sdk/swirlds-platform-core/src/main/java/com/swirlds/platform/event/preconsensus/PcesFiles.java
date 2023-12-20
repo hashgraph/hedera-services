@@ -152,8 +152,10 @@ public class PcesFiles {
      * @param startingRound     the round to start iterating from
      * @return an iterator that walks over events
      */
-    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(final long minimumGeneration, final long startingRound) {
-        return new PreconsensusEventMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration, startingRound));
+    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(
+            final long minimumGeneration, final long startingRound) {
+        return new PreconsensusEventMultiFileIterator(
+                minimumGeneration, getFileIterator(minimumGeneration, startingRound));
     }
 
     /**
@@ -169,7 +171,8 @@ public class PcesFiles {
      * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(final long minimumGeneration, final long startingRound) {
+    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(
+            final long minimumGeneration, final long startingRound) {
         final int firstFileIndex = getFirstRelevantFileIndex(startingRound);
 
         // Edge case: we want all events regardless of generation

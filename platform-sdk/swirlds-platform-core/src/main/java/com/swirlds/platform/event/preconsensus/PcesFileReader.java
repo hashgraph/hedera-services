@@ -120,7 +120,8 @@ public class PcesFileReader {
      * @return the handler
      */
     @NonNull
-    private static Consumer<PreconsensusEventFile> buildFileHandler(@NonNull final PcesFiles files, final boolean permitGaps) {
+    private static Consumer<PreconsensusEventFile> buildFileHandler(
+            @NonNull final PcesFiles files, final boolean permitGaps) {
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
         final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);
         final ValueReference<Long> previousMaximumGeneration = new ValueReference<>(-1L);
@@ -183,7 +184,8 @@ public class PcesFileReader {
             return;
         }
 
-        final PreconsensusEventFile lastUndeletedFile = firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
+        final PreconsensusEventFile lastUndeletedFile =
+                firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
 
         logger.warn(
                 STARTUP.getMarker(),

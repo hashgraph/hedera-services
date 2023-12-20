@@ -184,7 +184,8 @@ public class PcesFileManager {
      * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
-    public @NonNull PreconsensusEventFile getNextFileDescriptor(final long minimumGeneration, final long maximumGeneration) {
+    public @NonNull PreconsensusEventFile getNextFileDescriptor(
+            final long minimumGeneration, final long maximumGeneration) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");

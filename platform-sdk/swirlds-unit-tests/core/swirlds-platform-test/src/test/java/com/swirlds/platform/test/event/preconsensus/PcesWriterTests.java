@@ -43,12 +43,12 @@ import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFiles;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
@@ -597,7 +597,8 @@ class PcesWriterTests {
         // Since we were very careful to always advance the first non-ancient generation, we should
         // find lots of files with a minimum generation exceeding 0.
         boolean foundNonZeroMinimumGeneration = false;
-        for (final Iterator<PreconsensusEventFile> fileIterator = pcesFiles.getFileIterator(0, 0); fileIterator.hasNext(); ) {
+        for (final Iterator<PreconsensusEventFile> fileIterator = pcesFiles.getFileIterator(0, 0);
+                fileIterator.hasNext(); ) {
             final PreconsensusEventFile file = fileIterator.next();
             if (file.getMinimumGeneration() > 0) {
                 foundNonZeroMinimumGeneration = true;
