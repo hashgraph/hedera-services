@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.dispatch;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.base.state.Mutable;
 import com.swirlds.base.state.Startable;
@@ -45,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Manages the construction of dispatch methods. Useful for linking together various platform
@@ -71,9 +70,10 @@ public class DispatchBuilder implements Mutable, Startable {
      *
      * @param configuration
      * 		dispatch configuration
+     * @throws NullPointerException in case {@code configuration} parameter is {@code null}
      */
     public DispatchBuilder(final DispatchConfiguration configuration) {
-        throwArgNull(configuration, "configuration");
+        Objects.requireNonNull(configuration, "configuration must not be null");
         if (configuration.flowchartEnabled()) {
             flowchart = new DispatchFlowchart(configuration);
         } else {
@@ -152,6 +152,12 @@ public class DispatchBuilder implements Mutable, Startable {
      * @return this object
      * @throws MutabilityException
      * 		if called after {@link #start()}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code triggerClass}</li>
+     *       <li>{@code observer}</li>
+     *     </ul>
+     *
      */
     public <BASE_INTERFACE extends Trigger<BASE_INTERFACE>, TRIGGER_CLASS extends BASE_INTERFACE>
             DispatchBuilder registerObserver(
@@ -161,9 +167,8 @@ public class DispatchBuilder implements Mutable, Startable {
                     final String comment) {
 
         throwIfImmutable("observer can only be registered while this object is mutable");
-        throwArgNull(triggerClass, "triggerClass");
-        throwArgNull(triggerClass, "dispatchType");
-        throwArgNull(observer, "observer");
+        Objects.requireNonNull(triggerClass, "triggerClass must not be null");
+        Objects.requireNonNull(observer, "observer must not be null");
 
         if (flowchart != null && isMutable()) {
             flowchart.registerObserver(owner, triggerClass, comment);
@@ -185,7 +190,7 @@ public class DispatchBuilder implements Mutable, Startable {
      */
     public DispatchBuilder registerObservers(final Object object) {
         throwIfImmutable("observers can only be registered while this object is mutable");
-        throwArgNull(object, "object");
+        Objects.requireNonNull(object, "object must not be null");
 
         for (final Method method : object.getClass().getDeclaredMethods()) {
 
@@ -301,8 +306,8 @@ public class DispatchBuilder implements Mutable, Startable {
             BASE_INTERFACE getDispatcher(
                     final Object owner, final Class<DISPATCHER_TYPE> triggerClass, final String comment) {
 
-        throwArgNull(owner, "owner");
-        throwArgNull(triggerClass, "dispatchType");
+        Objects.requireNonNull(owner, "owner must not be null");
+        Objects.requireNonNull(triggerClass, "dispatchType must not be null");
 
         if (flowchart != null && isMutable()) {
             flowchart.registerDispatcher(owner, triggerClass, comment);

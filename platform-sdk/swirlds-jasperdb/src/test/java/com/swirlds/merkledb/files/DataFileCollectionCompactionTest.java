@@ -467,7 +467,8 @@ class DataFileCollectionCompactionTest {
         final Future<?> f = exec.submit(() -> {
             try {
                 final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
-                assertEquals(numFiles, filesToMerge.size());
+                // Data file collection may create a new file before the compaction starts
+                assertTrue(filesToMerge.size() == numFiles || filesToMerge.size() == numFiles + 1);
                 compactor.compactFiles(index, filesToMerge, 1);
                 // Wait for the new file to be available. Without this wait, there
                 // may be 1 or 2
