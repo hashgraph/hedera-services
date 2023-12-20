@@ -101,7 +101,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
@@ -385,7 +384,10 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.maybeNewRecoveredStateListener().ifPresent(listener -> platform.getNotificationEngine()
                 .register(NewRecoveredStateListener.class, listener));
 
-        Objects.requireNonNull(platformState);
+        if (platformState == null) {
+            log.error("Platform state is null, this is highly unusual.");
+            platformState = new PlatformState();
+        }
         app.platformStateAccessor().setPlatformState(platformState);
         log.info(
                 "Platform state includes freeze time={} and last frozen={}",
