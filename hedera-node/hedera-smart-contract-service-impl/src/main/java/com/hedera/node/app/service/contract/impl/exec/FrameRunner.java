@@ -16,13 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.maybeNext;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.successFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.NONE;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -41,6 +44,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
@@ -136,6 +140,8 @@ public class FrameRunner {
                     case CONTRACT_CREATION -> contractCreation;
                 };
         executor.process(frame, tracer);
+
+        frame.getExceptionalHaltReason().ifPresent(haltReason -> propagateHaltException(frame, haltReason));
         // For mono-service compatibility, we need to also halt the frame on the stack that
         // executed the CALL operation whose dispatched frame failed due to a missing receiver
         // signature; since mono-service did that check as part of the CALL operation itself
@@ -155,5 +161,12 @@ public class FrameRunner {
         nominalUsed -= (selfDestructRefund + frame.getGasRefund());
         final var maxRefundPercent = contractsConfigOf(frame).maxRefundPercentOfGasLimit();
         return Math.max(nominalUsed, gasLimit - gasLimit * maxRefundPercent / 100);
+    }
+
+    // potentially other cases could be handled here if necessary
+    private void propagateHaltException(MessageFrame frame, ExceptionalHaltReason haltReason) {
+        if (haltReason.equals(INSUFFICIENT_CHILD_RECORDS)) {
+            setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
+        }
     }
 }

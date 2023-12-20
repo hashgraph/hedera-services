@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.stats.signing.algorithms;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import java.util.Objects;
 
 /**
  * An extended signature which provides both the raw/encoded signature and its coordinate pair (if the signature was
@@ -68,9 +68,11 @@ public final class ExtendedSignature {
      * 		the raw or encoded R coordinate.
      * @param s
      * 		the raw of encoded S coordinate.
+     *
+     * @throws NullPointerException in case {@code signature} parameter is {@code null}
      */
     public ExtendedSignature(final byte[] signature, final byte[] r, final byte[] s) {
-        throwArgNull(signature, "signature");
+        Objects.requireNonNull(signature, "signature must not be null");
 
         this.signature = signature;
         this.r = r;

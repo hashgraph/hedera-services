@@ -506,6 +506,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 recordWith().status(SUCCESS).consensusTimeImpliedByNonce(parentConsTime.get(), -1))));
     }
 
+    @HapiTest
     final HapiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
