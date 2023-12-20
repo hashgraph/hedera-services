@@ -16,9 +16,12 @@
 
 package com.hedera.services.bdd.junit;
 
+import static java.lang.String.format;
+
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -26,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.jetbrains.annotations.Nullable;
 
@@ -261,6 +265,36 @@ public abstract class HapiTestEnvBase implements HapiTestEnv {
             Files.writeString(log4j2File, updatedLogConfig, StandardOpenOption.WRITE);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    protected void executeWithElevation(final String... args) {
+        if (args == null || args.length == 0) {
+            throw new IllegalArgumentException("The args parameter must not be an empty array");
+        }
+
+        final String[] commandArgs = new String[args.length + 2];
+        commandArgs[0] = "/usr/bin/env";
+        commandArgs[1] = "sudo";
+        System.arraycopy(args, 0, commandArgs, 2, args.length);
+
+        try {
+            final ProcessBuilder pb = new ProcessBuilder();
+            pb.command(commandArgs);
+            pb.inheritIO();
+            final Process process = pb.start();
+            if (!process.waitFor(60, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Command execution timed out while waiting for completion.");
+            }
+
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException(
+                        format("Command execution failed with an error (Exit Code: %d).", process.exitValue()));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

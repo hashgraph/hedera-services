@@ -78,9 +78,9 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                 new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, scheduleId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
-                        // Block network port on node 2
+                        // Block network port on node 1
                         disconnectNode("Bob", 90),
-                        sleepFor(10_000),
+                        sleepFor(30_000),
                         newKeyNamed(SUBMIT_KEY),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(ADMIN_KEY),
@@ -104,7 +104,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         //                        waitForNodeToBecomeActive("Carol", 60)
                         )
                 .then(
-                        sleepFor(60_000),
+                        sleepFor(10_000),
                         getReceipt("creation").setNodeFrom(() -> "0.0.3").logged(),
                         getReceipt("creation").setNodeFrom(() -> "0.0.5").logged(),
                         getReceipt("creation").setNodeFrom(() -> "0.0.6").logged(),

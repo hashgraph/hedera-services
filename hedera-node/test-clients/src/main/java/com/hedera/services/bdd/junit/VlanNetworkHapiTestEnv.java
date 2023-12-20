@@ -17,8 +17,6 @@
 package com.hedera.services.bdd.junit;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class VlanNetworkHapiTestEnv extends HapiTestEnvBase {
 
@@ -55,52 +53,11 @@ public class VlanNetworkHapiTestEnv extends HapiTestEnvBase {
     }
 
     private void manipulateVlanAdapter(final int nodeId, @NonNull final String op) {
-        try {
-            final ProcessBuilder pb = new ProcessBuilder();
-            pb.command("/usr/bin/env", "sudo", "ifconfig", String.format("vlan10%d", nodeId), op);
-            pb.inheritIO();
-            final Process process = pb.start();
-            if (!process.waitFor(60, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("Command execution timed out while waiting for completion.");
-            }
-
-            if (process.exitValue() != 0) {
-                throw new IllegalStateException(
-                        String.format("Command execution failed with an error (Exit Code: %d).", process.exitValue()));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        executeWithElevation("ifconfig", String.format("vlan10%d", nodeId), op);
     }
 
     private void assignNetworkAddress(final int nodeId, @NonNull String nodeAddress) {
-        try {
-            final ProcessBuilder pb = new ProcessBuilder();
-            pb.command(
-                    "/usr/bin/env",
-                    "sudo",
-                    "ifconfig",
-                    String.format("vlan10%d", nodeId),
-                    "inet",
-                    nodeAddress,
-                    "netmask",
-                    "255.255.255.0");
-            pb.inheritIO();
-            final Process process = pb.start();
-            if (!process.waitFor(60, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("Command execution timed out while waiting for completion.");
-            }
-
-            if (process.exitValue() != 0) {
-                throw new IllegalStateException(
-                        String.format("Command execution failed with an error (Exit Code: %d).", process.exitValue()));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        executeWithElevation(
+                "ifconfig", String.format("vlan10%d", nodeId), "inet", nodeAddress, "netmask", "255.255.255.0");
     }
 }

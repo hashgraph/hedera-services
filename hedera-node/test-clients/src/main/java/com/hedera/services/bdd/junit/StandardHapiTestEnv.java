@@ -24,5 +24,4 @@ public class StandardHapiTestEnv extends HapiTestEnvBase implements HapiTestEnv 
         super();
         initialize(testName, cluster, useInProcessAlice);
     }
-
 }
