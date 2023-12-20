@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.config.sources;
@@ -38,13 +37,13 @@ class PropertyConfigSourceTest {
 
     @Test
     void testExistentPropertyConfigSource() {
-        //given
-        int ordinal = 1;        // used to determine priority of config source
+        // given
+        int ordinal = 1; // used to determine priority of config source
 
-        //when
+        // when
         PropertyConfigSource propertyConfigSource = new PropertyConfigSource(properties, ordinal);
 
-        //then
+        // then
         assertEquals(2, propertyConfigSource.getPropertyNames().size());
         assertEquals("value1", propertyConfigSource.getValue("key1"));
         assertEquals("value2", propertyConfigSource.getValue("key2"));
@@ -53,10 +52,10 @@ class PropertyConfigSourceTest {
 
     @Test
     void testPropertyConfigSourceWhenPropertyFileNotFound() {
-        //given
+        // given
         String nonExistentFile = "non-existent-file.properties";
 
-        //then
+        // then
         assertThrows(UncheckedIOException.class, () -> new PropertyConfigSource(nonExistentFile, 1));
     }
 
@@ -64,5 +63,4 @@ class PropertyConfigSourceTest {
     void tearDown() {
         properties = null;
     }
-
 }
