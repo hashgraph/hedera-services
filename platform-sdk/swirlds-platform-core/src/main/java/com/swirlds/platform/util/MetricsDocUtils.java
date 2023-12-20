@@ -22,7 +22,6 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
 import java.io.File;
@@ -32,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,14 +58,21 @@ public final class MetricsDocUtils {
      * @param globalMetrics the global {@code Metrics}
      * @param platforms     the collection of {@code SwirldsPlatform}s
      * @param configuration the {@code Configuration}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code globalMetrics}</li>
+     *       <li>{@code platforms}</li>
+     *       <li>{@code configuration}</li>
+     *     </ul>
+     *
      */
     public static void writeMetricsDocumentToFile(
             final Metrics globalMetrics,
             final Collection<SwirldsPlatform> platforms,
             final Configuration configuration) {
-        CommonUtils.throwArgNull(globalMetrics, "globalMetrics");
-        CommonUtils.throwArgNull(platforms, "platforms");
-        CommonUtils.throwArgNull(configuration, "configuration");
+        Objects.requireNonNull(globalMetrics, "globalMetrics must not be null");
+        Objects.requireNonNull(platforms, "platforms must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
 
         // Combine global metrics and platform metrics without duplicates
         final Set<Metric> combinedMetrics = new HashSet<>(globalMetrics.getAll());
@@ -92,9 +99,10 @@ public final class MetricsDocUtils {
      *
      * @param metrics a collection of {@code Metric}s
      * @return the metrics document contents
+     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     private static String generateMetricsDocContentsInTSV(final Collection<Metric> metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(metrics, "metrics must not be null");
 
         final List<Metric> sortedMetrics = metrics.stream()
                 .sorted((x, y) -> x.getIdentifier().compareToIgnoreCase(y.getIdentifier()))

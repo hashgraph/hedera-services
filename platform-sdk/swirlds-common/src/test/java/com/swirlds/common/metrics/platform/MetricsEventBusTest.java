@@ -54,7 +54,7 @@ class MetricsEventBusTest {
 
     @Test
     void testConstructorWithNull() {
-        assertThatThrownBy(() -> new MetricsEventBus<>(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new MetricsEventBus<>(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -90,9 +90,8 @@ class MetricsEventBusTest {
         final MetricsEventBus<Integer> eventBus = new MetricsEventBus<>(executor);
 
         // then
-        assertThatThrownBy(() -> eventBus.subscribe(null, () -> Stream.of(1)))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> eventBus.subscribe(it -> {}, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> eventBus.subscribe(null, () -> Stream.of(1))).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> eventBus.subscribe(it -> {}, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> eventBus.subscribe(it -> {}, () -> null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -125,6 +124,6 @@ class MetricsEventBusTest {
         final MetricsEventBus<Integer> eventBus = new MetricsEventBus<>(executor);
 
         // then
-        assertThatThrownBy(() -> eventBus.submit(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> eventBus.submit(null)).isInstanceOf(NullPointerException.class);
     }
 }

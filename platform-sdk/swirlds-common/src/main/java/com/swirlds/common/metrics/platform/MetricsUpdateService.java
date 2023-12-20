@@ -20,8 +20,8 @@ import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -59,11 +59,14 @@ class MetricsUpdateService implements Startable {
 
     private ScheduledFuture<?> future;
 
+    /**
+     * @throws NullPointerException in case {@code executor} parameter is {@code null}
+     */
     MetricsUpdateService(final ScheduledExecutorService executor, final long period, final TimeUnit unit) {
-        this.executor = CommonUtils.throwArgNull(executor, "executor");
+        this.executor = Objects.requireNonNull(executor, "executor must not be null");
         this.period = period;
         this.unit = unit;
-        state = new AtomicReference<>(State.INIT);
+        this.state = new AtomicReference<>(State.INIT);
     }
 
     /**
@@ -75,7 +78,7 @@ class MetricsUpdateService implements Startable {
      * 		if {@code updater} is {@code null}
      */
     public void addUpdater(final Runnable updater) {
-        CommonUtils.throwArgNull(updater, "updater");
+        Objects.requireNonNull(updater, "updater must not be null");
         updaters.add(updater);
     }
 
@@ -88,7 +91,7 @@ class MetricsUpdateService implements Startable {
      * 		if {@code updater} is {@code null}
      */
     public void removeUpdater(final Runnable updater) {
-        CommonUtils.throwArgNull(updater, "updater");
+        Objects.requireNonNull(updater, "updater must not be null");
         updaters.remove(updater);
     }
 

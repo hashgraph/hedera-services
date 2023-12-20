@@ -48,7 +48,7 @@ public class TypedIteratorTest {
     @Test
     @DisplayName("TypedListIterator - null list")
     void testNullArray() {
-        assertThrows(IllegalArgumentException.class, () -> new TypedIterator<>(null));
+        assertThrows(NullPointerException.class, () -> new TypedIterator<>(null));
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)

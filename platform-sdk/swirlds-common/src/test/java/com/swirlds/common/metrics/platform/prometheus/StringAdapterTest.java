@@ -112,15 +112,11 @@ class StringAdapterTest {
                         .withDescription(DESCRIPTION));
 
         // then
-        assertThatThrownBy(() -> new StringAdapter(null, metric, GLOBAL)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(null, metric, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(registry, null, GLOBAL))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(registry, null, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StringAdapter(registry, metric, null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new StringAdapter(null, metric, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(null, metric, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(registry, null, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(registry, null, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StringAdapter(registry, metric, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -165,7 +161,7 @@ class StringAdapterTest {
         final NodeId nodeId = new NodeId(1L);
 
         // then
-        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(NullPointerException.class);
     }
 }

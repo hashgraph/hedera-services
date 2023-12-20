@@ -20,7 +20,6 @@ import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
@@ -29,6 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
+import java.util.Objects;
 
 /**
  * Adapter that synchronizes a {@link com.swirlds.common.metrics.Counter}
@@ -48,12 +48,16 @@ public class CounterAdapter extends AbstractMetricAdapter {
      * @param adapterType
      * 		Scope of the {@link com.swirlds.common.metrics.Counter},
      * 		either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
-     * @throws IllegalArgumentException if one of the parameters is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code registry}</li>
+     *       <li>{@code metric}</li>
+     *     </ul>
      */
     public CounterAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
-        throwArgNull(registry, "registry");
-        throwArgNull(metric, "metric");
+        Objects.requireNonNull(registry, "registry must not be null");
+        Objects.requireNonNull(metric, "metric must not be null");
         final Counter.Builder builder = new Counter.Builder()
                 .subsystem(fix(metric.getCategory()))
                 .name(fix(metric.getName()))
@@ -71,13 +75,13 @@ public class CounterAdapter extends AbstractMetricAdapter {
      */
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
-        throwArgNull(snapshot, "snapshot");
+        Objects.requireNonNull(snapshot, "snapshot must not be null");
         final double newValue = ((Number) snapshot.getValue()).doubleValue();
         if (adapterType == GLOBAL) {
             final double oldValue = counter.get();
             counter.inc(newValue - oldValue);
         } else {
-            throwArgNull(nodeId, "nodeId");
+            Objects.requireNonNull(nodeId, "nodeId must not be null");
             final Counter.Child child = counter.labels(nodeId.toString());
             final double oldValue = child.get();
             child.inc(newValue - oldValue);

@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import com.swirlds.common.utility.CommonUtils;
+import java.util.Objects;
 
 /**
  * Converter that ensures a label satisfies Prometheus requirements
@@ -32,10 +32,10 @@ public final class NameConverter {
      * @param label
      * 		The input-{@link String}
      * @return The resulting {@link String}
-     * @throws IllegalArgumentException if {@code label} is {@code null}
+     * @throws NullPointerException in case {@code label} parameter is {@code null}
      */
     public static String fix(final String label) {
-        CommonUtils.throwArgNull(label, "label");
+        Objects.requireNonNull(label, "label must not be null");
         return label.strip()
                 .replace('.', ':')
                 .replace('-', '_')

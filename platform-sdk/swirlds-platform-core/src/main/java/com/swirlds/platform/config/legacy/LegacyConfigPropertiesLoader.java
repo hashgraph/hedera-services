@@ -68,8 +68,12 @@ public final class LegacyConfigPropertiesLoader {
 
     private LegacyConfigPropertiesLoader() {}
 
+    /**
+     * @throws NullPointerException in case {@code configPath} parameter is {@code null}
+     * @throws ConfigurationException in case {@code configPath} cannot be found in the system
+     */
     public static LegacyConfigProperties loadConfigFile(@NonNull final Path configPath) throws ConfigurationException {
-        CommonUtils.throwArgNull(configPath, "configPath");
+        Objects.requireNonNull(configPath, "configPath must not be null");
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         if (!Files.exists(configPath)) {

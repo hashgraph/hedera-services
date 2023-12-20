@@ -31,7 +31,6 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.state.signed.SignedState;
 import java.io.File;
@@ -42,6 +41,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -151,8 +151,11 @@ public final class RuntimeMetrics {
         }
     }
 
+    /**
+     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
+     */
     private RuntimeMetrics(final Metrics metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(metrics, "metrics must not be null");
         this.osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         this.thbean = ManagementFactory.getThreadMXBean();
 
