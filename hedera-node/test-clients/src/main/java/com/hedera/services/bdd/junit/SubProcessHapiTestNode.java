@@ -264,10 +264,10 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                     "sudo",
                     "bash",
                     "-c",
-                    "iptables -A OUTPUT -p tcp -d " + nodeAddress + " --dport " + format("%d:%d", grpcPort, grpcPort)
-                            + " -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT; iptables -A INPUT -p tcp -d "
+                    "iptables -A OUTPUT -p tcp -s " + nodeAddress + " --sport " + format("%d:%d", grpcPort, grpcPort)
+                            + " -m conntrack --ctstate ESTABLISHED -j ACCEPT; iptables -A INPUT -p tcp -d "
                             + nodeAddress + " --dport " + format("%d:%d", grpcPort, grpcPort)
-                            + " -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT; iptables -A INPUT -p tcp -s "
+                            + " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -A INPUT -p tcp -d "
                             + nodeAddress + " -j DROP; iptables -A OUTPUT -p tcp -s " + nodeAddress + " -j DROP;"
                 };
             }
