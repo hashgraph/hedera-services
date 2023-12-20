@@ -25,7 +25,7 @@ public class LinuxNetworkHapiTestEnv extends HapiTestEnvBase {
 
     private static final PortAllocator ADAPTER_GRPC_PORT_ALLOC = nodeId -> FIRST_GRPC_PORT + (nodeId * 2);
 
-    private static final PortAllocator ADAPTER_GOSSIP_PORT_ALLOC = nodeId -> 50111;
+    private static final PortAllocator ADAPTER_GOSSIP_PORT_ALLOC = nodeId -> FIRST_GOSSIP_PORT + nodeId;
 
     public LinuxNetworkHapiTestEnv(
             @NonNull final String testName, final boolean cluster, final boolean useInProcessAlice) {
