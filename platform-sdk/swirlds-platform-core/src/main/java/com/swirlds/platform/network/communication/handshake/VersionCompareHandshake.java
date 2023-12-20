@@ -19,12 +19,12 @@ package com.swirlds.platform.network.communication.handshake;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.system.SoftwareVersion;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,9 +50,10 @@ public class VersionCompareHandshake implements ProtocolRunnable {
      * @param throwOnMismatch
      * 		if set to true, the protocol will throw an exception on a version mismatch. if set to false, it will log an
      * 		error and continue
+     * @throws NullPointerException in case {@code version} parameter is {@code null}
      */
     public VersionCompareHandshake(final SoftwareVersion version, final boolean throwOnMismatch) {
-        CommonUtils.throwArgNull(version, "version");
+        Objects.requireNonNull(version, "version must not be null");
         this.version = version;
         this.throwOnMismatch = throwOnMismatch;
     }
