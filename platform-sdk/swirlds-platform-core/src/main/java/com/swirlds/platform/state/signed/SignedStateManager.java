@@ -24,11 +24,13 @@ import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -121,6 +123,12 @@ public class SignedStateManager {
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
     }
 
+    public synchronized void addState(@NonNull final ReservedSignedState reservedSignedState) {
+        try(reservedSignedState){
+            addState(reservedSignedState.get());
+        }
+    }
+
     /**
      * Add a state. State may be ignored if it is too old.
      *
@@ -164,6 +172,18 @@ public class SignedStateManager {
         }
     }
 
+    public synchronized void handlePreconsensusScopedSystemTransactions(
+            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+        for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
+            handlePreconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
+        }
+    }
+
+    public synchronized void handlePreconsensusScopedSystemTransaction(
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
+        handlePreconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
+    }
+
     /**
      * An observer of pre-consensus state signatures.
      *
@@ -196,6 +216,18 @@ public class SignedStateManager {
 
             addSignature(reservedState.get(), signerId, signature);
         }
+    }
+
+    public synchronized void handlePostconsensusScopedSystemTransactions(
+            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+        for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
+            handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
+        }
+    }
+
+    public synchronized void handlePostconsensusScopedSystemTransaction(
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
+        handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
     }
 
     /**
