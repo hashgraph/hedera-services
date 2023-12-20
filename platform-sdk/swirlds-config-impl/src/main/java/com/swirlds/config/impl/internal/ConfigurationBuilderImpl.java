@@ -23,6 +23,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -88,6 +89,24 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     }
 
     @NonNull
+    private static <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
+        Objects.requireNonNull(converterClass, "converterClass must not be null");
+        return Arrays.stream(converterClass.getGenericInterfaces())
+                .filter(ParameterizedType.class::isInstance)
+                .map(ParameterizedType.class::cast)
+                .filter(parameterizedType -> Objects.equals(ConfigConverter.class, parameterizedType.getRawType()))
+                .map(ParameterizedType::getActualTypeArguments)
+                .findAny()
+                .map(typeArguments -> {
+                    if (typeArguments.length != 1) {
+                        throw new IllegalStateException("Can not extract generic type for converter " + converterClass);
+                    }
+                    return (Class<T>) typeArguments[0];
+                })
+                .orElseGet(() -> getConverterType((Class<C>) converterClass.getSuperclass()));
+    }
+
+    @NonNull
     @Override
     public Configuration build() {
         initializationLock.lock();
@@ -144,7 +163,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         if (initialized.get()) {
             throw new IllegalStateException("Converters can not be added to initialized config");
         }
-        converterService.addConverter(converter);
+        converterService.addConverter(getConverterType(converter.getClass()), converter);
     }
 
     @NonNull

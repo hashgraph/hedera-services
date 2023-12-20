@@ -38,7 +38,6 @@ import com.swirlds.config.impl.converters.ZonedDateTimeConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
-import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -47,7 +46,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,24 +96,6 @@ class ConverterService implements ConfigLifecycle {
         this.converters = new ConcurrentHashMap<>();
     }
 
-    @NonNull
-    private <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
-        Objects.requireNonNull(converterClass, "converterClass must not be null");
-        return Arrays.stream(converterClass.getGenericInterfaces())
-                .filter(ParameterizedType.class::isInstance)
-                .map(ParameterizedType.class::cast)
-                .filter(parameterizedType -> Objects.equals(ConfigConverter.class, parameterizedType.getRawType()))
-                .map(ParameterizedType::getActualTypeArguments)
-                .findAny()
-                .map(typeArguments -> {
-                    if (typeArguments.length != 1) {
-                        throw new IllegalStateException("Can not extract generic type for converter " + converterClass);
-                    }
-                    return (Class<T>) typeArguments[0];
-                })
-                .orElseGet(() -> getConverterType((Class<C>) converterClass.getSuperclass()));
-    }
-
     @Nullable
     <T> T convert(@Nullable final String value, @NonNull final Class<T> targetClass) {
         throwIfNotInitialized();
@@ -138,10 +118,7 @@ class ConverterService implements ConfigLifecycle {
         }
     }
 
-    <T> void addConverter(@NonNull final ConfigConverter<T> converter) {
-        throwIfInitialized();
-        Objects.requireNonNull(converter, "converter must not be null");
-        final Class<T> converterType = getConverterType(converter.getClass());
+    <T> void addConverter(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         add(converterType, converter);
     }
 

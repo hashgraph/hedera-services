@@ -61,7 +61,7 @@ class ConverterServiceTest {
         // given
         ConverterService cs = new ConverterService();
         FakeEnumConverter converter = new FakeEnumConverter();
-        cs.addConverter(converter); // creates a new enumConverter for NumberAndValueEnum
+        cs.addConverter(NumberAndValueEnum.class, converter); // creates a new enumConverter for NumberAndValueEnum
         cs.init();
 
         // then:
