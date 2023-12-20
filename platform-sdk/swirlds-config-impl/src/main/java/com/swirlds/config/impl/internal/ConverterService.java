@@ -24,6 +24,7 @@ import com.swirlds.config.impl.converters.ByteConverter;
 import com.swirlds.config.impl.converters.ChronoUnitConverter;
 import com.swirlds.config.impl.converters.DoubleConverter;
 import com.swirlds.config.impl.converters.DurationConverter;
+import com.swirlds.config.impl.converters.EnumConverter;
 import com.swirlds.config.impl.converters.FileConverter;
 import com.swirlds.config.impl.converters.FloatConverter;
 import com.swirlds.config.impl.converters.IntegerConverter;
@@ -47,9 +48,9 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 class ConverterService implements ConfigLifecycle {
     private final Map<Class<?>, ConfigConverter<?>> converters;
@@ -94,7 +95,7 @@ class ConverterService implements ConfigLifecycle {
     private static final ConfigConverter<ChronoUnit> CHRONO_UNIT_CONVERTER = new ChronoUnitConverter();
 
     ConverterService() {
-        this.converters = new HashMap<>();
+        this.converters = new ConcurrentHashMap<>();
     }
 
     @NonNull
@@ -115,7 +116,6 @@ class ConverterService implements ConfigLifecycle {
                 .orElseGet(() -> getConverterType((Class<C>) converterClass.getSuperclass()));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Nullable
     <T> T convert(@Nullable final String value, @NonNull final Class<T> targetClass) {
         throwIfNotInitialized();
@@ -126,20 +126,7 @@ class ConverterService implements ConfigLifecycle {
         if (Objects.equals(targetClass, String.class)) {
             return (T) value;
         }
-        final ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(targetClass);
-
-        if (converter == null && targetClass.isEnum()) {
-            // FUTURE WORK: once logging is added to this module, log a warning here
-            // ("No converter defined for type '" + targetClass + "'. Converting using backup enum converter.");
-            try {
-                return (T) Enum.valueOf((Class<Enum>) targetClass, value);
-            } catch (final IllegalArgumentException e) {
-                throw new IllegalArgumentException(
-                        "Can not convert value '%s' of Enum '%s' by default. Please add a custom config converter."
-                                .formatted(value, targetClass),
-                        e);
-            }
-        }
+        final ConfigConverter<T> converter = getOrAdConverter(targetClass);
 
         if (converter == null) {
             throw new IllegalArgumentException("No converter defined for type '" + targetClass + "'");
@@ -216,11 +203,30 @@ class ConverterService implements ConfigLifecycle {
         return initialized;
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     <T> ConfigConverter<T> getConverterForType(@NonNull final Class<T> valueType) {
         throwIfNotInitialized();
         Objects.requireNonNull(valueType, "valueType must not be null");
-        return (ConfigConverter<T>) converters.get(valueType);
+        return getOrAdConverter(valueType);
+    }
+
+    /**
+     * @param valueType type to convert to
+     * @return
+     *     <ul>
+     *       <li>the previously configured {@code ConfigConverter} if exist for {@code valueType}</li>
+     *       <li>a new instance of {@code EnumConverter} if {@code valueType} is an enum
+     *       and no {@code ConfigConverter} was found</li>
+     *       <li>{@code null} otherwise</li>
+     *     </ul>
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private <T> ConfigConverter<T> getOrAdConverter(@NonNull Class<T> valueType) {
+        ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(valueType);
+
+        if (converter == null && valueType.isEnum()) {
+            return (ConfigConverter<T>) converters.computeIfAbsent(valueType, c -> new EnumConverter(c));
+        }
+        return converter;
     }
 }
