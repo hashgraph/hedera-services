@@ -16,4 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
+/**
+ * Trigger to indicate that the platform is done streaming events from the PCES
+ */
 public class DoneStreamingPcesTrigger {}
