@@ -29,7 +29,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
@@ -39,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHan
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -84,9 +82,6 @@ class EthereumTransactionHandlerTest {
     private EthereumTransactionRecordBuilder recordBuilder;
 
     @Mock
-    private ContractCreateRecordBuilder childContractCreateRecordBuilder;
-
-    @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 
     private EthereumTransactionHandler subject;
@@ -124,8 +119,6 @@ class EthereumTransactionHandlerTest {
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
-        given(handleContext.addChildRecordBuilder(ContractCreateRecordBuilder.class))
-                .willReturn(childContractCreateRecordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome =
@@ -137,14 +130,6 @@ class EthereumTransactionHandlerTest {
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITHOUT_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-
-        given(childContractCreateRecordBuilder.status(SUCCESS)).willReturn(childContractCreateRecordBuilder);
-        given(childContractCreateRecordBuilder.transaction(Transaction.DEFAULT))
-                .willReturn(childContractCreateRecordBuilder);
-        given(childContractCreateRecordBuilder.contractID(CALLED_CONTRACT_ID))
-                .willReturn(childContractCreateRecordBuilder);
-        given(childContractCreateRecordBuilder.contractCreateResult(expectedResult))
-                .willReturn(childContractCreateRecordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }

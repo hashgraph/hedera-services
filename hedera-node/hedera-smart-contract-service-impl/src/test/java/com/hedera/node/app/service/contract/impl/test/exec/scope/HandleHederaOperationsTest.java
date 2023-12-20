@@ -399,6 +399,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(OK);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(context.getFunctionality()).willReturn(HederaFunctionality.CONTRACT_CREATE);
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
@@ -436,6 +437,7 @@ class HandleHederaOperationsTest {
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        given(context.getFunctionality()).willReturn(HederaFunctionality.CONTRACT_CREATE);
 
         assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, CANONICAL_ALIAS));
     }
