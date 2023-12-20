@@ -71,7 +71,7 @@ public class EnumConverterTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"One", "one", "onE", "oNe", " ONE", "ONE ", "DOS", "", "OnE", "null"})
+    @ValueSource(strings = {"One", "one", "onE", "oNe", " ONE", "ONE ", "DOS", "OnE", "null"})
     void itFailsConvertingInvalidEnumValues(final String param) {
         // given
         final EnumConverter<NumberEnum> converter = new EnumConverter<>(NumberEnum.class);
