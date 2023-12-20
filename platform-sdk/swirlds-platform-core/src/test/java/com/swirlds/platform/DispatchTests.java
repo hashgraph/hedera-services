@@ -290,32 +290,30 @@ class DispatchTests {
         final DispatchBuilder builder = new DispatchBuilder(config);
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(null, null, null),
                 "null arguments not allowed");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(DispatchTests.class, TestDispatchOne.class, null),
                 "null arguments not allowed");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(TestDispatchOne.class, null, (TestDispatchOne) x -> {}),
                 "null arguments not allowed");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(DispatchTests.class, null, (TestDispatchOne) x -> {}),
                 "null arguments not allowed");
-        assertThrows(
-                IllegalArgumentException.class, () -> builder.registerObservers(null), "null arguments not allowed");
+        assertThrows(NullPointerException.class, () -> builder.registerObservers(null), "null arguments not allowed");
 
         builder.start();
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.getDispatcher(null, TestDispatchOne.class),
                 "null arguments not allowed");
-        assertThrows(
-                IllegalArgumentException.class, () -> builder.getDispatcher(this, null), "null arguments not allowed");
+        assertThrows(NullPointerException.class, () -> builder.getDispatcher(this, null), "null arguments not allowed");
     }
 
     @Test
