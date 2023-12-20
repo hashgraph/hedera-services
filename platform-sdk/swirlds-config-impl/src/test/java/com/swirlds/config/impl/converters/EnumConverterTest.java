@@ -80,7 +80,8 @@ public class EnumConverterTest {
     }
 
     private enum NumberEnum {
-        ONE
+        ONE,
+        TWO
     }
 
     private enum SpecialCharacterEnum {
