@@ -63,7 +63,7 @@ class TaskSchedulerTransformersTests {
         final BindableInputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
 
         final OutputWire<Integer> splitter =
-                taskSchedulerA.getOutputWire().buildSplitter("test splitter", "test splitter input");
+                taskSchedulerA.getOutputWire().buildSplitter("testSplitter", "test splitter input");
         splitter.solderTo(wireBIn);
         splitter.solderTo(wireCIn);
         taskSchedulerA.getOutputWire().solderTo(wireDIn);
