@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -63,6 +64,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -1515,9 +1518,15 @@ public class ContractCallSuite extends HapiSuite {
                                         "del",
                                         asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
                                 .gas(1_000_000L)))
-                .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
-                        .gas(350_000L)
-                        .hasKnownStatus(CONTRACT_DELETED));
+                .then(
+                        ifHapiTest(contractCall(
+                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
+                                .gas(350_000L)
+                                .hasKnownStatus(CONTRACT_DELETED)),
+                        ifNotHapiTest(contractCall(
+                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
+                                .gas(350_000L)
+                                .hasPrecheck(CONTRACT_DELETED)));
     }
 
     @HapiTest
@@ -1538,7 +1547,7 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 
-        return defaultHapiSpec("InsufficientFee")
+        return onlyDefaultHapiSpec("InsufficientFee")
                 .given(cryptoCreate("accountToPay"), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(contractCall(contract, "create")
@@ -1572,25 +1581,26 @@ public class ContractCallSuite extends HapiSuite {
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
-    // This test for modularization
+    @HapiTest
     HapiSpec invalidContractDoesNotExist() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
         return defaultHapiSpec("invalidContractDoesNotExist")
-                .given(cryptoCreate("invalid")
-                        .balance(ONE_MILLION_HBARS)
-                        .payingWith(GENESIS)
-                        .exposingCreatedIdTo(accountID::set))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCallWithFunctionAbi("0.0.100000001", function)
+                .given()
+                .when(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                ifHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
+                                        .hasKnownStatus(INVALID_CONTRACT_ID)
+                                        .via("contractDoesNotExist")))),
+                        ifNotHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
                                 .hasPrecheck(INVALID_CONTRACT_ID)
-                                .via("contractIsAccount"))))
-                .then(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                                .via("contractDoesNotExist")))
+                .then(ifNotHapiTest(getTxnRecord("contractDoesNotExist").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
-    // This test disabled for modularization service
+    @HapiTest
     HapiSpec invalidContractIsAnAccount() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
@@ -1600,12 +1610,20 @@ public class ContractCallSuite extends HapiSuite {
                         .balance(ONE_MILLION_HBARS)
                         .payingWith(GENESIS)
                         .exposingCreatedIdTo(accountID::set))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCallWithFunctionAbi("0.0." + accountID.get().getAccountNum(), function)
-                                .hasPrecheck(INVALID_CONTRACT_ID)
-                                .via("contractIsAccount"))))
-                .then(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .when(
+                        ifHapiTest(withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallWithFunctionAbi(
+                                                "0.0." + accountID.get().getAccountNum(), function)
+                                        .hasKnownStatus(SUCCESS)
+                                        .via("contractIsAccount")))),
+                        ifNotHapiTest(withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallWithFunctionAbi(
+                                                "0.0." + accountID.get().getAccountNum(), function)
+                                        .hasPrecheck(INVALID_CONTRACT_ID)
+                                        .via("contractIsAccount")))))
+                .then(ifNotHapiTest(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
     // This test disabled for modularization service
