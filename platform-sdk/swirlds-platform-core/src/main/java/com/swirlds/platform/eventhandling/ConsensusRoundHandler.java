@@ -368,6 +368,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         consensusTimingStat.setTimePoint(1);
 
         propagateConsensusData(round);
+        updatePlatformState(round);
 
         if (round.getEventCount() > 0) {
             consensusHandlingMetrics.recordConsensusTime(round.getConsensusTimestamp());
@@ -400,8 +401,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         // . For an accurate stat on how much time it takes to create a signed state, refer to
         // newSignedStateCycleTiming in Statistics
         consensusTimingStat.setTimePoint(5);
-
-        updatePlatformState(round);
+        updateRunningEventHash();
 
         consensusTimingStat.setTimePoint(6);
 
@@ -440,22 +440,29 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     }
 
     /**
-     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all of its needed data.
+     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all of its needed data for this
+     * round, with the exception of the running event hash. Wait until transactions are handled before updating this.
+     * This makes it less likely that we will have to wait for the hash to be computed.
      */
-    private void updatePlatformState(final ConsensusRound round) throws InterruptedException {
-        final Hash runningHash = eventsConsRunningHash.getFutureHash().getAndRethrow();
-
+    private void updatePlatformState(final ConsensusRound round) {
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
 
-        // TODO ensure things are set prior to handling of transactions
-
         platformState.setRound(round.getRoundNum());
-        platformState.setHashEventsCons(runningHash);
         platformState.setConsensusTimestamp(round.getConsensusTimestamp());
         platformState.setCreationSoftwareVersion(softwareVersion);
         platformState.setRoundsNonAncient(roundsNonAncient);
         platformState.setSnapshot(round.getSnapshot());
+    }
+
+    /**
+     * Update the running event hash in the platform state.
+     */
+    private void updateRunningEventHash() throws InterruptedException {
+        final PlatformState platformState =
+                swirldStateManager.getConsensusState().getPlatformState();
+        final Hash runningHash = eventsConsRunningHash.getFutureHash().getAndRethrow();
+        platformState.setHashEventsCons(runningHash);
     }
 
     private void createSignedState() throws InterruptedException {
