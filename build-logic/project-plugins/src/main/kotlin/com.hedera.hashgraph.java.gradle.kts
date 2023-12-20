@@ -35,6 +35,9 @@ version =
     providers.fileContents(rootProject.layout.projectDirectory.versionTxt()).asText.get().trim()
 
 java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
         vendor.set(JvmVendorSpec.ADOPTIUM)

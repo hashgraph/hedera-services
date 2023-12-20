@@ -22,7 +22,10 @@ pluginManagement {
     }
 }
 
-plugins { id("com.gradle.enterprise").version("3.13.1") }
+plugins {
+    id("com.gradle.enterprise")
+    id("org.gradle.toolchains.foojay-resolver-convention")
+}
 
 // Enable Gradle Build Scan
 gradleEnterprise {

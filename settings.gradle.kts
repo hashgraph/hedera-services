@@ -16,11 +16,7 @@
 
 pluginManagement { includeBuild("build-logic") }
 
-plugins {
-    id("com.hedera.hashgraph.settings")
-    id("org.gradle.toolchains.foojay-resolver-convention") version("0.4.0")
-
-}
+plugins { id("com.hedera.hashgraph.settings") }
 
 // "BOM" with versions of 3rd party dependencies
 include("hedera-dependency-versions")
