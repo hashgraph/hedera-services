@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -1539,7 +1538,7 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 
-        return onlyDefaultHapiSpec("InsufficientFee")
+        return defaultHapiSpec("InsufficientFee")
                 .given(cryptoCreate("accountToPay"), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(contractCall(contract, "create")

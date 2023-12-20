@@ -716,8 +716,6 @@ class ContractCallTransitionLogicTest {
     void acceptsOkSyntax() {
         givenValidTxnCtx();
         given(properties.maxGasPerSec()).willReturn(gas + 1);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-                .willReturn(contractAccount);
         contractAccount.setSmartContract(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
@@ -725,7 +723,7 @@ class ContractCallTransitionLogicTest {
 
     @Test
     void failsIfNotSmartContractSyntax() {
-        givenValidTxnCtx();
+        givenValidTxnCtxWithNoAmount();
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);
@@ -791,6 +789,15 @@ class ContractCallTransitionLogicTest {
                 .setContractCall(ContractCallTransactionBody.newBuilder()
                         .setGas(gas)
                         .setAmount(sent)
+                        .setContractID(target));
+        contractCallTxn = op.build();
+    }
+
+    private void givenValidTxnCtxWithNoAmount() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
                         .setContractID(target));
         contractCallTxn = op.build();
     }

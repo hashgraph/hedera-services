@@ -243,11 +243,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         // Missing entity num is a valid target for lazy create.  Tokens are also valid targets
         final var target = targetOf(op);
         if (!target.equals(EntityNum.MISSING_NUM)
-                && !entityAccess.isTokenAccount(target.toId().asEvmAddress())) {
+                && !entityAccess.isTokenAccount(target.toId().asEvmAddress())
+                && op.getAmount() == 0) {
             try {
                 final var receiver = accountStore.loadContract(target.toId());
-                validateTrue(receiver != null || op.getAmount() > 0, INVALID_CONTRACT_ID);
-                validateTrue(receiver.isSmartContract(), INVALID_CONTRACT_ID);
+                validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
             } catch (InvalidTransactionException e) {
                 return e.getResponseCode();
             }
