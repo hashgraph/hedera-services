@@ -900,10 +900,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * @return The removed value. May return null if there was no value to remove or if the value was null.
      */
     public V remove(final K key) {
-        assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         throwIfImmutable();
         Objects.requireNonNull(key);
-
+        assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         try {
             // Verify whether the current leaf exists. If not, we can just return null.
             VirtualLeafRecord<K, V> leafToDelete = records.findLeafRecord(key, true);
