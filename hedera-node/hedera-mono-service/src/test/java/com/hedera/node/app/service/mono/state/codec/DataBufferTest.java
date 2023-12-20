@@ -21,16 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 class DataBufferTest {
 
@@ -111,9 +103,12 @@ class DataBufferTest {
         subject.writeFloat(17.0f);
         subject.writeDouble(18.0);
 
-        assertArrayEquals(new byte[] {
-            12, 1, 2, 3, 4, 5, 2, 3, 4, 42, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 16, 65, -120, 0, 0, 64, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        }, buffer.array());
+        assertArrayEquals(
+                new byte[] {
+                    12, 1, 2, 3, 4, 5, 2, 3, 4, 42, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 16, 65, -120, 0, 0, 64, 50, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                },
+                buffer.array());
 
         buffer.rewind();
         assertEquals(12, buffer.get());
