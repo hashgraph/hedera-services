@@ -65,21 +65,6 @@ public final class SwirldStateManagerUtils {
     }
 
     /**
-     * Determines if a {@code timestamp} is in a freeze period according to the provided state.
-     *
-     * @param timestamp      the timestamp to check
-     * @param consensusState the state that contains the freeze periods
-     * @return true is the {@code timestamp} is in a freeze period
-     */
-    public static boolean isInFreezePeriod(final Instant timestamp, final State consensusState) {
-        final PlatformState platformState = consensusState.getPlatformState();
-        return isInFreezePeriod(
-                platformState.getConsensusTimestamp(),
-                platformState.getFreezeTime(),
-                platformState.getLastFrozenTime());
-    }
-
-    /**
      * Determines if a {@code timestamp} is in a freeze period according to the provided timestamps.
      *
      * @param consensusTime  the consensus time to check

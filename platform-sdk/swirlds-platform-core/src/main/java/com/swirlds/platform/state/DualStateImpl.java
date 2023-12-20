@@ -133,24 +133,4 @@ public class DualStateImpl extends PartialMerkleLeaf implements MerkleLeaf {
     public DualStateImpl copy() {
         return new DualStateImpl(this);
     }
-
-    // TODO move this elsewhere
-
-    //    /**
-    //     * {@inheritDoc}
-    //     */
-    //    @Override
-    //    public boolean isInFreezePeriod(Instant consensusTime) {
-    //        // if freezeTime is not set, or consensusTime is before freezeTime, we are not in a freeze period
-    //        // if lastFrozenTime is equal to or after freezeTime, which means the nodes have been frozen once at/after
-    // the
-    //        // freezeTime, we are not in a freeze period
-    //        if (freezeTime == null || consensusTime.isBefore(freezeTime)) {
-    //            return false;
-    //        }
-    //        // Now we should check whether the nodes have been frozen at the freezeTime.
-    //        // when consensusTime is equal to or after freezeTime,
-    //        // and lastFrozenTime is before freezeTime, we are in a freeze period.
-    //        return lastFrozenTime == null || lastFrozenTime.isBefore(freezeTime);
-    //    }
 }
