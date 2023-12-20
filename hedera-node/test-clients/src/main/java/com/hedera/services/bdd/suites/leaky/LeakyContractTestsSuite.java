@@ -2927,7 +2927,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var canonicalTxn = "canonical";
 
         return propertyPreservingHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
-                .preserving(CHAIN_ID_PROP)
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(CHAIN_ID_PROP, "298"),
                         uploadDefaultFeeSchedules(GENESIS),
