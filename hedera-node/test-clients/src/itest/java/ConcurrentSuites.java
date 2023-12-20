@@ -79,7 +79,6 @@ import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
-import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
@@ -125,7 +124,6 @@ public class ConcurrentSuites {
             SubmitMessageSuite::new,
             ChunkingSuite::new,
             CryptoTransferSuite::new,
-            CannotDeleteSystemEntitiesSuite::new,
             CryptoUpdateSuite::new,
             SelfDestructSuite::new,
             // contract.hapi

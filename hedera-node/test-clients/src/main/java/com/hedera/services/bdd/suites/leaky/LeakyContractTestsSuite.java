@@ -161,6 +161,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRU
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
+import static com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite.depositAmount;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
@@ -350,7 +351,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 someErc721OwnerOfScenariosPass(),
                 someErc721BalanceOfScenariosPass(),
                 callToNonExistingContractFailsGracefully(),
-                getErc20TokenNameExceedingLimits());
+                getErc20TokenNameExceedingLimits(),
+                relayerFeeAsExpectedIfSenderCoversGas());
     }
 
     @SuppressWarnings("java:S5960")
@@ -2918,6 +2920,41 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 .aliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                 .getAlias()
                                                                 .toStringUtf8())))))));
+    }
+
+    @HapiTest
+    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
+        final var canonicalTxn = "canonical";
+
+        return propertyPreservingHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
+                .preserving(CHAIN_ID_PROP)
+                .given(
+                        overriding(CHAIN_ID_PROP, "298"),
+                        uploadDefaultFeeSchedules(GENESIS),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .when(
+                        // The cost to the relayer to transmit a simple call with sufficient gas
+                        // allowance is ≈ $0.0001
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via(canonicalTxn)
+                                .nonce(0)
+                                .gasPrice(100L)
+                                .maxFeePerGas(100L)
+                                .maxPriorityGas(2_000_000L)
+                                .gasLimit(1_000_000L)
+                                .sending(depositAmount))
+                .then(getAccountInfo(RELAYER)
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
+                        .logged());
     }
 
     @Override

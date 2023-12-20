@@ -82,7 +82,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
-    private static final long depositAmount = 20_000L;
+    public static final long depositAmount = 20_000L;
 
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
