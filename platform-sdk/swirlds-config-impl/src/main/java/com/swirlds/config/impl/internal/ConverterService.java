@@ -118,6 +118,16 @@ class ConverterService implements ConfigLifecycle {
         }
     }
 
+    /**
+     * Associates a {@code ConfigConverter} to a {@code Class} so each conversion of that type is performed by the converter.
+     *
+     * @throws IllegalStateException if {@code ConverterService} instance is already initialized
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code converterType}</li>
+     *       <li>{@code converter}</li>
+     *     </ul>
+     */
     <T> void addConverter(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         throwIfInitialized();
         Objects.requireNonNull(converterType, "converterType must not be null");
