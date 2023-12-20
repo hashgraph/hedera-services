@@ -248,7 +248,7 @@ public class HtmlGenerator {
                     let toggleClass;
 
                     for (const element of checkboxClasses) {
-                        if (element === "filter-checkbox") {
+                        if (element === "filter-checkbox" || element === "default-hidden") {
                             continue;
                         }
 
@@ -329,6 +329,10 @@ public class HtmlGenerator {
                     }
                 });
             }
+            let defaultHidden = document.getElementsByClassName("default-hidden");
+            for (const element of defaultHidden) {
+                element.click();
+            }
             """;
 
     /**
@@ -372,19 +376,23 @@ public class HtmlGenerator {
     /**
      * Create a single checkbox filter
      *
-     * @param elementName the name of the element to hide / show
+     * @param elementName    the name of the element to hide / show
+     * @param defaultHidden the initial state of the checkbox
      * @return the checkbox
      */
     @NonNull
-    private static String createCheckboxFilter(@NonNull final String elementName) {
+    private static String createCheckboxFilter(@NonNull final String elementName, final boolean defaultHidden) {
+        final HtmlTagFactory tagFactory = new HtmlTagFactory("input")
+                .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
+                .addAttribute("type", "checkbox")
+                .addAttribute("checked", "checked");
+
+        if (defaultHidden) {
+            tagFactory.addClass("default-hidden");
+        }
+
         final StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder
-                .append(new HtmlTagFactory("input")
-                        .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName))
-                        .addAttribute("type", "checkbox")
-                        .addAttribute("checked", "checked")
-                        .generateTag())
-                .append("\n");
+        stringBuilder.append(tagFactory.generateTag()).append("\n");
 
         stringBuilder
                 .append(new HtmlTagFactory("label", elementName).generateTag())
@@ -495,15 +503,21 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create the div for column filters
+     * Create the div for column filters.
      *
-     * @param filterValues the different column names to make filters for
+     * @param filterValues  the different column names to make filters for
+     * @param initialStates the initial states of the checkboxes. a value of true means default hidden
      * @return the column filter div
      */
     @NonNull
-    private static String createColumnFilterDiv(@NonNull final List<String> filterValues) {
-        final List<String> filterCheckboxes =
-                filterValues.stream().map(HtmlGenerator::createCheckboxFilter).toList();
+    private static String createColumnFilterDiv(
+            @NonNull final List<String> filterValues, @NonNull final List<Boolean> initialStates) {
+
+        final List<String> filterCheckboxes = new ArrayList<>();
+        for (int i = 0; i < filterValues.size(); i++) {
+            filterCheckboxes.add(createCheckboxFilter(filterValues.get(i), initialStates.get(i)));
+        }
+
         return createInputDiv("Columns", filterCheckboxes);
     }
 
@@ -694,16 +708,18 @@ public class HtmlGenerator {
                 .map(NodeId::toString)
                 .toList()));
 
-        filterDivBuilder.append(createColumnFilterDiv(List.of(
-                NODE_ID_COLUMN_LABEL,
-                ELAPSED_TIME_COLUMN_LABEL,
-                TIMESTAMP_COLUMN_LABEL,
-                LOG_NUMBER_COLUMN_LABEL,
-                LOG_LEVEL_COLUMN_LABEL,
-                MARKER_COLUMN_LABEL,
-                THREAD_NAME_COLUMN_LABEL,
-                CLASS_NAME_COLUMN_LABEL,
-                REMAINDER_OF_LINE_COLUMN_LABEL)));
+        filterDivBuilder.append(createColumnFilterDiv(
+                List.of(
+                        NODE_ID_COLUMN_LABEL,
+                        ELAPSED_TIME_COLUMN_LABEL,
+                        TIMESTAMP_COLUMN_LABEL,
+                        LOG_NUMBER_COLUMN_LABEL,
+                        LOG_LEVEL_COLUMN_LABEL,
+                        MARKER_COLUMN_LABEL,
+                        THREAD_NAME_COLUMN_LABEL,
+                        CLASS_NAME_COLUMN_LABEL,
+                        REMAINDER_OF_LINE_COLUMN_LABEL),
+                List.of(false, false, true, true, false, true, true, false, false)));
 
         logLevelLabels.forEach((logLevel, labelClass) -> cssFactory.addRule(
                 "." + labelClass, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
@@ -722,6 +738,12 @@ public class HtmlGenerator {
                 .append(createStandardFilterDivWithoutLabelClasses(
                         "Log Marker",
                         logLines.stream().map(LogLine::getMarker).distinct().toList()))
+                .append("\n");
+
+        filterDivBuilder
+                .append(createStandardFilterDivWithoutLabelClasses(
+                        "Class",
+                        logLines.stream().map(LogLine::getClassName).distinct().toList()))
                 .append("\n");
 
         final StringBuilder containingDivBuilder = new StringBuilder();
