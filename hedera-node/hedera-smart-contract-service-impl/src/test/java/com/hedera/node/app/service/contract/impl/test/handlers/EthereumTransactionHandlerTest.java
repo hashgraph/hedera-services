@@ -19,33 +19,48 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
+import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,13 +91,28 @@ class EthereumTransactionHandlerTest {
     private TransactionComponent.Factory factory;
 
     @Mock
-    private ContextTransactionProcessor processor;
-
-    @Mock
     private EthereumTransactionRecordBuilder recordBuilder;
 
     @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
+
+    @Mock
+    private HevmTransactionFactory hevmTransactionFactory;
+
+    @Mock
+    private HederaEvmContext hederaEvmContext;
+
+    @Mock
+    private ActionSidecarContentTracer tracer;
+
+    @Mock
+    private Supplier<HederaWorldUpdater> feesOnlyUpdater;
+
+    @Mock
+    private TransactionProcessor transactionProcessor;
+
+    @Mock
+    private ReadableAccountStore readableAccountStore;
 
     private EthereumTransactionHandler subject;
 
@@ -91,23 +121,56 @@ class EthereumTransactionHandlerTest {
         subject = new EthereumTransactionHandler(ethereumSignatures, callDataHydration, () -> factory);
     }
 
+    void setUpTransactionProcessing() {
+        final var contractsConfig = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
+        final var processors = Map.of(VERSION_038, transactionProcessor);
+
+        final var contextTransactionProcessor = new ContextTransactionProcessor(
+                HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
+                handleContext,
+                contractsConfig,
+                DEFAULT_CONFIG,
+                hederaEvmContext,
+                tracer,
+                baseProxyWorldUpdater,
+                hevmTransactionFactory,
+                feesOnlyUpdater,
+                processors);
+
+        given(component.contextTransactionProcessor()).willReturn(contextTransactionProcessor);
+        given(hevmTransactionFactory.fromHapiTransaction(handleContext.body())).willReturn(HEVM_CREATION);
+
+        final AccountID senderId = HEVM_CREATION.senderId();
+        final var parsedAccount = Account.newBuilder().accountId(senderId).build();
+
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(readableAccountStore.getAccountById(HEVM_CREATION.senderId())).willReturn(parsedAccount);
+        given(transactionProcessor.processTransaction(
+                        HEVM_CREATION,
+                        baseProxyWorldUpdater,
+                        feesOnlyUpdater,
+                        hederaEvmContext,
+                        tracer,
+                        DEFAULT_CONFIG))
+                .willReturn(SUCCESS_RESULT);
+    }
+
     @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCallWithToAddress() {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
-        given(component.contextTransactionProcessor()).willReturn(processor);
+        setUpTransactionProcessing();
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
                 expectedResult, SUCCESS_RESULT.finalStatus(), CALLED_CONTRACT_ID, SUCCESS_RESULT.gasPrice());
-        given(processor.call()).willReturn(expectedOutcome);
-
         given(recordBuilder.status(SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCallResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
+        given(recordBuilder.feeChargedToPayer(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
@@ -116,26 +179,26 @@ class EthereumTransactionHandlerTest {
     void delegatesToCreatedComponentAndExposesEthTxDataCreateWithoutToAddress() {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
-        given(component.contextTransactionProcessor()).willReturn(processor);
+        setUpTransactionProcessing();
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome =
                 new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus(), null, SUCCESS_RESULT.gasPrice());
-        given(processor.call()).willReturn(expectedOutcome);
 
         given(recordBuilder.status(SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITHOUT_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
+        given(recordBuilder.feeChargedToPayer(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test
-    void preHandleCachesTheSignaturesIfDataCanBeHydrated() {
+    void preHandleCachesTheSignaturesIfDataCanBeHydrated() throws PreCheckException {
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
                 .build();
@@ -151,7 +214,7 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
-    void preHandleIgnoresFailureToHydrate() {
+    void preHandleDoesNotIgnoreFailureToHydrate() throws PreCheckException {
         final var ethTxn =
                 EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
         final var body =
@@ -161,7 +224,7 @@ class EthereumTransactionHandlerTest {
         given(preHandleContext.configuration()).willReturn(DEFAULT_CONFIG);
         given(callDataHydration.tryToHydrate(ethTxn, fileStore, 1001L))
                 .willReturn(HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION));
-        subject.preHandle(preHandleContext);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_ETHEREUM_TRANSACTION);
         verifyNoInteractions(ethereumSignatures);
     }
 }

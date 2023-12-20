@@ -58,12 +58,14 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -72,6 +74,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -135,6 +138,15 @@ class TransactionProcessorTest {
 
     @Mock
     private CustomGasCharging gasCharging;
+
+    @Mock
+    private HederaWorldUpdater.Enhancement enhancement;
+
+    @Mock
+    private HederaNativeOperations nativeOperations;
+
+    @Mock
+    private ReadableAccountStore readableAccountStore;
 
     private TransactionProcessor subject;
 
@@ -272,6 +284,12 @@ class TransactionProcessorTest {
                         messageCallProcessor,
                         contractCreationProcessor))
                 .willReturn(SUCCESS_RESULT);
+        given(worldUpdater.enhancement()).willReturn(enhancement);
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.readableAccountStore()).willReturn(readableAccountStore);
+        final var parsedAccount =
+                Account.newBuilder().accountId(senderAccount.hederaId()).build();
+        given(readableAccountStore.getAccountById(SENDER_ID)).willReturn(parsedAccount);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
         final var result =

@@ -58,7 +58,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     private final ActionSidecarContentTracer tracer;
     private final RootProxyWorldUpdater rootProxyWorldUpdater;
-    private final HevmTransactionFactory hevmTransactionFactory;
+    public final HevmTransactionFactory hevmTransactionFactory;
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
     private final Map<HederaEvmVersion, TransactionProcessor> processors;
 
