@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
@@ -73,6 +74,7 @@ public class SigningReqsSuite extends HapiSuite {
         return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
     }
 
+    @HapiTest
     final HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewMirrorAddr = new AtomicReference<>();

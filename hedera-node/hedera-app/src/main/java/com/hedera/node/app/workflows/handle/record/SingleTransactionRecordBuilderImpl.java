@@ -176,6 +176,8 @@ public class SingleTransactionRecordBuilderImpl
     // CryptoCreate transactions as ContractCreate synthetic transactions
     private final ExternalizedRecordCustomizer customizer;
 
+    private TokenID tokenID;
+
     /**
      * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
      * and it is asked to be reverted
@@ -894,8 +896,13 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
+        this.tokenID = tokenID;
         transactionReceiptBuilder.tokenID(tokenID);
         return this;
+    }
+
+    public TokenID tokenID() {
+        return tokenID;
     }
 
     /**
