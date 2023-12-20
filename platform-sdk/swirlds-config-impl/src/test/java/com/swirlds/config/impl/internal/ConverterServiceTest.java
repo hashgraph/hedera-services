@@ -110,7 +110,7 @@ class ConverterServiceTest {
      */
     private static class FakeEnumConverter implements ConfigConverter<NumberAndValueEnum> {
         @Override
-        public NumberAndValueEnum convert(String value) throws IllegalArgumentException, NullPointerException {
+        public NumberAndValueEnum convert(String value) {
             return NumberAndValueEnum.ONE;
         }
     }
