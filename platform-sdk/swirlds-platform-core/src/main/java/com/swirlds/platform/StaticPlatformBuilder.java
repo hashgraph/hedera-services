@@ -21,13 +21,13 @@ import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThre
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
-import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.NodeStartPayload;
+import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

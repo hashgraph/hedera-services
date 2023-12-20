@@ -35,8 +35,6 @@ import static com.swirlds.platform.system.UptimeData.NO_ROUND;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -75,6 +73,7 @@ import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsum
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -113,6 +112,7 @@ import com.swirlds.platform.event.validation.SignatureValidator;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
@@ -484,7 +484,19 @@ public class SwirldsPlatform implements Platform {
                 Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
         issScratchpad.logContents();
         final SerializableLong issRound = issScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
-        final boolean ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
+
+        final boolean forceIgnorePcesSignatures = platformContext
+                .getConfiguration()
+                .getConfigData(PreconsensusEventStreamConfig.class)
+                .forceIgnorePcesSignatures();
+
+        final boolean ignorePreconsensusSignatures;
+        if (forceIgnorePcesSignatures) {
+            // this is used FOR TESTING ONLY
+            ignorePreconsensusSignatures = true;
+        } else {
+            ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
+        }
 
         // A round that we will completely skip ISS detection for. Needed for tests that do janky state modification
         // without a software upgrade (in production this feature should not be used).
@@ -665,10 +677,10 @@ public class SwirldsPlatform implements Platform {
                 addedEventMetrics,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
-                    sequencer.assignStreamSequenceNumber(event);
+                    sequencer.assignStreamSequenceNumber(event.getBaseEvent());
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::writeEvent,
-                            event,
+                            event.getBaseEvent(),
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {

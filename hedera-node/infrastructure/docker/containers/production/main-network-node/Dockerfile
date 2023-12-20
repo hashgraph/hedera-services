@@ -12,6 +12,10 @@ FROM ${IMAGE_PREFIX}network-node-base:${IMAGE_TAG}
 ENV JAVA_HEAP_MIN=""
 ENV JAVA_HEAP_MAX=""
 ENV JAVA_OPTS=""
+ENV JAVA_MAIN_CLASS=""
+ENV JAVA_CLASS_PATH=""
+
+# Performance Tuning for Malloc
 ENV MALLOC_ARENA_MAX=4
 
 # Add SDK components

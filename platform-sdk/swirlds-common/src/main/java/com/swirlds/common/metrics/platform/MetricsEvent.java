@@ -16,10 +16,9 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.platform.NodeId;
+import java.util.Objects;
 
 public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
     public enum Type {
@@ -27,8 +26,15 @@ public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
         REMOVED
     }
 
+    /**
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code type}</li>
+     *       <li>{@code metric}</li>
+     *     </ul>
+     */
     public MetricsEvent {
-        throwArgNull(type, "type");
-        throwArgNull(metric, "metric");
+        Objects.requireNonNull(type, "type must not be null");
+        Objects.requireNonNull(metric, "metric must not be null");
     }
 }

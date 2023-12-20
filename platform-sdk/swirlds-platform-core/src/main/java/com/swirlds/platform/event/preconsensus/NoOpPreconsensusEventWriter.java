@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import java.time.Duration;
 
 /**
@@ -56,7 +56,7 @@ public class NoOpPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void writeEvent(final EventImpl event) {
+    public void writeEvent(final GossipEvent event) {
         // no-op
     }
 
@@ -88,7 +88,7 @@ public class NoOpPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEventDurable(final EventImpl event) {
+    public boolean isEventDurable(final GossipEvent event) {
         // If we are not writing events, then we should never block on events becoming durable.
         return true;
     }
@@ -97,7 +97,7 @@ public class NoOpPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void waitUntilDurable(final EventImpl event) {
+    public void waitUntilDurable(final GossipEvent event) {
         // If we are not writing events, then we should never block on events becoming durable.
     }
 
@@ -105,7 +105,7 @@ public class NoOpPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public boolean waitUntilDurable(final EventImpl event, final Duration timeToWait) {
+    public boolean waitUntilDurable(final GossipEvent event, final Duration timeToWait) {
         // If we are not writing events, then we should never block on events becoming durable.
         return true;
     }

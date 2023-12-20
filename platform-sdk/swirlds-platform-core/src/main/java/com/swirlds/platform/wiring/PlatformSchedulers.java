@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.config.PlatformSchedulersConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
