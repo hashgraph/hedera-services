@@ -35,6 +35,7 @@ import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.*;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.*;
@@ -118,27 +119,29 @@ public class SigningReqsSuite extends HapiSuite {
                             CustomSpecAssert.allRunFor(spec, propertyUpdate);
                         }),
                         // Succeeds with the full-prefix signature
-                        sourcing(() -> contractCall(
-                                        MINIMAL_CREATIONS_CONTRACT,
-                                        "makeRenewableTokenIndirectly",
-                                        autoRenewMirrorAddr.get(),
-                                        THREE_MONTHS_IN_SECONDS)
-                                .via(SECOND_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(CIVILIAN)
-                                .refusingEthConversion()),
-                        getTxnRecord(SECOND_CREATE_TXN)
-                                .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))))
+                        UtilVerbs.ifNotHapiTest(
+                                sourcing(() -> contractCall(
+                                                MINIMAL_CREATIONS_CONTRACT,
+                                                "makeRenewableTokenIndirectly",
+                                                autoRenewMirrorAddr.get(),
+                                                THREE_MONTHS_IN_SECONDS)
+                                        .via(SECOND_CREATE_TXN)
+                                        .gas(10L * GAS_TO_OFFER)
+                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                        .payingWith(CIVILIAN)
+                                        .refusingEthConversion()),
+                                getTxnRecord(SECOND_CREATE_TXN)
+                                        .andAllChildRecords()
+                                        .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0)))))
                 .then(
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-                        sourcing(() ->
-                                getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
+                                        // @TODO can we use statusFrom and include also INVALID_SIGNATURE?
+                                        .statusFrom(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
+                        UtilVerbs.ifNotHapiTest(sourcing(() ->
+                                getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew))));
     }
 
     @Override

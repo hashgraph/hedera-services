@@ -153,7 +153,8 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                 nominalBodyFor(attempt),
                 attempt.defaultVerificationStrategy(),
                 attempt.senderAddress(),
-                attempt.addressIdConverter());
+                attempt.addressIdConverter(),
+                attempt.onlyDelegatableContractKeysActive());
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {

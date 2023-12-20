@@ -24,9 +24,11 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
@@ -36,14 +38,19 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
+import com.hedera.node.app.service.contract.impl.exec.scope.CustomContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -60,7 +67,10 @@ public class ClassicCreatesCall extends AbstractHtsCall {
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
     private final AccountID spenderId;
+    private final Bytes spender;
     private final long gasRequirement;
+    private boolean onlyDelegatableContractKeysActive;
+    private TokenCreateRecordBuilder recordBuilder;
 
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -68,12 +78,15 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             @NonNull final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
-            @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final AddressIdConverter addressIdConverter,
+            final boolean onlyDelegatableContractKeysActive) {
         super(systemContractGasCalculator, enhancement, false);
         this.syntheticCreate = requireNonNull(syntheticCreate);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.addressIdConverter = requireNonNull(addressIdConverter);
+        this.onlyDelegatableContractKeysActive = onlyDelegatableContractKeysActive;
 
+        this.spender = spender;
         this.spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         this.gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
     }
@@ -94,8 +107,11 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             return externalizeUnsuccessfulResult(INVALID_EXPIRATION_TIME, gasCalculator.viewGasRequirement());
         }
 
-        final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticCreate, verificationStrategy, spenderId, TokenCreateRecordBuilder.class);
+        if (recordBuilder == null) {
+            recordBuilder = systemContractOperations()
+                    .dispatch(syntheticCreate, verificationStrategy, spenderId, TokenCreateRecordBuilder.class);
+        }
+
         final var customFees =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
         final var tokenType =
@@ -138,6 +154,28 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
     @Override
     public @NonNull PricedResult execute(final MessageFrame frame) {
+        final var property =
+                configOf(frame).getConfigData(ContractsConfig.class).keysLegacyActivations();
+        // @TODO converter to parse the data in more consumable way
+        final var propertyContractId =
+                Long.parseLong(property.substring(property.indexOf("[") + 1, property.indexOf("]")));
+
+        final var parentNumber = ((ProxyWorldUpdater)
+                        frame.getWorldUpdater().parentUpdater().get())
+                .getPendingCreation()
+                .parentNumber();
+
+        // @TODO won't enter here unless parentNumber is 1062784
+        if (parentNumber == propertyContractId) {
+            final var customStrategy = new CustomContractVerificationStrategy(
+                    parentNumber,
+                    propertyContractId,
+                    tuweniToPbjBytes(spender),
+                    onlyDelegatableContractKeysActive,
+                    UseTopLevelSigs.NO);
+            recordBuilder = systemContractOperations()
+                    .dispatch(syntheticCreate, customStrategy, spenderId, TokenCreateRecordBuilder.class);
+        }
         if (!frame.getValue().greaterOrEqualThan(Wei.of(gasRequirement))) {
             return externalizeUnsuccessfulResult(INSUFFICIENT_TX_FEE, gasCalculator.viewGasRequirement());
         }
