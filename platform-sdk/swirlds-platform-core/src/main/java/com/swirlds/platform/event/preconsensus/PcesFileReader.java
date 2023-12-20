@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.compactPreconsensusEventFile;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.fileSanityChecks;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -29,11 +31,15 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class is responsible for reading event files from disk and adding them to the collection of tracked files.
  */
 public class PcesFileReader {
+    private static final Logger logger = LogManager.getLogger(PcesFileReader.class);
+
     /**
      * Hidden constructor.
      */
@@ -43,14 +49,18 @@ public class PcesFileReader {
      * Scan the file system for event files and add them to the collection of tracked files.
      *
      * @param platformContext   the platform context
+     * @param recycleBin        the recycle bin
      * @param databaseDirectory the directory to scan for files
+     * @param startingRound     the round to start reading from
      * @param permitGaps        if gaps are permitted in sequence number
      * @return the files read from disk
      * @throws IOException if there is an error reading the files
      */
     public static PcesFiles readFilesFromDisk(
             @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final Path databaseDirectory,
+            final long startingRound,
             final boolean permitGaps)
             throws IOException {
 
@@ -75,6 +85,8 @@ public class PcesFileReader {
         if (files.getFileCount() != 0 && doInitialGenerationalCompaction) {
             compactGenerationalSpanOfLastFile(files);
         }
+
+        resolveDiscontinuities(databaseDirectory, recycleBin, files, startingRound);
 
         return files;
     }
@@ -135,5 +147,59 @@ public class PcesFileReader {
             // If the sequence number is good then add it to the collection of tracked files
             files.addFile(descriptor);
         };
+    }
+
+    /**
+     * If there is a discontinuity in the stream after the location where we will begin streaming, delete all files that
+     * come after the discontinuity.
+     *
+     * @param databaseDirectory the directory where PCES files are stored
+     * @param recycleBin        the recycle bin
+     * @param files             the files that have been read from disk
+     * @param startingRound     the round the system is starting from
+     * @throws IOException if there is an error deleting files
+     */
+    private static void resolveDiscontinuities(
+            @NonNull final Path databaseDirectory,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final PcesFiles files,
+            final long startingRound)
+            throws IOException {
+
+        final long initialOrigin = PcesUtilities.getInitialOrigin(files, startingRound);
+
+        final int firstRelevantFileIndex = files.getFirstRelevantFileIndex(startingRound);
+        int firstIndexToDelete = firstRelevantFileIndex + 1;
+        for (; firstIndexToDelete < files.getFileCount(); firstIndexToDelete++) {
+            final PcesFile file = files.getFile(firstIndexToDelete);
+            if (file.getOrigin() != initialOrigin) {
+                // as soon as we find a file that has a different origin, this and all subsequent files must be deleted
+                break;
+            }
+        }
+
+        if (firstIndexToDelete == files.getFileCount()) {
+            // No discontinuities were detected
+            return;
+        }
+
+        final PcesFile lastUndeletedFile = firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
+
+        logger.warn(
+                STARTUP.getMarker(),
+                """
+                        Discontinuity detected in the preconsensus event stream. Purging {} file(s).
+                            Last undeleted file: {}
+                            First deleted file:  {}
+                            Last deleted file:   {}""",
+                files.getFileCount() - firstIndexToDelete,
+                lastUndeletedFile,
+                files.getFile(firstIndexToDelete),
+                files.getLastFile());
+
+        // Delete files in reverse order so that if we crash we don't leave gaps in the sequence number if we crash.
+        while (files.getFileCount() > firstIndexToDelete) {
+            files.removeLastFile().deleteFile(databaseDirectory, recycleBin);
+        }
     }
 }

@@ -228,4 +228,25 @@ public final class PcesUtilities {
 
         return databaseDirectory;
     }
+
+    /**
+     * Get the initial origin round for the PCES files. This is the origin round of the first file that is compatible
+     * with the starting round, or the starting round itself if no file has an original that is compatible with the
+     * starting round.
+     *
+     * @param files         the files that have been read from disk
+     * @param startingRound the round the system is starting from
+     * @return the initial origin round
+     */
+    public static long getInitialOrigin(@NonNull final PcesFiles files, final long startingRound) {
+        final int firstRelevantFileIndex = files.getFirstRelevantFileIndex(startingRound);
+        if (firstRelevantFileIndex >= 0) {
+            // if there is a file with an origin that is compatible with the starting round, use that origin
+            return files.getFile(firstRelevantFileIndex).getOrigin();
+        } else {
+            // if there is no file with an origin that is compatible with the starting round, use the starting round
+            // itself as the origin.
+            return startingRound;
+        }
+    }
 }

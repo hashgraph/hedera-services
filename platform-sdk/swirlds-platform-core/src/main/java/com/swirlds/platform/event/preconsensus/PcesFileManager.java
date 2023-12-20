@@ -22,7 +22,6 @@ import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseD
 import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -65,18 +64,6 @@ public class PcesFileManager {
     private final Path databaseDirectory;
 
     /**
-     * If we ever have to delete files out of band, move them to the recycle bin.
-     */
-    private final RecycleBin recycleBin;
-
-    /**
-     * When streaming files at startup time, this is the index of the first file to consider. Note that the file at this
-     * index may not contain any events in the requested generational range. This is just the first file that we may
-     * legally begin streaming from, regardless of generations.
-     */
-    private final int firstFileIndex;
-
-    /**
      * The current origin round.
      */
     private long currentOrigin;
@@ -99,7 +86,6 @@ public class PcesFileManager {
      * @param platformContext the platform context for this node
      * @param time            provides wall clock time
      * @param files           the files to track
-     * @param recycleBin      can remove files in a way that allows them to be possibly recovered for debugging
      * @param selfId          the ID of this node
      * @param startingRound   the round number of the initial state of the system
      * @throws IOException if there is an error reading the files
@@ -108,7 +94,6 @@ public class PcesFileManager {
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final PcesFiles files,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             final long startingRound)
             throws IOException {
@@ -128,64 +113,10 @@ public class PcesFileManager {
         this.metrics = new PcesMetrics(platformContext.getMetrics());
         this.minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
         this.databaseDirectory = getDatabaseDirectory(platformContext, selfId);
-        this.recycleBin = Objects.requireNonNull(recycleBin);
 
-        this.firstFileIndex = files.getFirstFileIndex(startingRound);
-        this.currentOrigin = getInitialOrigin(startingRound);
+        this.currentOrigin = PcesUtilities.getInitialOrigin(files, startingRound);
 
-        resolveDiscontinuities();
         initializeMetrics();
-    }
-
-    /**
-     * Get the origin round that should be used at startup time.
-     *
-     * @param startingRound the round number of the initial state of the system
-     * @return the origin round that should be used at startup time
-     */
-    private long getInitialOrigin(final long startingRound) {
-        if (firstFileIndex >= 0) {
-            return files.getFile(firstFileIndex).getOrigin();
-        }
-        return startingRound;
-    }
-
-    /**
-     * If there is a discontinuity in the stream after the location where we will begin streaming, delete all files that
-     * come after the discontinuity.
-     */
-    private void resolveDiscontinuities() throws IOException {
-        int firstIndexToDelete = firstFileIndex + 1;
-        for (; firstIndexToDelete < files.getFileCount(); firstIndexToDelete++) {
-            final PcesFile file = files.getFile(firstIndexToDelete);
-            if (file.getOrigin() != currentOrigin) {
-                break;
-            }
-        }
-
-        if (firstIndexToDelete == files.getFileCount()) {
-            // No discontinuities were detected
-            return;
-        }
-
-        final PcesFile lastUndeletedFile = firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
-
-        logger.warn(
-                STARTUP.getMarker(),
-                """
-                        Discontinuity detected in the preconsensus event stream. Purging {} file(s).
-                            Last undeleted file: {}
-                            First deleted file:  {}
-                            Last deleted file:   {}""",
-                files.getFileCount() - firstIndexToDelete,
-                lastUndeletedFile,
-                files.getFile(firstIndexToDelete),
-                files.getLastFile());
-
-        // Delete files in reverse order so that if we crash we don't leave gaps in the sequence number if we crash.
-        while (files.getFileCount() > firstIndexToDelete) {
-            files.removeLastFile().deleteFile(databaseDirectory, recycleBin);
-        }
     }
 
     /**

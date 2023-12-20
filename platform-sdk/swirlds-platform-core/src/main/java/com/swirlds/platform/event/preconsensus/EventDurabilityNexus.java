@@ -40,6 +40,22 @@ public class EventDurabilityNexus {
     }
 
     /**
+     * Determine if an event is guaranteed to be durable, i.e. flushed to disk
+     *
+     * @param event the event in question
+     * @return true if the event is guaranteed to be durable, false otherwise
+     */
+    public boolean isEventDurable(@NonNull final GossipEvent event) {
+        Objects.requireNonNull(event);
+        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            // Stale events are not written to disk.
+            return false;
+        }
+
+        return event.getStreamSequenceNumber() <= latestDurableSequenceNumber.getCount();
+    }
+
+    /**
      * Wait until an event is guaranteed to be durable, i.e. flushed to disk
      *
      * @param event the event in question

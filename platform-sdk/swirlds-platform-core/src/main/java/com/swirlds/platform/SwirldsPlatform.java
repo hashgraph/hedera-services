@@ -463,10 +463,14 @@ public class SwirldsPlatform implements Platform {
             final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
-                    platformContext, databaseDirectory, preconsensusEventStreamConfig.permitGaps());
+                    platformContext,
+                    recycleBin,
+                    databaseDirectory,
+                    initialState.getRound(),
+                    preconsensusEventStreamConfig.permitGaps());
 
             preconsensusEventFileManager = new PcesFileManager(
-                    platformContext, Time.getCurrent(), initialPcesFiles, recycleBin, selfId, initialState.getRound());
+                    platformContext, Time.getCurrent(), initialPcesFiles, selfId, initialState.getRound());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

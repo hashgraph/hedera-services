@@ -169,8 +169,8 @@ public class PcesFiles {
      * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
-    private @NonNull Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
-        final int firstFileIndex = getFirstFileIndex(startingRound);
+    public @NonNull Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
+        final int firstFileIndex = getFirstRelevantFileIndex(startingRound);
 
         // Edge case: we want all events regardless of generation
         if (minimumGeneration == NO_MINIMUM_GENERATION) {
@@ -224,13 +224,16 @@ public class PcesFiles {
     }
 
     /**
-     * Get the index of the first file to consider given a certain starting round. If no file is compatible with
-     * the starting round, return -1.
+     * Get the index of the first file to consider given a certain starting round. This will be the file with the
+     * largest origin that does not exceed the starting round.
+     * <p>
+     * If no file is compatible with the starting round, return -1. If there are no compatible files, that means there
+     * are either no files, or all files have an origin that exceeds the starting round.
      *
      * @param startingRound the round to start streaming from
      * @return the index of the first file to consider for a given starting round
      */
-    public int getFirstFileIndex(final long startingRound) {
+    public int getFirstRelevantFileIndex(final long startingRound) {
         // When streaming from the preconsensus event stream, we need to start at
         // the file with the largest origin that does not exceed the starting round.
 

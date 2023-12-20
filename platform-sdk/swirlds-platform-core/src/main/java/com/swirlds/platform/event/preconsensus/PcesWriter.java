@@ -364,4 +364,17 @@ public class PcesWriter {
 
         return latestDurableSequenceNumberUpdate;
     }
+
+    /**
+     * Close the current mutable file.
+     */
+    public void closeCurrentMutableFile() {
+        if (currentMutableFile != null) {
+            try {
+                currentMutableFile.close();
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
 }
