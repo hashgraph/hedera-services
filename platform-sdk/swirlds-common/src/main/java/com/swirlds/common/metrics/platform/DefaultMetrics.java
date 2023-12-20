@@ -18,7 +18,6 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.ADDED;
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.REMOVED;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
@@ -31,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,9 +48,6 @@ public class DefaultMetrics implements PlatformMetrics {
      * Threshold for the number of similar {@link Exception} that are thrown by regular metrics-tasks
      */
     public static final int EXCEPTION_RATE_THRESHOLD = 10;
-
-    private static final String CATEGORY = "category";
-    private static final String NAME = "name";
 
     // A reference to the NodeId of the current node
     private final NodeId selfId;
@@ -89,6 +86,14 @@ public class DefaultMetrics implements PlatformMetrics {
      * 		the {@link PlatformMetricsFactory} that will be used to create new instances of {@link Metric}
      * @param metricsConfig
      *      the {@link MetricsConfig} for metrics configuration
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code metricKeyRegistry}</li>
+     *       <li>{@code executor}</li>
+     *       <li>{@code factory}</li>
+     *       <li>{@code metricsConfig}</li>
+     *     </ul>
+     *
      */
     public DefaultMetrics(
             final NodeId selfId,
@@ -97,11 +102,11 @@ public class DefaultMetrics implements PlatformMetrics {
             final PlatformMetricsFactory factory,
             final MetricsConfig metricsConfig) {
         this.selfId = selfId;
-        this.metricKeyRegistry = throwArgNull(metricKeyRegistry, "metricsKeyRegistry");
-        this.factory = throwArgNull(factory, "factory");
-        throwArgNull(executor, "executor");
+        this.metricKeyRegistry = Objects.requireNonNull(metricKeyRegistry, "metricsKeyRegistry must not be null");
+        this.factory = Objects.requireNonNull(factory, "factory must not be null");
+        Objects.requireNonNull(executor, "executor must not be null");
         this.eventBus = new MetricsEventBus<>(executor);
-        throwArgNull(metricsConfig, "metricsConfig");
+        Objects.requireNonNull(metricsConfig, "metricsConfig must not be null");
         this.updateService = metricsConfig.metricsUpdatePeriodMillis() <= 0
                 ? null
                 : new MetricsUpdateService(executor, metricsConfig.metricsUpdatePeriodMillis(), TimeUnit.MILLISECONDS);
@@ -120,8 +125,8 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public Metric getMetric(final String category, final String name) {
-        throwArgNull(category, CATEGORY);
-        throwArgNull(name, NAME);
+        Objects.requireNonNull(category, "category must not be null");
+        Objects.requireNonNull(name, "name must not be null");
         return metricMap.get(calculateMetricKey(category, name));
     }
 
@@ -130,7 +135,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public Collection<Metric> findMetricsByCategory(final String category) {
-        throwArgNull(category, CATEGORY);
+        Objects.requireNonNull(category, "category must not be null");
         final String start = category + ".";
         // The character '/' is the successor of '.' in Unicode. We use it to define the first metric-key,
         // which is not part of the result set anymore.
@@ -169,7 +174,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public <T extends Metric> T getOrCreate(final MetricConfig<T, ?> config) {
-        throwArgNull(config, "config");
+        Objects.requireNonNull(config, "config must not be null");
 
         // first we check the happy path, if the metric is already registered
         final String key = calculateMetricKey(config);
@@ -209,8 +214,8 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void remove(final String category, final String name) {
-        throwArgNull(category, CATEGORY);
-        throwArgNull(name, NAME);
+        Objects.requireNonNull(category, "category must not be null");
+        Objects.requireNonNull(name, "name must not be null");
         final String metricKey = calculateMetricKey(category, name);
         throwIfGlobal(metricKey);
         final Metric metric = metricMap.remove(metricKey);
@@ -226,7 +231,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void remove(final Metric metric) {
-        throwArgNull(metric, "metric");
+        Objects.requireNonNull(metric, "metric must not be null");
         final String metricKey = calculateMetricKey(metric);
         throwIfGlobal(metricKey);
         final boolean removed = metricMap.remove(metricKey, metric);
@@ -242,7 +247,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void remove(final MetricConfig<?, ?> config) {
-        throwArgNull(config, "config");
+        Objects.requireNonNull(config, "config must not be null");
         final String metricKey = calculateMetricKey(config);
         throwIfGlobal(metricKey);
         metricMap.computeIfPresent(metricKey, (key, oldValue) -> {
@@ -268,7 +273,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void addUpdater(final Runnable updater) {
-        throwArgNull(updater, "updater");
+        Objects.requireNonNull(updater, "updater must not be null");
         if (updateService != null) {
             updateService.addUpdater(updater);
         }
@@ -279,7 +284,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void removeUpdater(final Runnable updater) {
-        throwArgNull(updater, "updater");
+        Objects.requireNonNull(updater, "updater must not be null");
         if (updateService != null) {
             updateService.removeUpdater(updater);
         }
