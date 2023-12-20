@@ -716,6 +716,9 @@ class ContractCallTransitionLogicTest {
     void acceptsOkSyntax() {
         givenValidTxnCtx();
         given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+                .willReturn(contractAccount);
+        contractAccount.setSmartContract(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
     }

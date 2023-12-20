@@ -92,6 +92,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -232,6 +233,8 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientFee(),
                 nonPayable(),
                 invalidContract(),
+                invalidContractIsAnAccount(),
+                invalidContractDoesNotExist(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -1569,6 +1572,43 @@ public class ContractCallSuite extends HapiSuite {
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
+    // This test for modularization
+    HapiSpec invalidContractDoesNotExist() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
+
+        return defaultHapiSpec("invalidContractDoesNotExist")
+                .given(cryptoCreate("invalid")
+                        .balance(ONE_MILLION_HBARS)
+                        .payingWith(GENESIS)
+                        .exposingCreatedIdTo(accountID::set))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi("0.0.100000001", function)
+                                .hasPrecheck(INVALID_CONTRACT_ID)
+                                .via("contractIsAccount"))))
+                .then(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+    }
+
+    // This test disabled for modularization service
+    HapiSpec invalidContractIsAnAccount() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
+
+        return defaultHapiSpec("invalidContractIsAnAccount")
+                .given(cryptoCreate("invalid")
+                        .balance(ONE_MILLION_HBARS)
+                        .payingWith(GENESIS)
+                        .exposingCreatedIdTo(accountID::set))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi("0.0." + accountID.get().getAccountNum(), function)
+                                .hasPrecheck(INVALID_CONTRACT_ID)
+                                .via("contractIsAccount"))))
+                .then(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+    }
+
+    // This test disabled for modularization service
     @HapiTest
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
