@@ -1108,8 +1108,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {
                     final var op2 = fileUpdate(APP_PROPERTIES)
                             .payingWith(ADDRESS_BOOK_CONTROL)
-                            .overridingProps(Map.of(LAZY_CREATION_ENABLED, "" + FALSE))
-                            .deferStatusResolution();
+                            .overridingProps(Map.of(LAZY_CREATION_ENABLED, "" + FALSE));
 
                     final var op3 = cryptoTransfer(
                                     tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
