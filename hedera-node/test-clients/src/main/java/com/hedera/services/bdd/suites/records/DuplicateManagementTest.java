@@ -72,6 +72,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @HapiTest
+    @SuppressWarnings("java:S5960")
     final HapiSpec hasExpectedDuplicates() {
         return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
@@ -154,6 +155,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                         .transfers(includingDeduction("node payment", TO))));
     }
 
+    @HapiTest
     final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
         return propertyPreservingHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .preserving(ACTIVE_PROFILE_PROPERTY)
