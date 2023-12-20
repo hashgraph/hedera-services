@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * type.
  * <p>
  * Implementations of the interface can be added to the configuration setup by calling {@link
- * com.swirlds.config.api.ConfigurationBuilder#withConverter(ConfigConverter)}
+ * com.swirlds.config.api.ConfigurationBuilder#withConverter(Class, ConfigConverter)}}
  *
  * @param <T> The data type of the converter
  */

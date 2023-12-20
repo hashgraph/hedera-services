@@ -62,12 +62,14 @@ public interface ConfigurationBuilder {
      * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
+     * @param converterType the type to convert to
      * @param converter the converter that should be used for the configuration
      * @return the builder instance (useful for fluent API)
      * @throws IllegalStateException if this method is called after the config has been created
      */
     @NonNull
-    <T> ConfigurationBuilder withConverter(@NonNull final ConfigConverter<T> converter) throws IllegalStateException;
+    <T> ConfigurationBuilder withConverter(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter)
+            throws IllegalStateException;
 
     /**
      * Adds a validator (see {@link ConfigValidator}). If this method is called after the config has been created (see
