@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_MAX_REFUND_QUOTIENT;
@@ -202,6 +203,28 @@ class FrameRunnerTest {
 
         assertFailureExpectationsWith(frame, result);
         assertEquals(FAILURE_DURING_LAZY_ACCOUNT_CREATION, result.haltReason());
+        assertNull(result.revertReason());
+    }
+
+    @Test
+    void failurePathWorksWithHaltReasonWhenExceedingChildRecords() {
+        final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
+        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
+        messageFrameStack.addFirst(frame);
+
+        givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INSUFFICIENT_CHILD_RECORDS));
+
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+
+        inOrder.verify(tracer).traceOriginAction(frame);
+        inOrder.verify(contractCreationProcessor).process(frame, tracer);
+        inOrder.verify(messageCallProcessor).process(childFrame, tracer);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
+
+        assertFailureExpectationsWith(frame, result);
+        assertEquals(INSUFFICIENT_CHILD_RECORDS, result.haltReason());
         assertNull(result.revertReason());
     }
 
