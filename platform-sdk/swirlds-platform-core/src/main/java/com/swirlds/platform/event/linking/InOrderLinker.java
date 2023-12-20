@@ -27,6 +27,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
@@ -242,12 +243,13 @@ public class InOrderLinker {
     }
 
     /**
-     * Set the minimum generation required for an event to be non-ancient.
+     * Set the non-ancient event window, defining the minimum non-ancient threshold.
      *
-     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        this.minimumGenerationNonAncient = nonAncientEventWindow.minGenNonAncient();
 
         parentDescriptorMap.shiftWindow(
                 minimumGenerationNonAncient, (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));

@@ -25,6 +25,7 @@ import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -238,12 +239,13 @@ public class EventSignatureValidator {
     }
 
     /**
-     * Set the minimum generation required for an event to be non-ancient.
+     * Set the non-ancient event window that defines the minimum threshold required for an event to be non-ancient
      *
-     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        this.minimumGenerationNonAncient = nonAncientEventWindow.minGenNonAncient();
     }
 
     /**

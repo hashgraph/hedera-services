@@ -22,6 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -137,12 +138,13 @@ public class EventDeduplicator {
     }
 
     /**
-     * Set the minimum generation required for an event to be non-ancient.
+     * Set the NonAncientEventWindow, defines the minimum threshold for an event to be non-ancient.
      *
-     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        this.minimumGenerationNonAncient = nonAncientEventWindow.minGenNonAncient();
 
         observedEvents.shiftWindow(minimumGenerationNonAncient);
     }

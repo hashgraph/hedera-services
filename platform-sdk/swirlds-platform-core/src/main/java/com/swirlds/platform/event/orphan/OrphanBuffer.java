@@ -24,6 +24,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -134,14 +135,15 @@ public class OrphanBuffer {
     }
 
     /**
-     * Set the minimum generation of non-ancient events to keep in the buffer.
+     * Sets the non-ancient event window that defines when an event is considered ancient.
      *
-     * @param minimumGenerationNonAncient the minimum generation of non-ancient events to keep in the buffer
+     * @param nonAncientEventWindow the non-ancient event window
      * @return the list of events that are no longer orphans as a result of this change
      */
     @NonNull
-    public List<GossipEvent> setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public List<GossipEvent> setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        this.minimumGenerationNonAncient = nonAncientEventWindow.minGenNonAncient();
 
         eventsWithParents.shiftWindow(minimumGenerationNonAncient);
 

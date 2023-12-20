@@ -74,6 +74,7 @@ import com.swirlds.platform.components.transaction.system.ConsensusSystemTransac
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -341,8 +342,8 @@ public class SwirldsPlatform implements Platform {
     private final AsyncEventCreationManager eventCreator;
 
     /**
-     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND}
-     * if no reconnect state has been received since startup.
+     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
+     * been received since startup.
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
@@ -881,7 +882,8 @@ public class SwirldsPlatform implements Platform {
             if (eventConfig.useLegacyIntake()) {
                 eventLinker.loadFromSignedState(initialState);
             } else {
-                platformWiring.updateMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
+                platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.create(
+                        initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
             }
 
             // We don't want to invoke these callbacks until after we are starting up.
@@ -1159,7 +1161,8 @@ public class SwirldsPlatform implements Platform {
                             .inject(new AddressBookUpdate(
                                     signedState.getState().getPlatformState().getPreviousAddressBook(),
                                     signedState.getState().getPlatformState().getAddressBook()));
-                    platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
+                    platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.create(
+                            signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
                 }
             } finally {
                 intakeQueue.resume();

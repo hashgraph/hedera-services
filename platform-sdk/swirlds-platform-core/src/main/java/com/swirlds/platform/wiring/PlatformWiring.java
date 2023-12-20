@@ -29,6 +29,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -90,7 +91,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
             orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
             inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-            linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+            linkedEventIntakeWiring =
+                    LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler(), platformContext);
             eventCreationManagerWiring =
                     EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
             platformCoordinator = new PlatformCoordinator(
@@ -130,19 +132,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Solder the minimum generation non-ancient output to all components that need it.
+     * Solder the NonAncientEventWindow output to all components that need it.
      */
-    private void solderMinimumGenerationNonAncient() {
-        final OutputWire<Long> minimumGenerationNonAncientOutput =
-                linkedEventIntakeWiring.minimumGenerationNonAncientOutput();
+    private void solderNonAncientEventWindow() {
+        final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
+                linkedEventIntakeWiring.nonAncientEventWindowOutput();
 
-        minimumGenerationNonAncientOutput.solderTo(eventDeduplicatorWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventDeduplicatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
     }
 
     /**
@@ -158,7 +158,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
             eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
 
-            solderMinimumGenerationNonAncient();
+            solderNonAncientEventWindow();
         }
     }
 
@@ -293,8 +293,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Get the input wire for signing a state
      * <p>
-     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole
-     * system being migrated to the new framework.
+     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole system being
+     * migrated to the new framework.
      *
      * @return the input wire for signing a state
      */
@@ -304,19 +304,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Inject a new minimum generation non-ancient on all components that need it.
+     * Inject a new non-ancient event window into all components that need it.
      * <p>
-     * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient during
-     * startup. This method will be removed once the components are wired together.
+     * Future work: this is a temporary hook to allow the components to get the non-ancient event window during startup.
+     * This method will be removed once the components are wired together.
      *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     * @param nonAncientEventWindow the new non-ancient event window
      */
-    public void updateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        eventDeduplicatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        eventSignatureValidatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        orphanBufferWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        inOrderLinkerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        eventCreationManagerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+    public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        eventDeduplicatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        eventSignatureValidatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
     }
 
     /**
