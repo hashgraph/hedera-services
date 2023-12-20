@@ -933,6 +933,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .withName(TOKEN_NAME)))));
     }
 
+    @HapiTest
     final HapiSpec getErc20TokenNameExceedingLimits() {
         final var REDUCED_NETWORK_FEE = 1L;
         final var REDUCED_NODE_FEE = 1L;

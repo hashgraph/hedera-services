@@ -34,7 +34,7 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation"),
     NOT_SUPPORTED("Not supported."),
     CONTRACT_ENTITY_LIMIT_REACHED("Contract entity limit reached."),
-    INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call."),
+    INVALID_FEE_SUBMITTED("Invalid fee submitted f or an EVM call."),
     INSUFFICIENT_CHILD_RECORDS("Result cannot be externalized due to insufficient child records");
 
     private final String description;
@@ -77,7 +77,11 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
 
     public static String errorMessageFor(@NonNull final ExceptionalHaltReason reason) {
         requireNonNull(reason);
-        var status = statusFor(reason);
-        return Bytes.of(status.name().getBytes()).toHexString();
+        // #10568 - We add this check to match mono behavior
+        if (reason == CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS) {
+            return Bytes.of(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED.name().getBytes())
+                    .toHexString();
+        }
+        return reason.toString();
     }
 }
