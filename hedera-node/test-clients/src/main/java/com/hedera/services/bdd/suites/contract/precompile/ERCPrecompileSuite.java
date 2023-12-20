@@ -1193,6 +1193,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     // Expects revert
+    @HapiTest
     final HapiSpec getErc721TokenURIFromErc20TokenFails() {
         final var invalidTokenURITxn = "tokenURITxnFromErc20";
 
