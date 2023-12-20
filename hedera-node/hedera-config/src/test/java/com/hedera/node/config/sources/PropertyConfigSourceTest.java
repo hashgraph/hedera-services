@@ -19,6 +19,7 @@ package com.hedera.node.config.sources;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.UncheckedIOException;
+import java.lang.reflect.Method;
 import java.util.Properties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +58,22 @@ class PropertyConfigSourceTest {
 
         // then
         assertThrows(UncheckedIOException.class, () -> new PropertyConfigSource(nonExistentFile, 1));
+    }
+
+    @Test
+    void testLoadProperties() throws Exception {
+        // given
+        String existingFile = "bootstrap.properties";
+        String nonExistentFile = "non-existent-file.properties";
+
+        // when
+        Method method = PropertyConfigSource.class.getDeclaredMethod("loadProperties", String.class);
+        method.setAccessible(true);
+
+        // then
+        // Test successful path
+        Properties properties = (Properties) method.invoke(null, existingFile);
+        assertNotNull(properties);
     }
 
     @AfterEach
