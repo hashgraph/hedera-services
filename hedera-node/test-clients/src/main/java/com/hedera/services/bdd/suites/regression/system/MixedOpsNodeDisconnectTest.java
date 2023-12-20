@@ -79,7 +79,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         // Block network port on node 1
-                        disconnectNode("Bob", 90),
+                        disconnectNode("Alice", 90),
                         sleepFor(100_000),
                         newKeyNamed(SUBMIT_KEY),
                         newKeyNamed(SUPPLY_KEY),
@@ -104,11 +104,11 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         //                        waitForNodeToBecomeActive("Carol", 60)
                         )
                 .then(
-                        sleepFor(100_000),
-                        getReceipt("creation").setNodeFrom(() -> "0.0.3").logged(),
+                        sleepFor(10_000),
+                        getReceipt("creation").setNodeFrom(() -> "0.0.4").logged(),
                         getReceipt("creation").setNodeFrom(() -> "0.0.5").logged(),
                         getReceipt("creation").setNodeFrom(() -> "0.0.6").logged(),
-                        getReceipt("creation").setNodeFrom(() -> "0.0.4").logged()
+                        getReceipt("creation").setNodeFrom(() -> "0.0.3").logged()
 
                         //                         Once nodes come back ACTIVE, submit some operations again
                         //                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
