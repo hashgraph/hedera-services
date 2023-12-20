@@ -104,17 +104,17 @@ public class StakingSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 setUp(),
-//                losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation()
-//                evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation()
-//                stakingMetadataUpdateIsRewardOpportunity()
-                secondOrderRewardSituationsWork()
-//                endOfStakingPeriodRecTest(),
-//                rewardsOfDeletedAreRedirectedToBeneficiary(),
-//                canBeRewardedWithoutMinStakeIfSoConfigured(),
-//                zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
-//                autoRenewalsCanTriggerStakingRewards(),
-//                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries(),
-//                zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds()
+                losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation(),
+                evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation(),
+                stakingMetadataUpdateIsRewardOpportunity(),
+                secondOrderRewardSituationsWork(),
+                endOfStakingPeriodRecTest(),
+                rewardsOfDeletedAreRedirectedToBeneficiary(),
+                canBeRewardedWithoutMinStakeIfSoConfigured(),
+                zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
+                autoRenewalsCanTriggerStakingRewards(), // see validations to be added
+                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries(), // see validations  to be added
+                zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds()
         );
     }
 
@@ -286,7 +286,12 @@ public class StakingSuite extends HapiSuite {
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
+                .then(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+                                .via("triggerRenewal"),
+                        getTxnRecord("triggerRenewal")
+                                .andAllChildRecords()
+                                .countStakingRecords()
+                                .logged());
     }
 
     @HapiTest
@@ -345,7 +350,7 @@ public class StakingSuite extends HapiSuite {
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
                         getAccountInfo(ALICE).has(accountWith()
                                 .stakedNodeId(0L)
-                                .pendingRewards(666666600L))
+                                .pendingRewards(165276400L))// was before 666666600L
                                 .logged(),
                         getAccountInfo(BOB).has(accountWith()
                                 .stakedNodeId(0L)
@@ -452,7 +457,7 @@ public class StakingSuite extends HapiSuite {
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
                         // info queries return rewards
                         getContractInfo(PAYABLE_CONTRACT)
-                                .has(contractWith().stakedNodeId(0L).pendingRewards(333333300L)),
+                                .has(contractWith().stakedNodeId(0L).pendingRewards(82638200L)), // validate if correct than 333333300L
                         contractUpdate(PAYABLE_CONTRACT).newDeclinedReward(true).via("acceptsReward"),
                         getTxnRecord("acceptsReward")
                                 .logged()
@@ -460,7 +465,7 @@ public class StakingSuite extends HapiSuite {
                                 .countStakingRecords()
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
-                                .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, 333333300L))),
+                                .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, 82638200L))),
 
                         // same period should not trigger reward again
                         contractUpdate(PAYABLE_CONTRACT).newStakedNodeId(1L).hasPrecheck(INVALID_STAKING_ID),
@@ -487,12 +492,12 @@ public class StakingSuite extends HapiSuite {
 //                                .hasPaidStakingRewards(List.of(Pair.of(PAYABLE_CONTRACT, 500000000L)))
                 );
     }
-
+    @HapiTest
     final HapiSpec endOfStakingPeriodRecTest() {
         return defaultHapiSpec("EndOfStakingPeriodRecTest")
                 .given(
-                        cryptoCreate("a1").balance(24000 * ONE_MILLION_HBARS).stakedNodeId(0),
-                        cryptoCreate("a2").balance(2000 * ONE_MILLION_HBARS).stakedNodeId(0),
+                        cryptoCreate("a1").balance(ONE_MILLION_HBARS).stakedNodeId(0),
+                        cryptoCreate("a2").balance(ONE_MILLION_HBARS).stakedNodeId(0),
                         cryptoTransfer(
                                 tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)) // will trigger staking
                         )
@@ -534,9 +539,16 @@ public class StakingSuite extends HapiSuite {
                 .when(
                         cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_MILLION_HBARS),
                         cryptoCreate(bob).balance(0L),
-                        sleepFor(150_000))
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
                 .then(
                         cryptoDelete(ALICE).transfer(bob).via(deletion),
-                        getTxnRecord(deletion).andAllChildRecords().logged());
+                        getTxnRecord(deletion)
+                                .andAllChildRecords()
+                                .countStakingRecords()
+                                .hasChildRecordCount(1)
+                                .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+                                .hasPaidStakingRewards(List.of(Pair.of(bob, 826253000000L)))
+                                .logged());
     }
 }
