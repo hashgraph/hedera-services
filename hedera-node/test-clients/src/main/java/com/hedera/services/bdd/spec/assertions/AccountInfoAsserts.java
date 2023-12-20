@@ -388,8 +388,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-
-    public boolean hasTokenAssociationExpectation(){
-       return hasTokenAssociationExpectations;
+    public boolean hasTokenAssociationExpectation() {
+        return hasTokenAssociationExpectations;
     }
 }
