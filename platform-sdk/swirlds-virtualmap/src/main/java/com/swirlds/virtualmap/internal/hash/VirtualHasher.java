@@ -24,9 +24,11 @@ import static com.swirlds.virtualmap.internal.Path.getIndexInRank;
 import static com.swirlds.virtualmap.internal.Path.getParentPath;
 import static com.swirlds.virtualmap.internal.Path.getRank;
 import static com.swirlds.virtualmap.internal.Path.getSiblingPath;
+import static com.swirlds.virtualmap.internal.Path.isLeft;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -36,6 +38,11 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
+import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
@@ -43,7 +50,11 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -217,7 +228,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * 		A {@link VirtualHashListener} that will receive notification of all hashing events. Can be null.
      * @return The hash of the root of the tree
      */
-    public Hash hash(
+    public Hash hash0(
             final LongFunction<Hash> hashReader,
             final Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
@@ -796,4 +807,228 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         hashJob.hash(new HashBuilder(Cryptography.DEFAULT_DIGEST_TYPE));
         return hashJob.getHash();
     }
+
+
+	private static final Cryptography CRYPTO = CryptographyHolder.get();
+	private static final Hash NULL_HASH = CRYPTO.getNullHash();
+
+	private static final ForkJoinPool pool;
+
+	static {
+		pool = new ForkJoinPool(HASHING_THREAD_COUNT);
+	}
+
+	static class BaseTask extends ForkJoinTask<Void> {
+		protected AtomicInteger count;
+
+		public BaseTask(int n) {
+			this.count = new AtomicInteger(n);
+		}
+
+		@Override
+		public Void getRawResult() {
+			return null;
+		}
+
+		@Override
+		protected void setRawResult(Void value) {
+			// not used
+		}
+
+		@Override
+		protected boolean exec() {
+			return true;
+		}
+
+		void push() {
+			if (count.decrementAndGet() == 0) {
+				if (Thread.currentThread() instanceof ForkJoinWorkerThread) {
+					fork();
+				} else {
+					pool.execute(this);
+				}
+			}
+		}
+	}
+
+	class HashTask extends BaseTask {
+		HashTask	out;
+		Hash		leftHash;
+		Hash		rightHash;
+		long 		path;
+		VirtualLeafRecord<K,V> 		leaf;
+
+		public HashTask(long path) {
+			super(3);
+			this.path = path;
+		}
+
+		public void setIn(VirtualLeafRecord<K,V> leaf) {
+			this.leaf = leaf;
+			setLeftHash(null);
+			setRightHash(null);
+		}
+
+		public void setOut(HashTask out) {
+			this.out = out;
+			push();
+		}
+
+		public void setLeftHash(Hash hash) {
+			leftHash = hash;
+			push();
+		}
+
+		public void setRightHash(Hash hash) {
+			rightHash = hash;
+			push();
+		}
+
+		@Override
+		protected boolean exec() {
+			final Hash hash;
+			if (leaf != null) {
+				hash = CRYPTO.digestSync(leaf);
+				synchronized (listener) {
+					listener.onLeafHashed(leaf);
+                    listener.onNodeHashed(path, hash);
+				}
+			} else if (leftHash == null && rightHash == null) {
+				hash = hashReader.apply(path);
+			} else {
+				final long classId = path == ROOT_PATH
+						? VirtualRootNode.CLASS_ID
+						: VirtualInternalNode.CLASS_ID;
+
+				final int serId = path == ROOT_PATH
+						? VirtualRootNode.ClassVersion.CURRENT_VERSION
+						: VirtualInternalNode.SERIALIZATION_VERSION;
+
+				final HashBuilder builder = HASH_BUILDER_THREAD_LOCAL.get();
+				builder.reset();
+				builder.update(classId);
+				builder.update(serId);
+				builder.update(leftHash);
+				builder.update(rightHash);
+				hash = builder.build();
+
+				synchronized (listener) {
+					listener.onNodeHashed(path, hash);
+				}
+			}
+
+			if (isLeft(path)) {
+				out.setLeftHash(hash);
+			} else {
+				out.setRightHash(hash);
+			}
+			return true;
+		}
+	}
+
+	LongFunction<Hash> hashReader;
+	VirtualHashListener<K, V> listener;
+
+	public Hash hash(
+			final LongFunction<Hash> hashReader,
+			Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
+			final long firstLeafPath,
+			final long lastLeafPath,
+			VirtualHashListener<K, V> listener) {
+
+		// If the first or last leaf path are invalid, then there is nothing to hash.
+		if (firstLeafPath < 1 || lastLeafPath < 1) {
+			return null;
+		}
+
+		if (!sortedDirtyLeaves.hasNext()) {
+			return null;
+		}
+
+		// We don't want to include null checks everywhere, so let the listener be NoopListener if null
+		if (listener == null) {
+			listener = new VirtualHashListener<>() { /* noop */
+			};
+		}
+
+		this.hashReader = hashReader;
+		this.listener = listener;
+
+		// Let the listener know we have started hashing.
+		listener.onHashingStarted();
+		listener.onBatchStarted();
+		listener.onRankStarted();
+
+		final HashMap<Long, HashTask> map = new HashMap<>();
+		HashTask resultTask = new HashTask(INVALID_PATH);
+		HashTask rootTask = new HashTask(ROOT_PATH);
+		rootTask.setOut(resultTask);
+		map.put(ROOT_PATH, rootTask);
+
+		boolean firstLeaf = true;
+		long[] stack = new long[Path.getRank(lastLeafPath) + 1];
+		Arrays.fill(stack, INVALID_PATH);
+		while (sortedDirtyLeaves.hasNext()) {
+			VirtualLeafRecord<K, V> leaf = sortedDirtyLeaves.next();
+			long path = leaf.getPath();
+			HashTask curTask = map.remove(path);
+			if (curTask == null) {
+				curTask = new HashTask(path);
+			}
+			curTask.setIn(leaf);
+
+			while (curTask.out == null) {
+				int curRank = getRank(path);
+				if (stack[curRank] != INVALID_PATH) {
+					HashTask t = map.remove(stack[curRank]);
+					if (t != null) {
+						t.setIn(null);
+					}
+					stack[curRank] = INVALID_PATH;
+				}
+
+				long parentPath = getParentPath(path);
+				HashTask parentTask = map.remove(parentPath);
+				if (parentTask == null) {
+					parentTask = new HashTask(parentPath);
+				}
+				curTask.setOut(parentTask);
+				stack[getRank(parentPath)] = INVALID_PATH;
+
+				long siblingPath = getSiblingPath(path);
+				if (siblingPath > lastLeafPath) {
+					assert siblingPath == 2 : "Inconsistent sibling path";
+					parentTask.setRightHash(NULL_HASH);
+				} else {
+					HashTask siblingTask = map.remove(siblingPath);
+					if (siblingTask == null) {
+						siblingTask = new HashTask(siblingPath);
+					}
+					siblingTask.setOut(parentTask);
+					if (isLeft(siblingPath) && !firstLeaf) {
+						siblingTask.setIn(null);
+					} else {
+						map.put(siblingPath, siblingTask);
+						if (!firstLeaf) {
+							stack[curRank] = siblingPath;
+						}
+					}
+				}
+
+				path = parentPath;
+				curTask = parentTask;
+			}
+			firstLeaf = false;
+		}
+		map.forEach((path, task) -> task.setIn(null));
+		map.clear();
+
+		rootTask.join();
+
+		listener.onRankCompleted();
+		listener.onBatchCompleted();
+		listener.onHashingCompleted();
+
+		return resultTask.leftHash;
+	}
 }
