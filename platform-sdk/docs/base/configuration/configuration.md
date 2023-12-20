@@ -171,6 +171,7 @@ The config API supports several datatypes for reading config properties. The fol
   1994-11-05T08:15:30-05:00"
 - `Duration`: the custom format from the old settings is supported; examples are "2ms" or "10s"
 - `ChronoUnit`: examples are "millis" or "seconds"
+- `Enum` 
 
 The support for all data types is done by using the `com.swirlds.config.api.converter.ConfigConverter` API. The
 `com.swirlds.config.api.ConfigurationBuilder` must be used to add support for custom datatypes. The following code
