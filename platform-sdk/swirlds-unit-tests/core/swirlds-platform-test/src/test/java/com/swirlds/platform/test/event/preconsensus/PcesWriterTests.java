@@ -92,7 +92,6 @@ class PcesWriterTests {
     Path testDirectory;
 
     private FakeTime time;
-    private Random random;
     private final NodeId selfId = new NodeId(0);
     private final int numEvents = 1_000;
     private PlatformContext platformContext;
@@ -241,7 +240,7 @@ class PcesWriterTests {
 
         platformContext = buildContext();
 
-        random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         generator = buildGraphGenerator(random);
         generationsUntilAncient = random.nextInt(50, 100);
         sequencer = new PcesSequencer();
