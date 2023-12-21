@@ -106,7 +106,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -122,7 +122,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -138,7 +138,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -154,7 +154,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -170,7 +170,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -186,7 +186,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -202,7 +202,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -218,7 +218,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -234,7 +234,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -250,7 +250,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
@@ -266,7 +266,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
                         .getOutputs()
                         .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
                         .array()),
