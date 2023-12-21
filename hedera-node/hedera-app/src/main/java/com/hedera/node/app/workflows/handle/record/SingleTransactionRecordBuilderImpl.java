@@ -1131,4 +1131,9 @@ public class SingleTransactionRecordBuilderImpl
             throw new IllegalStateException("Record being built for unparseable transaction", e);
         }
     }
+
+    public EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount) {
+        transactionRecordBuilder.transactionFee(transactionFee + amount);
+        return this;
+    }
 }
