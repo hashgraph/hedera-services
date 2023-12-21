@@ -47,6 +47,7 @@ import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -59,6 +60,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -198,6 +200,29 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // Instead, this method will be a callback the app registers with the platform. So for now,
         // we simply call the callback handler, which is implemented by the app.
         this.onInit.onStateInitialized(this, platform, dualState, trigger, deserializedVersion);
+    }
+
+    @NonNull
+    @Override
+    public AddressBook updateWeight(
+            @NonNull final AddressBook configAddressBook, @NonNull final PlatformContext context) {
+        //        throwIfImmutable();
+        //        // Get all nodeIds added in the config.txt
+        //        Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
+        //        final var stakingInfoState = getChild(findNodeIndex(TokenService.NAME, STAKING_INFO_KEY));
+        //        final var stakingInfoStore = new ReadableStakingInfoStoreImpl(stakingInfoState);
+        //        stakingInfo().forEach((nodeNum, stakingInfo) -> {
+        //            NodeId nodeId = new NodeId(nodeNum.longValue());
+        //            // ste weight for the nodes that exist in state and remove from
+        //            // nodes given in config.txt. This is needed to recognize newly added nodes
+        //            configAddressBook.updateWeight(nodeId, stakingInfo.getWeight());
+        //            configNodeIds.remove(nodeId);
+        //        });
+        //
+        //        // for any newly added nodes that doesn't exist in state, weight should be set to 0
+        //        // irrespective of the weight provided in config.txt
+        //        configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
+        return configAddressBook;
     }
 
     /**

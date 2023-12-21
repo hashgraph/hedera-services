@@ -27,9 +27,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
+    private static final Logger logger = LogManager.getLogger(StakeRewardCalculatorImpl.class);
     private final StakePeriodManager stakePeriodManager;
 
     @Inject
@@ -46,6 +49,7 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
             @NonNull final Instant consensusNow) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
         if (!stakePeriodManager.isRewardable(effectiveStart, rewardsStore, consensusNow)) {
+            logger.info("Account {} is not eligible for rewards", account);
             return 0;
         }
 
@@ -55,6 +59,11 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         final var stakingInfo = stakingInfoStore.getOriginalValue(nodeId);
         final var rewardOffered = computeRewardFromDetails(
                 account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);
+        logger.info(
+                "Account {} with declined reward {}, reward offered{}",
+                account,
+                account.declineReward(),
+                rewardOffered);
         return account.declineReward() ? 0 : rewardOffered;
     }
 

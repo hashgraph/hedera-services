@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PROCESS_ALICE;
+
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -76,7 +78,7 @@ public class HapiTestEnv {
                 final AccountID acct =
                         AccountID.newBuilder().accountNum(3L + nodeId).build();
                 boolean currentNodeAlice = nodeId == 0;
-                if (currentNodeAlice) {
+                if (IN_PROCESS_ALICE == nodesType && currentNodeAlice) {
                     nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
                 } else {
                     nodes.add(new SubProcessHapiTestNode(

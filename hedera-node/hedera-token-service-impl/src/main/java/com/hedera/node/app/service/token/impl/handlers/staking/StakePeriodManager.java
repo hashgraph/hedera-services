@@ -28,12 +28,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class manages the current stake period and the previous stake period.
  */
 @Singleton
 public class StakePeriodManager {
+    private static final Logger log = LogManager.getLogger(StakePeriodManager.class);
     // Sentinel value for a field that wasn't applicable to this transaction
     public static final long NA = Long.MIN_VALUE;
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
@@ -74,7 +77,18 @@ public class StakePeriodManager {
         if (prevConsensusSecs != currentConsensusSecs) {
             currentStakePeriod = StakingRewardsApi.stakePeriodAt(consensusNow, stakingPeriodMins);
             prevConsensusSecs = currentConsensusSecs;
+            log.info(
+                    "ENTERING IF currentStakePeriod consensusNow {}, prevConsensusSecs {}, currentStakePeriod {}, stakingPeriodMins {}",
+                    consensusNow,
+                    prevConsensusSecs,
+                    currentStakePeriod,
+                    stakingPeriodMins);
         }
+        log.info(
+                "ENTERING currentStakePeriod consensusNow {}, prevConsensusSecs {}, currentStakePeriod {}",
+                consensusNow,
+                prevConsensusSecs,
+                currentStakePeriod);
         return currentStakePeriod;
     }
 
@@ -184,12 +198,29 @@ public class StakePeriodManager {
             @NonNull final Instant consensusNow) {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         if (modifiedAccount.hasStakedNodeId()) {
+            long period = 0;
             if ((originalAccount != null && originalAccount.hasStakedAccountId()) || stakeMetaChanged) {
                 // We just started staking to a node today
-                return currentStakePeriod(consensusNow);
+                period = currentStakePeriod(consensusNow);
+                log.info(
+                        "ENTERING IF: Updating stake period start for account {} (original: {}, rewarded: {}, stakeMetaChanged: {}), Period : {} ",
+                        modifiedAccount,
+                        originalAccount,
+                        rewarded,
+                        stakeMetaChanged,
+                        period);
+                return period;
             } else if (rewarded) {
                 // If we were just rewarded, stake period start is yesterday
-                return currentStakePeriod(consensusNow) - 1;
+                period = currentStakePeriod(consensusNow) - 1;
+                log.info(
+                        "ENTERING ELSE: Updating stake period start for account {} (original: {}, rewarded: {}, stakeMetaChanged: {}), Period : {} ",
+                        modifiedAccount,
+                        originalAccount,
+                        rewarded,
+                        stakeMetaChanged,
+                        period);
+                return period;
             }
         }
         return -1;

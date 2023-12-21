@@ -39,8 +39,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -75,9 +78,10 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
 
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
-        adjustStakedToMeForAccountStakees(writableStore);
+        final var specialRewardReceivers = adjustStakedToMeForAccountStakees(writableStore);
         // Get list of possible reward receivers and pay rewards to them
-        final var rewardReceivers = getPossibleRewardReceivers(writableStore);
+        final var rewardReceivers = getPossibleRewardReceivers(writableStore, specialRewardReceivers);
+        log.info("Reward receivers are {}", rewardReceivers);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
@@ -86,6 +90,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         adjustStakeMetadata(writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
         // Decrease staking reward account balance by rewardPaid amount
         decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
+        log.info("Rewards paid are {}", rewardsPaid);
         return rewardsPaid;
     }
 
@@ -98,13 +103,13 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      *
      * @param writableStore The store to write to for updated values
      */
-    public void adjustStakedToMeForAccountStakees(@NonNull final WritableAccountStore writableStore) {
+    public Set<AccountID> adjustStakedToMeForAccountStakees(@NonNull final WritableAccountStore writableStore) {
         // If there is a FROM_ACCOUNT_ or _TO_ACCOUNT stake change scenario, the set of modified
         // accounts in the writable store can change inside the body of the for loop below; so we
         // create a new ArrayList to iterate through just the accounts modified by the initial
         // transaction
         final var modifiedAccounts = new ArrayList<>(writableStore.modifiedAccountsInState());
-
+        Set<AccountID> specialRewardReceivers = null;
         for (final var id : modifiedAccounts) {
             final var originalAccount = writableStore.getOriginalValue(id);
             final var modifiedAccount = writableStore.get(id);
@@ -122,19 +127,31 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 final var delta = roundedFinalBalance - roundedInitialBalance;
                 // Even if the stakee's total stake hasn't changed, we still want to
                 // trigger a reward situation whenever the staker balance changes
-                if (roundedFinalBalance != roundedInitialBalance) {
+                if (modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance()) {
+                    if (specialRewardReceivers == null) {
+                        specialRewardReceivers = new LinkedHashSet<>();
+                    }
+                    specialRewardReceivers.add(modifiedAccount.stakedAccountId());
                     updateStakedToMeFor(modifiedAccount.stakedAccountId(), delta, writableStore);
                 }
             } else {
                 if (scenario.withdrawsFromAccount()) {
+                    if (specialRewardReceivers == null) {
+                        specialRewardReceivers = new LinkedHashSet<>();
+                    }
                     final var curStakedAccountId = originalAccount.stakedAccountId();
+                    specialRewardReceivers.add(curStakedAccountId);
                     final var roundedInitialBalance = roundedToHbar(originalAccount.tinybarBalance());
                     // Always trigger a reward situation for the old stakee when they are
                     // losing an indirect staker, even if it doesn't change their total stake
                     updateStakedToMeFor(curStakedAccountId, -roundedInitialBalance, writableStore);
                 }
                 if (scenario.awardsToAccount()) {
+                    if (specialRewardReceivers == null) {
+                        specialRewardReceivers = new LinkedHashSet<>();
+                    }
                     final var newStakedAccountId = modifiedAccount.stakedAccountId();
+                    specialRewardReceivers.add(newStakedAccountId);
                     final var balance = originalAccount == null ? 0 : originalAccount.tinybarBalance();
                     // Always trigger a reward situation for the new stakee when they are
                     // gaining an indirect staker, even if it doesn't change their total stake
@@ -143,6 +160,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 }
             }
         }
+        return specialRewardReceivers == null ? Collections.emptySet() : specialRewardReceivers;
     }
 
     /**
@@ -161,6 +179,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final WritableNetworkStakingRewardsStore stakingRewardStore,
             final Instant consensusNow,
             final Map<AccountID, Long> paidRewards) {
+        log.info("Modified accounts in state {}", writableStore.modifiedAccountsInState());
         for (final var id : writableStore.modifiedAccountsInState()) {
             final var originalAccount = writableStore.getOriginalValue(id);
             final var modifiedAccount = writableStore.get(id);
@@ -205,10 +224,16 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                                             originalAccount, stakingRewardStore, consensusNow)));
             final var stakePeriodStart = stakePeriodManager.startUpdateFor(
                     originalAccount, modifiedAccount, wasRewarded, containStakeMetaChanges, consensusNow);
+            log.info(
+                    "Account {} has earned {} tinybars in rewards with stakePeriodStart {}",
+                    id,
+                    reward,
+                    stakePeriodStart);
             if (stakePeriodStart != -1) {
                 final var copy = modifiedAccount.copyBuilder();
                 copy.stakePeriodStart(stakePeriodStart);
                 writableStore.put(copy.build());
+                log.info("Updated account {}", writableStore.get(modifiedAccount.accountId()));
             }
         }
     }

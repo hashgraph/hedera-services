@@ -28,7 +28,7 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,11 +53,14 @@ public class StakingRewardsHelper {
     /**
      * Looks through all the accounts modified in state and returns a list of accounts which are staked to a node
      * and has stakedId or stakedToMe or balance or declineReward changed in this transaction.
-     * @param writableAccountStore The store to write to for updated values and original values
+     *
+     * @param writableAccountStore   The store to write to for updated values and original values
+     * @param specialRewardReceivers
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
-    public static Set<AccountID> getPossibleRewardReceivers(final WritableAccountStore writableAccountStore) {
-        final var possibleRewardReceivers = new HashSet<AccountID>();
+    public static Set<AccountID> getPossibleRewardReceivers(
+            final WritableAccountStore writableAccountStore, final Set<AccountID> specialRewardReceivers) {
+        final var possibleRewardReceivers = new LinkedHashSet<>(specialRewardReceivers);
         for (final AccountID id : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.get(id);
             final var originalAcct = writableAccountStore.getOriginalValue(id);
@@ -95,7 +98,18 @@ public class StakingRewardsHelper {
         // TODO: Also check that the HAPI operation was a ContractCreate/ContractCall/EthereumTransaction
         final var isCalledContract = modifiedAccount.smartContract();
         final var isStakedToNode = originalAccount.stakedNodeIdOrElse(-1L) >= 0L;
-        return isStakedToNode && (isCalledContract || hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges);
+        final var isRewardSituation =
+                isStakedToNode && (isCalledContract || hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges);
+        log.info(
+                "isRewardSituation {}: isStakedToNode {}, isCalledContract {}, hasStakedToMeUpdate {}, "
+                        + "hasBalanceChange {}, hasStakeMetaChanges {}",
+                isRewardSituation,
+                isStakedToNode,
+                isCalledContract,
+                hasStakedToMeUpdate,
+                hasBalanceChange,
+                hasStakeMetaChanges);
+        return isRewardSituation;
     }
 
     /**

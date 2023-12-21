@@ -29,12 +29,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Validations needed for staking related fields in token operations
  */
 @Singleton
 public class StakingValidator {
+    Logger log = LogManager.getLogger(StakingValidator.class);
 
     @Inject
     public StakingValidator() {
@@ -126,8 +129,13 @@ public class StakingValidator {
         // If the stakedId is not sentinel values, then validate the accountId is present in account store
         // or nodeId is valid
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
+            log.info("stakedAccountIdInOp {}", stakedAccountIdInOp);
             validateTrue(accountStore.getAccountById(requireNonNull(stakedAccountIdInOp)) != null, INVALID_STAKING_ID);
         } else if (stakedIdKind.equals("STAKED_NODE_ID")) {
+            log.info(
+                    "stakedNodeIdInOp {} , with info {} ",
+                    stakedNodeIdInOp,
+                    networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)));
             validateTrue(networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)) != null, INVALID_STAKING_ID);
         }
     }

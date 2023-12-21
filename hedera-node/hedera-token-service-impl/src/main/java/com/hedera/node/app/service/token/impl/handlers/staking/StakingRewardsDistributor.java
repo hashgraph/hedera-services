@@ -70,7 +70,7 @@ public class StakingRewardsDistributor {
                     originalAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
 
             var receiverId = receiver;
-            var beneficiary = modifiedAccount;
+            var beneficiary = originalAccount;
             // Only if reward is greater than zero do all operations below.
             // But, even if reward is zero add it to the rewardsPaid map, if the account is not declining reward.
             // It is important to know that if the reward is zero because of its zero stake in last period.
@@ -99,8 +99,9 @@ public class StakingRewardsDistributor {
             }
 
             if (!beneficiary.declineReward() && reward > 0) {
+                final var mutableBeneficiary = writableStore.get(beneficiary.accountId());
                 // even if reward is zero it will be added to rewardsPaid
-                applyReward(reward, beneficiary, writableStore);
+                applyReward(reward, mutableBeneficiary, writableStore);
                 rewardsPaid.merge(receiverId, reward, Long::sum);
             }
         }

@@ -48,7 +48,7 @@ public class SequentialSuites {
             LeakyCryptoTestsSuite::new,
             LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
-                StakingSuite::new
+            StakingSuite::new
         };
     }
 }

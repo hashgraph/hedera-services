@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides write methods for modifying underlying data storage mechanisms for working with
@@ -43,6 +45,7 @@ import java.util.Set;
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
+    private static final Logger log = LogManager.getLogger(WritableAccountStore.class);
     /**
      * Create a new {@link WritableAccountStore} instance.
      *
@@ -70,6 +73,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
+        log.info("Putting account {} into state", account);
         accountState().put(account.accountIdOrThrow(), account);
     }
 

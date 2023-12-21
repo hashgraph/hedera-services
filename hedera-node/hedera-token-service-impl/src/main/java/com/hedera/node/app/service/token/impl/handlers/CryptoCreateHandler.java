@@ -391,6 +391,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 .tinybarBalance(op.initialBalance())
                 .declineReward(op.declineReward())
                 .key(op.keyOrThrow())
+                .stakeAtStartOfLastRewardedPeriod(-1L)
+                .stakePeriodStart(-1L)
                 .alias(op.alias());
 
         // We do this separately because we want to let the protobuf object remain UNSET for the staked ID if neither

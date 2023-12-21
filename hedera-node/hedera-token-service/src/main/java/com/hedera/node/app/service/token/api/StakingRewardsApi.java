@@ -30,11 +30,14 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Methods for computing an account's pending staking rewards.
  */
 public interface StakingRewardsApi {
+    Logger log = LogManager.getLogger(StakingRewardsApi.class);
     int MINUTES_TO_SECONDS = 60;
     long MINUTES_TO_MILLISECONDS = 60_000L;
     long DAILY_STAKING_PERIOD_MINS = 1440L;
@@ -56,11 +59,18 @@ public interface StakingRewardsApi {
             final long currentStakePeriod,
             final long stakePeriodStart) {
         requireNonNull(account);
+        log.info("NodeStakingInfo", nodeStakingInfo);
         if (nodeStakingInfo == null) {
             return 0L;
         }
         final var rewardSumHistory = nodeStakingInfo.rewardSumHistory();
-        return rewardFor(account, rewardSumHistory, currentStakePeriod, stakePeriodStart);
+        final var reward = rewardFor(account, rewardSumHistory, currentStakePeriod, stakePeriodStart);
+        log.info(
+                "Account {} has earned {} tinybars in rewards with stakePeriodStart {}",
+                account,
+                reward,
+                stakePeriodStart);
+        return reward;
     }
 
     /**
@@ -88,7 +98,7 @@ public interface StakingRewardsApi {
                         account,
                         readableStakingInfoStore.get(account.stakedNodeIdOrThrow()),
                         currentStakePeriod,
-                        account.stakePeriodStart());
+                        clampedStakePeriodStart);
             }
         }
         return 0;
@@ -174,6 +184,7 @@ public interface StakingRewardsApi {
         if (rewardFrom == 0) {
             return 0;
         }
+        log.info("RewardFrom is {}", rewardFrom);
 
         final var firstRewardSum = rewardSumHistory.get(0);
         final var rewardFromSum = rewardSumHistory.get(rewardFrom);
@@ -182,13 +193,17 @@ public interface StakingRewardsApi {
 
             // Two-step computation; first, the reward from the last period the account changed its
             // stake in...
-            return account.stakeAtStartOfLastRewardedPeriod()
+            final var reward = account.stakeAtStartOfLastRewardedPeriod()
                             / HBARS_TO_TINYBARS
                             * (rewardFromMinus1Sum - rewardFromSum)
                     // ...and second, the reward for all following periods
                     + totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromMinus1Sum);
+            log.info("Inside IF {}", reward);
+            return reward;
         } else {
-            return totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
+            final var reward = totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
+            log.info("Inside ELSE {}", reward);
+            return reward;
         }
     }
 
