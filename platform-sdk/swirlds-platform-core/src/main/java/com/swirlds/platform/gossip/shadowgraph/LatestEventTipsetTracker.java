@@ -43,6 +43,7 @@ public class LatestEventTipsetTracker {
      *
      * @param time        provides wall clock time
      * @param addressBook the current address book
+     * @param selfId      the ID of this node
      */
     public LatestEventTipsetTracker(
             @NonNull final Time time, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
