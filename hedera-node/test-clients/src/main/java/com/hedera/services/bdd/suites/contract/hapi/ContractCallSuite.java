@@ -63,6 +63,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -92,6 +94,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -232,6 +235,8 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientFee(),
                 nonPayable(),
                 invalidContract(),
+                invalidContractIsAnAccount(),
+                invalidContractDoesNotExist(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -1506,9 +1511,15 @@ public class ContractCallSuite extends HapiSuite {
                                         "del",
                                         asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
                                 .gas(1_000_000L)))
-                .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
-                        .gas(350_000L)
-                        .hasKnownStatus(CONTRACT_DELETED));
+                .then(
+                        ifHapiTest(contractCall(
+                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
+                                .gas(350_000L)
+                                .hasKnownStatus(CONTRACT_DELETED)),
+                        ifNotHapiTest(contractCall(
+                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
+                                .gas(350_000L)
+                                .hasPrecheck(CONTRACT_DELETED)));
     }
 
     HapiSpec insufficientGas() {
@@ -1558,6 +1569,51 @@ public class ContractCallSuite extends HapiSuite {
                 .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))))
                 .when()
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
+    }
+
+    @HapiTest
+    HapiSpec invalidContractDoesNotExist() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
+
+        return defaultHapiSpec("invalidContractDoesNotExist")
+                .given()
+                .when(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                ifHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
+                                        .hasKnownStatus(INVALID_CONTRACT_ID)
+                                        .via("contractDoesNotExist")))),
+                        ifNotHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
+                                .hasPrecheck(INVALID_CONTRACT_ID)
+                                .via("contractDoesNotExist")))
+                .then(ifNotHapiTest(getTxnRecord("contractDoesNotExist").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
+    }
+
+    @HapiTest
+    HapiSpec invalidContractIsAnAccount() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
+
+        return defaultHapiSpec("invalidContractIsAnAccount")
+                .given(cryptoCreate("invalid")
+                        .balance(ONE_MILLION_HBARS)
+                        .payingWith(GENESIS)
+                        .exposingCreatedIdTo(accountID::set))
+                .when(
+                        ifHapiTest(withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallWithFunctionAbi(
+                                                "0.0." + accountID.get().getAccountNum(), function)
+                                        .hasKnownStatus(SUCCESS)
+                                        .via("contractIsAccount")))),
+                        ifNotHapiTest(withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCallWithFunctionAbi(
+                                                "0.0." + accountID.get().getAccountNum(), function)
+                                        .hasPrecheck(INVALID_CONTRACT_ID)
+                                        .via("contractIsAccount")))))
+                .then(ifNotHapiTest(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
     HapiSpec smartContractFailFirst() {
