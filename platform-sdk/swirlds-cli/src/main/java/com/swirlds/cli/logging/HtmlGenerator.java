@@ -525,9 +525,7 @@ public class HtmlGenerator {
      */
     @NonNull
     private static String createCheckboxFilter(
-            @NonNull final String elementName,
-            @NonNull final String sectionName,
-            final boolean compactView) {
+            @NonNull final String elementName, @NonNull final String sectionName, final boolean compactView) {
 
         final HtmlTagFactory tagFactory = new HtmlTagFactory("input")
                 .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName, sectionName))
@@ -683,8 +681,7 @@ public class HtmlGenerator {
      */
     @NonNull
     private static String createColumnFilterDiv(
-            @NonNull final List<String> filterValues,
-            @NonNull final List<Boolean> compactView) {
+            @NonNull final List<String> filterValues, @NonNull final List<Boolean> compactView) {
 
         final String sectionName = "column-filter-section";
 
@@ -704,8 +701,7 @@ public class HtmlGenerator {
         elements.add(new HtmlTagFactory("br").generateTag());
 
         for (int i = 0; i < filterValues.size(); i++) {
-            elements.add(
-                    createCheckboxFilter(filterValues.get(i), sectionName, compactView.get(i)));
+            elements.add(createCheckboxFilter(filterValues.get(i), sectionName, compactView.get(i)));
         }
 
         return createInputDiv("Columns", elements);
@@ -866,7 +862,8 @@ public class HtmlGenerator {
         cssFactory.addRule("." + LOG_LINE_LABEL + ":hover td", new CssDeclaration("background-color", HIGHLIGHT_COLOR));
 
         cssFactory.addRule(
-                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL + ", ." + SELECT_COMPACT_BUTTON_LABEL,
+                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL + ", ."
+                        + SELECT_COMPACT_BUTTON_LABEL,
                 new CssDeclaration("background-color", getHtmlColor(TextEffect.GRAY)));
 
         // make the select column buttons the same color as the accent of the radio buttons=
