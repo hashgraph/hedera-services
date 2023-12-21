@@ -115,8 +115,8 @@ public class SyncNode {
         discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         consensus = mock(Consensus.class);
         this.executor = executor;
     }
@@ -243,6 +243,7 @@ public class SyncNode {
                 platformContext,
                 Time.getCurrent(),
                 shadowGraph,
+                null,
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,

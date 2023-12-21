@@ -92,14 +92,14 @@ public class TestIntake implements LoadableFromSignedState {
             @NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
         output = new ConsensusOutput(time);
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
         linker = new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
 
         final EventObserverDispatcher dispatcher =
-                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
+                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph, null), output);
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
@@ -116,6 +116,7 @@ public class TestIntake implements LoadableFromSignedState {
                 dispatcher,
                 mock(PhaseTimer.class),
                 shadowGraph,
+                null,
                 e -> {},
                 mock(IntakeEventCounter.class));
     }

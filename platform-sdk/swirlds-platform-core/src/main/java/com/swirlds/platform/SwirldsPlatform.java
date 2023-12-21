@@ -121,6 +121,7 @@ import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -440,11 +441,18 @@ public class SwirldsPlatform implements Platform {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        final boolean trackTipsetInShadowgraph = platformContext
+        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId);
+
+        final LatestEventTipsetTracker latestEventTipsetTracker;
+        final boolean enableEventFiltering = platformContext
                 .getConfiguration()
                 .getConfigData(SyncConfig.class)
                 .filterLikelyDuplicates();
-        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId, trackTipsetInShadowgraph);
+        if (enableEventFiltering) {
+            latestEventTipsetTracker = new LatestEventTipsetTracker(time, currentAddressBook, selfId);
+        } else {
+            latestEventTipsetTracker = null;
+        }
 
         this.keysAndCerts = keysAndCerts;
 
@@ -686,7 +694,7 @@ public class SwirldsPlatform implements Platform {
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
-                new ShadowGraphEventObserver(shadowGraph),
+                new ShadowGraphEventObserver(shadowGraph, latestEventTipsetTracker),
                 consensusRoundHandler,
                 addedEventMetrics,
                 eventIntakeMetrics,
@@ -738,6 +746,7 @@ public class SwirldsPlatform implements Platform {
                 eventObserverDispatcher,
                 eventIntakePhaseTimer,
                 shadowGraph,
+                latestEventTipsetTracker,
                 preconsensusEventHandlerConsumer,
                 intakeEventCounter);
 
@@ -780,7 +789,13 @@ public class SwirldsPlatform implements Platform {
             final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
             final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
             final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                    platformContext, time, consensusRef::get, eventObserverDispatcher, shadowGraph, intakeEventCounter);
+                    platformContext,
+                    time,
+                    consensusRef::get,
+                    eventObserverDispatcher,
+                    shadowGraph,
+                    latestEventTipsetTracker,
+                    intakeEventCounter);
 
             final EventCreationManager eventCreationManager = buildEventCreationManager(
                     platformContext,
@@ -854,6 +869,7 @@ public class SwirldsPlatform implements Platform {
                 appVersion,
                 epochHash,
                 shadowGraph,
+                latestEventTipsetTracker,
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
@@ -1080,6 +1096,9 @@ public class SwirldsPlatform implements Platform {
                             signedState.getEvents().clone()),
                     // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
                     consensusRef.get().getMinRoundGeneration());
+
+            // Intentionally don't bother initiating the latestEventTipsetTracker here. We don't support this
+            // code path way any more.
         } else {
             shadowGraph.startFromGeneration(consensusRef.get().getMinGenerationNonAncient());
         }

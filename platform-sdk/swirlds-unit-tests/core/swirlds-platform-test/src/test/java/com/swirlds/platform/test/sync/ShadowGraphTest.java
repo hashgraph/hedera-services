@@ -101,8 +101,8 @@ class ShadowGraphTest {
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
 
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         for (int i = 0; i < numEvents; i++) {
             IndexedEvent event = emitter.emitEvent();
@@ -692,8 +692,8 @@ class ShadowGraphTest {
 
     @Test
     void testInitFromEvents_NullEventList() {
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> shadowGraph.initFromEvents(null, 0L),
@@ -702,8 +702,8 @@ class ShadowGraphTest {
 
     @Test
     void testInitFromEvents_EmptyEventList() {
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         final List<EventImpl> empty = Collections.emptyList();
         assertThrows(
                 IllegalArgumentException.class,
@@ -720,8 +720,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(4).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         List<IndexedEvent> events = emitter.emitEvents(20);
         List<EventImpl> filteredEvents = events.stream()
@@ -748,8 +748,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(4).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         List<IndexedEvent> events = emitter.emitEvents(20);
         List<EventImpl> filteredEvents =
@@ -774,8 +774,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(4).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         List<IndexedEvent> events = emitter.emitEvents(20);
         List<EventImpl> filteredEvents =
@@ -804,8 +804,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(numNodes).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(
-                Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0), false);
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         for (int i = 0; i < numEvents; i++) {
             shadowGraph.addEvent(emitter.emitEvent());
         }
