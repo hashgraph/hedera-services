@@ -30,8 +30,8 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PcesFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -260,7 +260,7 @@ class PreconsensusEventReadWriteTests {
 
         truncateFile(file.getPath(), truncationPosition);
 
-        final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
+        final PreconsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
         final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
 
@@ -320,7 +320,7 @@ class PreconsensusEventReadWriteTests {
 
         corruptFile(random, file.getPath(), corruptionPosition);
 
-        final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
+        final PreconsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
 
         for (int i = 0; i <= lastEventIndex; i++) {
             assertEquals(events.get(i), iterator.next());
@@ -532,7 +532,7 @@ class PreconsensusEventReadWriteTests {
         assertTrue(path.toFile().createNewFile());
         assertTrue(Files.exists(path));
 
-        final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
+        final PreconsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
         assertFalse(iterator.hasNext());
         assertThrows(NoSuchElementException.class, iterator::next);
     }

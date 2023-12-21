@@ -30,7 +30,7 @@ import java.util.NoSuchElementException;
 /**
  * Iterates over the events in a single preconsensus event file.
  */
-public class PcesFileIterator implements IOIterator<GossipEvent> {
+public class PreconsensusEventFileIterator implements IOIterator<GossipEvent> {
 
     private final long minimumGeneration;
     private final SerializableDataInputStream stream;
@@ -48,7 +48,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
      * 		the minimum generation to return, any events in the file with a smaller
      * 		generation are ignored and not returned
      */
-    public PcesFileIterator(final PreconsensusEventFile fileDescriptor, final long minimumGeneration)
+    public PreconsensusEventFileIterator(final PreconsensusEventFile fileDescriptor, final long minimumGeneration)
             throws IOException {
 
         this.minimumGeneration = minimumGeneration;

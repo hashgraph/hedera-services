@@ -152,8 +152,10 @@ public class PcesFileTracker {
      * @param startingRound     the round to start iterating from
      * @return an iterator that walks over events
      */
-    public @NonNull PcesMultiFileIterator getEventIterator(final long minimumGeneration, final long startingRound) {
-        return new PcesMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration, startingRound));
+    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(
+            final long minimumGeneration, final long startingRound) {
+        return new PreconsensusEventMultiFileIterator(
+                minimumGeneration, getFileIterator(minimumGeneration, startingRound));
     }
 
     /**

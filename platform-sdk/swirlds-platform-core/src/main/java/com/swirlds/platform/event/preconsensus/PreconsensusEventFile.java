@@ -378,8 +378,8 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
      * @return an iterator over the events in this file
      */
     @NonNull
-    public PcesFileIterator iterator(final long minimumGeneration) throws IOException {
-        return new PcesFileIterator(this, minimumGeneration);
+    public PreconsensusEventFileIterator iterator(final long minimumGeneration) throws IOException {
+        return new PreconsensusEventFileIterator(this, minimumGeneration);
     }
 
     /**

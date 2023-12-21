@@ -46,11 +46,11 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
-import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -128,7 +128,7 @@ class PcesWriterTests {
                 false);
 
         // Verify that the events were written correctly
-        final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
+        final PreconsensusEventMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
         for (final GossipEvent event : events) {
             assertTrue(eventsIterator.hasNext());
             assertEquals(event, eventsIterator.next());

@@ -61,7 +61,7 @@ public final class PcesUtilities {
 
         // Find the maximum generation in the file.
         long maxGeneration = originalFile.getMinimumGeneration();
-        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0)) {
+        try (final IOIterator<GossipEvent> iterator = new PreconsensusEventFileIterator(originalFile, 0)) {
 
             while (iterator.hasNext()) {
                 final GossipEvent next = iterator.next();
