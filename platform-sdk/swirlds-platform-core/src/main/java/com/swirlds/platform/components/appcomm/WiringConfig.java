@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.converter;
+package com.swirlds.platform.components.appcomm;
 
-import com.hedera.node.config.types.Profile;
-import com.swirlds.config.api.converter.ConfigConverter;
-import com.swirlds.config.extensions.converters.AbstractEnumConfigConverter;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
-public class ProfileConverter extends AbstractEnumConfigConverter<Profile> implements ConfigConverter<Profile> {
-    @Override
-    protected Class<Profile> getEnumType() {
-        return Profile.class;
-    }
-}
+/**
+ * Configuration used to control the wiring of platform components.
+ *
+ * @param newLatestCompleteStateConsumerQueueSize
+ * 		the size of the queue used to asynchronously invoke consumers of new latest complete states
+ */
+@ConfigData("wiring")
+public record WiringConfig(@ConfigProperty(defaultValue = "1000") int newLatestCompleteStateConsumerQueueSize) {}
