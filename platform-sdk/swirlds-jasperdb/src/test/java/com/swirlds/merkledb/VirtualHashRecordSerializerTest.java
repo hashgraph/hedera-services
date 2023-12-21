@@ -71,9 +71,7 @@ class VirtualHashRecordSerializerTest {
         final VirtualHashRecord expectedData = new VirtualHashRecord(42L, validHash);
         bb.putLong(42L);
         bb.rewind();
-
-        //        when(bb.getLong()).thenReturn(42L);
-        //        when(bb.get(any())).thenReturn(bb);
+        
         final DataItemHeader expectedHeader = new DataItemHeader(56, 42L);
         assertEquals(expectedHeader, subject.deserializeHeader(bb), "Deserialized header should match serialized");
         bb.rewind();
