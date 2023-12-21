@@ -123,10 +123,11 @@ public class SignedStateManager {
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
     }
 
-    public synchronized void addState(@NonNull final ReservedSignedState reservedSignedState) {
+    public synchronized List<ReservedSignedState> addReservedState(@NonNull final ReservedSignedState reservedSignedState) {
         try(reservedSignedState){
             addState(reservedSignedState.get());
         }
+        return null;
     }
 
     /**
@@ -172,11 +173,12 @@ public class SignedStateManager {
         }
     }
 
-    public synchronized void handlePreconsensusScopedSystemTransactions(
+    public synchronized List<ReservedSignedState> handlePreconsensusScopedSystemTransactions(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
             handlePreconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
         }
+        return null;
     }
 
     public synchronized void handlePreconsensusScopedSystemTransaction(
@@ -218,11 +220,12 @@ public class SignedStateManager {
         }
     }
 
-    public synchronized void handlePostconsensusScopedSystemTransactions(
+    public synchronized List<ReservedSignedState> handlePostconsensusScopedSystemTransactions(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
             handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
         }
+        return null;
     }
 
     public synchronized void handlePostconsensusScopedSystemTransaction(

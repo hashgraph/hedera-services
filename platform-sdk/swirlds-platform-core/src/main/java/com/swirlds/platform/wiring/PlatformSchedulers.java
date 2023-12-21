@@ -23,6 +23,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,7 +65,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler,
         @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
-        @NonNull TaskScheduler<Void> stateSignatureCollectorScheduler) {
+        @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
