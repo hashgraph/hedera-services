@@ -20,10 +20,10 @@ import com.hedera.hapi.node.base.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link VerificationStrategy} that verifies signatures assuming two "active" contracts; but never
+ * A {@link VerificationStrategy} that verifies signatures as if both of two contracts are "active; but never
  * using top-level signatures.
  *
- * <p>This is the verification strategy used to support the {@code }
+ * <p>This is the verification strategy used to support the {@code contracts.keys.legacyActivations} property.
  */
 public class EitherOrVerificationStrategy implements VerificationStrategy {
     private final VerificationStrategy firstStrategy;
