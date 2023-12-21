@@ -139,7 +139,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "prng_bytes");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
-    private static final String MONO_STREAMS_LOC = "hedera-node/hedera-app/build/node/data/recordStreams/record0.0.3";
+    private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";
     private static final String HAPI_TEST_STREAMS_LOC_TPL =
             "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
@@ -180,7 +180,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("LeakyCryptoTests", "lazyCreateViaEthereumCryptoTransfer");
+        final var snapshotFileMeta = new SnapshotFileMeta(
+                "ContractKeysHTS", "DissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
