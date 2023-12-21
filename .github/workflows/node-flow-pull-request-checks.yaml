@@ -58,8 +58,6 @@ jobs:
   spotless:
     name: Spotless
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
     with:
       custom-job-label: "Check"
       enable-unit-tests: false
@@ -75,8 +73,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: true
@@ -92,8 +89,7 @@ jobs:
   eet-tests:
     name: E2E Tests
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -110,8 +106,7 @@ jobs:
   integration-tests:
     name: Integration Tests
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -128,8 +123,7 @@ jobs:
   hapi-tests-misc:
     name: HAPI Tests (Misc)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -147,8 +141,7 @@ jobs:
   hapi-tests-crypto:
     name: HAPI Tests (Crypto)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -166,8 +159,7 @@ jobs:
   hapi-tests-token:
     name: HAPI Tests (Token)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -185,8 +177,7 @@ jobs:
   hapi-tests-smart-contract:
     name: HAPI Tests (Smart Contract)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -204,8 +195,7 @@ jobs:
   hapi-tests-time-consuming:
     name: HAPI Tests (Time Consuming)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -223,8 +213,7 @@ jobs:
   abbreviated-panel:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
-    needs:
-      - build
+    needs: [build, Spotless]
     if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
     with:
       custom-job-name: "Platform SDK"
