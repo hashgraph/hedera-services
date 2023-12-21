@@ -361,21 +361,6 @@ public class HandleHederaOperations implements HederaOperations {
     }
 
     @Override
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
-        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
-        recordBuilder
-                .contractID(contractId)
-                // add dummy transaction, because SingleTransactionRecord require NonNull on build
-                .transaction(Transaction.newBuilder()
-                        .signedTransactionBytes(Bytes.EMPTY)
-                        .build())
-                .contractCreateResult(ContractFunctionResult.newBuilder()
-                        .contractID(contractId)
-                        .evmAddress(evmAddress)
-                        .build());
-    }
-
-    @Override
     public ContractID shardAndRealmValidated(@NonNull final ContractID contractId) {
         return configValidated(contractId, hederaConfig);
     }
