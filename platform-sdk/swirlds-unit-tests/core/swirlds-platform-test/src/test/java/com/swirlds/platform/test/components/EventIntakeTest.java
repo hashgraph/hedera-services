@@ -88,8 +88,11 @@ class EventIntakeTest {
         final EventImpl added = mock(EventImpl.class);
         when(added.getBaseEvent()).thenReturn(gossipEvent);
         final EventImpl consEvent1 = mock(EventImpl.class);
+        when(consEvent1.getBaseEvent()).thenReturn(mock(GossipEvent.class));
         final EventImpl consEvent2 = mock(EventImpl.class);
+        when(consEvent2.getBaseEvent()).thenReturn(mock(GossipEvent.class));
         final EventImpl stale = mock(EventImpl.class);
+        when(stale.getBaseEvent()).thenReturn(mock(GossipEvent.class));
 
         final Queue<EventImpl> staleQueue = new LinkedList<>(List.of(stale));
         when(shadowGraph.findByGeneration(anyLong(), anyLong(), any())).thenReturn(staleQueue);

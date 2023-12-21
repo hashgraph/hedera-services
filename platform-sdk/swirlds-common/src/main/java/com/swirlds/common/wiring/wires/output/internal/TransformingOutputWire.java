@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * An output wire that transforms data that flows across it. For advanced use cases where
- * {@link OutputWire#buildTransformer(String, Function)} semantics are insufficient.
+ * {@link OutputWire#buildTransformer(String, String, Function)} semantics are insufficient.
  *
  * @param <IN>  the type of data passed to the forwarding method
  * @param <OUT> the type of data forwarded to things soldered to this wire

@@ -652,8 +652,18 @@ public class SwirldsPlatform implements Platform {
                 .build());
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-        final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+
+        final Consumer<EventImpl> preconsensusEventHandlerConsumer;
+        final Clearable preconsensusEventHandlerClear;
+        if (eventConfig.useLegacyIntake()) {
+            final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
+                    metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+            preconsensusEventHandlerConsumer = preConsensusEventHandler::preconsensusEvent;
+            preconsensusEventHandlerClear = preConsensusEventHandler;
+        } else {
+            preconsensusEventHandlerConsumer = event -> {};
+            preconsensusEventHandlerClear = null;
+        }
 
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
@@ -724,7 +734,7 @@ public class SwirldsPlatform implements Platform {
                 eventObserverDispatcher,
                 eventIntakePhaseTimer,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent,
+                preconsensusEventHandlerConsumer,
                 intakeEventCounter);
 
         final List<GossipEventValidator> validators = new ArrayList<>();
@@ -766,14 +776,7 @@ public class SwirldsPlatform implements Platform {
             final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
             final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
             final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                    platformContext,
-                    threadManager,
-                    time,
-                    consensusRef::get,
-                    eventObserverDispatcher,
-                    shadowGraph,
-                    preConsensusEventHandler::preconsensusEvent,
-                    intakeEventCounter);
+                    platformContext, time, consensusRef::get, eventObserverDispatcher, shadowGraph, intakeEventCounter);
 
             final EventCreationManager eventCreationManager = buildEventCreationManager(
                     platformContext,
@@ -793,7 +796,9 @@ public class SwirldsPlatform implements Platform {
                     orphanBuffer,
                     inOrderLinker,
                     linkedEventIntake,
-                    eventCreationManager);
+                    eventCreationManager,
+                    swirldStateManager,
+                    signedStateManager);
 
             intakeHandler = platformWiring.getEventInput()::put;
         }
@@ -912,7 +917,7 @@ public class SwirldsPlatform implements Platform {
                     List.of(
                             Pair.of(pauseEventCreation, "eventCreator"),
                             Pair.of(gossip, "gossip"),
-                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                            Pair.of(preconsensusEventHandlerClear, "preConsensusEventHandler"),
                             Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                             Pair.of(transactionPool, "transactionPool")));
         } else {
@@ -922,7 +927,6 @@ public class SwirldsPlatform implements Platform {
                             Pair.of(intakeQueue, "intakeQueue"),
                             Pair.of(platformWiring, "platformWiring"),
                             Pair.of(shadowGraph, "shadowGraph"),
-                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                             Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                             Pair.of(transactionPool, "transactionPool")));
         }

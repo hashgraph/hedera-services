@@ -24,6 +24,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -127,13 +128,24 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     }
 
     /**
-     * Invokes the pre-handle method. Called after the event has been verified but before
-     * {@link #handlePreConsensusEvent(EventImpl)}.
+     * Prehandles application transactions. Similar to {@link #prehandleApplicationTransactions(EventImpl)} but accepts
+     * a {@link GossipEvent} instead of an {@link EventImpl}.
      *
-     * @param event
-     * 		the event to handle
+     * @param event the event to handle
      */
-    public void preHandle(final EventImpl event) {
+    public void prehandleApplicationTransactions(final GossipEvent event) {
+        // As a temporary work around, convert to EventImpl.
+        // Once we remove the legacy pathway, we can remove this.
+        final EventImpl eventImpl = new EventImpl(event, null, null);
+        prehandleApplicationTransactions(eventImpl);
+    }
+
+    /**
+     * Prehandles application transactions.
+     *
+     * @param event the event to handle
+     */
+    public void prehandleApplicationTransactions(final EventImpl event) {
         final long startTime = System.nanoTime();
 
         State immutableState = latestImmutableState.get();
@@ -141,18 +153,18 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
             immutableState = latestImmutableState.get();
         }
         transactionHandler.preHandle(event, immutableState.getSwirldState());
+        event.getBaseEvent().signalPrehandleCompletion();
         immutableState.release();
 
         stats.preHandleTime(startTime, System.nanoTime());
     }
 
     /**
-     * Handles an event before it reaches consensus..
+     * Prehandles system transactions.
      *
-     * @param event
-     * 		the event to handle
+     * @param event the event to handle
      */
-    public void handlePreConsensusEvent(final EventImpl event) {
+    public void prehandleSystemTransactions(final EventImpl event) {
         final long startTime = System.nanoTime();
 
         preconsensusSystemTransactionManager.handleEvent(event);
@@ -161,11 +173,10 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     }
 
     /**
-     * Handles the events in a consensus round. Implementations are responsible for invoking {@link
-     * SwirldState#handleConsensusRound(Round, SwirldDualState)}.
+     * Handles the events in a consensus round. Implementations are responsible for invoking
+     * {@link SwirldState#handleConsensusRound(Round, SwirldDualState)}.
      *
-     * @param round
-     * 		the round to handle
+     * @param round the round to handle
      */
     public void handleConsensusRound(final ConsensusRound round) {
         final State state = stateRef.get();
@@ -180,8 +191,8 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     }
 
     /**
-     * Returns the consensus state. The consensus state could become immutable at any time. Modifications must
-     * not be made to the returned state.
+     * Returns the consensus state. The consensus state could become immutable at any time. Modifications must not be
+     * made to the returned state.
      */
     public State getConsensusState() {
         return stateRef.get();
@@ -190,8 +201,8 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     /**
      * Invoked when a signed state is about to be created for the current freeze period.
      * <p>
-     * Invoked only by the consensus handling thread, so there is no chance of the state being modified by a
-     * concurrent thread.
+     * Invoked only by the consensus handling thread, so there is no chance of the state being modified by a concurrent
+     * thread.
      * </p>
      */
     public void savedStateInFreezePeriod() {
@@ -276,8 +287,8 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     /**
      * <p>Updates the state to a fast copy of itself and returns a reference to the previous state to be used for
      * signing. The reference count of the previous state returned by this is incremented to prevent it from being
-     * garbage collected until it is put in a signed state, so callers are responsible for decrementing the
-     * reference count when it is no longer needed.</p>
+     * garbage collected until it is put in a signed state, so callers are responsible for decrementing the reference
+     * count when it is no longer needed.</p>
      *
      * <p>Consensus event handling will block until this method returns. Pre-consensus
      * event handling may or may not be blocked depending on the implementation.</p>

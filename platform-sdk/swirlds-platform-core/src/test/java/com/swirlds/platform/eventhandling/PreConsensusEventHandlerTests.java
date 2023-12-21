@@ -81,7 +81,7 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
                     return null;
                 })
                 .when(swirldStateManager)
-                .handlePreConsensusEvent(any(EventImpl.class));
+                .prehandleSystemTransactions(any(EventImpl.class));
 
         final ExecutorService executor = Executors.newFixedThreadPool(1);
 

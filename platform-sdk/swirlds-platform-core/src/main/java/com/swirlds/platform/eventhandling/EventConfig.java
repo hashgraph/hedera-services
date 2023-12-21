@@ -57,7 +57,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventsLogDir                      eventStream files will be generated in this directory.
  * @param enableEventStreaming              enable stream event to server.
  * @param prehandlePoolSize                 the size of the thread pool used for prehandling transactions
- * @param useLegacyIntake                   if true then use the legacy intake monolith, if false then use the new intake pipeline
+ * @param useLegacyIntake                   if true then use the legacy intake monolith, if false then use the new
+ *                                          intake pipeline
  */
 @ConfigData("event")
 public record EventConfig(

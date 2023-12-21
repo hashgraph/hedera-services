@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.transformers.internal;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.internal.ForwardingOutputWire;
 import com.swirlds.common.wiring.wires.output.internal.TransformingOutputWire;
