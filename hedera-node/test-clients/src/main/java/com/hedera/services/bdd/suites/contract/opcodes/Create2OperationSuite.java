@@ -418,6 +418,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 NONDETERMINISTIC_FUNCTION_PARAMETERS,
                                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                                 // diff mono/hapi
+                                NONDETERMINISTIC_TRANSACTION_FEES,
                                 SKIP_LOG_INFO_CONTAINING_ADDRESSES),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
