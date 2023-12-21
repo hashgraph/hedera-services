@@ -21,15 +21,12 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link VerificationStrategy} that verifies signatures from a single active contract. This is the
  * verification strategy used within the EVM to check receiver signature requirements.
  */
 public class ActiveContractVerificationStrategy implements VerificationStrategy {
-    private static final Logger logger = LogManager.getLogger(ActiveContractVerificationStrategy.class);
     private final long activeNumber;
     private final Bytes activeAddress;
     private final boolean requiresDelegatePermission;
@@ -86,10 +83,6 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
 
     private Decision decisionFor(@NonNull final ContractID authorizedId) {
         if (authorizedId.hasContractNum() && authorizedId.contractNumOrThrow() == activeNumber) {
-            logger.info(
-                    "Active contract verification strategy: decision is valid for {} with activeNumber {}",
-                    authorizedId,
-                    activeNumber);
             return Decision.VALID;
         } else if (authorizedId.hasEvmAddress() && activeAddress.equals(authorizedId.evmAddress())) {
             return Decision.VALID;
