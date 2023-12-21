@@ -122,18 +122,6 @@ class HtsSystemContractTest {
         assertSamePrecompileResult(expected, result);
     }
 
-    @Test
-    void callWithNonGasCostNotImplemented() {
-        commonMocks();
-
-        givenValidCallAttempt();
-        final var pricedResult =
-                new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L, SUCCESS, true);
-        given(call.execute(frame)).willReturn(pricedResult);
-
-        assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
-    }
-
     private void givenValidCallAttempt() {
         frameUtils.when(() -> isDelegateCall(frame)).thenReturn(false);
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
