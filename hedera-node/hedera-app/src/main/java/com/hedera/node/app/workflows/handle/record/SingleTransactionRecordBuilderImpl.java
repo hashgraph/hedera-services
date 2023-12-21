@@ -335,7 +335,7 @@ public class SingleTransactionRecordBuilderImpl
         transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);
         transactionReceiptBuilder.topicSequenceNumber(0L);
-        transactionRecordBuilder.contractCreateResult((ContractFunctionResult) null);
+        // Note that internal contract creations are removed instead of reversed
         transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionRecordBuilder.alias(Bytes.EMPTY);
         transactionRecordBuilder.ethereumHash(Bytes.EMPTY);

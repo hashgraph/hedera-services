@@ -52,6 +52,14 @@ public interface HtsCall {
             return new PricedResult(result, 0L, responseCode, isViewCall);
         }
 
+        public static PricedResult gasAndValue(
+                @NonNull final FullResult result,
+                @NonNull final ResponseCodeEnum responseCode,
+                final boolean isViewCall,
+                final long nonGasCost) {
+            return new PricedResult(result, nonGasCost, responseCode, isViewCall);
+        }
+
         public ContractFunctionResult asResultOfCall(
                 @NonNull final AccountID senderId,
                 @NonNull final ContractID contractId,

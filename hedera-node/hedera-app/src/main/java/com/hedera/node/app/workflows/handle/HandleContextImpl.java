@@ -772,6 +772,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (keyVerifier != null) {
             for (final var key : preHandleContext.requiredNonPayerKeys()) {
                 final var verification = keyVerifier.verificationFor(key);
+                logger.info("Verifying key {} -> got {}", key, verification);
                 if (verification.failed()) {
                     throw new PreCheckException(INVALID_SIGNATURE);
                 }

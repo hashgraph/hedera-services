@@ -172,6 +172,20 @@ public class FrameUtils {
         return frames.hasNext() ? Optional.of(frames.next()) : Optional.empty();
     }
 
+    public static boolean stackIncludesActiveAddress(
+            @NonNull final MessageFrame frame, @NonNull final Address address) {
+        final var iter = frame.getMessageFrameStack().iterator();
+        // We skip the frame at the top of the stack (recall that a deque representing
+        // a stack stores the top at the front of its internal list)
+        for (iter.next(); iter.hasNext(); ) {
+            final var ancestor = iter.next();
+            if (address.equals(ancestor.getRecipientAddress())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean unqualifiedDelegateDetected(final MessageFrame frame) {
         if (!isDelegateCall(frame)) {
             return false;
