@@ -17,11 +17,11 @@
 package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.events.PlatformEvent;
 
 /**

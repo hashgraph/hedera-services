@@ -65,14 +65,14 @@ import java.util.concurrent.CountDownLatch;
 @ConstructableIgnored
 public class EventImpl extends EventMetadata
         implements BaseEvent,
-        Comparable<EventImpl>,
-        PlatformEvent,
-        SerializableHashable,
-        OptionalSelfSerializable<EventSerializationOptions>,
-        RunningHashable,
-        StreamAligned,
-        Timestamped,
-        Iterable<EventImpl> {
+                Comparable<EventImpl>,
+                PlatformEvent,
+                SerializableHashable,
+                OptionalSelfSerializable<EventSerializationOptions>,
+                RunningHashable,
+                StreamAligned,
+                Timestamped,
+                Iterable<EventImpl> {
     /**
      * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
      * the transaction immediately before it in consensus order, and to be a multiple of this (must be positive and a

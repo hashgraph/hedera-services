@@ -35,9 +35,9 @@ import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.signed.SignedState;
@@ -845,6 +845,39 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     /**
+     * Get a list of non-ancient parents of event x.
+     * @param x the event to get the parents of
+     * @return a list of parents of event x
+     */
+    private List<EventImpl> parents(@NonNull final EventImpl x) {
+        final List<EventImpl> parents = new ArrayList<>();
+        if (x.getSelfParent() != null && !ancient(x.getSelfParent())) {
+            parents.add(x.getSelfParent());
+        }
+        for (final EventImpl otherParent : x.getOtherParents()) {
+            if (!ancient(otherParent)) {
+                parents.add(otherParent);
+            }
+        }
+        return parents;
+    }
+
+    /**
+     * Get a list of non-ancient other parents of event x.
+     * @param x the event to get the other parents of
+     * @return a list of other parents of event x
+     */
+    private List<EventImpl> otherParents(@NonNull final EventImpl x) {
+        final List<EventImpl> otherParents = new ArrayList<>();
+        for (final EventImpl otherParent : x.getOtherParents()) {
+            if (!ancient(otherParent)) {
+                otherParents.add(otherParent);
+            }
+        }
+        return otherParents;
+    }
+
+    /**
      * Check if the event is ancient
      * @param x the event to check
      * @return true if the event is ancient
@@ -904,15 +937,32 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             if (creatorIndexEquals(x, mm)) {
                 x.setLastSee(mm, x);
             } else {
+                final List<EventImpl> parents = parents(x);
 
-                // TODO this needs to be refactored for multiple other parents!!!
-
-                final EventImpl op = otherParent(x);
-                final EventImpl sp = selfParent(x);
-
-                if (sp == null && op == null) {
+                if (parents.isEmpty()) {
                     x.setLastSee(mm, null);
                 } else {
+
+                    EventImpl bestLastSeenEvent = null;
+                    for (final EventImpl parent : parents) {
+                        final EventImpl candidateLastSeenEvent = lastSee(parent, mm);
+                        if (candidateLastSeenEvent == null) {
+                            continue;
+                        }
+                        if (bestLastSeenEvent == null) {
+                            bestLastSeenEvent = candidateLastSeenEvent;
+                            continue;
+                        }
+
+                        if ((round(candidateLastSeenEvent) > round(bestLastSeenEvent))
+                                || (candidateLastSeenEvent.getGeneration() > bestLastSeenEvent.getGeneration()
+                                        && (firstSee(candidateLastSeenEvent, mm) == firstSee(bestLastSeenEvent, mm)))) {
+                            bestLastSeenEvent = candidateLastSeenEvent;
+                        }
+                    }
+                    x.setLastSee(mm, bestLastSeenEvent);
+
+                    /* TODO remove, keep as a reference until replacement is verified
                     final EventImpl lsop = lastSee(op, mm);
                     final EventImpl lssp = lastSee(sp, mm);
                     final long lsopGen = lsop == null ? 0 : lsop.getGeneration();
@@ -921,7 +971,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         x.setLastSee(mm, lsop);
                     } else {
                         x.setLastSee(mm, lssp);
-                    }
+                    } */
                 }
             }
         }
@@ -1161,6 +1211,22 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             return x.getFirstWitnessS();
         }
         // calculate, memoize, and return the result
+
+        // Find the first parent that is in the same round as x. The first witness of that parent
+        // is the first witness of x. If there are no parents with the same round as x, then the
+        // first witness of x is x.
+
+        for (final EventImpl parent : x) {
+            if (round(parent) == round(x)) {
+                x.setFirstWitnessS(firstWitnessS(parent));
+                return x.getFirstWitnessS();
+            }
+        }
+
+        x.setFirstWitnessS(x);
+        return x;
+
+        /* TODO remove after reviewing
         if (round(x) > parentRound(x)) {
             x.setFirstWitnessS(x);
         } else if (round(x) == round(selfParent(x))) {
@@ -1169,6 +1235,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             x.setFirstWitnessS(firstWitnessS(otherParent(x)));
         }
         return x.getFirstWitnessS();
+        */
     }
 
     /**

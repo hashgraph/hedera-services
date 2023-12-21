@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.event.creation;
 
 import com.swirlds.common.utility.DurationUtils;
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.event.EventImpl;
+import com.swirlds.platform.internal.ConsensusRound;
 import java.time.Duration;
 import java.util.Collection;
 

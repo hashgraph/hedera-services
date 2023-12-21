@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.SimpleEvent;

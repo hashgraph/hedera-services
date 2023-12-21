@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.observers;
 
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.event.EventImpl;
+import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;

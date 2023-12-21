@@ -22,12 +22,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.ChatterNotifier;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import java.util.List;
 import org.junit.jupiter.api.Tag;

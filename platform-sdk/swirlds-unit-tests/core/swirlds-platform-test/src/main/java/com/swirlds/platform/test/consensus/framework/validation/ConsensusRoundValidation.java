@@ -19,8 +19,8 @@ package com.swirlds.platform.test.consensus.framework.validation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.event.EventImpl;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.Iterator;
