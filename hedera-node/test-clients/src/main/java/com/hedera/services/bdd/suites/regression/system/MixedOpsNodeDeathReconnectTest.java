@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * shuts one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
  * submits the same burst of mixed operations again.
  */
-@HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes
+//@HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes
 public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsNodeDeathReconnectTest.class);
 
