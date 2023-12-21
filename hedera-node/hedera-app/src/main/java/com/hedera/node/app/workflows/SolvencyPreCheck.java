@@ -142,7 +142,7 @@ public class SolvencyPreCheck {
             return;
         }
 
-        final var totalFee = fees.totalFee();
+        final var totalFee = ingestCheck ? fees.totalWithoutServiceFee() : fees.totalFee();
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txBody.transactionFee();
         final ResponseCodeEnum insufficientFeeResponseCode;
