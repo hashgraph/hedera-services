@@ -830,7 +830,10 @@ public class HtmlGenerator {
                 "." + SECLECT_COLUMN_BUTTON_LABEL + "." + BLACKLIST_RADIO_LABEL,
                 new CssDeclaration("border-color", BLACKLIST_RADIO_COLOR));
 
-        cssFactory.addRule("." + SECLECT_COLUMN_BUTTON_LABEL, new CssDeclaration("margin", "0.2em"));
+        cssFactory.addRule(
+                "." + SECLECT_COLUMN_BUTTON_LABEL,
+                new CssDeclaration("margin", "1px"),
+                new CssDeclaration("width", "2em"));
 
         // create color rules for each log level
         logLines.stream()
