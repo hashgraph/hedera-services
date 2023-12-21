@@ -573,6 +573,8 @@ public class TestHelpers {
     public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     public static final AccountID UNAUTHORIZED_SPENDER_ID =
             AccountID.newBuilder().accountNum(999999L).build();
+    public static final AccountID REVOKE_APPROVAL_SPENDER_ID =
+            AccountID.newBuilder().accountNum(0L).build();
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
     public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
             asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());

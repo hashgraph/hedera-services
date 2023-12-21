@@ -90,6 +90,29 @@ public final class SystemContractUtils {
                 .build();
     }
 
+    /**
+     * Create an error contract function result.
+     *
+     * @param gasUsed    Report the gas used.
+     * @param errorMsg   The error message to report back to the caller.
+     * @param contractID The contract ID.
+     * @param contractCallResult Bytes representation of the contract call result error
+     * @return The created contract function result when for a failed call.
+     */
+    @NonNull
+    public static ContractFunctionResult contractFunctionResultFailedForProto(
+            final long gasUsed,
+            final String errorMsg,
+            final ContractID contractID,
+            final com.hedera.pbj.runtime.io.buffer.Bytes contractCallResult) {
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .contractID(contractID)
+                .errorMessage(errorMsg)
+                .contractCallResult(contractCallResult)
+                .build();
+    }
+
     private static ContractID contractIdFromEvmAddress(final byte[] bytes) {
         return ContractID.newBuilder()
                 .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
