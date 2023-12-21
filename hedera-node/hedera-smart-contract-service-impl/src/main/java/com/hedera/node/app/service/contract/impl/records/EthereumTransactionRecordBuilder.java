@@ -68,4 +68,7 @@ public interface EthereumTransactionRecordBuilder extends GasFeeRecordBuilder {
      */
     @NonNull
     EthereumTransactionRecordBuilder ethereumHash(@NonNull Bytes ethereumHash);
+
+    @NonNull
+    EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount);
 }

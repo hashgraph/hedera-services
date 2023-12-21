@@ -46,6 +46,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -154,9 +155,10 @@ class HandleHederaNativeOperationsTest {
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
-        given(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
-                .willReturn(cryptoCreateRecordBuilder);
+
+        when(context.dispatchRemovablePrecedingTransaction(
+                eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                .thenReturn(cryptoCreateRecordBuilder);
 
         final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
         given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID)).willReturn(synthLazyCreateFees);
@@ -168,6 +170,7 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID))
                 .willReturn(synthFinalizatonFees);
+
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
         final var status = subject.createHollowAccount(CANONICAL_ALIAS);

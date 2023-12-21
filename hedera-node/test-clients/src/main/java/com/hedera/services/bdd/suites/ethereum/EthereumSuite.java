@@ -165,7 +165,6 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
-    @HapiTest
     @Disabled("Failing or intermittently failing HAPI Test")
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
@@ -296,6 +295,66 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest1() {
+        return feePaymentMatrix().get(0);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest2() {
+        return feePaymentMatrix().get(1);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest3() {
+        return feePaymentMatrix().get(2);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest4() {
+        return feePaymentMatrix().get(3);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest5() {
+        return feePaymentMatrix().get(4);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest6() {
+        return feePaymentMatrix().get(5);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest7() {
+        return feePaymentMatrix().get(6);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest8() {
+        return feePaymentMatrix().get(7);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest9() {
+        return feePaymentMatrix().get(8);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest10() {
+        return feePaymentMatrix().get(9);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest11() {
+        return feePaymentMatrix().get(10);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest12() {
+        return feePaymentMatrix().get(11);
+    }
+
     @BddTestNameDoesNotMatchMethodName
     HapiSpec matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {
@@ -349,6 +408,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
@@ -423,6 +483,7 @@ public class EthereumSuite extends HapiSuite {
                                 .memo(MEMO))));
     }
 
+    @HapiTest
     HapiSpec etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
         final var relayerSnapshot = "relayer";
         final var senderSnapshot = "sender";
@@ -464,6 +525,7 @@ public class EthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(0L)));
     }
 
+    @HapiTest
     HapiSpec etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
@@ -514,6 +576,7 @@ public class EthereumSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
+    @HapiTest
     HapiSpec etx009CallsToTokenAddresses() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
@@ -711,6 +774,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec directTransferWorksForERC20() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
@@ -812,6 +876,7 @@ public class EthereumSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
+    @HapiTest
     HapiSpec callToTokenAddressViaEip2930TxSuccessfully() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
@@ -856,6 +921,7 @@ public class EthereumSuite extends HapiSuite {
                                                 .withTotalSupply(totalSupply)))));
     }
 
+    @HapiTest
     HapiSpec transferTokensViaEip2930TxSuccessfully() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
@@ -908,6 +974,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
+    @HapiTest
     HapiSpec callToNonExistingContractFailsGracefully() {
 
         return defaultHapiSpec("callToNonExistingContractFailsGracefully")
