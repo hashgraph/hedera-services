@@ -61,8 +61,8 @@ public class ShadowEvent {
      * @param selfParent   the self-parent event's shadow
      * @param otherParents a list of other parent event shadows
      */
-    public ShadowEvent(final EventImpl event, final ShadowEvent selfParent,
-            @NonNull final List<ShadowEvent> otherParents) {
+    public ShadowEvent(
+            final EventImpl event, final ShadowEvent selfParent, @NonNull final List<ShadowEvent> otherParents) {
         this.event = event;
         this.selfParent = selfParent;
         this.otherParents = Objects.requireNonNull(otherParents);
@@ -98,7 +98,6 @@ public class ShadowEvent {
         }
         return null;
     }
-
 
     /**
      * Get a list of other parents.

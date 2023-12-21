@@ -62,8 +62,8 @@ public final class TipsetUtils {
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final GossipEvent event) {
-        final List<EventDescriptor> parentDescriptors = new ArrayList<>(
-                1 + event.getHashedData().getOtherParents().size());
+        final List<EventDescriptor> parentDescriptors =
+                new ArrayList<>(1 + event.getHashedData().getOtherParents().size());
 
         final BaseEventHashedData hashedData = event.getHashedData();
         if (hashedData.hasSelfParent()) {

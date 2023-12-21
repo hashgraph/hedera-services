@@ -18,7 +18,10 @@ package com.swirlds.platform.system.events;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * @deprecated This interface will be removed at a later date. Use {@link Event} or {@link ConsensusEvent} instead.
@@ -74,7 +77,8 @@ public interface PlatformEvent extends ConsensusEvent {
      *
      * @return The other parent event
      */
-    PlatformEvent getOtherParent();
+    @NonNull
+    List<EventImpl> getOtherParents();
 
     /**
      * This event's generation, which is 1 plus max of parents' generations.

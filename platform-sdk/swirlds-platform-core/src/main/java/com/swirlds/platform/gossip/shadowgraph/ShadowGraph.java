@@ -696,27 +696,6 @@ public class ShadowGraph implements Clearable {
             return InsertableStatus.EXPIRED_EVENT;
         }
 
-        final boolean hasOP = e.getOtherParent() != null;
-        final boolean hasSP = e.getSelfParent() != null;
-
-        // If e has an unexpired parent that is not already referenced by the shadow graph, then we log an error. This
-        // is only a sanity check, so there is no need to prevent insertion
-        if (hasOP) {
-            final boolean knownOP = shadow(e.getOtherParent()) != null;
-            final boolean expiredOP = expired(e.getOtherParent());
-            if (!knownOP && !expiredOP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
-            }
-        }
-
-        if (hasSP) {
-            final boolean knownSP = shadow(e.getSelfParent()) != null;
-            final boolean expiredSP = expired(e.getSelfParent());
-            if (!knownSP && !expiredSP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
-            }
-        }
-
         // If both parents are null, then insertion is allowed. This will create
         // a new tree in the forest view of the graph.
         return InsertableStatus.INSERTABLE;
