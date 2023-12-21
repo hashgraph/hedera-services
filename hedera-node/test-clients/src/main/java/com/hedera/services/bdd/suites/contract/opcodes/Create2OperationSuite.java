@@ -782,6 +782,9 @@ public class Create2OperationSuite extends HapiSuite {
         return defaultHapiSpec("CanCallFinalizedContractViaHapi")
                 .given(
                         // todo: missing transaction fee and memo on preceding crypto create record
+                        // this issue is fixed with this PR https://github.com/hashgraph/hedera-services/pull/10539
+                        // we can enable fuzzy match when it is merged.
+
                         // snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_ETHEREUM_DATA,
                         // NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
@@ -899,6 +902,9 @@ public class Create2OperationSuite extends HapiSuite {
         return defaultHapiSpec("canUseAliasesInPrecompilesAndContractKeys")
                 .given(
                         // todo: we add admin key on child records produced by contract created with omitAdminKey()
+                        // If adminKey is empty, we allays set it to be the pending creation contract id, when the new
+                        // account is created. See SynthTxnUtils.synthAccountCreationFromHapi
+
                         //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                         //                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         //                                NONDETERMINISTIC_TRANSACTION_FEES,
