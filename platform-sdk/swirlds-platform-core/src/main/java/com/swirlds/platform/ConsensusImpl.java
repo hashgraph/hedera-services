@@ -1115,6 +1115,27 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             return x.getRoundCreated();
         }
 
+        long greatestParentRound = ConsensusConstants.ROUND_NEGATIVE_INFINITY;
+        long previousParentRound = Long.MIN_VALUE;
+        boolean allParentsHaveTheSameRound = true;
+        for (final EventImpl parent : parents(x)) {
+            final long parentRound = round(parent);
+            if (parentRound > greatestParentRound) {
+                greatestParentRound = parentRound;
+            }
+
+            if (previousParentRound != Long.MIN_VALUE && parentRound != previousParentRound) {
+                allParentsHaveTheSameRound = false;
+            }
+            previousParentRound = parentRound;
+        }
+
+        if (!allParentsHaveTheSameRound) {
+            x.setRoundCreated(greatestParentRound);
+            return x.getRoundCreated();
+        }
+
+        /* TODO remove after review
         // roundCreated of self parent
         final long rsp = round(selfParent(x));
         // roundCreated of other parent
@@ -1130,12 +1151,12 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         if (rop > rsp) {
             x.setRoundCreated(rop);
             return x.getRoundCreated();
-        }
+        }*/
 
         //
-        // parents have equal rounds. But if both are -infinity, then this is -infinity
+        // parents have equal rounds. But if all are -infinity, then this is -infinity
         //
-        if (rsp == ConsensusConstants.ROUND_NEGATIVE_INFINITY) {
+        if (greatestParentRound == ConsensusConstants.ROUND_NEGATIVE_INFINITY) {
             x.setRoundCreated(ConsensusConstants.ROUND_NEGATIVE_INFINITY);
             return x.getRoundCreated();
         }
