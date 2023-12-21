@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.converter;
+package com.swirlds.common.wiring.model;
 
-import com.hedera.node.config.types.Profile;
-import com.swirlds.config.api.converter.ConfigConverter;
-import com.swirlds.config.extensions.converters.AbstractEnumConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class ProfileConverter extends AbstractEnumConfigConverter<Profile> implements ConfigConverter<Profile> {
-    @Override
-    protected Class<Profile> getEnumType() {
-        return Profile.class;
-    }
-}
+/**
+ * Describes a manual link between two components. Useful for adding information to the diagram that is not captured by
+ * the wiring framework
+ *
+ * @param source the source scheduler
+ * @param label  the label on the edge
+ * @param target the target scheduler
+ */
+public record ModelManualLink(@NonNull String source, @NonNull String label, @NonNull String target) {}
