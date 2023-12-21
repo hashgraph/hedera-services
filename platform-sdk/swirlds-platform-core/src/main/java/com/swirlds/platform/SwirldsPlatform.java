@@ -341,8 +341,8 @@ public class SwirldsPlatform implements Platform {
     private final AsyncEventCreationManager eventCreator;
 
     /**
-     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND}
-     * if no reconnect state has been received since startup.
+     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
+     * been received since startup.
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
@@ -786,6 +786,7 @@ public class SwirldsPlatform implements Platform {
                     selfId,
                     appVersion,
                     transactionPool,
+                    this::getIntakeQueueSize,
                     platformStatusManager::getCurrentStatus,
                     latestReconnectRound::get);
 
@@ -940,6 +941,15 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
+    }
+
+    /**
+     * Get the current size of the intake queue. Helper method to break a circular dependency.
+     *
+     * @return the current size of the intake queue
+     */
+    private int getIntakeQueueSize() {
+        return intakeQueue.size();
     }
 
     /**
