@@ -40,9 +40,9 @@ public class EventImplParentIterator implements Iterator<EventImpl> {
      */
     public EventImplParentIterator(@NonNull final EventImpl event) {
         this.event = Objects.requireNonNull(event);
-        returnSelfParent = event.getHashedData().getSelfParent() != null;
+        returnSelfParent = event.getSelfParent() != null;
         eventCount = (returnSelfParent ? 1 : 0)
-                + event.getHashedData().getOtherParents().size();
+                + event.getOtherParents().size();
     }
 
     /**
