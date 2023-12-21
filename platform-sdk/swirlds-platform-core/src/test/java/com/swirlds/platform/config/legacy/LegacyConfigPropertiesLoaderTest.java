@@ -32,8 +32,7 @@ class LegacyConfigPropertiesLoaderTest {
 
     @Test
     void testNullValue() {
-        Assertions.assertThrows(
-                IllegalArgumentException.class, () -> LegacyConfigPropertiesLoader.loadConfigFile(null));
+        Assertions.assertThrows(NullPointerException.class, () -> LegacyConfigPropertiesLoader.loadConfigFile(null));
     }
 
     @Test
