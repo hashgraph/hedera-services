@@ -47,16 +47,20 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
+import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -81,9 +85,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PcesWriterWiring pcesWriterWiring;
     private final PcesSequencerWiring pcesSequencerWiring;
     private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
+    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
     private final PlatformCoordinator platformCoordinator;
-
     /**
      * Constructor.
      *
@@ -111,6 +116,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             eventCreationManagerWiring =
                     EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
             pcesSequencerWiring = PcesSequencerWiring.create(schedulers.pcesSequencerScheduler());
+
+            applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
+                    schedulers.applicationTransactionPrehandlerScheduler());
+            stateSignatureCollectorWiring =
+                    StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
+
             platformCoordinator = new PlatformCoordinator(
                     internalEventValidatorWiring,
                     eventDeduplicatorWiring,
@@ -118,7 +129,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     orphanBufferWiring,
                     inOrderLinkerWiring,
                     linkedEventIntakeWiring,
-                    eventCreationManagerWiring);
+                    eventCreationManagerWiring,
+                    applicationTransactionPrehandlerWiring,
+                    stateSignatureCollectorWiring);
         } else {
             internalEventValidatorWiring = null;
             eventDeduplicatorWiring = null;
@@ -129,6 +142,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             eventCreationManagerWiring = null;
             pcesSequencerWiring = null;
             platformCoordinator = null;
+            applicationTransactionPrehandlerWiring = null;
+            stateSignatureCollectorWiring = null;
         }
 
         eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
@@ -189,6 +204,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
             eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
+            orphanBufferWiring
+                    .eventOutput()
+                    .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
+            orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
             solderMinimumGenerationNonAncient();
         } else {
@@ -258,6 +277,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param linkedEventIntake       the linked event intake to bind
      * @param eventCreationManager    the event creation manager to bind
      * @param pcesSequencer           the PCES sequencer to bind
+     * @param swirldStateManager      the swirld state manager to bind
+     * @param signedStateManager      the signed state manager to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -267,7 +288,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake,
             @NonNull final EventCreationManager eventCreationManager,
-            @NonNull final PcesSequencer pcesSequencer) {
+            @NonNull final PcesSequencer pcesSequencer,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final SignedStateManager signedStateManager) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -277,6 +300,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         linkedEventIntakeWiring.bind(linkedEventIntake);
         eventCreationManagerWiring.bind(eventCreationManager);
         pcesSequencerWiring.bind(pcesSequencer);
+        applicationTransactionPrehandlerWiring.bind(swirldStateManager);
+        stateSignatureCollectorWiring.bind(signedStateManager);
     }
 
     /**
@@ -361,8 +386,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Get the input wire for signing a state
      * <p>
-     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole
-     * system being migrated to the new framework.
+     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole system being
+     * migrated to the new framework.
      *
      * @return the input wire for signing a state
      */

@@ -35,7 +35,9 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -88,7 +90,9 @@ class PlatformWiringTests {
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
                 mock(EventCreationManager.class),
-                mock(PcesSequencer.class));
+                mock(PcesSequencer.class),
+                mock(SwirldStateManager.class),
+                mock(SignedStateManager.class));
         wiring.bind(
                 mock(EventHasher.class),
                 mock(SignedStateFileManager.class),

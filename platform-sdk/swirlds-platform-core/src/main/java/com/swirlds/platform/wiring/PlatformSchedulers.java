@@ -32,19 +32,21 @@ import java.util.List;
  * The {@link TaskScheduler}s used by the platform.
  *
  * @param eventHasherScheduler             the scheduler for the event hasher
- * @param internalEventValidatorScheduler  the scheduler for the internal event validator
- * @param eventDeduplicatorScheduler       the scheduler for the event deduplicator
- * @param eventSignatureValidatorScheduler the scheduler for the event signature validator
- * @param orphanBufferScheduler            the scheduler for the orphan buffer
- * @param inOrderLinkerScheduler           the scheduler for the in-order linker
- * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
- * @param eventCreationManagerScheduler    the scheduler for the event creation manager
- * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
- * @param stateSignerScheduler             the scheduler for the state signer
+ * @param internalEventValidatorScheduler           the scheduler for the internal event validator
+ * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
+ * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
+ * @param orphanBufferScheduler                     the scheduler for the orphan buffer
+ * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
+ * @param linkedEventIntakeScheduler                the scheduler for the linked event intake
+ * @param eventCreationManagerScheduler             the scheduler for the event creation manager
+ * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
+ * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler            the scheduler for the pces replayer
  * @param pcesWriterScheduler              the scheduler for the pces writer
  * @param pcesSequencerScheduler           the scheduler for the pces sequencer
  * @param eventDurabilityNexusScheduler    the scheduler for the event durability nexus
+ * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
+ * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -60,7 +62,9 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
         @NonNull TaskScheduler<Long> pcesWriterScheduler,
         @NonNull TaskScheduler<GossipEvent> pcesSequencerScheduler,
-        @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler) {
+        @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
+        @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
+        @NonNull TaskScheduler<Void> stateSignatureCollectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -161,6 +165,21 @@ public record PlatformSchedulers(
                         .withType(config.eventDurabilityNexusSchedulerType())
                         .withUnhandledTaskCapacity(config.eventDurabilityNexusUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("applicationTransactionPrehandler")
+                        .withType(config.applicationTransactionPrehandlerSchedulerType())
+                        .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("stateSignatureCollector")
+                        .withType(config.stateSignatureCollectorSchedulerType())
+                        .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
                         .build()
                         .cast());
     }
