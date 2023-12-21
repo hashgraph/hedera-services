@@ -16,17 +16,17 @@
 
 package com.swirlds.common.metrics.extensions;
 
+import static com.swirlds.base.ArgumentUtils.throwArgBlank;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
-import com.swirlds.common.units.UnitConstants;
 import java.util.Objects;
 
 /**

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.POPPED_FROM_STACK;
-import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.READ_FROM_LIST_END;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionSidecarsEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionValidationEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasValidatedActionSidecarsEnabled;
@@ -87,7 +85,7 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         if (state == CODE_SUSPENDED) {
             actionStack.pushActionOfIntermediate(frame);
         } else if (state != CODE_EXECUTING) {
-            actionStack.finalizeLastAction(POPPED_FROM_STACK, frame, stackValidationChoice(frame));
+            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
         }
     }
 
@@ -111,8 +109,16 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
             @NonNull final MessageFrame frame, @NonNull final Optional<ExceptionalHaltReason> haltReason) {
         requireNonNull(frame);
         requireNonNull(haltReason);
-        if (hasActionSidecarsEnabled(frame)) {
-            actionStack.finalizeLastAction(READ_FROM_LIST_END, frame, stackValidationChoice(frame));
+        // It is important NOT to finalize the last action on the stack unless a halt reason
+        // is present, as otherwise the same action could be finalized twice depending on the
+        // value returned from this tracer's isExtendedTracing()---c.f. the call in Besu's
+        // ContractCreationProcessor given both the deposit fee and passing validation rules.
+        // It is equally important that we DO finalize the last action here when a halt
+        // reason is present, since that means creation failed before executing the frame's
+        // code, and tracePostExecution() will never be called; so this is our only chance
+        // to keep the action stack in sync with the message frame stack.
+        if (hasActionSidecarsEnabled(frame) && haltReason.isPresent()) {
+            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
         }
     }
 

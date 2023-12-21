@@ -31,6 +31,7 @@ mainModuleInfo {
 }
 
 testModuleInfo {
+    requires("com.fasterxml.jackson.databind")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
@@ -156,16 +157,37 @@ val copyApp =
         shouldRunAfter(tasks.named("copyLib"))
     }
 
+// Working directory for 'run' tasks
+val nodeWorkingDir = layout.buildDirectory.dir("node")
+
+val copyNodeData =
+    tasks.register<Sync>("copyNodeDataAndConfig") {
+        into(nodeWorkingDir)
+
+        // Copy things from hedera-node/data
+        into("data/lib") { from(copyLib) }
+        into("data/apps") { from(copyApp) }
+        into("data/onboard") { from(layout.projectDirectory.dir("../data/onboard")) }
+        into("data/keys") { from(layout.projectDirectory.dir("../data/keys")) }
+
+        // Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
+        from(layout.projectDirectory.dir("../configuration/dev")) { into("data/config") }
+        from(layout.projectDirectory.file("../config.txt"))
+        from(layout.projectDirectory.file("../log4j2.xml"))
+        from(layout.projectDirectory.file("../configuration/dev/settings.txt"))
+    }
+
 tasks.assemble {
     dependsOn(copyLib)
     dependsOn(copyApp)
+    dependsOn(copyNodeData)
 }
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("..").asFile
+    workingDir = nodeWorkingDir.get().asFile
     jvmArgs = listOf("-cp", "data/lib/*")
     mainClass.set("com.swirlds.platform.Browser")
 }
@@ -173,7 +195,7 @@ tasks.register<JavaExec>("run") {
 tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("..").asFile
+    workingDir = nodeWorkingDir.get().asFile
     jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }

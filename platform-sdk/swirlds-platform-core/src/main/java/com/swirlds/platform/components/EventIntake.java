@@ -20,23 +20,23 @@ import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
@@ -168,6 +168,7 @@ public class EventIntake {
         try {
             // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
             if (consensus().isExpired(event)) {
+                event.clear();
                 return;
             }
 
@@ -214,10 +215,7 @@ public class EventIntake {
      */
     @NonNull
     private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
-        return () -> {
-            prehandleEvent.accept(event);
-            event.signalPrehandleCompletion();
-        };
+        return () -> prehandleEvent.accept(event);
     }
 
     /**
@@ -250,7 +248,7 @@ public class EventIntake {
             // It is critically important that prehandle is always called prior to handleConsensusRound().
 
             final long start = time.nanoTime();
-            consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+            consensusRound.forEach(e -> ((EventImpl) e).getBaseEvent().awaitPrehandleCompletion());
             final long end = time.nanoTime();
             metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 

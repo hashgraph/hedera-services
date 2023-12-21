@@ -136,7 +136,9 @@ public class SingleTransactionRecordBuilderImpl
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
-    private final Instant consensusNow;
+    // Mutable because the provisional consensus timestamp assigned on dispatch could
+    // change when removable records appear "between" this record and the parent record
+    private Instant consensusNow;
     private Instant parentConsensus;
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
@@ -308,6 +310,36 @@ public class SingleTransactionRecordBuilderImpl
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
 
+    public void nullOutSideEffectFields() {
+        serialNumbers.clear();
+        tokenTransferLists.clear();
+        automaticTokenAssociations.clear();
+        if (transferList.hasAccountAmounts()) {
+            transferList.accountAmounts().clear();
+        }
+        paidStakingRewards.clear();
+        assessedCustomFees.clear();
+
+        newTotalSupply = 0L;
+        contractFunctionResult = null;
+
+        transactionReceiptBuilder.accountID((AccountID) null);
+        transactionReceiptBuilder.contractID((ContractID) null);
+        transactionReceiptBuilder.fileID((FileID) null);
+        transactionReceiptBuilder.tokenID((TokenID) null);
+        transactionReceiptBuilder.scheduleID((ScheduleID) null);
+        transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
+        transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
+        transactionReceiptBuilder.newTotalSupply(0L);
+        transactionReceiptBuilder.topicRunningHashVersion(0L);
+        transactionReceiptBuilder.topicSequenceNumber(0L);
+        transactionRecordBuilder.contractCreateResult((ContractFunctionResult) null);
+        transactionRecordBuilder.scheduleRef((ScheduleID) null);
+        transactionRecordBuilder.alias(Bytes.EMPTY);
+        transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
+        transactionRecordBuilder.evmAddress(Bytes.EMPTY);
+    }
+
     public ReversingBehavior reversingBehavior() {
         return reversingBehavior;
     }
@@ -317,6 +349,11 @@ public class SingleTransactionRecordBuilderImpl
 
     public SingleTransactionRecordBuilderImpl parentConsensus(@NonNull final Instant parentConsensus) {
         this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
+        return this;
+    }
+
+    public SingleTransactionRecordBuilderImpl consensusTimestamp(@NonNull final Instant now) {
+        this.consensusNow = requireNonNull(now, "consensus time must not be null");
         return this;
     }
 
@@ -374,20 +411,10 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
-        try {
-            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                    transaction.signedTransactionBytes().toReadableSequentialData());
-            final var existingTransactionBody =
-                    TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
-            final var body = existingTransactionBody
-                    .copyBuilder()
-                    .transactionID(newTransactionID)
-                    .build();
-            this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
-            return this;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        final var body =
+                inProgressBody().copyBuilder().transactionID(newTransactionID).build();
+        this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
+        return this;
     }
 
     /**
@@ -476,6 +503,17 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the transferList.
+     *
+     * @return transferList
+     */
+    @Override
+    @NonNull
+    public TransferList transferList() {
+        return transferList;
+    }
+
+    /**
      * Sets the transferList.
      *
      * @param transferList the transferList
@@ -487,12 +525,6 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(transferList, "transferList must not be null");
         this.transferList = transferList;
         return this;
-    }
-
-    @Override
-    @NonNull
-    public TransferList transferList() {
-        return transferList;
     }
 
     /**
@@ -1080,5 +1112,25 @@ public class SingleTransactionRecordBuilderImpl
      */
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
+    }
+
+    /**
+     * Returns the in-progress {@link TransactionBody}.
+     *
+     * @return the in-progress {@link TransactionBody}
+     */
+    private TransactionBody inProgressBody() {
+        try {
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                    transaction.signedTransactionBytes().toReadableSequentialData());
+            return TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+        } catch (Exception e) {
+            throw new IllegalStateException("Record being built for unparseable transaction", e);
+        }
+    }
+
+    public EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount) {
+        transactionRecordBuilder.transactionFee(transactionFee + amount);
+        return this;
     }
 }

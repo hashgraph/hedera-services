@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_MEBIBYTES;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.collections.AbstractLongList.FILE_HEADER_SIZE_V2;

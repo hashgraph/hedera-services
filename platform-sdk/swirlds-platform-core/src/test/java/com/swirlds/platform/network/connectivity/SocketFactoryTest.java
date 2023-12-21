@@ -18,11 +18,12 @@ package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.network.SocketConfig_;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
@@ -46,11 +47,11 @@ class SocketFactoryTest {
 
     static {
         final Configuration configurationNoIpTos =
-                new TestConfigBuilder().withValue("socket.ipTos", "-1").getOrCreateConfig();
+                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "-1").getOrCreateConfig();
         NO_IP_TOS = configurationNoIpTos.getConfigData(SocketConfig.class);
 
         final Configuration configurationIpTos =
-                new TestConfigBuilder().withValue("socket.ipTos", "100").getOrCreateConfig();
+                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "100").getOrCreateConfig();
         IP_TOS = configurationIpTos.getConfigData(SocketConfig.class);
 
         CRYPTO_CONFIG = configurationIpTos.getConfigData(CryptoConfig.class);
@@ -109,9 +110,9 @@ class SocketFactoryTest {
 
         final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, PORT);
         clientSocket.getOutputStream().write(DATA);
-        clientSocket.close();
 
         server.join();
+        clientSocket.close();
 
         if (threadException.get() != null) {
             throw threadException.get();

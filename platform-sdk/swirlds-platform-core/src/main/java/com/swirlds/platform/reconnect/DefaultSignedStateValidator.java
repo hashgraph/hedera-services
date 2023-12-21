@@ -16,14 +16,15 @@
 
 package com.swirlds.platform.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +75,7 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
                         .getConsensusTimestamp()
                         .isBefore(previousStateData.consensusTimestamp())) {
             logger.error(
-                    LogMarker.SIGNED_STATE.getMarker(),
+                    EXCEPTION.getMarker(),
                     """
                             State is too old. Failed reconnect state:
                             {}

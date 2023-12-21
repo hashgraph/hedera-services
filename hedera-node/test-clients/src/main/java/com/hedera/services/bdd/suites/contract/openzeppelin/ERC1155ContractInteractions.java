@@ -69,7 +69,7 @@ public class ERC1155ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec erc1155() {
+    final HapiSpec erc1155() {
         return defaultHapiSpec("erc1155")
                 .given(
                         newKeyNamed("ec").shape(SECP_256K1_SHAPE),
@@ -86,7 +86,10 @@ public class ERC1155ContractInteractions extends HapiSuite {
                         uploadInitCode(CONTRACT))
                 .when()
                 .then(
-                        contractCreate(CONTRACT).via("contractCreate").payingWith(ACCOUNT2),
+                        contractCreate(CONTRACT)
+                                .gas(500_000L)
+                                .via("contractCreate")
+                                .payingWith(ACCOUNT2),
                         getTxnRecord("contractCreate").logged(),
                         getAccountBalance(ACCOUNT2).logged(),
                         getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),

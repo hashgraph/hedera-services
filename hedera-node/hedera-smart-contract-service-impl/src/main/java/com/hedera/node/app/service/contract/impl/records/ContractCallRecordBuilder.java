@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -99,4 +100,7 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
     @NonNull
     ContractCallRecordBuilder addContractStateChanges(
             @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration);
+
+    @NonNull
+    ContractCallRecordBuilder entropyBytes(@NonNull final Bytes prngBytes);
 }

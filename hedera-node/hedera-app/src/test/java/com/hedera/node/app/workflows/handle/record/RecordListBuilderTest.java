@@ -24,13 +24,17 @@ import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomi
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,9 +50,12 @@ class RecordListBuilderTest extends AppTestBase {
     private static final long MAX_CHILDREN = 10;
 
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.create()
-            .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-            .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+            .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+            .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
             .getOrCreateConfig();
+    private static final int EXPECTED_CHILD_NANO_INCREMENT = 0;
+    private static final int EXPECTED_CHILD_NANO_INCREMENT_SCHEDULED =
+            Math.toIntExact(CONFIGURATION.getConfigData(ConsensusConfig.class).handleMaxPrecedingRecords());
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -133,8 +140,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -237,8 +244,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -351,8 +358,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxPreceding = 4L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
-                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .withValue("consensus.handle.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -447,8 +454,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxChildren = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-                .withValue("consensus.message.maxFollowingRecords", maxChildren)
+                .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+                .withValue("consensus.handle.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -676,8 +683,8 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var maxChildren = 2L;
         final var config = HederaTestConfigBuilder.create()
-                .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
-                .withValue("consensus.message.maxFollowingRecords", maxChildren)
+                .withValue("consensus.handle.maxPrecedingRecords", MAX_PRECEDING)
+                .withValue("consensus.handle.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -827,33 +834,232 @@ class RecordListBuilderTest extends AppTestBase {
                 .hasTransaction(child3Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(4))
-                // child4 was removed, leaving a gap in consensus time.
-                .nanosAfter(5, result.userTransactionRecord())
+                // child4 was removed, but for mono-service fidelity we "smooth" the gap in consensus times
+                .nanosAfter(4, result.userTransactionRecord())
                 .hasNonce(4) // child5 gets the 4th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child5Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(5))
-                .nanosAfter(6, result.userTransactionRecord()) // immediately after child5
+                .nanosAfter(5, result.userTransactionRecord()) // immediately after child5
                 .hasNonce(5) // child6 gets the 5th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child6Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(6))
-                .nanosAfter(7, result.userTransactionRecord())
+                .nanosAfter(6, result.userTransactionRecord())
                 .hasNonce(6)
                 .hasResponseCode(OK)
                 .hasTransaction(child8Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(7))
-                .nanosAfter(8, result.userTransactionRecord())
+                .nanosAfter(7, result.userTransactionRecord())
                 .hasNonce(7)
                 .hasResponseCode(OK)
                 .hasTransaction(child9Tx)
                 .hasParent(result.userTransactionRecord());
     }
 
-    private SingleTransactionRecordBuilderImpl addUserTransaction(RecordListBuilder builder) {
+    @Test
+    void revertChildrenFrom_NullCheckpoint_ShouldThrowException() {
+        final var builder = new RecordListBuilder(Instant.now());
+        assertThrows(NullPointerException.class, () -> builder.revertChildrenFrom(null));
+    }
+
+    @Test
+    void revertChildrenFrom_CheckpointWithNoChildren_ShouldUseUserTransactionRecord() {
+        // given
+        final var recordListBuilder = new RecordListBuilder(Instant.now());
+        final var checkpoint = new RecordListCheckPoint(null, null);
+        addUserTransaction(recordListBuilder);
+
+        // when
+        recordListBuilder.revertChildrenFrom(checkpoint);
+
+        // then
+        final var result = recordListBuilder.build();
+        assertThat(result.records()).hasSize(1);
+        assertThat(result.records().get(0)).isSameAs(result.userTransactionRecord());
+    }
+
+    @Test
+    void revertChildrenFrom_NotFound_PrecedingInList() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+
+        // When
+        final var followingChild =
+                recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        final var nonExistentPreceding = new SingleTransactionRecordBuilderImpl(Instant.EPOCH);
+        final var recordListCheckPoint = new RecordListCheckPoint(nonExistentPreceding, followingChild);
+
+        // then
+        assertThatThrownBy(() -> recordListBuilder.revertChildrenFrom(recordListCheckPoint))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void revertChildrenFrom_Correctly_Revert_ChildrenBothWays() {
+        // Given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var builder = addUserTransaction(recordListBuilder);
+        final var txnId = builder.transactionID();
+
+        final var first = simpleCryptoTransferWithNonce(txnId, 2);
+        final var second = simpleCryptoTransferWithNonce(txnId, 1);
+        final var third = simpleCryptoTransferWithNonce(txnId, 3);
+        final var fourth = simpleCryptoTransferWithNonce(txnId, 4);
+        // mixing up preceding vs. following, but within which, in order
+        var following = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(third);
+        var preceding = recordListBuilder
+                .addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS)
+                .transaction(first);
+        recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(second);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(fourth);
+
+        final var recordListCheckPoint = new RecordListCheckPoint(preceding, following);
+
+        // When
+        recordListBuilder.revertChildrenFrom(recordListCheckPoint);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then
+        assertThat(records).hasSize(5);
+        assertThat(records.get(2)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasNoParent()
+                .hasTransaction(first);
+        assertCreatedRecord(records.get(1))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasNoParent()
+                .hasTransaction(second);
+        assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(3))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(3)
+                .hasParent(result.userTransactionRecord())
+                .hasTransaction(third);
+        assertCreatedRecord(records.get(4))
+                .nanosAfter(2, result.userTransactionRecord())
+                .hasNonce(4)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasParent(result.userTransactionRecord())
+                .hasTransaction(fourth);
+    }
+
+    @Test
+    void revertChildrenFrom_Correctly_Revert_FollowingChild() {
+        // Given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+
+        addUserTransaction(recordListBuilder);
+        final var followingChild =
+                recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        final var recordListCheckPoint = new RecordListCheckPoint(null, followingChild);
+
+        // When
+        recordListBuilder.revertChildrenFrom(recordListCheckPoint);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then the following child should be reverted
+        assertThat(records).hasSize(3);
+        assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasResponseCode(OK).hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasResponseCode(OK)
+                .hasParent(result.userTransactionRecord());
+        assertCreatedRecord(records.get(2))
+                .nanosAfter(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasParent(result.userTransactionRecord());
+    }
+
+    @Test
+    void revertChildrenFrom_Correctly_Revert_RemovableFollowingChild() {
+        // Given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+
+        addUserTransaction(recordListBuilder);
+        final var followingChild =
+                recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var recordListCheckPoint = new RecordListCheckPoint(null, followingChild);
+
+        // When
+        recordListBuilder.revertChildrenFrom(recordListCheckPoint);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then the following child should have been removed from the list
+        assertThat(records).hasSize(2);
+        assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasResponseCode(OK).hasNoParent();
+        assertCreatedRecord(records.get(1)).hasResponseCode(OK).hasParent(result.userTransactionRecord());
+    }
+
+    @Test
+    void revertChildrenFrom_Correctly_Revert_RemovablePrecedingChild() {
+        // Given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var builder = addUserTransaction(recordListBuilder);
+        final var txnId = builder.transactionID();
+
+        final var first = simpleCryptoTransferWithNonce(txnId, 2);
+        final var second = simpleCryptoTransferWithNonce(txnId, 1);
+        final var third = simpleCryptoTransferWithNonce(txnId, 3);
+
+        // mixing up preceding vs. following, but within which, in order
+        var preceding = recordListBuilder
+                .addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS)
+                .transaction(first);
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(second);
+        var following = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(third);
+
+        final var recordListCheckPoint = new RecordListCheckPoint(preceding, following);
+
+        // When
+        recordListBuilder.revertChildrenFrom(recordListCheckPoint);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then
+        assertThat(records).hasSize(4);
+        assertThat(records.get(2)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasNoParent()
+                .hasTransaction(first);
+        assertCreatedRecord(records.get(1))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasNoParent()
+                .hasTransaction(second);
+        assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(3))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(3)
+                .hasParent(result.userTransactionRecord())
+                .hasTransaction(third);
+    }
+
+    private SingleTransactionRecordBuilderImpl addUserTransaction(final RecordListBuilder builder) {
         final var start = Instant.now().minusSeconds(60);
         final var txnId = TransactionID.newBuilder()
                 .accountID(ALICE.accountID())
@@ -864,7 +1070,7 @@ class RecordListBuilderTest extends AppTestBase {
                 .transactionID(txnId);
     }
 
-    private TransactionRecordAssertions assertCreatedRecord(SingleTransactionRecord record) {
+    private TransactionRecordAssertions assertCreatedRecord(final SingleTransactionRecord record) {
         return new TransactionRecordAssertions(record);
     }
 
@@ -886,10 +1092,11 @@ class RecordListBuilderTest extends AppTestBase {
         }
 
         TransactionRecordAssertions nanosAfter(final int nanos, @NonNull final SingleTransactionRecord otherRecord) {
-            final var otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
-            final var expectedTimestamp = otherTimestamp
+            final Timestamp otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
+            final int actualOffset = EXPECTED_CHILD_NANO_INCREMENT + nanos;
+            final Timestamp expectedTimestamp = otherTimestamp
                     .copyBuilder()
-                    .nanos(otherTimestamp.nanos() + nanos)
+                    .nanos(otherTimestamp.nanos() + actualOffset)
                     .build();
             assertThat(record.transactionRecord().consensusTimestampOrThrow()).isEqualTo(expectedTimestamp);
             return this;

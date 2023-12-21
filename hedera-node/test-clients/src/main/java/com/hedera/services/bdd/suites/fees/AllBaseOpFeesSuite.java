@@ -90,7 +90,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseNftMintOperationIsChargedExpectedFee() {
+    final HapiSpec baseNftMintOperationIsChargedExpectedFee() {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
@@ -113,7 +113,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
+    final HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
         final var expectedFee = 10 * EXPECTED_NFT_MINT_PRICE_USD;
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
@@ -149,7 +149,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
+    final HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
         final var numOfSigs = 10;
         final var extraSigPrice = 0.0006016996;
         final var expectedFee = EXPECTED_NFT_MINT_PRICE_USD + ((numOfSigs - 1) * extraSigPrice);
@@ -175,7 +175,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseNftWipeOperationIsChargedExpectedFee() {
+    final HapiSpec baseNftWipeOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueWipeOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -201,7 +201,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseNftBurnOperationIsChargedExpectedFee() {
+    final HapiSpec baseNftBurnOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -222,7 +222,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseNftFreezeUnfreezeChargedAsExpected() {
+    final HapiSpec baseNftFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseNftFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),
@@ -260,7 +260,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseCommonFreezeUnfreezeChargedAsExpected() {
+    final HapiSpec baseCommonFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseCommonFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),

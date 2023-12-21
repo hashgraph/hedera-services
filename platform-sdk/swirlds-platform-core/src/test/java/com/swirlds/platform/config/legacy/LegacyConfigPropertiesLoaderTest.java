@@ -19,10 +19,9 @@ package com.swirlds.platform.config.legacy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.common.internal.ConfigurationException;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,8 +32,7 @@ class LegacyConfigPropertiesLoaderTest {
 
     @Test
     void testNullValue() {
-        Assertions.assertThrows(
-                IllegalArgumentException.class, () -> LegacyConfigPropertiesLoader.loadConfigFile(null));
+        Assertions.assertThrows(NullPointerException.class, () -> LegacyConfigPropertiesLoader.loadConfigFile(null));
     }
 
     @Test

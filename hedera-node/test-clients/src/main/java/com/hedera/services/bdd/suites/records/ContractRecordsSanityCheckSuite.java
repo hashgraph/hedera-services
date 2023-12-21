@@ -71,7 +71,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractDeleteRecordSanityChecks() {
+    final HapiSpec contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(BALANCE_LOOKUP),
@@ -87,7 +87,8 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiSpec contractCreateRecordSanityChecks() {
+    @HapiTest
+    final HapiSpec contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(BALANCE_LOOKUP),
@@ -100,7 +101,8 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiSpec contractCallWithSendRecordSanityChecks() {
+    @HapiTest
+    final HapiSpec contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(PAYABLE_CONTRACT),
@@ -117,7 +119,8 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiSpec circularTransfersRecordSanityChecks() {
+    @HapiTest
+    final HapiSpec circularTransfersRecordSanityChecks() {
         final var contractName = "CircularTransfers";
         int numAltruists = 3;
         ToLongFunction<String> initBalanceFn = ignore -> 1_000_000L;
@@ -191,7 +194,8 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         }));
     }
 
-    private HapiSpec contractUpdateRecordSanityChecks() {
+    @HapiTest
+    final HapiSpec contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
                 .given(flattened(
                         newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),

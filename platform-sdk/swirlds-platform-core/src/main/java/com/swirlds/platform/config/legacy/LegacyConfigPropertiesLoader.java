@@ -18,12 +18,11 @@ package com.swirlds.platform.config.legacy;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.internal.ConfigurationException;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.address.AddressBookUtils;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -69,8 +68,12 @@ public final class LegacyConfigPropertiesLoader {
 
     private LegacyConfigPropertiesLoader() {}
 
+    /**
+     * @throws NullPointerException in case {@code configPath} parameter is {@code null}
+     * @throws ConfigurationException in case {@code configPath} cannot be found in the system
+     */
     public static LegacyConfigProperties loadConfigFile(@NonNull final Path configPath) throws ConfigurationException {
-        CommonUtils.throwArgNull(configPath, "configPath");
+        Objects.requireNonNull(configPath, "configPath must not be null");
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         if (!Files.exists(configPath)) {

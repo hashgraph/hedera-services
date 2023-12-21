@@ -19,7 +19,7 @@ package com.swirlds.platform.health.entropy;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
-import com.swirlds.common.config.OSHealthCheckConfig;
+import com.swirlds.platform.health.OSHealthCheckConfig;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 

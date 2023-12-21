@@ -95,6 +95,11 @@ import java.time.Duration;
  *                                                        snapshot directories every time we take a state snapshot. The
  *                                                        files copied are guaranteed to contain all non-ancient events
  *                                                        w.r.t. the state snapshot.
+ * @param compactLastFileOnStartup                        if true, then compact the last file's generational span on
+ *                                                        startup.
+ * @param forceIgnorePcesSignatures                       if true, then ignore the signatures on preconsensus events.
+ *                                                        Note: This is a TEST ONLY setting. It must never be enabled
+ *                                                        in production.
  */
 @ConfigData("event.preconsensus")
 public record PreconsensusEventStreamConfig(
@@ -112,4 +117,6 @@ public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "true") boolean enableReplay,
         @ConfigProperty(defaultValue = "1024") int replayQueueSize,
         @ConfigProperty(defaultValue = "8") int replayHashPoolSize,
-        @ConfigProperty(defaultValue = "true") boolean copyRecentStreamToStateSnapshots) {}
+        @ConfigProperty(defaultValue = "true") boolean copyRecentStreamToStateSnapshots,
+        @ConfigProperty(defaultValue = "true") boolean compactLastFileOnStartup,
+        @ConfigProperty(defaultValue = "false") boolean forceIgnorePcesSignatures) {}

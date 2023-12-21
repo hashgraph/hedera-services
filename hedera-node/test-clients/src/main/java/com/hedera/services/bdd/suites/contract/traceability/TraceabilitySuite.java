@@ -215,7 +215,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec beforeAll() {
+    final HapiSpec beforeAll() {
         try {
             initialize();
         } catch (final Exception e) {
@@ -230,11 +230,12 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(1)
-    private HapiSpec traceabilityE2EScenario1() {
+    final HapiSpec traceabilityE2EScenario1() {
         return defaultHapiSpec("traceabilityE2EScenario1")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
+                                .gas(500_000L)
                                 .via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
@@ -260,7 +261,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -300,7 +301,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -340,7 +341,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(28692)
@@ -399,7 +400,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(33979)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -419,7 +420,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963018)
+                                                        .setGas(962655)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -433,7 +434,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960236)
+                                                        .setGas(959873)
                                                         .setGasUsed(5324)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -446,7 +447,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(952309)
+                                                        .setGas(951947)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -459,7 +460,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(949543)
+                                                        .setGas(949181)
                                                         .setGasUsed(3180)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -473,7 +474,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(946053)
+                                                        .setGas(945691)
                                                         .setGasUsed(5778)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -491,7 +492,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(928026)
+                                                        .setGas(927670)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -504,7 +505,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(939987)
+                                                        .setGas(939625)
                                                         .setGasUsed(1501)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -523,7 +524,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(924301)
+                                                        .setGas(923945)
                                                         .setGasUsed(423)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -537,7 +538,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(938149)
+                                                        .setGas(937787)
                                                         .setGasUsed(3345)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -555,7 +556,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(922684)
+                                                        .setGas(922327)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -568,7 +569,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(934470)
+                                                        .setGas(934107)
                                                         .setGasUsed(4235)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -587,7 +588,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(918936)
+                                                        .setGas(918579)
                                                         .setGasUsed(3224)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -600,7 +601,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    private HapiSpec traceabilityE2EScenario2() {
+    final HapiSpec traceabilityE2EScenario2() {
         return defaultHapiSpec("traceabilityE2EScenario2")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -630,7 +631,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48260)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(8792)
@@ -670,7 +671,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -710,7 +711,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(28692)
@@ -767,7 +768,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(70255)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -787,7 +788,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963083)
+                                                        .setGas(962721)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -801,7 +802,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960302)
+                                                        .setGas(959939)
                                                         .setGasUsed(22424)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -814,7 +815,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(937875)
+                                                        .setGas(937512)
                                                         .setGasUsed(5811)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -832,7 +833,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(919912)
+                                                        .setGas(919554)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -845,7 +846,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(931783)
+                                                        .setGas(931421)
                                                         .setGasUsed(4235)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -864,7 +865,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(916248)
+                                                        .setGas(915892)
                                                         .setGasUsed(3180)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -878,7 +879,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(927248)
+                                                        .setGas(926886)
                                                         .setGasUsed(5819)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -896,7 +897,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(909474)
+                                                        .setGas(909118)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -909,7 +910,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(921145)
+                                                        .setGas(920783)
                                                         .setGasUsed(21353)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -928,7 +929,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(905801)
+                                                        .setGas(905444)
                                                         .setGasUsed(20323)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -942,7 +943,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(899766)
+                                                        .setGas(899403)
                                                         .setGasUsed(3387)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -960,7 +961,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(884859)
+                                                        .setGas(884502)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -973,7 +974,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(896045)
+                                                        .setGas(895682)
                                                         .setGasUsed(1476)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -992,7 +993,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(881071)
+                                                        .setGas(880714)
                                                         .setGasUsed(424)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1005,12 +1006,13 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(3)
-    private HapiSpec traceabilityE2EScenario3() {
+    final HapiSpec traceabilityE2EScenario3() {
         return defaultHapiSpec("traceabilityE2EScenario3")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -1035,7 +1037,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -1075,7 +1077,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -1115,7 +1117,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(28692)
@@ -1173,7 +1175,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(57011)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -1193,7 +1195,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963059)
+                                                        .setGas(962697)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1207,7 +1209,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960277)
+                                                        .setGas(959915)
                                                         .setGasUsed(5324)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -1222,7 +1224,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(954683)
+                                                        .setGas(954321)
                                                         .setGasUsed(5810)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1240,7 +1242,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(936458)
+                                                        .setGas(936102)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1253,7 +1255,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(948592)
+                                                        .setGas(948230)
                                                         .setGasUsed(4209)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1272,7 +1274,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(932820)
+                                                        .setGas(932463)
                                                         .setGasUsed(3180)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1286,7 +1288,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(941399)
+                                                        .setGas(941036)
                                                         .setGasUsed(3278)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1304,7 +1306,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(925906)
+                                                        .setGas(925548)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1317,7 +1319,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(937474)
+                                                        .setGas(937112)
                                                         .setGasUsed(21401)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1336,7 +1338,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(921827)
+                                                        .setGas(921471)
                                                         .setGasUsed(20323)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1350,7 +1352,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(915805)
+                                                        .setGas(915443)
                                                         .setGasUsed(3345)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1368,7 +1370,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(900689)
+                                                        .setGas(900333)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1381,7 +1383,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(911814)
+                                                        .setGas(911452)
                                                         .setGasUsed(4235)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1400,7 +1402,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(896634)
+                                                        .setGas(896278)
                                                         .setGasUsed(3224)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1413,12 +1415,13 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(4)
-    private HapiSpec traceabilityE2EScenario4() {
+    final HapiSpec traceabilityE2EScenario4() {
         return defaultHapiSpec("traceabilityE2EScenario4")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -1443,7 +1446,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -1482,7 +1485,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48260)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(8792)
@@ -1521,7 +1524,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48260)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(8792)
@@ -1567,7 +1570,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(23913)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -1587,7 +1590,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963038)
+                                                        .setGas(962676)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1601,7 +1604,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960256)
+                                                        .setGas(959894)
                                                         .setGasUsed(3223)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -1614,7 +1617,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(956871)
+                                                        .setGas(956509)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1628,7 +1631,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(954049)
+                                                        .setGas(953687)
                                                         .setGasUsed(3224)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -1641,7 +1644,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(950522)
+                                                        .setGas(950160)
                                                         .setGasUsed(5810)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1659,7 +1662,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(932362)
+                                                        .setGas(932006)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1672,7 +1675,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(944118)
+                                                        .setGas(943755)
                                                         .setGasUsed(3953)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1691,7 +1694,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(925954)
+                                                        .setGas(925596)
                                                         .setGasUsed(423)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1704,12 +1707,13 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(5)
-    private HapiSpec traceabilityE2EScenario5() {
+    final HapiSpec traceabilityE2EScenario5() {
         return defaultHapiSpec("traceabilityE2EScenario5")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -1734,7 +1738,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -1749,7 +1753,8 @@ public class TraceabilitySuite extends HapiSuite {
                                 BigInteger.TWO),
                         contractCustomCreate(
                                         TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
-                                .via(SECOND_CREATE_TXN),
+                                .via(SECOND_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY + SECOND)
@@ -1774,7 +1779,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -1789,7 +1794,8 @@ public class TraceabilitySuite extends HapiSuite {
                                 BigInteger.valueOf(12)),
                         contractCustomCreate(
                                         TRACEABILITY, THIRD, BigInteger.valueOf(4), BigInteger.ONE, BigInteger.ZERO)
-                                .via(THIRD_CREATE_TXN),
+                                .via(THIRD_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY + THIRD)
@@ -1814,7 +1820,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298236)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(48592)
@@ -1870,7 +1876,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(27376)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -1890,7 +1896,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963081)
+                                                        .setGas(962719)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1904,7 +1910,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960300)
+                                                        .setGas(959937)
                                                         .setGasUsed(5324)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -1919,7 +1925,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(952373)
+                                                        .setGas(952011)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1932,7 +1938,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(949607)
+                                                        .setGas(949245)
                                                         .setGasUsed(3180)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1946,7 +1952,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(946117)
+                                                        .setGas(945755)
                                                         .setGasUsed(5777)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1964,7 +1970,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_STATICCALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(928090)
+                                                        .setGas(927734)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -1977,7 +1983,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(940069)
+                                                        .setGas(939707)
                                                         .setGasUsed(3320)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -1995,7 +2001,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_STATICCALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(924598)
+                                                        .setGas(924242)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -2007,12 +2013,13 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(6)
-    private HapiSpec traceabilityE2EScenario6() {
+    final HapiSpec traceabilityE2EScenario6() {
         return defaultHapiSpec("traceabilityE2EScenario6")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -2037,7 +2044,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -2077,7 +2084,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -2116,7 +2123,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(28692)
@@ -2170,7 +2177,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(29910)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -2190,7 +2197,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963082)
+                                                        .setGas(962720)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2204,7 +2211,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960301)
+                                                        .setGas(959938)
                                                         .setGasUsed(5324)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -2217,7 +2224,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(954706)
+                                                        .setGas(954344)
                                                         .setGasUsed(5810)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2235,7 +2242,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(936481)
+                                                        .setGas(936124)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -2248,7 +2255,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(948616)
+                                                        .setGas(948254)
                                                         .setGasUsed(4209)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2267,7 +2274,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(932843)
+                                                        .setGas(932487)
                                                         .setGasUsed(3180)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -2281,7 +2288,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(943883)
+                                                        .setGas(943521)
                                                         .setGasUsed(5777)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2299,7 +2306,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_STATICCALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(925891)
+                                                        .setGas(925534)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -2312,7 +2319,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(937591)
+                                                        .setGas(937229)
                                                         .setGasUsed(3320)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2330,7 +2337,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_STATICCALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + SECOND))
-                                                        .setGas(922159)
+                                                        .setGas(921803)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -2342,7 +2349,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(7)
-    private HapiSpec traceabilityE2EScenario7() {
+    final HapiSpec traceabilityE2EScenario7() {
         return defaultHapiSpec("traceabilityE2EScenario7")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -2372,7 +2379,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(115992)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY_CALLCODE))
                                                 .setGasUsed(67632)
@@ -2416,7 +2423,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(116016)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY_CALLCODE + SECOND))
                                                 .setGasUsed(27832)
@@ -2460,7 +2467,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(116004)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY_CALLCODE + THIRD))
                                                 .setGasUsed(47732)
@@ -2518,7 +2525,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(51483)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
@@ -2538,7 +2545,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(963159)
+                                                        .setGas(962797)
                                                         .setGasUsed(2500)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2553,7 +2560,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
                                                         .setCallDepth(1)
-                                                        .setGas(960259)
+                                                        .setGas(959897)
                                                         .setGasUsed(5249)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
@@ -2568,7 +2575,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(952294)
+                                                        .setGas(951931)
                                                         .setGasUsed(2368)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(spec.registry()
@@ -2582,7 +2589,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(949526)
+                                                        .setGas(949163)
                                                         .setGasUsed(3215)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(spec.registry()
@@ -2596,7 +2603,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(945992)
+                                                        .setGas(945630)
                                                         .setGasUsed(6069)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(spec.registry()
@@ -2614,7 +2621,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(spec.registry()
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
-                                                        .setGas(927718)
+                                                        .setGas(927361)
                                                         .setGasUsed(2500)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(spec.registry()
@@ -2629,7 +2636,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(939626)
+                                                        .setGas(939264)
                                                         .setGasUsed(21544)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(spec.registry()
@@ -2648,7 +2655,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(spec.registry()
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
-                                                        .setGas(923822)
+                                                        .setGas(923465)
                                                         .setGasUsed(20381)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(spec.registry()
@@ -2665,7 +2672,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(918049)
+                                                        .setGas(917687)
                                                         .setGasUsed(3393)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(spec.registry()
@@ -2683,7 +2690,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(spec.registry()
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
-                                                        .setGas(902867)
+                                                        .setGas(902511)
                                                         .setGasUsed(2522)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(spec.registry()
@@ -2698,7 +2705,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(914320)
+                                                        .setGas(913958)
                                                         .setGasUsed(1270)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(spec.registry()
@@ -2717,7 +2724,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(spec.registry()
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
-                                                        .setGas(899149)
+                                                        .setGas(898793)
                                                         .setGasUsed(349)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(spec.registry()
@@ -2733,7 +2740,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(8)
-    private HapiSpec traceabilityE2EScenario8() {
+    final HapiSpec traceabilityE2EScenario8() {
         return defaultHapiSpec("traceabilityE2EScenario8")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -2763,7 +2770,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(115992)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY_CALLCODE))
                                                 .setGasUsed(67632)
@@ -2807,7 +2814,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(116016)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY_CALLCODE + SECOND))
                                                 .setGasUsed(27832)
@@ -2851,7 +2858,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(116004)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY_CALLCODE + THIRD))
                                                 .setGasUsed(47732)
@@ -2899,7 +2906,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(29301)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
@@ -2919,7 +2926,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(962924)
+                                                        .setGas(962562)
                                                         .setGasUsed(2500)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2934,7 +2941,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
                                                         .setCallDepth(1)
-                                                        .setGas(960024)
+                                                        .setGas(959662)
                                                         .setGasUsed(3281)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
@@ -2949,7 +2956,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(956466)
+                                                        .setGas(956103)
                                                         .setGasUsed(2522)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2964,7 +2971,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
                                                         .setCallDepth(1)
-                                                        .setGas(953547)
+                                                        .setGas(953185)
                                                         .setGasUsed(3149)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
@@ -2979,7 +2986,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(950079)
+                                                        .setGas(949717)
                                                         .setGasUsed(5783)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -2997,7 +3004,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(931893)
+                                                        .setGas(931536)
                                                         .setGasUsed(2368)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(spec.registry()
@@ -3012,7 +3019,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(943995)
+                                                        .setGas(943633)
                                                         .setGasUsed(4290)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3031,7 +3038,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(928209)
+                                                        .setGas(927853)
                                                         .setGasUsed(3215)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(spec.registry()
@@ -3048,7 +3055,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY_CALLCODE))
-                                                        .setGas(938961)
+                                                        .setGas(938599)
                                                         .setGasUsed(4144)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(spec.registry()
@@ -3069,7 +3076,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALLCODE)
                                                         .setCallingContract(spec.registry()
                                                                 .getContractId(TRACEABILITY_CALLCODE + SECOND))
-                                                        .setGas(920706)
+                                                        .setGas(920350)
                                                         .setGasUsed(481)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(spec.registry()
@@ -3085,12 +3092,13 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(9)
-    private HapiSpec traceabilityE2EScenario9() {
+    final HapiSpec traceabilityE2EScenario9() {
         return defaultHapiSpec("traceabilityE2EScenario9")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -3115,7 +3123,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -3155,7 +3163,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -3194,7 +3202,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(28692)
@@ -3248,7 +3256,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(50335)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -3268,7 +3276,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963040)
+                                                        .setGas(962678)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3282,7 +3290,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960258)
+                                                        .setGas(959896)
                                                         .setGasUsed(5324)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -3297,7 +3305,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(952332)
+                                                        .setGas(951970)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3310,7 +3318,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(949566)
+                                                        .setGas(949204)
                                                         .setGasUsed(3180)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3324,7 +3332,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(943624)
+                                                        .setGas(943262)
                                                         .setGasUsed(29899)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3338,7 +3346,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(928493)
+                                                        .setGas(928136)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3351,7 +3359,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(925711)
+                                                        .setGas(925354)
                                                         .setGasUsed(20323)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3365,7 +3373,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(905493)
+                                                        .setGas(905136)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3378,7 +3386,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(902659)
+                                                        .setGas(902302)
                                                         .setGasUsed(3224)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3391,12 +3399,13 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(10)
-    private HapiSpec traceabilityE2EScenario10() {
+    final HapiSpec traceabilityE2EScenario10() {
         return defaultHapiSpec("traceabilityE2EScenario10")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -3421,7 +3430,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -3461,7 +3470,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -3500,7 +3509,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(28692)
@@ -3555,7 +3564,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(52541)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -3575,7 +3584,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963038)
+                                                        .setGas(962676)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3589,7 +3598,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960256)
+                                                        .setGas(959894)
                                                         .setGasUsed(5324)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -3602,7 +3611,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(954662)
+                                                        .setGas(954300)
                                                         .setGasUsed(5811)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3620,7 +3629,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(936436)
+                                                        .setGas(936080)
                                                         .setGasUsed(2315)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3633,7 +3642,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(948571)
+                                                        .setGas(948209)
                                                         .setGasUsed(4235)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3652,7 +3661,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(932774)
+                                                        .setGas(932417)
                                                         .setGasUsed(3180)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3666,7 +3675,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(941591)
+                                                        .setGas(941228)
                                                         .setGasUsed(29898)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3680,7 +3689,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(926492)
+                                                        .setGas(926135)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3693,7 +3702,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(923710)
+                                                        .setGas(923353)
                                                         .setGasUsed(20323)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3707,7 +3716,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(903492)
+                                                        .setGas(903135)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3720,7 +3729,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
-                                                        .setGas(900658)
+                                                        .setGas(900301)
                                                         .setGasUsed(3224)
                                                         .setCallDepth(2)
                                                         .setRecipientContract(
@@ -3733,12 +3742,13 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(11)
-    private HapiSpec traceabilityE2EScenario11() {
+    final HapiSpec traceabilityE2EScenario11() {
         return defaultHapiSpec("traceabilityE2EScenario11")
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -3763,7 +3773,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(298224)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY))
                                                 .setGasUsed(68492)
@@ -3803,7 +3813,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + SECOND))
                                                 .setGasUsed(28692)
@@ -3842,7 +3852,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(48248)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(TRACEABILITY + THIRD))
                                                 .setGasUsed(28692)
@@ -3895,7 +3905,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallType(CALL)
                                                         .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                         .setCallOperationType(CallOperationType.OP_CALL)
-                                                        .setGas(979000)
+                                                        .setGas(978632)
                                                         .setGasUsed(44077)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -3915,7 +3925,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(963038)
+                                                        .setGas(962676)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3929,7 +3939,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(960256)
+                                                        .setGas(959894)
                                                         .setGasUsed(5324)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
@@ -3942,7 +3952,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(952341)
+                                                        .setGas(951979)
                                                         .setGasUsed(237)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3957,7 +3967,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(949404)
+                                                        .setGas(949041)
                                                         .setGasUsed(2347)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3971,7 +3981,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
                                                         .setCallDepth(1)
-                                                        .setGas(946606)
+                                                        .setGas(946244)
                                                         .setGasUsed(20323)
                                                         .setRecipientContract(
                                                                 spec.registry().getContractId(TRACEABILITY + THIRD))
@@ -3984,7 +3994,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(926387)
+                                                        .setGas(926025)
                                                         .setGasUsed(2391)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -3997,7 +4007,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .setCallOperationType(CallOperationType.OP_CALL)
                                                         .setCallingContract(
                                                                 spec.registry().getContractId(TRACEABILITY))
-                                                        .setGas(923534)
+                                                        .setGas(923172)
                                                         .setGasUsed(3224)
                                                         .setCallDepth(1)
                                                         .setRecipientContract(
@@ -4010,7 +4020,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(12)
-    private HapiSpec traceabilityE2EScenario12() {
+    final HapiSpec traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
         return defaultHapiSpec(scenario12)
@@ -4033,7 +4043,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(contract))
-                                                    .setGas(197000)
+                                                    .setGas(184672)
                                                     .setGasUsed(214)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4079,7 +4089,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setCallingAccount(accountIDAtomicReference.get())
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PAY_RECEIVABLE_CONTRACT))
-                                                    .setGas(947000)
+                                                    .setGas(937984)
                                                     .setGasUsed(135)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4089,7 +4099,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(14)
-    private HapiSpec traceabilityE2EScenario14() {
+    final HapiSpec traceabilityE2EScenario14() {
         return propertyPreservingHapiSpec("traceabilityE2EScenario14")
                 .preserving(CHAIN_ID_PROPERTY)
                 .given(
@@ -4122,7 +4132,7 @@ public class TraceabilitySuite extends HapiSuite {
                                             .setCallType(CREATE)
                                             .setCallOperationType(CallOperationType.OP_CREATE)
                                             .setCallingAccount(accountIDAtomicReference.get())
-                                            .setGas(947000)
+                                            .setGas(937984)
                                             .setRecipientContract(
                                                     spec.registry().getContractId(PAY_RECEIVABLE_CONTRACT))
                                             .setGasUsed(135)
@@ -4164,7 +4174,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(153184)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(contract))
                                                 .setGasUsed(613)
@@ -4235,7 +4245,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             .setCallType(CALL)
                                                             .setCallOperationType(CallOperationType.OP_CALL)
                                                             .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                            .setGas(3979000)
+                                                            .setGas(3965516)
                                                             .setValue(tcValue)
                                                             .setRecipientContract(
                                                                     spec.registry()
@@ -4255,7 +4265,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             .setCallingContract(
                                                                     spec.registry()
                                                                             .getContractId(contract))
-                                                            .setGas(3883883)
+                                                            .setGas(3870609)
                                                             .setRecipientContract(childId)
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
@@ -4302,7 +4312,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGas(197000)
+                                                    .setGas(125628)
                                                     .setGasUsed(942)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4327,7 +4337,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setCallOperationType(CallOperationType.OP_CALL)
                                                     .setCallingAccount(
                                                             spec.registry().getAccountID(GENESIS))
-                                                    .setGas(79000)
+                                                    .setGas(78304)
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
                                                     .setGasUsed(5330)
@@ -4346,7 +4356,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setCallOperationType(CallOperationType.OP_STATICCALL)
                                                     .setCallingContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGas(76587)
+                                                    .setGas(75902)
                                                     // SHA 256 precompile address is
                                                     // 0x02
                                                     .setRecipientContract(ContractID.newBuilder()
@@ -4362,7 +4372,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setCallOperationType(CallOperationType.OP_CALL)
                                                     .setCallingContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGas(73240)
+                                                    .setGas(72555)
                                                     // HTS precompile address is
                                                     // 0x167
                                                     .setRecipientContract(ContractID.newBuilder()
@@ -4385,7 +4395,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(17)
-    private HapiSpec traceabilityE2EScenario17() {
+    final HapiSpec traceabilityE2EScenario17() {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -4399,7 +4409,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(185276)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setGasUsed(345)
@@ -4422,7 +4432,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CALL)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
-                                                .setGas(979000)
+                                                .setGas(978796)
                                                 .setGasUsed(32583)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
@@ -4435,7 +4445,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
-                                                .setGas(931868)
+                                                .setGas(931667)
                                                 .setCallDepth(1)
                                                 .setGasUsed(201)
                                                 .setRevertReason(EMPTY)
@@ -4444,7 +4454,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(18)
-    private HapiSpec traceabilityE2EScenario18() {
+    final HapiSpec traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(4))
@@ -4459,7 +4469,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(185276)
                                                 .setGasUsed(201)
                                                 .setRevertReason(EMPTY)
                                                 .build())))),
@@ -4515,12 +4525,12 @@ public class TraceabilitySuite extends HapiSuite {
 
 
     @Order(20)
-    private HapiSpec traceabilityE2EScenario20() {
+    final HapiSpec traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
                         .via(FIRST_CREATE_TXN)
-                        .gas(53050)
+                        .gas(64774)
                         .hasKnownStatus(INSUFFICIENT_GAS))
                 .then(
                         withOpContext((spec, opLog) -> allRunFor(
@@ -4541,7 +4551,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(21)
-    private HapiSpec traceabilityE2EScenario21() {
+    final HapiSpec traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -4555,7 +4565,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(197000)
+                                                .setGas(185276)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setGasUsed(345)
@@ -4578,8 +4588,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CALL)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
-                                                .setGas(979000)
-                                                .setGasUsed(963811)
+                                                .setGas(978936)
+                                                .setGasUsed(963748)
                                                 .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
@@ -4596,12 +4606,12 @@ public class TraceabilitySuite extends HapiSuite {
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setCallDepth(1)
-                                                .setGas(960639)
+                                                .setGas(960576)
                                                 .setInput(ByteStringUtils.wrapUnsafely(
                                                         Function.parse("boo" + "(uint256)")
                                                                 .encodeCallWithArgs(BigInteger.valueOf(234))
                                                                 .array()))
-                                                .setGasUsed(960639)
+                                                .setGasUsed(960576)
                                                 .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
                                                 /*
                                                    For EVM v0.34 use this code block instead:
@@ -4616,7 +4626,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(22)
-    private HapiSpec vanillaBytecodeSidecar() {
+    final HapiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
         final var firstTxn = "firstTxn";
@@ -4640,7 +4650,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(EMPTY_CONSTRUCTOR_CONTRACT))
-                                                    .setGas(197000)
+                                                    .setGas(195600)
                                                     .setGasUsed(66)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4651,7 +4661,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(23)
-    private HapiSpec vanillaBytecodeSidecar2() {
+    final HapiSpec vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
@@ -4673,7 +4683,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(contract))
-                                                    .setGas(197000)
+                                                    .setGas(184672)
                                                     .setGasUsed(214)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4683,7 +4693,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     @Order(24)
-    private HapiSpec actionsShowPropagatedRevert() {
+    final HapiSpec actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
         final var badApproval = "BadApproval";
         final var somebody = "somebody";
@@ -4700,7 +4710,7 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         overriding(SIDECARS_PROP, "CONTRACT_ACTION"),
                         uploadInitCode(APPROVE_BY_DELEGATE),
-                        contractCreate(APPROVE_BY_DELEGATE).via(contractCreateTxn),
+                        contractCreate(APPROVE_BY_DELEGATE).gas(500_000).via(contractCreateTxn),
                         withOpContext((spec, opLog) -> {
                             final HapiGetTxnRecord txnRecord = getTxnRecord(contractCreateTxn);
                             allRunFor(
@@ -4715,7 +4725,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(APPROVE_BY_DELEGATE))
-                                                    .setGas(197000)
+                                                    .setGas(433856)
                                                     .setGasUsed(214)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4780,8 +4790,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                                             spec.registry()
                                                                                     .getAccountID(somebodyElse))),
                                                             serialNumberId))
-                                                    .setGas(979000)
-                                                    .setGasUsed(948950)
+                                                    .setGas(978120)
+                                                    .setGasUsed(948098)
                                                     .setRevertReason(ByteString.EMPTY)
                                                     .build(),
                                             ContractAction.newBuilder()
@@ -4795,8 +4805,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                                             .getTokenID(tokenInQuestion)
                                                                             .getTokenNum())
                                                             .build())
-                                                    .setGas(959347)
-                                                    .setGasUsed(944446)
+                                                    .setGas(958481)
+                                                    .setGasUsed(943594)
                                                     .setInput(ByteStringUtils.wrapUnsafely(Function.parse(
                                                                     "approve(address,uint256)")
                                                             .encodeCallWithArgs(
@@ -4822,8 +4832,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setRecipientContract(ContractID.newBuilder()
                                                             .setContractNum(359L)
                                                             .build())
-                                                    .setGas(941693)
-                                                    .setGasUsed(941693)
+                                                    .setGas(940841)
+                                                    .setGasUsed(940841)
                                                     .setInput(ByteStringUtils.wrapUnsafely(ArrayUtils.addAll(
                                                             ArrayUtils.addAll(
                                                                     Arrays.copyOfRange(
@@ -4862,7 +4872,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @Order(25)
-    private HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
+    final HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
         final var lazyCreateTxn = "lazyCreateTxn";
@@ -4956,7 +4966,7 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     @Order(26)
     @SuppressWarnings("java:S5960")
-    private HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
+    final HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
         final var create2Factory = "Create2Factory";
         final var creation = "creation";
@@ -5081,7 +5091,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             .setCallType(CALL)
                                                             .setCallOperationType(CallOperationType.OP_CALL)
                                                             .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                            .setGas(3979000)
+                                                            .setGas(3965516)
                                                             .setValue(tcValue)
                                                             .setRecipientContract(
                                                                     spec.registry()
@@ -5101,7 +5111,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             .setCallingContract(
                                                                     spec.registry()
                                                                             .getContractId(create2Factory))
-                                                            .setGas(3883883)
+                                                            .setGas(3870609)
                                                             // recipient should be the
                                                             // original hollow account id as
                                                             // a contract
@@ -5124,7 +5134,7 @@ public class TraceabilitySuite extends HapiSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
     @Order(27)
-    private HapiSpec assertSidecars() {
+    final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars

@@ -33,6 +33,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -94,7 +96,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec factoryAndSelfDestructInConstructorContract() {
+    final HapiSpec factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
         final var sender = "sender";
@@ -103,12 +105,19 @@ public class CreateOperationSuite extends HapiSuite {
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract).balance(10).payingWith(sender))
-                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED).payingWith(sender))
+                .when(
+                        // Currently only mono service has a precheck for deleted contracts
+                        ifHapiTest(contractCall(contract)
+                                .hasKnownStatus(CONTRACT_DELETED)
+                                .payingWith(sender)),
+                        ifNotHapiTest(contractCall(contract)
+                                .hasPrecheck(CONTRACT_DELETED)
+                                .payingWith(sender)))
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
     @HapiTest
-    private HapiSpec factoryQuickSelfDestructContract() {
+    final HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
@@ -133,7 +142,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec inheritanceOfNestedCreatedContracts() {
+    final HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
                 .given(
@@ -287,7 +296,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
+    final HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
         return defaultHapiSpec("contractCreateWithNewOpInConstructorAbandoningParent")
                 .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))

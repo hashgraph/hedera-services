@@ -29,19 +29,20 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
+import com.swirlds.platform.network.SocketConfig_;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -283,8 +284,8 @@ class OutboundConnectionCreatorTest {
     @NonNull
     private static Configuration getConfig() {
         return new TestConfigBuilder()
-                .withValue("socket.bufferSize", "100")
-                .withValue("socket.gzipCompression", false)
+                .withValue(SocketConfig_.BUFFER_SIZE, "100")
+                .withValue(SocketConfig_.GZIP_COMPRESSION, false)
                 .getOrCreateConfig();
     }
 }

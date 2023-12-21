@@ -18,6 +18,7 @@ module com.hedera.node.app {
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.merkledb;
+    requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
     requires transitive grpc.stub;
@@ -34,7 +35,7 @@ module com.hedera.node.app {
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.fcqueue;
-    requires com.swirlds.platform.core;
+    requires com.swirlds.logging;
     requires grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
@@ -54,10 +55,12 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
+            com.hedera.node.services.cli,
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.disk to
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.memory to
+            com.hedera.node.services.cli,
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.singleton to
             com.swirlds.common;

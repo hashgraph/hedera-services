@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
 import static java.util.Collections.emptyList;
@@ -66,12 +65,14 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class ClassicTransfersCall extends AbstractHtsCall {
     private final byte[] selector;
     private final AccountID spenderId;
+    private final ResponseCodeEnum preemptingFailureStatus;
     private final TransactionBody syntheticTransfer;
     private final Configuration configuration;
 
     @Nullable
     private final ApprovalSwitchHelper approvalSwitchHelper;
 
+    private final CallStatusStandardizer callStatusStandardizer;
     private final SystemAccountCreditScreen systemAccountCreditScreen;
 
     private final VerificationStrategy verificationStrategy;
@@ -83,17 +84,21 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final byte[] selector,
             @NonNull final AccountID spenderId,
+            @Nullable final ResponseCodeEnum preemptingFailureStatus,
             @NonNull final TransactionBody syntheticTransfer,
             @NonNull final Configuration configuration,
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
+            @NonNull final CallStatusStandardizer callStatusStandardizer,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final SystemAccountCreditScreen systemAccountCreditScreen) {
         super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
         this.spenderId = requireNonNull(spenderId);
+        this.preemptingFailureStatus = preemptingFailureStatus;
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
         this.configuration = requireNonNull(configuration);
         this.approvalSwitchHelper = approvalSwitchHelper;
+        this.callStatusStandardizer = requireNonNull(callStatusStandardizer);
         this.systemAccountCreditScreen = systemAccountCreditScreen;
         this.verificationStrategy = requireNonNull(verificationStrategy);
     }
@@ -104,6 +109,9 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
+        if (preemptingFailureStatus != null) {
+            return reversionWith(preemptingFailureStatus, gasRequirement);
+        }
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             return reversionWith(
                     gasRequirement,
@@ -127,10 +135,11 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
+        final var op = transferToDispatch.cryptoTransferOrThrow();
         if (recordBuilder.status() == SUCCESS) {
-            maybeEmitErcLogsFor(transferToDispatch.cryptoTransferOrThrow(), frame);
+            maybeEmitErcLogsFor(op, frame);
         } else {
-            recordBuilder.status(standardized(recordBuilder.status()));
+            recordBuilder.status(callStatusStandardizer.codeForFailure(recordBuilder.status(), frame, op));
         }
         return completionWith(gasRequirement, recordBuilder, encodedRc(recordBuilder.status()));
     }

@@ -18,11 +18,12 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.ConsensusConfig_;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -66,8 +67,8 @@ class IntakeAndConsensusTests {
         final List<Integer> partitionNodes = List.of(0, 1);
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("consensus.roundsNonAncient", 25)
-                .withValue("consensus.roundsExpired", 25)
+                .withValue(ConsensusConfig_.ROUNDS_NON_ANCIENT, 25)
+                .withValue(ConsensusConfig_.ROUNDS_EXPIRED, 25)
                 .getOrCreateConfig();
 
         final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);

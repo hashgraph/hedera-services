@@ -62,6 +62,11 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
         return accounts.size();
     }
 
+    @Override
+    public long sizeOfAccountState() {
+        return accounts.size();
+    }
+
     private static Account getNewAccount(long num, Bytes alias, Account account) {
         return account.copyBuilder()
                 .alias(alias)
@@ -72,6 +77,11 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
     @Override
     public boolean containsAlias(@NonNull Bytes alias) {
         return aliases.contains(new ProtoBytes(alias));
+    }
+
+    @Override
+    public boolean contains(@NonNull AccountID accountID) {
+        return accounts.contains(accountID);
     }
 
     @Override

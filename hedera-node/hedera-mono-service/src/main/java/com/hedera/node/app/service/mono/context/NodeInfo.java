@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;

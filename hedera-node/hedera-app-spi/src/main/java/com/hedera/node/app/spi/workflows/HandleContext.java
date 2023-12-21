@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -394,7 +395,9 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
     default <T> T dispatchPrecedingTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> verifier) {
         throwIfMissingPayerId(txBody);
         return dispatchPrecedingTransaction(
                 txBody,
@@ -476,7 +479,9 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
     default <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> verifier) {
         throwIfMissingPayerId(txBody);
         return dispatchReversiblePrecedingTransaction(
                 txBody,
@@ -534,7 +539,9 @@ public interface HandleContext {
      */
     @NonNull
     default <T> T dispatchScheduledChildTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
         throwIfMissingPayerId(txBody);
         return dispatchChildTransaction(
                 txBody,
@@ -586,7 +593,9 @@ public interface HandleContext {
      */
     @NonNull
     default <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
         throwIfMissingPayerId(txBody);
         return dispatchRemovableChildTransaction(
                 txBody,
@@ -645,9 +654,18 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
-     * Revert all child records in RecordListBuilder.
+     * Revert the childRecords from the checkpoint.
      */
-    void revertChildRecords();
+    void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
+
+    /**
+     * Create a checkpoint for the current childRecords.
+     *
+     * @return the checkpoint for the current childRecords, containing the first preceding record and the last following
+     * record.
+     */
+    @NonNull
+    RecordListCheckPoint createRecordListCheckPoint();
 
     /**
      * A stack of savepoints.

@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.store.models;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class OwnershipTrackerTest {
@@ -28,12 +27,6 @@ class OwnershipTrackerTest {
     private final Id treasury = new Id(1, 2, 3);
     private final Id account = new Id(4, 5, 6);
     private final Id token = new Id(0, 0, 1);
-
-    @BeforeEach
-    void setup() {
-        // setup the getter/setter test
-        subject = new OwnershipTracker();
-    }
 
     @Test
     void add() {

@@ -40,6 +40,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A singleton that provides near real-time access to the record stream files for all concurrently
@@ -47,6 +49,8 @@ import org.apache.commons.io.monitor.FileAlterationObserver;
  */
 public enum RecordStreamAccess {
     RECORD_STREAM_ACCESS;
+
+    private static final Logger LOGGER = LogManager.getLogger(RecordStreamAccess.class);
 
     private static final int MONITOR_INTERVAL_MS = 250;
 
@@ -73,6 +77,8 @@ public enum RecordStreamAccess {
                 .sum();
         if (numSubscribers == 0) {
             try {
+                LOGGER.info("Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
+                validatingListeners.clear();
                 // Will throw ISE if already stopped, ignore that
                 monitor.stop();
             } catch (Exception ignore) {

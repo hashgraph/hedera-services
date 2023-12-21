@@ -29,9 +29,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ModelTests {
@@ -59,10 +57,8 @@ class ModelTests {
         final boolean illegalDirectSchedulerUseDetected = model.checkForIllegalDirectSchedulerUsage();
         assertEquals(illegalDirectSchedulerUseExpected, illegalDirectSchedulerUseDetected);
 
-        final Set<ModelGroup> groups = new HashSet<>();
-
         // Should not throw.
-        final String diagram = model.generateWiringDiagram(groups);
+        final String diagram = model.generateWiringDiagram(List.of(), List.of());
         if (printMermaidDiagram) {
             System.out.println(diagram);
         }
@@ -1003,7 +999,10 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().buildFilter("onlyEven", x -> x % 2 == 0).solderTo(inputE);
+        taskSchedulerD
+                .getOutputWire()
+                .buildFilter("onlyEven", "onlyEvenInput", x -> x % 2 == 0)
+                .solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
         taskSchedulerG.getOutputWire().solderTo(inputD);
@@ -1083,7 +1082,10 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().buildTransformer("inverter", x -> -x).solderTo(inputE);
+        taskSchedulerD
+                .getOutputWire()
+                .buildTransformer("inverter", "inverterInput", x -> -x)
+                .solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
         taskSchedulerG.getOutputWire().solderTo(inputD);
@@ -1163,7 +1165,7 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        final OutputWire<Integer> splitter = taskSchedulerD.getOutputWire().buildSplitter();
+        final OutputWire<Integer> splitter = taskSchedulerD.getOutputWire().buildSplitter("splitter", "splitterInput");
         splitter.solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
