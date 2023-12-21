@@ -999,7 +999,10 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().buildFilter("onlyEven", x -> x % 2 == 0).solderTo(inputE);
+        taskSchedulerD
+                .getOutputWire()
+                .buildFilter("onlyEven", "onlyEvenInput", x -> x % 2 == 0)
+                .solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
         taskSchedulerG.getOutputWire().solderTo(inputD);
@@ -1079,7 +1082,10 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().buildTransformer("inverter", x -> -x).solderTo(inputE);
+        taskSchedulerD
+                .getOutputWire()
+                .buildTransformer("inverter", "inverterInput", x -> -x)
+                .solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
         taskSchedulerG.getOutputWire().solderTo(inputD);
@@ -1159,7 +1165,7 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        final OutputWire<Integer> splitter = taskSchedulerD.getOutputWire().buildSplitter();
+        final OutputWire<Integer> splitter = taskSchedulerD.getOutputWire().buildSplitter("splitter", "splitterInput");
         splitter.solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
