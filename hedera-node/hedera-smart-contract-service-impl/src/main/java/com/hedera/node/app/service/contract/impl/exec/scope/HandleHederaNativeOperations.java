@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static java.util.Objects.requireNonNull;
 
@@ -103,9 +104,10 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         // Note the use of the null "verification assistant" callback; we don't want any
         // signing requirements enforced for this synthetic transaction
         try {
-            return context.dispatchRemovablePrecedingTransaction(
-                            synthTxn, CryptoCreateRecordBuilder.class, null, context.payer())
-                    .status();
+            final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
+                    synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
+            childRecordBuilder.memo(LAZY_CREATION_MEMO);
+            return childRecordBuilder.status();
         } catch (final HandleException e) {
             // It is critically important we don't let HandleExceptions propagate to the workflow because
             // it doesn't rollback for contract operations so we can commit gas charges; that is, the
