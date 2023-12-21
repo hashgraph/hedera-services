@@ -118,11 +118,14 @@ public interface WiringModel extends Startable, Stoppable {
      *
      * @param groups        optional groupings of vertices
      * @param substitutions edges to substitute
+     * @param manualLinks   manual links to add to the diagram
      * @return a mermaid style wiring diagram
      */
     @NonNull
     String generateWiringDiagram(
-            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions);
+            @NonNull final List<ModelGroup> groups,
+            @NonNull final List<ModelEdgeSubstitution> substitutions,
+            @NonNull final List<ModelManualLink> manualLinks);
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and
