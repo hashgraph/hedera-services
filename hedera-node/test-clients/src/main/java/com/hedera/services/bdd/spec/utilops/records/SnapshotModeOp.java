@@ -50,6 +50,7 @@ import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -138,7 +139,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "prng_bytes");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
-    private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";
+    private static final String MONO_STREAMS_LOC = "hedera-node/hedera-app/build/node/data/recordStreams/record0.0.3";
     private static final String HAPI_TEST_STREAMS_LOC_TPL =
             "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
@@ -179,8 +180,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta(
-                "ContractKeysHTS", "DissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla");
+        final var snapshotFileMeta = new SnapshotFileMeta("LeakyCryptoTests", "lazyCreateViaEthereumCryptoTransfer");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -429,6 +429,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Mismatched field names ('" + expectedName + "' vs '" + actualName + "' between expected "
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
+
+            final boolean isFileUpdate = FileUpdateTransactionBody.class.isAssignableFrom(expectedType);
+            final boolean isForFile121 =
+                    FileID.newBuilder().setFileNum(121).build().equals(expectedField.getValue());
+            // skip matching FileUpdate for properties file 121 since depending on if leaky tests are run before or not,
+            // the FileUpdate contents can be different
+            if (isFileUpdate && isForFile121) {
+                return;
+            }
+
             if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
                 //                System.out.println("YES");
                 continue;
