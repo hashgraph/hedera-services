@@ -1516,6 +1516,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
+    @HapiTest
     final HapiSpec someErc721ApproveAndRemoveScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
