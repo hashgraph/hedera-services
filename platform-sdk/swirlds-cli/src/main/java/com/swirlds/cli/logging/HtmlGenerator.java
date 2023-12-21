@@ -56,6 +56,10 @@ public class HtmlGenerator {
      */
     public static final String DEFAULT_TEXT_COLOR = "#bdbfc4";
 
+    public static final String WHITELIST_RADIO_COLOR = "#6FD154";
+    public static final String NEUTRALLIST_RADIO_COLOR = "#F3D412";
+    public static final String BLACKLIST_RADIO_COLOR = "#DA4754";
+
     /**
      * Jetbrains font
      */
@@ -812,9 +816,19 @@ public class HtmlGenerator {
         cssFactory.addRule("." + LOG_LINE_LABEL + ":hover td", new CssDeclaration("background-color", HIGHLIGHT_COLOR));
 
         cssFactory.addRule(
-                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL + ", ."
-                        + SECLECT_COLUMN_BUTTON_LABEL,
+                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL,
                 new CssDeclaration("background-color", getHtmlColor(TextEffect.GRAY)));
+
+        // make the select column buttons the same color as the accent of the radio buttons=
+        cssFactory.addRule(
+                "." + SECLECT_COLUMN_BUTTON_LABEL + "." + WHITELIST_RADIO_LABEL,
+                new CssDeclaration("border-color", WHITELIST_RADIO_COLOR));
+        cssFactory.addRule(
+                "." + SECLECT_COLUMN_BUTTON_LABEL + "." + NEUTRALLIST_RADIO_LABEL,
+                new CssDeclaration("border-color", NEUTRALLIST_RADIO_COLOR));
+        cssFactory.addRule(
+                "." + SECLECT_COLUMN_BUTTON_LABEL + "." + BLACKLIST_RADIO_LABEL,
+                new CssDeclaration("border-color", BLACKLIST_RADIO_COLOR));
 
         cssFactory.addRule("." + SECLECT_COLUMN_BUTTON_LABEL, new CssDeclaration("margin", "0.2em"));
 
@@ -942,9 +956,9 @@ public class HtmlGenerator {
                         .generateTag())
                 .append("\n");
 
-        cssFactory.addRule("." + WHITELIST_RADIO_LABEL, new CssDeclaration("accent-color", "#6FD154"));
-        cssFactory.addRule("." + NEUTRALLIST_RADIO_LABEL, new CssDeclaration("accent-color", "#F3D412"));
-        cssFactory.addRule("." + BLACKLIST_RADIO_LABEL, new CssDeclaration("accent-color", "#DA4754"));
+        cssFactory.addRule("." + WHITELIST_RADIO_LABEL, new CssDeclaration("accent-color", WHITELIST_RADIO_COLOR));
+        cssFactory.addRule("." + NEUTRALLIST_RADIO_LABEL, new CssDeclaration("accent-color", NEUTRALLIST_RADIO_COLOR));
+        cssFactory.addRule("." + BLACKLIST_RADIO_LABEL, new CssDeclaration("accent-color", BLACKLIST_RADIO_COLOR));
 
         // make the filter columns and the log table scroll independently
         cssFactory.addRule("." + INDEPENDENT_SCROLL_LABEL, new CssDeclaration("overflow", "auto"));
