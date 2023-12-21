@@ -805,6 +805,7 @@ public class SwirldsPlatform implements Platform {
                     selfId,
                     appVersion,
                     transactionPool,
+                    this::getIntakeQueueSize,
                     platformStatusManager::getCurrentStatus,
                     latestReconnectRound::get);
 
@@ -960,6 +961,15 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
+    }
+
+    /**
+     * Get the current size of the intake queue. Helper method to break a circular dependency.
+     *
+     * @return the current size of the intake queue
+     */
+    private int getIntakeQueueSize() {
+        return intakeQueue.size();
     }
 
     /**
