@@ -22,17 +22,14 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -84,7 +81,6 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         final ContractID contractID = asEvmContractId(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
 
         try {
-            validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
             // compute the pseudorandom number
             final var randomNum = generatePseudoRandomData(input, frame);
             requireNonNull(randomNum);
@@ -126,12 +122,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
 
             updater.enhancement()
                     .systemOperations()
-                    .dispatch(
-                            synthBody(),
-                            new ActiveContractVerificationStrategy(
-                                    senderId.accountNum(), contractID.evmAddress(), false, UseTopLevelSigs.NO),
-                            senderId,
-                            ContractCallRecordBuilder.class)
+                    .dispatch(synthBody(), key -> Decision.INVALID, senderId, ContractCallRecordBuilder.class)
                     .contractCallResult(data)
                     .entropyBytes(tuweniToPbjBytes(randomNum));
         }

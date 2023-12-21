@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.config.legacy;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -61,12 +60,18 @@ public class LegacyConfigProperties {
         return addressBook.copy();
     }
 
+    /**
+     * @throws NullPointerException in case {@code appConfig} parameter is {@code null}
+     */
     public void setAppConfig(final JarAppConfig appConfig) {
-        this.appConfig = CommonUtils.throwArgNull(appConfig, "appConfig");
+        this.appConfig = Objects.requireNonNull(appConfig, "appConfig must not be null");
     }
 
+    /**
+     * @throws NullPointerException in case {@code swirldName} parameter is {@code null}
+     */
     public void setSwirldName(final String swirldName) {
-        this.swirldName = CommonUtils.throwArgNull(swirldName, "swirldName");
+        this.swirldName = Objects.requireNonNull(swirldName, "swirldName must not be null");
     }
 
     public Optional<String> swirldName() {
