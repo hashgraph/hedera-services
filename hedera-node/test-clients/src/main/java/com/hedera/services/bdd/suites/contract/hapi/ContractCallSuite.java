@@ -1616,8 +1616,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(ifNotHapiTest(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
-    // This test disabled for modularization service
-    @HapiTest
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
         return defaultHapiSpec("smartContractFailFirst")
