@@ -162,7 +162,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      * @return the other parent's NodeId
      */
     @Nullable
-    public NodeId getOtherId() {
+    public NodeId getOtherId() { // TODO remove test only
         return otherId;
     }
 

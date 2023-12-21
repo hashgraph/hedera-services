@@ -152,7 +152,7 @@ public class EventMetadata implements Clearable {
      * @return the other parent of this
      */
     public @Nullable EventImpl getOtherParent() {
-        // TODO temporary
+        // TODO only used in tests, remove
         if (otherParents.isEmpty()) {
             return null;
         }
