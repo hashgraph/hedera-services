@@ -157,7 +157,7 @@ class HandleHederaNativeOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         when(context.dispatchRemovablePrecedingTransaction(
-                eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .thenReturn(cryptoCreateRecordBuilder);
 
         final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
