@@ -53,7 +53,7 @@ import java.util.stream.Stream;
  * [root directory]/[4 digit year][2 digit month][2 digit day]/[file name]
  * </pre>
  */
-public final class PcesFile implements Comparable<PcesFile> {
+public final class PreconsensusEventFile implements Comparable<PreconsensusEventFile> {
 
     /**
      * The file extension for standard files. Stands for "PreConsensus Event Stream".
@@ -133,7 +133,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @param origin            the origin of the stream file, signals the round from which the stream is unbroken
      * @param path              the location where this file can be found
      */
-    private PcesFile(
+    private PreconsensusEventFile(
             @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long minimumGeneration,
@@ -182,7 +182,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @return a description of the file
      */
     @NonNull
-    public static PcesFile of(
+    public static PreconsensusEventFile of(
             @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long minimumGeneration,
@@ -194,7 +194,7 @@ public final class PcesFile implements Comparable<PcesFile> {
         final String fileName = buildFileName(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin);
         final Path path = parentDirectory.resolve(fileName);
 
-        return new PcesFile(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, path);
+        return new PreconsensusEventFile(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, path);
     }
 
     /**
@@ -205,7 +205,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @throws IOException if the file could not be parsed
      */
     @NonNull
-    public static PcesFile of(@NonNull final Path filePath) throws IOException {
+    public static PreconsensusEventFile of(@NonNull final Path filePath) throws IOException {
         Objects.requireNonNull(filePath, "filePath");
 
         if (!filePath.toString().endsWith(EVENT_FILE_EXTENSION)) {
@@ -222,7 +222,7 @@ public final class PcesFile implements Comparable<PcesFile> {
         }
 
         try {
-            return new PcesFile(
+            return new PreconsensusEventFile(
                     parseSanitizedTimestamp(elements[0]),
                     Long.parseLong(elements[1].replace(SEQUENCE_NUMBER_PREFIX, "")),
                     Long.parseLong(elements[2].replace(MINIMUM_GENERATION_PREFIX, "")),
@@ -241,7 +241,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @return a description of the new file
      */
     @NonNull
-    public PcesFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
+    public PreconsensusEventFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
         if (maximumGenerationInFile < minimumGeneration) {
             throw new IllegalArgumentException("maximumGenerationInFile " + maximumGenerationInFile
                     + " is less than minimumGeneration " + minimumGeneration);
@@ -257,7 +257,8 @@ public final class PcesFile implements Comparable<PcesFile> {
                 buildFileName(timestamp, sequenceNumber, minimumGeneration, maximumGenerationInFile, origin);
         final Path newPath = parentDirectory.resolve(fileName);
 
-        return new PcesFile(timestamp, sequenceNumber, minimumGeneration, maximumGenerationInFile, origin, newPath);
+        return new PreconsensusEventFile(
+                timestamp, sequenceNumber, minimumGeneration, maximumGenerationInFile, origin, newPath);
     }
 
     /**
@@ -317,8 +318,8 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @return a writer for this file
      */
     @NonNull
-    public PcesMutableFile getMutableFile() throws IOException {
-        return new PcesMutableFile(this);
+    public PreconsensusEventMutableFile getMutableFile() throws IOException {
+        return new PreconsensusEventMutableFile(this);
     }
 
     /**
@@ -457,7 +458,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(@NonNull final PcesFile that) {
+    public int compareTo(@NonNull final PreconsensusEventFile that) {
         return Long.compare(sequenceNumber, that.sequenceNumber);
     }
 
@@ -478,7 +479,7 @@ public final class PcesFile implements Comparable<PcesFile> {
             return true;
         }
 
-        if (obj instanceof final PcesFile that) {
+        if (obj instanceof final PreconsensusEventFile that) {
             return this.sequenceNumber == that.sequenceNumber;
         }
 

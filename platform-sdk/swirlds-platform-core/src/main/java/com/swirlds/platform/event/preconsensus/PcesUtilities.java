@@ -56,8 +56,8 @@ public final class PcesUtilities {
      * @return the new compacted PCES file.
      */
     @NonNull
-    public static PcesFile compactPreconsensusEventFile(
-            @NonNull final PcesFile originalFile, final long previousMaximumGeneration) {
+    public static PreconsensusEventFile compactPreconsensusEventFile(
+            @NonNull final PreconsensusEventFile originalFile, final long previousMaximumGeneration) {
 
         // Find the maximum generation in the file.
         long maxGeneration = originalFile.getMinimumGeneration();
@@ -83,7 +83,7 @@ public final class PcesUtilities {
         }
 
         // Now, compact the generational span of the file using the newly discovered maximum generation.
-        final PcesFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
+        final PreconsensusEventFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
         try {
             Files.move(originalFile.getPath(), newFile.getPath(), StandardCopyOption.ATOMIC_MOVE);
         } catch (final IOException e) {
@@ -107,9 +107,9 @@ public final class PcesUtilities {
      * @return the wrapper object, or null if the file can't be parsed
      */
     @Nullable
-    public static PcesFile parseFile(@NonNull final Path path) {
+    public static PreconsensusEventFile parseFile(@NonNull final Path path) {
         try {
-            return PcesFile.of(path);
+            return PreconsensusEventFile.of(path);
         } catch (final IOException exception) {
             // ignore any file that can't be parsed
             logger.warn(EXCEPTION.getMarker(), "Failed to parse file: {}", path, exception);
@@ -123,11 +123,11 @@ public final class PcesUtilities {
      * @param rootPath the root of the directory tree
      */
     public static void compactPreconsensusEventFiles(@NonNull final Path rootPath) {
-        final List<PcesFile> files = new ArrayList<>();
+        final List<PreconsensusEventFile> files = new ArrayList<>();
         try (final Stream<Path> fileStream = Files.walk(rootPath)) {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
-                    .filter(f -> f.toString().endsWith(PcesFile.EVENT_FILE_EXTENSION))
+                    .filter(f -> f.toString().endsWith(PreconsensusEventFile.EVENT_FILE_EXTENSION))
                     .map(PcesUtilities::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
@@ -137,8 +137,8 @@ public final class PcesUtilities {
         }
 
         long previousMaximumGeneration = 0;
-        for (final PcesFile file : files) {
-            final PcesFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
+        for (final PreconsensusEventFile file : files) {
+            final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
             previousMaximumGeneration = compactedFile.getMaximumGeneration();
         }
     }
@@ -163,7 +163,7 @@ public final class PcesUtilities {
             final long previousMaximumGeneration,
             final long previousOrigin,
             @NonNull final Instant previousTimestamp,
-            @NonNull final PcesFile descriptor) {
+            @NonNull final PreconsensusEventFile descriptor) {
 
         // Sequence number should always monotonically increase
         if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {

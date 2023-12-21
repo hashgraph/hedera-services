@@ -30,9 +30,9 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileIterator;
-import com.swirlds.platform.event.preconsensus.PcesMutableFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.io.IOException;
@@ -106,10 +106,10 @@ class PreconsensusEventReadWriteTests {
 
         maximumGeneration += random.nextInt(0, 10);
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
             mutableFile.writeEvent(event);
         }
@@ -153,7 +153,7 @@ class PreconsensusEventReadWriteTests {
 
         maximumGeneration += random.nextInt(0, 10);
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -161,7 +161,7 @@ class PreconsensusEventReadWriteTests {
                 maximumGeneration,
                 testDirectory);
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
             mutableFile.writeEvent(event);
         }
@@ -192,7 +192,7 @@ class PreconsensusEventReadWriteTests {
     void readEmptyFileTest() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 random.nextLong(0, 1000),
@@ -200,7 +200,7 @@ class PreconsensusEventReadWriteTests {
                 0,
                 testDirectory);
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         mutableFile.close();
 
         final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
@@ -234,7 +234,7 @@ class PreconsensusEventReadWriteTests {
 
         maximumGeneration += random.nextInt(0, 10);
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -244,7 +244,7 @@ class PreconsensusEventReadWriteTests {
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (int i = 0; i < events.size(); i++) {
             final GossipEvent event = events.get(i);
             mutableFile.writeEvent(event);
@@ -299,12 +299,12 @@ class PreconsensusEventReadWriteTests {
 
         maximumGeneration += random.nextInt(0, 10);
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (int i = 0; i < events.size(); i++) {
             final GossipEvent event = events.get(i);
             mutableFile.writeEvent(event);
@@ -359,14 +359,14 @@ class PreconsensusEventReadWriteTests {
         final long restrictedMinimumGeneration = minimumGeneration + (minimumGeneration + maximumGeneration) / 4;
         final long restrictedMaximumGeneration = maximumGeneration - (minimumGeneration + maximumGeneration) / 4;
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 restrictedMinimumGeneration,
                 restrictedMaximumGeneration,
                 0,
                 testDirectory);
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
 
         final List<GossipEvent> validEvents = new ArrayList<>();
         for (final GossipEvent event : events) {
@@ -417,7 +417,7 @@ class PreconsensusEventReadWriteTests {
 
         maximumGeneration += random.nextInt(1, 10);
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumGeneration,
@@ -425,13 +425,13 @@ class PreconsensusEventReadWriteTests {
                 0,
                 testDirectory);
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
             mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
-        final PcesFile compressedFile = mutableFile.compressGenerationalSpan(0);
+        final PreconsensusEventFile compressedFile = mutableFile.compressGenerationalSpan(0);
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
@@ -483,7 +483,7 @@ class PreconsensusEventReadWriteTests {
         final long maximumFileGeneration = maximumEventGeneration + random.nextInt(10, 20);
         final long uncompressedSpan = 5;
 
-        final PcesFile file = PcesFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumEventGeneration,
@@ -491,13 +491,14 @@ class PreconsensusEventReadWriteTests {
                 0,
                 testDirectory);
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
             mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
-        final PcesFile compressedFile = mutableFile.compressGenerationalSpan(maximumEventGeneration + uncompressedSpan);
+        final PreconsensusEventFile compressedFile =
+                mutableFile.compressGenerationalSpan(maximumEventGeneration + uncompressedSpan);
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
@@ -523,7 +524,7 @@ class PreconsensusEventReadWriteTests {
     @Test
     @DisplayName("Empty File Test")
     void emptyFileTest() throws IOException {
-        final PcesFile file = PcesFile.of(Instant.now(), 0, 0, 100, 0, testDirectory);
+        final PreconsensusEventFile file = PreconsensusEventFile.of(Instant.now(), 0, 0, 100, 0, testDirectory);
 
         final Path path = file.getPath();
 

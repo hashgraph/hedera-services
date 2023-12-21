@@ -44,14 +44,14 @@ public class PcesFileTracker {
     /**
      * Tracks all files currently on disk.
      */
-    private final RandomAccessDeque<PcesFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
+    private final RandomAccessDeque<PreconsensusEventFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
 
     /**
      * Get the first file in the file list.
      *
      * @return the first file in the file list
      */
-    public PcesFile getFirstFile() {
+    public PreconsensusEventFile getFirstFile() {
         return files.getFirst();
     }
 
@@ -60,7 +60,7 @@ public class PcesFileTracker {
      *
      * @return the last file in the file list
      */
-    public PcesFile getLastFile() {
+    public PreconsensusEventFile getLastFile() {
         return files.getLast();
     }
 
@@ -69,7 +69,7 @@ public class PcesFileTracker {
      *
      * @return the file that was removed
      */
-    public PcesFile removeFirstFile() {
+    public PreconsensusEventFile removeFirstFile() {
         return files.removeFirst();
     }
 
@@ -78,7 +78,7 @@ public class PcesFileTracker {
      *
      * @return the file that was removed
      */
-    public PcesFile removeLastFile() {
+    public PreconsensusEventFile removeLastFile() {
         return files.removeLast();
     }
 
@@ -101,7 +101,7 @@ public class PcesFileTracker {
         long totalFileByteCount = 0;
 
         // Measure the size of each file.
-        for (final PcesFile file : files) {
+        for (final PreconsensusEventFile file : files) {
             totalFileByteCount += Files.size(file.getPath());
         }
 
@@ -113,7 +113,7 @@ public class PcesFileTracker {
      *
      * @param file the file to be added
      */
-    public void addFile(@NonNull final PcesFile file) {
+    public void addFile(@NonNull final PreconsensusEventFile file) {
         Objects.requireNonNull(file);
         files.addLast(file);
     }
@@ -124,7 +124,7 @@ public class PcesFileTracker {
      * @param index the index of the file to get
      * @return the file at the specified index
      */
-    public PcesFile getFile(final int index) {
+    public PreconsensusEventFile getFile(final int index) {
         return files.get(index);
     }
 
@@ -134,7 +134,7 @@ public class PcesFileTracker {
      * @param index the index of the file to set
      * @param file  the file to set
      */
-    public void setFile(final int index, @NonNull final PcesFile file) {
+    public void setFile(final int index, @NonNull final PreconsensusEventFile file) {
         Objects.requireNonNull(file);
         files.set(index, file);
     }
@@ -169,7 +169,8 @@ public class PcesFileTracker {
      * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
+    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(
+            final long minimumGeneration, final long startingRound) {
         final int firstFileIndex = getFirstRelevantFileIndex(startingRound);
 
         // Edge case: we want all events regardless of generation
@@ -212,7 +213,7 @@ public class PcesFileTracker {
         // Standard case: we need to stream data starting from a file somewhere in the middle of stream
         final int fileCount = files.size();
         for (int index = firstFileIndex; index < fileCount; index++) {
-            final PcesFile file = files.get(index);
+            final PreconsensusEventFile file = files.get(index);
             if (file.getMaximumGeneration() >= minimumGeneration) {
                 // We have found the first file that may contain events at the requested generation.
                 return new UnmodifiableIterator<>(files.iterator(index));

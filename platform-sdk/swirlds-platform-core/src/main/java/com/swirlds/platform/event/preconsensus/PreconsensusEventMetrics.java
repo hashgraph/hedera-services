@@ -25,7 +25,7 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 /**
  * Metrics for preconsensus events.
  */
-public class PcesMetrics {
+public class PreconsensusEventMetrics {
 
     private static final String CATEGORY = "platform";
 
@@ -91,7 +91,7 @@ public class PcesMetrics {
      *
      * @param metrics the metrics manager for the platform
      */
-    public PcesMetrics(final Metrics metrics) {
+    public PreconsensusEventMetrics(final Metrics metrics) {
         preconsensusEventFileCount = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_COUNT_CONFIG);
         preconsensusEventFileAverageSizeMB = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_AVERAGE_SIZE_MB_CONFIG);
         preconsensusEventFileTotalSizeGB = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_TOTAL_SIZE_GB_CONFIG);

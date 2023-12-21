@@ -56,7 +56,7 @@ public class PcesFileManager {
      */
     private final Time time;
 
-    private final PcesMetrics metrics;
+    private final PreconsensusEventMetrics metrics;
 
     /**
      * The root directory where event files are stored.
@@ -110,7 +110,7 @@ public class PcesFileManager {
 
         this.time = Objects.requireNonNull(time);
         this.files = Objects.requireNonNull(files);
-        this.metrics = new PcesMetrics(platformContext.getMetrics());
+        this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
         this.minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
         this.databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
@@ -163,7 +163,7 @@ public class PcesFileManager {
                     + "Current origin round: " + currentOrigin + ", new origin round: " + newOriginRound);
         }
 
-        final PcesFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
+        final PreconsensusEventFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
 
         logger.info(
                 STARTUP.getMarker(),
@@ -184,7 +184,8 @@ public class PcesFileManager {
      * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
-    public @NonNull PcesFile getNextFileDescriptor(final long minimumGeneration, final long maximumGeneration) {
+    public @NonNull PreconsensusEventFile getNextFileDescriptor(
+            final long minimumGeneration, final long maximumGeneration) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -205,7 +206,7 @@ public class PcesFileManager {
                     Math.max(maximumGeneration, files.getLastFile().getMaximumGeneration());
         }
 
-        final PcesFile descriptor = PcesFile.of(
+        final PreconsensusEventFile descriptor = PreconsensusEventFile.of(
                 time.now(),
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
@@ -216,7 +217,7 @@ public class PcesFileManager {
         if (files.getFileCount() > 0) {
             // There are never enough sanity checks. This is the same sanity check that is run when we parse
             // the files from disk, so if it doesn't pass now it's not going to pass when we read the files.
-            final PcesFile previousFile = files.getLastFile();
+            final PreconsensusEventFile previousFile = files.getLastFile();
             PcesUtilities.fileSanityChecks(
                     false,
                     previousFile.getSequenceNumber(),
@@ -238,7 +239,7 @@ public class PcesFileManager {
      *
      * @param file the file that has been completely written
      */
-    public void finishedWritingFile(@NonNull final PcesMutableFile file) {
+    public void finishedWritingFile(@NonNull final PreconsensusEventMutableFile file) {
         final long previousFileHighestGeneration;
         if (files.getFileCount() == 1) {
             previousFileHighestGeneration = 0;
@@ -248,7 +249,7 @@ public class PcesFileManager {
         }
 
         // Compress the generational span of the file. Reduces overlap between files.
-        final PcesFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
+        final PreconsensusEventFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
         files.setFile(files.getFileCount() - 1, compressedDescriptor);
 
         // Update metrics
@@ -275,7 +276,7 @@ public class PcesFileManager {
                 && files.getFirstFile().getMaximumGeneration() < minimumGeneration
                 && files.getFirstFile().getTimestamp().isBefore(minimumTimestamp)) {
 
-            final PcesFile file = files.removeFirstFile();
+            final PreconsensusEventFile file = files.removeFirstFile();
             totalFileByteCount -= Files.size(file.getPath());
             file.deleteFile(databaseDirectory);
         }

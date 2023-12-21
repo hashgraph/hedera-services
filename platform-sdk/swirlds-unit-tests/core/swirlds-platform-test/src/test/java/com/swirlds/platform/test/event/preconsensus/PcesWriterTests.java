@@ -43,7 +43,6 @@ import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
-import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
@@ -51,6 +50,7 @@ import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -154,7 +154,7 @@ class PcesWriterTests {
         assertFalse(eventsIterator3.hasNext());
 
         // Do basic validation on event files
-        final List<PcesFile> files = new ArrayList<>();
+        final List<PreconsensusEventFile> files = new ArrayList<>();
         pcesFiles.getFileIterator(0, 0).forEachRemaining(files::add);
 
         // There should be at least 2 files.
@@ -166,7 +166,7 @@ class PcesWriterTests {
         Instant previousTimestamp = Instant.MIN;
         long previousMinimum = Long.MIN_VALUE;
         long previousMaximum = Long.MIN_VALUE;
-        for (final PcesFile file : files) {
+        for (final PreconsensusEventFile file : files) {
             assertEquals(nextSequenceNumber, file.getSequenceNumber());
             nextSequenceNumber++;
             assertTrue(isGreaterThanOrEqualTo(file.getTimestamp(), previousTimestamp));
@@ -409,8 +409,8 @@ class PcesWriterTests {
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PcesFile> it = pcesFiles.getFileIterator(0, 0); it.hasNext(); ) {
-            final PcesFile file = it.next();
+        for (final Iterator<PreconsensusEventFile> it = pcesFiles.getFileIterator(0, 0); it.hasNext(); ) {
+            final PreconsensusEventFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
     }
@@ -491,9 +491,9 @@ class PcesWriterTests {
 
         if (truncateLastFile) {
             // Remove a single byte from the last file. This will corrupt the last event that was written.
-            final Iterator<PcesFile> it = pcesFiles.getFileIterator(NO_MINIMUM_GENERATION, 0);
+            final Iterator<PreconsensusEventFile> it = pcesFiles.getFileIterator(NO_MINIMUM_GENERATION, 0);
             while (it.hasNext()) {
-                final PcesFile file = it.next();
+                final PreconsensusEventFile file = it.next();
                 if (!it.hasNext()) {
                     FileManipulation.truncateNBytesFromFile(file.getPath(), 1);
                 }
@@ -597,8 +597,9 @@ class PcesWriterTests {
         // Since we were very careful to always advance the first non-ancient generation, we should
         // find lots of files with a minimum generation exceeding 0.
         boolean foundNonZeroMinimumGeneration = false;
-        for (final Iterator<PcesFile> fileIterator = pcesFiles.getFileIterator(0, 0); fileIterator.hasNext(); ) {
-            final PcesFile file = fileIterator.next();
+        for (final Iterator<PreconsensusEventFile> fileIterator = pcesFiles.getFileIterator(0, 0);
+                fileIterator.hasNext(); ) {
+            final PreconsensusEventFile file = fileIterator.next();
             if (file.getMinimumGeneration() > 0) {
                 foundNonZeroMinimumGeneration = true;
                 break;

@@ -48,7 +48,8 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
      * 		the minimum generation to return, any events in the file with a smaller
      * 		generation are ignored and not returned
      */
-    public PcesFileIterator(final PcesFile fileDescriptor, final long minimumGeneration) throws IOException {
+    public PcesFileIterator(final PreconsensusEventFile fileDescriptor, final long minimumGeneration)
+            throws IOException {
 
         this.minimumGeneration = minimumGeneration;
         counter = new CountingStreamExtension();
@@ -59,7 +60,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
 
         try {
             final int fileVersion = stream.readInt();
-            if (fileVersion != PcesMutableFile.FILE_VERSION) {
+            if (fileVersion != PreconsensusEventMutableFile.FILE_VERSION) {
                 throw new IOException("unsupported file version: " + fileVersion);
             }
         } catch (final EOFException e) {

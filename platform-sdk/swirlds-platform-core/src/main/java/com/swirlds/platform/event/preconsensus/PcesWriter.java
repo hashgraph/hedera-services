@@ -47,7 +47,7 @@ public class PcesWriter {
     /**
      * The current file that is being written to.
      */
-    private PcesMutableFile currentMutableFile;
+    private PreconsensusEventMutableFile currentMutableFile;
 
     /**
      * The current minimum generation required to be considered non-ancient. Only read and written on the handle

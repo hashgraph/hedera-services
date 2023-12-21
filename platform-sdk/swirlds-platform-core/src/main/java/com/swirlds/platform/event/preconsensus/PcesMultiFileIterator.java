@@ -29,7 +29,7 @@ import java.util.Objects;
  */
 public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
 
-    private final Iterator<PcesFile> fileIterator;
+    private final Iterator<PreconsensusEventFile> fileIterator;
     private PcesFileIterator currentIterator;
     private final long minimumGeneration;
     private GossipEvent next;
@@ -44,7 +44,8 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
      * @param fileIterator
      * 		an iterator that walks over event files
      */
-    public PcesMultiFileIterator(final long minimumGeneration, @NonNull final Iterator<PcesFile> fileIterator) {
+    public PcesMultiFileIterator(
+            final long minimumGeneration, @NonNull final Iterator<PreconsensusEventFile> fileIterator) {
 
         this.fileIterator = Objects.requireNonNull(fileIterator);
         this.minimumGeneration = minimumGeneration;
