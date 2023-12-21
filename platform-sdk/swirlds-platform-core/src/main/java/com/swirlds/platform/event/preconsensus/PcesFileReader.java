@@ -56,7 +56,7 @@ public class PcesFileReader {
      * @return the files read from disk
      * @throws IOException if there is an error reading the files
      */
-    public static PcesFiles readFilesFromDisk(
+    public static PcesFileTracker readFilesFromDisk(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final Path databaseDirectory,
@@ -67,7 +67,7 @@ public class PcesFileReader {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(databaseDirectory);
 
-        final PcesFiles files = new PcesFiles();
+        final PcesFileTracker files = new PcesFileTracker();
 
         try (final Stream<Path> fileStream = Files.walk(databaseDirectory)) {
             fileStream
@@ -95,7 +95,7 @@ public class PcesFileReader {
      * It's possible (if not probable) that the node was shut down prior to the last file being closed and having its
      * generational span compaction. This method performs that compaction if necessary.
      */
-    private static void compactGenerationalSpanOfLastFile(@NonNull final PcesFiles files) {
+    private static void compactGenerationalSpanOfLastFile(@NonNull final PcesFileTracker files) {
         Objects.requireNonNull(files);
 
         final PreconsensusEventFile lastFile = files.getFile(files.getFileCount() - 1);
@@ -121,7 +121,7 @@ public class PcesFileReader {
      */
     @NonNull
     private static Consumer<PreconsensusEventFile> buildFileHandler(
-            @NonNull final PcesFiles files, final boolean permitGaps) {
+            @NonNull final PcesFileTracker files, final boolean permitGaps) {
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
         final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);
         final ValueReference<Long> previousMaximumGeneration = new ValueReference<>(-1L);
@@ -163,7 +163,7 @@ public class PcesFileReader {
     private static void resolveDiscontinuities(
             @NonNull final Path databaseDirectory,
             @NonNull final RecycleBin recycleBin,
-            @NonNull final PcesFiles files,
+            @NonNull final PcesFileTracker files,
             final long startingRound)
             throws IOException {
 

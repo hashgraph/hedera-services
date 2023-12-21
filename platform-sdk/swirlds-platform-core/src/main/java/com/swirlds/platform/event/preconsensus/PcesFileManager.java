@@ -78,7 +78,7 @@ public class PcesFileManager {
      */
     private long totalFileByteCount = 0;
 
-    private final PcesFiles files;
+    private final PcesFileTracker files;
 
     /**
      * Constructor
@@ -93,7 +93,7 @@ public class PcesFileManager {
     public PcesFileManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
-            @NonNull final PcesFiles files,
+            @NonNull final PcesFileTracker files,
             @NonNull final NodeId selfId,
             final long startingRound)
             throws IOException {

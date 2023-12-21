@@ -45,7 +45,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
-import com.swirlds.platform.event.preconsensus.PcesFiles;
+import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
@@ -98,7 +98,7 @@ class PcesWriterTests {
     private StandardGraphGenerator generator;
     private int generationsUntilAncient;
     private PreconsensusEventStreamSequencer sequencer;
-    private PcesFiles pcesFiles;
+    private PcesFileTracker pcesFiles;
     private PcesWriter writer;
     private EventDurabilityNexus eventDurabilityNexus;
 
@@ -120,7 +120,7 @@ class PcesWriterTests {
             lastGeneration = Math.max(lastGeneration, event.getGeneration());
         }
 
-        final PcesFiles pcesFiles = PcesFileReader.readFilesFromDisk(
+        final PcesFileTracker pcesFiles = PcesFileReader.readFilesFromDisk(
                 platformContext,
                 TestRecycleBin.getInstance(),
                 PcesUtilities.getDatabaseDirectory(platformContext, selfId),
@@ -244,7 +244,7 @@ class PcesWriterTests {
         generator = buildGraphGenerator(random);
         generationsUntilAncient = random.nextInt(50, 100);
         sequencer = new PreconsensusEventStreamSequencer();
-        pcesFiles = new PcesFiles();
+        pcesFiles = new PcesFileTracker();
 
         time = new FakeTime(Duration.ofMillis(1));
         final PcesFileManager fileManager = new PcesFileManager(platformContext, time, pcesFiles, selfId, 0);
@@ -581,7 +581,7 @@ class PcesWriterTests {
         writer.setMinimumGenerationToStore(minimumGenerationToStore);
 
         // We shouldn't see any files that are incapable of storing events above the minimum
-        final PcesFiles pcesFiles = PcesFileReader.readFilesFromDisk(
+        final PcesFileTracker pcesFiles = PcesFileReader.readFilesFromDisk(
                 platformContext,
                 TestRecycleBin.getInstance(),
                 PcesUtilities.getDatabaseDirectory(platformContext, selfId),
