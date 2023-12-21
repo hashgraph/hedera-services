@@ -107,6 +107,8 @@ public class HtmlGenerator {
     public static final String SELECT_MANY_BUTTON_LABEL = "select-many-button";
     public static final String DESELECT_MANY_BUTTON_LABEL = "deselect-many-button";
     public static final String SECLECT_COLUMN_BUTTON_LABEL = "select-column-button";
+    public static final String SELECT_DEFAULT_BUTTON_LABEL = "select-default-button";
+    public static final String SELECT_COMPACT_BUTTON_LABEL = "select-compact-button";
 
     /**
      * Signifies filter radio buttons
@@ -257,7 +259,12 @@ public class HtmlGenerator {
                     let toggleClass;
 
                     for (const element of checkboxClasses) {
-                        if (element === "filter-checkbox" || element === "default-hidden" || element.endsWith("filter-section")) {
+                        if (element === "filter-checkbox" ||
+                        element === "default-show" ||
+                        element === "default-hide" ||
+                        element === "compact-show" ||
+                        element === "compact-hide" ||
+                        element.endsWith("filter-section")) {
                             continue;
                         }
 
@@ -399,6 +406,70 @@ public class HtmlGenerator {
                 });
             }
 
+            let selectDefaultButtons = document.getElementsByClassName("select-default-button");
+            for (const selectDefaultButton of selectDefaultButtons) {
+                // get the other class name of the button
+                let selectDefaultButtonClasses = selectDefaultButton.classList;
+
+                // the name of the section
+                let sectionClass;
+
+                for (const buttonClass of selectDefaultButtonClasses) {
+                    if (buttonClass === "select-default-button") {
+                        continue;
+                    }
+
+                    console.log(buttonClass);
+                    sectionClass = buttonClass;
+                }
+
+                let sectionButtons = document.getElementsByClassName(sectionClass);
+
+                selectDefaultButton.addEventListener("click", function() {
+                    for (const button of sectionButtons) {
+                        if ($(button).hasClass("select-default-button")) {
+                            continue;
+                        }
+                        if (!$(button).is(":checked") && $(button).hasClass("default-show") ||
+                        $(button).is(":checked") && $(button).hasClass("default-hide")) {
+                            button.click()
+                        }
+                    }
+                });
+            }
+
+            let selectCompactButtons = document.getElementsByClassName("select-compact-button");
+            for (const selectCompactButton of selectCompactButtons) {
+                // get the other class name of the button
+                let selectCompactButtonClasses = selectCompactButton.classList;
+
+                // the name of the section
+                let sectionClass;
+
+                for (const buttonClass of selectCompactButtonClasses) {
+                    if (buttonClass === "select-compact-button") {
+                        continue;
+                    }
+
+                    console.log(buttonClass);
+                    sectionClass = buttonClass;
+                }
+
+                let sectionButtons = document.getElementsByClassName(sectionClass);
+
+                selectCompactButton.addEventListener("click", function() {
+                    for (const button of sectionButtons) {
+                        if ($(button).hasClass("select-compact-button")) {
+                            continue;
+                        }
+                        if (!$(button).is(":checked") && $(button).hasClass("compact-show") ||
+                        $(button).is(":checked") && $(button).hasClass("compact-hide")) {
+                            button.click()
+                        }
+                    }
+                });
+            }
+
             let columnSelectButtons = document.getElementsByClassName("select-column-button");
             for (const columnSelectButton of columnSelectButtons) {
                 // get the other class name of the button
@@ -433,7 +504,8 @@ public class HtmlGenerator {
                 });
             }
 
-            let defaultHidden = document.getElementsByClassName("default-hidden");
+            // set the default view automatically
+            let defaultHidden = document.getElementsByClassName("default-hide");
             for (const element of defaultHidden) {
                 element.click();
             }
@@ -481,21 +553,34 @@ public class HtmlGenerator {
     /**
      * Create a single checkbox filter
      *
-     * @param elementName   the name of the element to hide / show
-     * @param sectionName   the name of the filter section this checkbox is in
-     * @param defaultHidden the initial state of the checkbox
+     * @param elementName the name of the element to hide / show
+     * @param sectionName the name of the filter section this checkbox is in
+     * @param defaultView whether or not the checkbox should be checked by default
+     * @param compactView whether or not the checkbox should be checked in compact view
      * @return the checkbox
      */
     @NonNull
     private static String createCheckboxFilter(
-            @NonNull final String elementName, @NonNull final String sectionName, final boolean defaultHidden) {
+            @NonNull final String elementName,
+            @NonNull final String sectionName,
+            final boolean defaultView,
+            final boolean compactView) {
+
         final HtmlTagFactory tagFactory = new HtmlTagFactory("input")
                 .addClasses(List.of(FILTER_CHECKBOX_LABEL, elementName, sectionName))
                 .addAttribute("type", "checkbox")
                 .addAttribute("checked", "checked");
 
-        if (defaultHidden) {
-            tagFactory.addClass("default-hidden");
+        if (defaultView) {
+            tagFactory.addClass("default-show");
+        } else {
+            tagFactory.addClass("default-hide");
+        }
+
+        if (compactView) {
+            tagFactory.addClass("compact-show");
+        } else {
+            tagFactory.addClass("compact-hide");
         }
 
         final StringBuilder stringBuilder = new StringBuilder();
@@ -636,12 +721,14 @@ public class HtmlGenerator {
      * Create the div for column filters.
      *
      * @param filterValues  the different column names to make filters for
-     * @param initialStates the initial states of the checkboxes. a value of true means default hidden
+     * @param defaultView the initial states of the checkboxes. a value of true means default hidden
      * @return the column filter div
      */
     @NonNull
     private static String createColumnFilterDiv(
-            @NonNull final List<String> filterValues, @NonNull final List<Boolean> initialStates) {
+            @NonNull final List<String> filterValues,
+            @NonNull final List<Boolean> defaultView,
+            @NonNull final List<Boolean> compactView) {
 
         final String sectionName = "column-filter-section";
 
@@ -652,10 +739,23 @@ public class HtmlGenerator {
                 .addAttribute("type", "button")
                 .addAttribute("value", "All")
                 .generateTag());
+        elements.add(new HtmlTagFactory("input")
+                .addClass(sectionName)
+                .addClass(SELECT_DEFAULT_BUTTON_LABEL)
+                .addAttribute("type", "button")
+                .addAttribute("value", "Default")
+                .generateTag());
+        elements.add(new HtmlTagFactory("input")
+                .addClass(sectionName)
+                .addClass(SELECT_COMPACT_BUTTON_LABEL)
+                .addAttribute("type", "button")
+                .addAttribute("value", "Compact")
+                .generateTag());
         elements.add(new HtmlTagFactory("br").generateTag());
 
         for (int i = 0; i < filterValues.size(); i++) {
-            elements.add(createCheckboxFilter(filterValues.get(i), sectionName, initialStates.get(i)));
+            elements.add(
+                    createCheckboxFilter(filterValues.get(i), sectionName, defaultView.get(i), compactView.get(i)));
         }
 
         return createInputDiv("Columns", elements);
@@ -816,7 +916,8 @@ public class HtmlGenerator {
         cssFactory.addRule("." + LOG_LINE_LABEL + ":hover td", new CssDeclaration("background-color", HIGHLIGHT_COLOR));
 
         cssFactory.addRule(
-                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL,
+                "." + SELECT_MANY_BUTTON_LABEL + ", ." + DESELECT_MANY_BUTTON_LABEL + ", ."
+                        + SELECT_DEFAULT_BUTTON_LABEL + ", ." + SELECT_COMPACT_BUTTON_LABEL,
                 new CssDeclaration("background-color", getHtmlColor(TextEffect.GRAY)));
 
         // make the select column buttons the same color as the accent of the radio buttons=
@@ -918,7 +1019,8 @@ public class HtmlGenerator {
                         THREAD_NAME_COLUMN_LABEL,
                         CLASS_NAME_COLUMN_LABEL,
                         REMAINDER_OF_LINE_COLUMN_LABEL),
-                List.of(false, false, true, true, false, true, true, false, false)));
+                List.of(true, true, false, false, true, false, false, true, true),
+                List.of(true, true, false, false, true, false, false, false, true)));
 
         logLevelLabels.forEach((logLevel, labelClass) -> cssFactory.addRule(
                 "." + labelClass, new CssDeclaration("color", getHtmlColor(getLogLevelColor(logLevel)))));
