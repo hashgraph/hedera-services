@@ -32,7 +32,7 @@ import java.util.Objects;
 /**
  * Tracks the tipset of the latest self event. Must be thread safe, gossip will access it from multiple threads.
  */
-public class LatestEventTipsetTracker { // TODO add a unit test
+public class LatestEventTipsetTracker {
 
     private final TipsetTracker tipsetTracker;
     private final NodeId selfId;
