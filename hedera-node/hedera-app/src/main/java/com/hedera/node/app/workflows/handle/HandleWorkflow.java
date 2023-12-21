@@ -108,6 +108,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
@@ -211,6 +212,8 @@ public class HandleWorkflow {
         logStartRound(round);
 
         // handle each event in the round
+        int eventCounter = 0;
+        System.out.println("DIFF-TEST: num events to process in round " + round.getRoundNum() + ": " + round.getEventCount());
         for (final ConsensusEvent event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
@@ -227,6 +230,7 @@ public class HandleWorkflow {
             logStartEvent(event, creator);
 
             // handle each transaction of the event
+            int userTxnCounter = 0;
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
                 final var platformTxn = it.next();
                 try {
@@ -234,6 +238,7 @@ public class HandleWorkflow {
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
                         handlePlatformTransaction(state, dualState, event, creator, platformTxn);
+                        userTxnCounter++;
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -242,6 +247,7 @@ public class HandleWorkflow {
                             e);
                 }
             }
+            System.out.println("DIFF-TEST: handled event " + eventCounter++ + " of " + round.getEventCount() + " with " + userTxnCounter + " user txns");
         }
 
         // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
@@ -353,7 +359,7 @@ public class HandleWorkflow {
             final var legacyFeeCalcNetworkVpt =
                     transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
             final var verifier = new DefaultKeyVerifier(
-                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.verificationResults());
+                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.verificationResults() == null ? Collections.emptyMap() : preHandleResult.verificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context

@@ -78,7 +78,8 @@ public enum DigestType {
             case 0x8fc9497e:
                 return SHA_512;
             default:
-                return null;
+                //todo: hack!
+                return SHA_384;
         }
     }
 

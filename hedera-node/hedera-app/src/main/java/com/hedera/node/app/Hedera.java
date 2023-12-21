@@ -21,20 +21,16 @@ import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONT
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.LEGACY_ADDRESS_BOOK;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SPECIAL_FILES;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
-import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
@@ -71,14 +67,9 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
-import com.hedera.node.app.service.mono.files.DataMapFactory;
-import com.hedera.node.app.service.mono.files.MetadataMapFactory;
-import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
-import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -95,7 +86,6 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
@@ -136,8 +126,10 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -154,7 +146,10 @@ import com.swirlds.virtualmap.VirtualMap;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -915,6 +910,9 @@ public final class Hedera implements SwirldMain {
         daggerApp.preHandleWorkflow().preHandle(readableStoreFactory, creator.accountId(), transactions.stream());
     }
 
+    static int normalHandleCounter = 0;
+    static int differentialEventTestCounter = 0;
+
     /**
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
@@ -922,7 +920,37 @@ public final class Hedera implements SwirldMain {
     private void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
-        daggerApp.handleWorkflow().handleRound(state, dualState, round);
+
+        // Hack the normal consensus round handling to instead process events from an .evts file
+        try {
+            // i.e. only run once
+            if (differentialEventTestCounter < 1) {
+                final String fileName = "<path-to-.evts-file>";   // PUT EVENTS FILE HERE
+                System.out.println("DIFF-TEST: running events from file " + fileName);
+
+                final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
+                        platform.getAddressBook(),
+                        Path.of(fileName),
+                        151988064,  // latest round of the state
+                        true);
+                while (roundIterator.hasNext()) {
+                    var nextRound = roundIterator.next();
+
+                    System.out.println("DIFF-TEST: file round: " + nextRound.getRoundNum() + "; counter: " + differentialEventTestCounter++);
+                    daggerApp.handleWorkflow().handleRound(state, dualState, round);
+                    System.out.println("DIFF-TEST: file round " + nextRound.getRoundNum() + " processed");
+                }
+            } else if (normalHandleCounter < 100) {
+                // Handle some normal (empty) rounds after processing the events file. This gives a little time for the node to close record files, save state to disk, etc.
+                daggerApp.handleWorkflow().handleRound(state, dualState, round);
+                normalHandleCounter++;
+            } else {
+                System.out.println("DIFF-TEST: finished events file (diff-test counter " + differentialEventTestCounter + ", normalHandleCounter " + normalHandleCounter + "). Exiting");
+                System.exit(0);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
    /*==================================================================================================================
