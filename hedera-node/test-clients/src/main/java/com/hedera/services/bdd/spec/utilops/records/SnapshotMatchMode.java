@@ -72,8 +72,11 @@ public enum SnapshotMatchMode {
      */
     ALLOW_SKIPPED_ENTITY_IDS,
     /**
-     * Allows for non-deterministic logs.
+     * Skip checks on logs that contain EVM addresses.
      */
     SKIP_LOG_INFO_CONTAINING_ADDRESSES,
+    /**
+     * Allows for non-deterministic ethereum data.
+     */
     NONDETERMINISTIC_ETHEREUM_DATA
 }
