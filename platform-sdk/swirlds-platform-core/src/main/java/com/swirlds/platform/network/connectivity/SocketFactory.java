@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import com.swirlds.common.config.SocketConfig;
+import com.swirlds.platform.network.SocketConfig;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

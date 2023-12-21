@@ -8,27 +8,30 @@ pcli diagram \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
-    -g 'Orphan Buffer:orphanBuffer,orphanBuffer_splitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntake_splitter,getMinimumGenerationNonAncient' \
-    -g 'State File Management:signedStateFileManager,extract oldestMinimumGenerationOnDisk,to StateWrittenToDiskAction' \
+    -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getMinimumGenerationNonAncient' \
+    -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
 
 ########################################################################################################################
 #### Simple Collapsing
 
-Same as "Uncollapsed" but with low level things collapsed. Attempts to hide things like transformers and splitters.
+Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide things like transformers and splitters.
 
 pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
-    -g 'Orphan Buffer:orphanBuffer,orphanBuffer_splitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntake_splitter,getMinimumGenerationNonAncient' \
-    -g 'State File Management:signedStateFileManager,extract oldestMinimumGenerationOnDisk,to StateWrittenToDiskAction' \
+    -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getMinimumGenerationNonAncient' \
+    -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
-    -c "Orphan Buffer" \
-    -c "Linked Event Intake" \
-    -c "State File Management"
+    -c 'Orphan Buffer' \
+    -c 'Linked Event Intake' \
+    -c 'State File Management' \
+    -c 'State Signature Collection'

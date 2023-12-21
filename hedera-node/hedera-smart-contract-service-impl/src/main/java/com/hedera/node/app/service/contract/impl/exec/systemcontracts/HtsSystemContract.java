@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
@@ -26,6 +27,7 @@ import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtil
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
@@ -112,7 +114,11 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID),
+                                            pricedResult.fullResult().gasRequirement(),
+                                            output,
+                                            frame.getRemainingGas(),
+                                            frame.getInputData(),
+                                            attempt.senderId()),
                                     responseCode);
                 } else {
                     enhancement
@@ -126,8 +132,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 }
             }
         } catch (final HandleException handleException) {
-            // TODO - this is almost certainly not the right way to handle this!
-            throw handleException;
+            return haltHandleException(handleException, frame.getRemainingGas());
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
@@ -136,5 +141,13 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             throw new AssertionError("Not implemented");
         }
         return pricedResult.fullResult();
+    }
+
+    // potentially other cases could be handled here if necessary
+    private static FullResult haltHandleException(final HandleException handleException, long remainingGas) {
+        if (handleException.getStatus().equals(MAX_CHILD_RECORDS_EXCEEDED)) {
+            return haltResult(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS, remainingGas);
+        }
+        throw handleException;
     }
 }

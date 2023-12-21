@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.config.PlatformSchedulersConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -31,15 +30,17 @@ import java.util.List;
 /**
  * The {@link TaskScheduler}s used by the platform.
  *
- * @param internalEventValidatorScheduler  the scheduler for the internal event validator
- * @param eventDeduplicatorScheduler       the scheduler for the event deduplicator
- * @param eventSignatureValidatorScheduler the scheduler for the event signature validator
- * @param orphanBufferScheduler            the scheduler for the orphan buffer
- * @param inOrderLinkerScheduler           the scheduler for the in-order linker
- * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
- * @param eventCreationManagerScheduler    the scheduler for the event creation manager
- * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
- * @param stateSignerScheduler             the scheduler for the state signer
+ * @param internalEventValidatorScheduler           the scheduler for the internal event validator
+ * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
+ * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
+ * @param orphanBufferScheduler                     the scheduler for the orphan buffer
+ * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
+ * @param linkedEventIntakeScheduler                the scheduler for the linked event intake
+ * @param eventCreationManagerScheduler             the scheduler for the event creation manager
+ * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
+ * @param stateSignerScheduler                      the scheduler for the state signer
+ * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
+ * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
@@ -50,7 +51,9 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
         @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
-        @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler) {
+        @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
+        @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
+        @NonNull TaskScheduler<Void> stateSignatureCollectorScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -122,6 +125,21 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("stateSigner")
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("applicationTransactionPrehandler")
+                        .withType(config.applicationTransactionPrehandlerSchedulerType())
+                        .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("stateSignatureCollector")
+                        .withType(config.stateSignatureCollectorSchedulerType())
+                        .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true)
                         .build()
                         .cast());
     }

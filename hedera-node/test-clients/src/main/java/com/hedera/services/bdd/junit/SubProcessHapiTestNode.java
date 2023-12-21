@@ -184,7 +184,8 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             "-Dhedera.workflows.enabled=true",
                             "-Dprometheus.endpointPortNumber=" + (10000 + nodeId),
                             "com.hedera.node.app.ServicesMain",
-                            "" + nodeId)
+                            "-local",
+                            Long.toString(nodeId))
                     .directory(workingDir.toFile())
                     .redirectOutput(stdout.toFile())
                     .redirectError(stderr.toFile());
