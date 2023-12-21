@@ -52,7 +52,7 @@ public record LinkedEventIntakeWiring(
      */
     public static LinkedEventIntakeWiring create(@NonNull final TaskScheduler<List<ConsensusRound>> taskScheduler) {
         final OutputWire<ConsensusRound> consensusRoundOutput =
-                taskScheduler.getOutputWire().buildSplitter();
+                taskScheduler.getOutputWire().buildSplitter("linkedEventIntakeSplitter", "round lists");
 
         return new LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("linked events"),
@@ -60,6 +60,7 @@ public record LinkedEventIntakeWiring(
                 consensusRoundOutput,
                 consensusRoundOutput.buildTransformer(
                         "getMinimumGenerationNonAncient",
+                        "rounds",
                         consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient()),
                 taskScheduler::flush);
     }

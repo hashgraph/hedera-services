@@ -220,7 +220,7 @@ public class TipsetEventCreator implements EventCreator {
         // We are pretty much guaranteed to be selfish to ~1/3 of other nodes by a score of 1.
         final double beNiceChance = (selfishness - 1) / antiSelfishnessFactor;
 
-        if (beNiceChance > 0 && random.nextDouble() < beNiceChance) {
+        if (beNiceChance > 0 && random.nextDouble() < beNiceChance && false /* todo */) {
             return createEventToReduceSelfishness();
         } else {
             return createEventByOptimizingAdvancementWeight();

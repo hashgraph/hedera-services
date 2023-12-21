@@ -27,6 +27,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ClassicGrantApprovalCall;
@@ -50,6 +53,15 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
 
     @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
+    private Nft nft;
+
+    @Mock
+    private Token token;
+
+    @Mock
+    private Account account;
 
     @Test
     void fungibleApprove() {
@@ -87,6 +99,10 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
+        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
+        given(token.treasuryAccountId()).willReturn(OWNER_ID);
+        given(nativeOperations.getAccount(OWNER_ID.accountNum())).willReturn(account);
         final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());

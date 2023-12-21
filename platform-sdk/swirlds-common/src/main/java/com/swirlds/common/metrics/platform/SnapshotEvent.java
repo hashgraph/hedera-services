@@ -16,14 +16,16 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.platform.NodeId;
 import java.util.Collection;
+import java.util.Objects;
 
 public record SnapshotEvent(NodeId nodeId, Collection<Snapshot> snapshots) {
 
+    /**
+     * @throws NullPointerException in case {@code snapshots} parameter is {@code null}
+     */
     public SnapshotEvent {
-        throwArgNull(snapshots, "snapshots");
+        Objects.requireNonNull(snapshots, "snapshots must not be null");
     }
 }

@@ -115,6 +115,7 @@ class OrphanEventsIntakeTest {
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
                     mock(PhaseTimer.class),
                     mock(ShadowGraph.class),
+                    null,
                     e -> {},
                     mock(IntakeEventCounter.class));
         }

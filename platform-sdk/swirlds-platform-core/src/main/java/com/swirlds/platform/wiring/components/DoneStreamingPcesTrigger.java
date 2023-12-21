@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.converter;
+package com.swirlds.platform.wiring;
 
-import com.hedera.node.config.types.Profile;
-import com.swirlds.config.api.converter.ConfigConverter;
-import com.swirlds.config.extensions.converters.AbstractEnumConfigConverter;
-
-public class ProfileConverter extends AbstractEnumConfigConverter<Profile> implements ConfigConverter<Profile> {
-    @Override
-    protected Class<Profile> getEnumType() {
-        return Profile.class;
-    }
-}
+/**
+ * Trigger to indicate that the platform is done streaming events from the PCES
+ */
+public class DoneStreamingPcesTrigger {}
