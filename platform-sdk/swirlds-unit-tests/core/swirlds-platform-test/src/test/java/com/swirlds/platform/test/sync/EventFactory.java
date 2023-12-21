@@ -46,7 +46,7 @@ public class EventFactory {
     public static ShadowEvent makeShadow(final ShadowEvent selfParent, final ShadowEvent otherParent) {
         final EventImpl e = makeEvent(
                 selfParent == null ? null : selfParent.getEvent(), otherParent == null ? null : otherParent.getEvent());
-        return new ShadowEvent(e, selfParent, otherParent);
+        return new ShadowEvent(e, selfParent, List.of(otherParent));
     }
 
     public static EventImpl makeEventWithRandomHash() {

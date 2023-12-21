@@ -292,8 +292,7 @@ public class ShadowGraph implements Clearable {
             todoStack.push(sp);
         }
 
-        ShadowEvent op = event.getOtherParent();
-        if (op != null) {
+        for (final ShadowEvent op : event.getOtherParents()) {
             todoStack.push(op);
         }
 
@@ -318,8 +317,8 @@ public class ShadowGraph implements Clearable {
                 if (xsp != null) {
                     todoStack.push(xsp);
                 }
-                ShadowEvent xop = x.getOtherParent();
-                if (xop != null) {
+
+                for (final ShadowEvent xop : x.getOtherParents()) {
                     todoStack.push(xop);
                 }
             }
@@ -610,9 +609,13 @@ public class ShadowGraph implements Clearable {
      */
     private ShadowEvent insert(final EventImpl e) {
         final ShadowEvent sp = shadow(e.getSelfParent());
-        final ShadowEvent op = shadow(e.getOtherParent());
 
-        ShadowEvent se = new ShadowEvent(e, sp, op);
+        final List<ShadowEvent> otherParents = new ArrayList<>();
+        for (final EventImpl op : e.getOtherParents()) {
+            final ShadowEvent opShadow = shadow(op);
+            otherParents.add(opShadow);
+        }
+        final ShadowEvent se = new ShadowEvent(e, sp, otherParents);
 
         hashToShadowEvent.put(se.getEventBaseHash(), se);
 

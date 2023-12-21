@@ -19,21 +19,26 @@ package com.swirlds.platform.gossip.shadowgraph;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.Objects;
 
 /**
+ * FUTURE WORK: this class is mind-blowingly redundant. It should be removed.
+ * <p>
  * A shadow event wraps a hashgraph event, and provides parent pointers to shadow events.
- *
- * The shadow event type is the vertex type of the shadow graph. This is the elemental type of {@link ShadowGraph}.
- * It provides a reference to a hashgraph event instance and the following operations:
+ * <p>
+ * The shadow event type is the vertex type of the shadow graph. This is the elemental type of {@link ShadowGraph}. It
+ * provides a reference to a hashgraph event instance and the following operations:
  *
  * <ul>
  * <li>linking of a parent shadow event</li>
  * <li>unlinking of a parent shadow event</li>
  * <li>querying for parent events</li>
  * </ul>
- *
+ * <p>
  * All linking and unlinking of a shadow event is implemented by this type.
- *
+ * <p>
  * A shadow event never modifies the fields in a hashgraph event.
  */
 public class ShadowEvent {
@@ -47,32 +52,26 @@ public class ShadowEvent {
      */
     private ShadowEvent selfParent;
 
-    /**
-     * other-parent
-     */
-    private ShadowEvent otherParent;
+    private List<ShadowEvent> otherParents;
 
     /**
      * Construct a shadow event from an event and the shadow events of its parents
      *
-     * @param event
-     * 		the event
-     * @param selfParent
-     * 		the self-parent event's shadow
-     * @param otherParent
-     * 		the other-parent event's shadow
+     * @param event        the event
+     * @param selfParent   the self-parent event's shadow
+     * @param otherParents a list of other parent event shadows
      */
-    public ShadowEvent(final EventImpl event, final ShadowEvent selfParent, final ShadowEvent otherParent) {
+    public ShadowEvent(final EventImpl event, final ShadowEvent selfParent,
+            @NonNull final List<ShadowEvent> otherParents) {
         this.event = event;
         this.selfParent = selfParent;
-        this.otherParent = otherParent;
+        this.otherParents = Objects.requireNonNull(otherParents);
     }
 
     /**
      * Construct a shadow event from an event
      *
-     * @param event
-     * 		the event
+     * @param event the event
      */
     public ShadowEvent(final EventImpl event) {
         this(event, null, null);
@@ -93,7 +92,22 @@ public class ShadowEvent {
      * @return the other-parent of {@code this} shadow event
      */
     public ShadowEvent getOtherParent() {
-        return this.otherParent;
+        // TODO remove, this is only used in tests
+        if (!this.otherParents.isEmpty()) {
+            return this.otherParents.get(0);
+        }
+        return null;
+    }
+
+
+    /**
+     * Get a list of other parents.
+     *
+     * @return a list of other parents.
+     */
+    @NonNull
+    public List<ShadowEvent> getOtherParents() {
+        return this.otherParents;
     }
 
     /**
@@ -119,7 +133,7 @@ public class ShadowEvent {
      */
     public void disconnect() {
         selfParent = null;
-        otherParent = null;
+        otherParents.clear();
     }
 
     /**
