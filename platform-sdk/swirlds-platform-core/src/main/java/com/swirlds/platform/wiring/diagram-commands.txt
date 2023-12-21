@@ -8,6 +8,8 @@ pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
+    -s 'applicationTransactionPrehandler:futures:★' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getMinimumGenerationNonAncient' \
@@ -27,6 +29,8 @@ pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
+    -s 'applicationTransactionPrehandler:futures:★' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getMinimumGenerationNonAncient' \
@@ -39,3 +43,8 @@ pcli diagram \
     -c 'Linked Event Intake' \
     -c 'State File Management' \
     -c 'State Signature Collection'
+
+
+
+
+        -s 'pcesReplayer:done streaming pces:✓' \
