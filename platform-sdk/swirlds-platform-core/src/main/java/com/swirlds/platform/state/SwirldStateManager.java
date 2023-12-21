@@ -24,6 +24,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -126,12 +127,24 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     }
 
     /**
-     * Invokes the pre-handle method. Called after the event has been verified but before
-     * {@link #handlePreConsensusEvent(EventImpl)}.
+     * Prehandles application transactions. Similar to {@link #prehandleApplicationTransactions(EventImpl)} but accepts
+     * a {@link GossipEvent} instead of an {@link EventImpl}.
      *
      * @param event the event to handle
      */
-    public void preHandle(final EventImpl event) {
+    public void prehandleApplicationTransactions(final GossipEvent event) {
+        // As a temporary work around, convert to EventImpl.
+        // Once we remove the legacy pathway, we can remove this.
+        final EventImpl eventImpl = new EventImpl(event, null, null);
+        prehandleApplicationTransactions(eventImpl);
+    }
+
+    /**
+     * Prehandles application transactions.
+     *
+     * @param event the event to handle
+     */
+    public void prehandleApplicationTransactions(final EventImpl event) {
         final long startTime = System.nanoTime();
 
         State immutableState = latestImmutableState.get();
@@ -139,17 +152,18 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
             immutableState = latestImmutableState.get();
         }
         transactionHandler.preHandle(event, immutableState.getSwirldState());
+        event.getBaseEvent().signalPrehandleCompletion();
         immutableState.release();
 
         stats.preHandleTime(startTime, System.nanoTime());
     }
 
     /**
-     * Handles an event before it reaches consensus..
+     * Prehandles system transactions.
      *
      * @param event the event to handle
      */
-    public void handlePreConsensusEvent(final EventImpl event) {
+    public void prehandleSystemTransactions(final EventImpl event) {
         final long startTime = System.nanoTime();
 
         preconsensusSystemTransactionManager.handleEvent(event);
