@@ -33,8 +33,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Tracks preconsensus event files currently on disk.
  */
-public class PcesFiles {
-    private static final Logger logger = LogManager.getLogger(PcesFiles.class);
+public class PcesFileTracker {
+    private static final Logger logger = LogManager.getLogger(PcesFileTracker.class);
 
     /**
      * The initial size of the ring buffer used to track event files.

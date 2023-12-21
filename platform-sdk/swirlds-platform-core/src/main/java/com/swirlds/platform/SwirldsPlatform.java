@@ -98,7 +98,7 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
-import com.swirlds.platform.event.preconsensus.PcesFiles;
+import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
@@ -308,7 +308,7 @@ public class SwirldsPlatform implements Platform {
     /**
      * The initial preconsensus event files read from disk.
      */
-    private final PcesFiles initialPcesFiles;
+    private final PcesFileTracker initialPcesFiles;
 
     /**
      * Manages the status of the platform.
