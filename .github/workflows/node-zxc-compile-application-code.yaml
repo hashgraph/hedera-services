@@ -422,7 +422,7 @@ jobs:
             hedera-node/test-clients/build/hapi-test/**/output/**
 
       - name: HAPI Testing (Node Death Reconnect)
-        id: gradle-hapi-time-consuming
+        id: gradle-hapi-death-reconnect
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         env:
           LC_ALL: en.UTF-8
