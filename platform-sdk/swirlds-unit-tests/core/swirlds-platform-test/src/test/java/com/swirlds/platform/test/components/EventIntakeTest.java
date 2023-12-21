@@ -81,6 +81,7 @@ class EventIntakeTest {
                 dispatcher,
                 mock(PhaseTimer.class),
                 shadowGraph,
+                null,
                 e -> {},
                 mock(IntakeEventCounter.class));
 
