@@ -47,7 +47,7 @@ public record NonAncientEventWindow(long latestConsensusRound, long minRoundNonA
      * @param event the event to check for being ancient.
      * @return true if the event is ancient, false otherwise.
      */
-    public boolean isAncient(GossipEvent event) {
+    public boolean isAncient(@NonNull final GossipEvent event) {
         // use minimum generation non-ancient until we throw the switch to using minimum round non-ancient
         return event.getGeneration() < minGenNonAncient;
     }
