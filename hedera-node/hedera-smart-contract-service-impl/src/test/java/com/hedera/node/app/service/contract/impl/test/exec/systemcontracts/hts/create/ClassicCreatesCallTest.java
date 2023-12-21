@@ -18,18 +18,21 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -40,6 +43,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import java.math.BigInteger;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -71,6 +76,11 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
     private ClassicCreatesCall subject;
 
+    private final Deque<MessageFrame> stack = new ArrayDeque<>();
+
+    private final Address tokenId =
+            Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(FUNGIBLE_TOKEN_ID.tokenNum())));
+
     @Test
     void createFungibleTokenHappyPathV1() {
         commonGivens();
@@ -80,9 +90,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -95,9 +106,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -110,9 +122,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -125,9 +138,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -140,9 +154,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -155,9 +170,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -170,9 +186,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -185,9 +202,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -200,9 +218,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -215,9 +234,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -230,9 +250,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -245,9 +266,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) SUCCESS.protoOrdinal(), tokenId)
+                        .array()),
                 result.getOutput());
     }
 
@@ -264,6 +286,9 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
     private void commonGivens() {
         given(frame.getValue()).willReturn(Wei.ZERO);
+        stack.push(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
@@ -282,5 +307,6 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                         eq(A_NEW_ACCOUNT_ID),
                         eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
+        lenient().when(recordBuilder.tokenID()).thenReturn(FUNGIBLE_TOKEN_ID);
     }
 }
