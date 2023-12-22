@@ -26,6 +26,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
@@ -70,7 +72,10 @@ public class LogsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec log0Works() {
         return defaultHapiSpec("log0Works")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
                         .via("log0")
                         .gas(GAS_TO_OFFER))
@@ -84,7 +89,10 @@ public class LogsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec log1Works() {
         return defaultHapiSpec("log1Works")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
                         .via("log1")
                         .gas(GAS_TO_OFFER))
@@ -101,7 +109,10 @@ public class LogsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec log2Works() {
         return defaultHapiSpec("log2Works")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
                         .gas(GAS_TO_OFFER)
                         .via("log2"))
@@ -120,7 +131,10 @@ public class LogsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec log3Works() {
         return defaultHapiSpec("log3Works")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
                         .gas(GAS_TO_OFFER)
                         .via("log3"))
@@ -140,7 +154,10 @@ public class LogsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec log4Works() {
         return defaultHapiSpec("log4Works")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(
                                 CONTRACT,
                                 "log4",
