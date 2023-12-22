@@ -46,8 +46,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
@@ -57,7 +55,6 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
  * {@code ContractCallLocal}) can reduce to a single code path.
  */
 public class TransactionProcessor {
-    private static final Logger logger = LogManager.getLogger(TransactionProcessor.class);
     private final FrameBuilder frameBuilder;
     private final FrameRunner frameRunner;
     private final CustomGasCharging gasCharging;
@@ -141,13 +138,8 @@ public class TransactionProcessor {
                 gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
-        final HederaEvmTransactionResult result;
-        try {
-            result = frameRunner.runToCompletion(
-                    transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
-        } catch (ResourceExhaustedException e) {
-            return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
-        }
+        final var result = frameRunner.runToCompletion(
+                transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
 
         // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
@@ -188,9 +180,12 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ResponseCodeEnum reason,
             @NonNull final Configuration config) {
-        // Note these calls cannot fail, or processTransaction() above would have aborted right away
+        // Note that computing involved parties and charging for gas are guaranteed to succeed here,
+        // or processTransaction() would have aborted right away
         final var parties = computeInvolvedParties(transaction, updater, config);
         gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
+        // (FUTURE) Once fee charging is more consumable in the HandleContext, we will also want
+        // to re-charge top-level HAPI fees in this edge case (not only gas); not urgent though
         updater.commit();
         return resourceExhaustionFrom(parties.senderId(), transaction.gasLimit(), context.gasPrice(), reason);
     }
@@ -238,7 +233,6 @@ public class TransactionProcessor {
             parties = new InvolvedParties(sender, relayer, to);
         } else {
             final var to = updater.getHederaAccount(transaction.contractIdOrThrow());
-            logger.info("@ {} -> to: {}", transaction.contractIdOrThrow(), to);
             if (maybeLazyCreate(transaction, to, config)) {
                 // Presumably these checks _could_ be done later as part of the message
                 // call, but historically we have failed fast when they do not pass

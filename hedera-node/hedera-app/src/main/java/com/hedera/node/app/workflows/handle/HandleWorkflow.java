@@ -56,7 +56,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
@@ -368,7 +367,6 @@ public class HandleWorkflow {
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
-            logger.info("Fee computed for transaction {} is {}", transactionInfo.functionality(), fees);
 
             // Run all pre-checks
             final var validationResult = validate(
@@ -428,11 +426,6 @@ public class HandleWorkflow {
                     if (!hasWaivedFees) {
                         // privileged transactions are not charged fees
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                        logger.info(
-                                "Modified after charging fees {}",
-                                tokenServiceContext
-                                        .writableStore(WritableAccountStore.class)
-                                        .modifiedAccountsInState());
                     }
 
                     if (networkUtilizationManager.wasLastTxnGasThrottled()) {
@@ -479,19 +472,8 @@ public class HandleWorkflow {
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
 
                 } catch (final HandleException e) {
-                    logger.info("Caught HandleException", e);
-                    logger.info(
-                            "Modified before rollback {}",
-                            tokenServiceContext
-                                    .writableStore(WritableAccountStore.class)
-                                    .modifiedAccountsInState());
                     // In case of a ContractCall when it reverts, the gas charged should not be rolled back
                     rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
-                    logger.info(
-                            "Modified after rollback {}",
-                            tokenServiceContext
-                                    .writableStore(WritableAccountStore.class)
-                                    .modifiedAccountsInState());
                     if (!hasWaivedFees && e.shouldRollbackStack()) {
                         // Only re-charge fees if we rolled back the stack
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);

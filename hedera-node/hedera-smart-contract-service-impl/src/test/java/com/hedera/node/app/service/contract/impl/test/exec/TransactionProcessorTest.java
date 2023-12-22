@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CHARGING_RESULT;
@@ -507,47 +506,6 @@ class TransactionProcessorTest {
         verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, feesOnlyUpdater, transaction);
         verify(worldUpdater).revert();
         verify(feesOnlyUpdater).commit();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void resourceExhaustionResultAsExpected() {
-        givenSenderAccount();
-        givenRelayerAccount();
-        givenReceiverAccount();
-        givenFeeOnlyParties();
-
-        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
-        final var transaction = wellKnownRelayedHapiCall(0);
-
-        given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
-                .willReturn(CHARGING_RESULT);
-        given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
-        given(senderAccount.getNonce()).willReturn(NONCE);
-        given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(frameBuilder.buildInitialFrameWith(
-                        transaction,
-                        worldUpdater,
-                        context,
-                        config,
-                        EIP_1014_ADDRESS,
-                        NON_SYSTEM_LONG_ZERO_ADDRESS,
-                        CHARGING_RESULT.intrinsicGas()))
-                .willReturn(initialFrame);
-        willThrow(new ResourceExhaustedException(MAX_CHILD_RECORDS_EXCEEDED))
-                .given(frameRunner)
-                .runToCompletion(
-                        eq(transaction.gasLimit()),
-                        eq(SENDER_ID),
-                        eq(initialFrame),
-                        eq(tracer),
-                        any(),
-                        eq(contractCreationProcessor));
-
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
-
-        assertResourceExhaustion(MAX_CHILD_RECORDS_EXCEEDED, result);
     }
 
     private void assertResourceExhaustion(
