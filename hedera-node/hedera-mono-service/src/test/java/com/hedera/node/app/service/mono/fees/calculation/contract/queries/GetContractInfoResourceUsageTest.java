@@ -90,6 +90,7 @@ class GetContractInfoResourceUsageTest {
 
         view = mock(StateView.class);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerContractInfo);
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
         given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator, true))
                 .willReturn(Optional.of(info));
 
