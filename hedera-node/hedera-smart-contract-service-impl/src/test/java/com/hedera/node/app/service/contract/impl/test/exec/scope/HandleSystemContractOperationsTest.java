@@ -19,7 +19,9 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,8 +30,10 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -42,6 +46,7 @@ import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.function.Predicate;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -137,6 +142,35 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
+    void externalizeSuccessfulResultWithTransactionBodyTest() {
+        var transaction = Transaction.newBuilder()
+                .body(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.DEFAULT)
+                        .build())
+                .build();
+        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
+
+        // given
+        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.transactionID(transaction.body().transactionID())).willReturn(recordBuilder);
+        given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
+        given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
+
+        // when
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS, transaction);
+
+        // then
+        verify(recordBuilder).transactionID(transaction.body().transactionID());
+        verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
+        verify(recordBuilder).contractCallResult(contractFunctionResult);
+    }
+
+    @Test
     void externalizeFailedResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
                 0,
@@ -159,6 +193,18 @@ class HandleSystemContractOperationsTest {
         verify(recordBuilder).transaction(Transaction.DEFAULT);
         verify(recordBuilder).status(ResponseCodeEnum.FAIL_INVALID);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
+    }
+
+    @Test
+    void syntheticTransactionForHtsCallTest() {
+        var transaction = subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true);
+        var body = transaction.body();
+        assertTrue(body.hasContractCall());
+        assertEquals(1, body.contractCall().gas());
+
+        transaction = subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, false);
+        body = transaction.body();
+        assertNotEquals(1, body.contractCall().gas());
     }
 
     @Test
