@@ -14,23 +14,9 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.shadow-jar")
-}
+package com.swirlds.platform.wiring;
 
-description = "Hedera Services Command-Line Clients"
-
-testModuleInfo {
-    requires("org.junit.jupiter.api")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-}
-
-tasks.shadowJar {
-    manifest {
-        attributes("Main-Class" to "com.swirlds.cli.PlatformCli", "Multi-Release" to "true")
-    }
-}
-
-tasks.assemble { dependsOn(tasks.shadowJar) }
+/**
+ * Trigger to indicate that the platform is done streaming events from the PCES
+ */
+public class DoneStreamingPcesTrigger {}

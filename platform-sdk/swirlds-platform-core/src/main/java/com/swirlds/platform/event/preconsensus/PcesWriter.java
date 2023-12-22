@@ -20,33 +20,29 @@ import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.base.state.Startable;
-import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * This object is responsible for writing events to the database.
- * <p>
- * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
-public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Startable, Stoppable {
+public class PcesWriter {
 
-    private static final Logger logger = LogManager.getLogger(SyncPreconsensusEventWriter.class);
+    private static final Logger logger = LogManager.getLogger(PcesWriter.class);
 
     /**
      * Keeps track of the event stream files on disk.
      */
-    private final PreconsensusEventFileManager fileManager;
+    private final PcesFileManager fileManager;
 
     /**
      * The current file that is being written to.
@@ -120,24 +116,18 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     private long lastWrittenEvent = -1;
 
     /**
-     * The highest event sequence number that has been flushed.
-     */
-    private final CountUpLatch lastFlushedEvent = new CountUpLatch(-1);
-
-    /**
      * If true then all added events are new and need to be written to the stream. If false then all added events
      * are already durable and do not need to be written to the stream.
      */
     private boolean streamingNewEvents = false;
 
     /**
-     * Create a new PreConsensusEventWriter.
+     * Constructor
      *
      * @param platformContext the platform context
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
-    public SyncPreconsensusEventWriter(
-            @NonNull final PlatformContext platformContext, @NonNull final PreconsensusEventFileManager fileManager) {
+    public PcesWriter(@NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
 
         Objects.requireNonNull(platformContext, "platformContext must not be null");
         Objects.requireNonNull(fileManager, "fileManager must not be null");
@@ -158,52 +148,75 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     }
 
     /**
-     * {@inheritDoc}
+     * Prior to this method being called, all events added to the preconsensus event stream are assumed to be events
+     * read from the preconsensus event stream on disk. The events from the stream on disk are not re-written to the
+     * disk, and are considered to be durable immediately upon ingest.
+     *
+     * @param ignored empty trigger object, to indicate that events are done being streamed
      */
-    @Override
-    public void beginStreamingNewEvents() {
+    public void beginStreamingNewEvents(final @NonNull DoneStreamingPcesTrigger ignored) {
         if (streamingNewEvents) {
-            logger.warn(EXCEPTION.getMarker(), "beginStreamingNewEvents() called while already streaming new events");
+            logger.error(EXCEPTION.getMarker(), "beginStreamingNewEvents() called while already streaming new events");
         }
         streamingNewEvents = true;
     }
 
     /**
-     * {@inheritDoc}
+     * Write an event to the stream.
+     *
+     * @param event the event to be written
+     * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
+     * result in any additional events being durably written to the stream
      */
-    @Override
-    public void writeEvent(@NonNull final GossipEvent event) {
+    @Nullable
+    public Long writeEvent(@NonNull final GossipEvent event) {
         validateSequenceNumber(event);
 
         if (!streamingNewEvents) {
             lastWrittenEvent = event.getStreamSequenceNumber();
-            return;
+            return lastWrittenEvent;
         }
 
         if (event.getGeneration() < minimumGenerationNonAncient) {
             event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
-            return;
+            return null;
         }
 
         try {
-            prepareOutputStream(event);
+            final Long latestDurableSequenceNumberUpdate = prepareOutputStream(event);
             currentMutableFile.writeEvent(event);
             lastWrittenEvent = event.getStreamSequenceNumber();
+
+            return latestDurableSequenceNumberUpdate;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     /**
-     * {@inheritDoc}
+     * Inform the preconsensus event writer that a discontinuity has occurred in the preconsensus event stream.
+     *
+     * @param newOriginRound the round of the state that the new stream will be starting from
+     * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
+     * result in any additional events being durably written to the stream
      */
-    @Override
-    public void registerDiscontinuity(final long newOriginRound) {
+    @Nullable
+    public Long registerDiscontinuity(final long newOriginRound) {
+        if (!streamingNewEvents) {
+            logger.error(EXCEPTION.getMarker(), "registerDiscontinuity() called while replaying events");
+        }
+
+        final Long latestDurableSequenceNumberUpdate;
         if (currentMutableFile != null) {
             closeFile();
+            latestDurableSequenceNumberUpdate = lastWrittenEvent;
+        } else {
+            latestDurableSequenceNumberUpdate = null;
         }
 
         fileManager.registerDiscontinuity(newOriginRound);
+
+        return latestDurableSequenceNumberUpdate;
     }
 
     /**
@@ -217,64 +230,42 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     }
 
     /**
-     * {@inheritDoc}
+     * Let the event writer know the minimum generation for non-ancient events. Ancient events will be ignored if added
+     * to the event writer.
+     *
+     * @param minimumGenerationNonAncient the minimum generation of a non-ancient event
+     * @return the sequence number of the last event durably written to the stream if this method call resulted in any
+     * additional events being durably written to the stream, otherwise null
      */
-    @Override
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+    @Nullable
+    public Long setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
             throw new IllegalArgumentException("Minimum generation non-ancient cannot be decreased. Current = "
                     + this.minimumGenerationNonAncient + ", requested = " + minimumGenerationNonAncient);
         }
 
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+
+        if (!streamingNewEvents || currentMutableFile == null) {
+            return null;
+        }
+
+        try {
+            currentMutableFile.flush();
+            return lastWrittenEvent;
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to flush", e);
+        }
     }
 
     /**
-     * {@inheritDoc}
+     * Set the minimum generation needed to be kept on disk.
+     *
+     * @param minimumGenerationToStore the minimum generation required to be stored on disk
      */
-    @Override
     public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
         this.minimumGenerationToStore = minimumGenerationToStore;
         pruneOldFiles();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isEventDurable(@NonNull final GossipEvent event) {
-        Objects.requireNonNull(event, "event must not be null");
-        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            // Stale events are not written to disk.
-            return false;
-        }
-        return event.getStreamSequenceNumber() <= lastFlushedEvent.getCount();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void waitUntilDurable(@NonNull final GossipEvent event) throws InterruptedException {
-        Objects.requireNonNull(event, "event must not be null");
-        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event is stale and will never be durable");
-        }
-        lastFlushedEvent.await(event.getStreamSequenceNumber());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean waitUntilDurable(@NonNull final GossipEvent event, @NonNull final Duration timeToWait)
-            throws InterruptedException {
-        Objects.requireNonNull(event, "event must not be null");
-        Objects.requireNonNull(timeToWait, "timeToWait must not be null");
-        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event is stale and will never be durable");
-        }
-        return lastFlushedEvent.await(event.getStreamSequenceNumber(), timeToWait);
     }
 
     /**
@@ -296,36 +287,9 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     }
 
     /**
-     * Mark all unflushed events as durable.
-     */
-    private void markEventsAsFlushed() {
-        lastFlushedEvent.set(lastWrittenEvent);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void requestFlush() {
-        if (!streamingNewEvents) {
-            markEventsAsFlushed();
-            return;
-        }
-
-        if (currentMutableFile == null) {
-            return;
-        }
-
-        try {
-            currentMutableFile.flush();
-            markEventsAsFlushed();
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to flush", e);
-        }
-    }
-
-    /**
      * Close the output file.
+     * <p>
+     * Should only be called if {@link #currentMutableFile} is not null.
      */
     private void closeFile() {
         try {
@@ -336,7 +300,6 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
             currentMutableFile.close();
 
             fileManager.finishedWritingFile(currentMutableFile);
-            markEventsAsFlushed();
             currentMutableFile = null;
 
             // Not strictly required here, but not a bad place to ensure we delete
@@ -370,8 +333,11 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * Prepare the output stream for a particular event. May create a new file/stream if needed.
      *
      * @param eventToWrite the event that is about to be written
+     * @return the latest sequence number durably written to disk, if preparing the output stream caused a file to be
+     * closed. Otherwise, null.
      */
-    private void prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
+    private Long prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
+        Long latestDurableSequenceNumberUpdate = null;
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
             final boolean fileIsFull =
@@ -379,6 +345,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
 
             if (!fileCanContainEvent || fileIsFull) {
                 closeFile();
+                latestDurableSequenceNumberUpdate = lastWrittenEvent;
             }
 
             if (fileIsFull) {
@@ -394,25 +361,17 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
                     .getNextFileDescriptor(minimumGenerationNonAncient, maximumGeneration)
                     .getMutableFile();
         }
+
+        return latestDurableSequenceNumberUpdate;
     }
 
     /**
-     * {@inheritDoc}
+     * Close the current mutable file.
      */
-    @Override
-    public void start() {
-        // no work needed
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void stop() {
+    public void closeCurrentMutableFile() {
         if (currentMutableFile != null) {
             try {
                 currentMutableFile.close();
-                markEventsAsFlushed();
             } catch (final IOException e) {
                 throw new UncheckedIOException(e);
             }

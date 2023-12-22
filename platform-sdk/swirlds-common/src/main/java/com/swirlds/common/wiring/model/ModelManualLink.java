@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.shadow-jar")
-}
+package com.swirlds.common.wiring.model;
 
-description = "Hedera Services Command-Line Clients"
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-testModuleInfo {
-    requires("org.junit.jupiter.api")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-}
-
-tasks.shadowJar {
-    manifest {
-        attributes("Main-Class" to "com.swirlds.cli.PlatformCli", "Multi-Release" to "true")
-    }
-}
-
-tasks.assemble { dependsOn(tasks.shadowJar) }
+/**
+ * Describes a manual link between two components. Useful for adding information to the diagram that is not captured by
+ * the wiring framework
+ *
+ * @param source the source scheduler
+ * @param label  the label on the edge
+ * @param target the target scheduler
+ */
+public record ModelManualLink(@NonNull String source, @NonNull String label, @NonNull String target) {}
