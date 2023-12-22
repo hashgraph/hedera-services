@@ -1,0 +1,66 @@
+########################################################################################################################
+#
+# Define Global Build Arguments
+#
+########################################################################################################################
+ARG UBUNTU_TAG="lunar-20231128"
+
+########################################################################################################################
+#
+# Setup OS Base Layer
+#
+########################################################################################################################
+FROM ubuntu:${UBUNTU_TAG} AS operating-system-base
+
+# Define Standard Environment Variables
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV DEBIAN_FRONTEND noninteractive
+
+# Install basic OS utilities
+RUN apt-get update && \
+    apt-get install -y tar gzip openssl zlib1g libsodium23 libreadline8 sudo netcat-traditional net-tools && \
+    apt-get autoclean --yes && \
+    apt-get clean all --yes && \
+    rm -rf /var/log/ && \
+    rm -rf /var/cache/
+
+# Create Application Folders
+RUN mkdir -p "/opt/hgcapp" && \
+    mkdir -p "/opt/hgcapp/accountBalances" && \
+    mkdir -p "/opt/hgcapp/eventsStreams" && \
+    mkdir -p "/opt/hgcapp/recordStreams" && \
+    mkdir -p "/opt/hgcapp/services-hedera" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/apps" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/config" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/diskFs" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/keys" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/lib" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/onboard" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/stats" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/saved" && \
+    mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade"
+
+# Configure the standard user account
+RUN groupadd --gid 2000 hedera && \
+    useradd --no-user-group --create-home --uid 2000 --gid 2000 --shell /bin/bash hedera && \
+    chown -R hedera:hedera /opt/hgcapp
+
+# Configure SUDO support
+RUN echo >> /etc/sudoers && \
+    echo "%hedera ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Define Volume Bindpoints
+VOLUME "/opt/hgcapp/accountBalances"
+VOLUME "/opt/hgcapp/eventsStreams"
+VOLUME "/opt/hgcapp/recordStreams"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/config"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/diskFs"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/keys"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/onboard"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/stats"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/saved"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade"
+

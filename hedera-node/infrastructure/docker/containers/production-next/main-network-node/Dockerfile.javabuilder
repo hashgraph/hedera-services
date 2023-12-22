@@ -1,0 +1,61 @@
+########################################################################################################################
+#
+# Define Global Build Arguments
+#
+########################################################################################################################
+ARG UBUNTU_TAG="lunar-20231128"
+
+########################################################################################################################
+#
+# Setup Ephemeral Java Downloader Layer
+#
+########################################################################################################################
+FROM ubuntu:${UBUNTU_TAG} AS java-builder
+
+# Define Standard Environment Variables
+ENV LC_ALL C.UTF-8
+ENV DEBIAN_FRONTEND noninteractive
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+# Install basic OS utilities for building
+RUN apt-get update && \
+	apt-get install --yes --no-install-recommends tar gzip curl ca-certificates && \
+    apt-get autoclean --yes && \
+    apt-get clean all --yes && \
+    rm -rf /var/log/ && \
+    rm -rf /var/cache/
+
+##########################
+####    Java Setup    ####
+##########################
+RUN set -eux; \
+        ARCH="$(dpkg --print-architecture)"; \
+        case "${ARCH}" in \
+           aarch64|arm64) \
+             ESUM='e184dc29a6712c1f78754ab36fb48866583665fa345324f1a79e569c064f95e9'; \
+             BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.1_12.tar.gz'; \
+             ;; \
+          amd64|i386:x86-64) \
+            ESUM='1a6fa8abda4c5caed915cfbeeb176e7fbd12eb6b222f26e290ee45808b529aa1'; \
+            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz'; \
+            ;; \
+           ppc64el|powerpc:common64) \
+             ESUM='9574828ef3d735a25404ced82e09bf20e1614f7d6403956002de9cfbfcb8638f'; \
+             BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_ppc64le_linux_hotspot_21.0.1_12.tar.gz'; \
+             ;; \
+           *) \
+             echo "Unsupported arch: ${ARCH}"; \
+             exit 1; \
+             ;; \
+        esac; \
+    curl -LfsSo /tmp/openjdk.tar.gz ${BINARY_URL}; \
+    echo "${ESUM} */tmp/openjdk.tar.gz" | sha256sum -c -; \
+    mkdir -p /usr/local/java; \
+    tar --extract \
+    	      --file /tmp/openjdk.tar.gz \
+    	      --directory "/usr/local/java" \
+    	      --strip-components 1 \
+    	      --no-same-owner \
+    	  ; \
+    rm -f /tmp/openjdk.tar.gz /usr/local/java/lib/src.zip;

@@ -3,9 +3,7 @@
 # Define Global Build Arguments
 #
 ########################################################################################################################
-
 ARG UBUNTU_TAG="lunar-20231128"
-ARG SDK_DATA_PATH="sdk/data"
 
 ########################################################################################################################
 #
@@ -22,11 +20,11 @@ ENV LC_ALL C.UTF-8
 
 # Install basic OS utilities for building
 RUN apt-get update && \
-	apt-get install --yes --no-install-recommends tar gzip gnupg2 curl ca-certificates && \
+	apt-get install --yes --no-install-recommends tar gzip curl ca-certificates && \
     apt-get autoclean --yes && \
     apt-get clean all --yes && \
-    rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
-    rm -rf /var/cache/apt/
+    rm -rf /var/log/ && \
+    rm -rf /var/cache/
 
 ##########################
 ####    Java Setup    ####
@@ -76,11 +74,11 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install basic OS utilities
 RUN apt-get update && \
-    apt-get install -y tar gzip openssl zlib1g libsodium23 libreadline7 sudo netcat net-tools && \
+    apt-get install -y tar gzip openssl zlib1g libsodium23 libreadline8 sudo netcat-traditional net-tools && \
     apt-get autoclean --yes && \
     apt-get clean all --yes && \
-    rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
-    rm -rf /var/cache/apt/
+    rm -rf /var/log/ && \
+    rm -rf /var/cache/
 
 # Create Application Folders
 RUN mkdir -p "/opt/hgcapp" && \
@@ -137,13 +135,10 @@ COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
 
 ########################################################################################################################
 #
-# Setup Final Container Image
+# Setup Production Container Image
 #
 ########################################################################################################################
-FROM java-base AS final-image
-
-# Import Build Arguments
-ARG SDK_DATA_PATH
+FROM java-base AS production-image
 
 # Define Environment Variables
 ENV JAVA_HEAP_MIN ""
@@ -159,8 +154,8 @@ ENV MALLOC_ARENA_MAX 4
 ENV LOG_DIR_NAME ""
 
 # Add SDK components
-ADD ${SDK_DATA_PATH}/apps/* /opt/hgcapp/services-hedera/HapiApp2.0/data/apps/
-ADD ${SDK_DATA_PATH}/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
+COPY sdk/data/apps/* /opt/hgcapp/services-hedera/HapiApp2.0/data/apps/
+COPY sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
 
 # Add the entrypoint script
 ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
@@ -176,6 +171,3 @@ EXPOSE 50111/tcp 50211/tcp 50212/tcp
 USER 2000
 WORKDIR "/opt/hgcapp"
 ENTRYPOINT ["/opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh"]
-
-
-
