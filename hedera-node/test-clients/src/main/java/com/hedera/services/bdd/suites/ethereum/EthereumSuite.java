@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -108,7 +109,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -165,7 +165,7 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
-    @Disabled("Failing or intermittently failing HAPI Test")
+    @HapiTest
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
@@ -191,22 +191,26 @@ public class EthereumSuite extends HapiSuite {
                                 .via("deployTokenCreateContract"),
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
-                .then(withOpContext((spec, opLog) -> {
-                    var call = ethereumCall(
-                                    TOKEN_CREATE_CONTRACT,
-                                    "createNonFungibleTokenPublic",
-                                    tokenCreateContractAddress.get())
-                            .type(EthTxData.EthTransactionType.EIP1559)
-                            .signingWith(SECP_256K1_SOURCE_KEY)
-                            .payingWith(RELAYER)
-                            .nonce(1)
-                            .gasPrice(10L)
-                            .sending(ONE_HUNDRED_HBARS)
-                            .gasLimit(1_000_000L)
-                            .via("createTokenTxn")
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
-                    allRunFor(spec, call);
-                }));
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            var call = ethereumCall(
+                                            TOKEN_CREATE_CONTRACT,
+                                            "createNonFungibleTokenPublic",
+                                            tokenCreateContractAddress.get())
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                    .payingWith(RELAYER)
+                                    .nonce(1)
+                                    .gasPrice(10L)
+                                    .sending(ONE_HUNDRED_HBARS)
+                                    .gasLimit(1_000_000L)
+                                    .via("createTokenTxn")
+                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
+                            allRunFor(spec, call);
+                        }),
+                        // Quick assertion to verify top-level HAPI fees were still charged after aborting
+                        getTxnRecord("createTokenTxn")
+                                .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))));
     }
 
     @HapiTest
@@ -433,6 +437,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     HapiSpec etx014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";
