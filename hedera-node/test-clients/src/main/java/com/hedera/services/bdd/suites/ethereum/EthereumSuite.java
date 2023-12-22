@@ -108,7 +108,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
@@ -165,7 +164,7 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
-    @Disabled("Failing or intermittently failing HAPI Test")
+    @HapiTest
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
@@ -191,22 +190,24 @@ public class EthereumSuite extends HapiSuite {
                                 .via("deployTokenCreateContract"),
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
-                .then(withOpContext((spec, opLog) -> {
-                    var call = ethereumCall(
-                                    TOKEN_CREATE_CONTRACT,
-                                    "createNonFungibleTokenPublic",
-                                    tokenCreateContractAddress.get())
-                            .type(EthTxData.EthTransactionType.EIP1559)
-                            .signingWith(SECP_256K1_SOURCE_KEY)
-                            .payingWith(RELAYER)
-                            .nonce(1)
-                            .gasPrice(10L)
-                            .sending(ONE_HUNDRED_HBARS)
-                            .gasLimit(1_000_000L)
-                            .via("createTokenTxn")
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
-                    allRunFor(spec, call);
-                }));
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            var call = ethereumCall(
+                                            TOKEN_CREATE_CONTRACT,
+                                            "createNonFungibleTokenPublic",
+                                            tokenCreateContractAddress.get())
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                    .payingWith(RELAYER)
+                                    .nonce(1)
+                                    .gasPrice(10L)
+                                    .sending(ONE_HUNDRED_HBARS)
+                                    .gasLimit(1_000_000L)
+                                    .via("createTokenTxn")
+                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
+                            allRunFor(spec, call);
+                        }),
+                        getTxnRecord("createTokenTxn").logged());
     }
 
     @HapiTest
@@ -433,6 +434,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     HapiSpec etx014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";
@@ -465,6 +467,9 @@ public class EthereumSuite extends HapiSuite {
                                 .exposingNumTo(num -> contractID.set(asHexedSolidityAddress(0, 0, num)))
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(SUCCESS),
+                        withOpContext((spec, opLog) -> {
+                            opLog.info("contractID created 0.0.{}", contractID.get());
+                        }),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, "getBalance")
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)

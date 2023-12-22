@@ -31,6 +31,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
@@ -47,6 +49,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @Singleton
 public class CustomGasCharging {
+    private static final Logger logger = LogManager.getLogger(CustomGasCharging.class);
     private final GasCalculator gasCalculator;
 
     @Inject
@@ -146,20 +149,24 @@ public class CustomGasCharging {
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
         final var gasCost = transaction.gasCostGiven(context.gasPrice());
+        logger.info("Start sender balance {} (value {})", sender.getBalance(), transaction.value());
+        final long relayerGasCost;
         if (transaction.requiresFullRelayerAllowance()) {
             validateTrue(transaction.maxGasAllowance() >= gasCost, INSUFFICIENT_TX_FEE);
             validateAndCharge(gasCost, requireNonNull(relayer), worldUpdater);
-            return gasCost;
+            relayerGasCost = gasCost;
         } else if (transaction.offeredGasPrice() >= context.gasPrice()) {
             validateAndCharge(gasCost, sender, worldUpdater);
-            return 0L;
+            relayerGasCost = 0L;
         } else {
-            final var relayerGasCost = gasCost - transaction.offeredGasCost();
+            relayerGasCost = gasCost - transaction.offeredGasCost();
             validateTrue(transaction.maxGasAllowance() >= relayerGasCost, INSUFFICIENT_TX_FEE);
             validateAndCharge(
                     transaction.offeredGasCost(), relayerGasCost, sender, requireNonNull(relayer), worldUpdater);
-            return relayerGasCost;
         }
+        logger.info("Post-charging sender balance {} (value {})", sender.getBalance(), transaction.value());
+        validateTrue(sender.getBalance().toLong() >= transaction.value(), INSUFFICIENT_PAYER_BALANCE);
+        return relayerGasCost;
     }
 
     private void validateAndCharge(

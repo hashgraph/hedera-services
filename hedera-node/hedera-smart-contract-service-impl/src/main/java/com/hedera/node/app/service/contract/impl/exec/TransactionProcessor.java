@@ -18,18 +18,18 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.sponsorCustomizedCreation;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -39,12 +39,13 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
@@ -54,6 +55,7 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
  * {@code ContractCallLocal}) can reduce to a single code path.
  */
 public class TransactionProcessor {
+    private static final Logger logger = LogManager.getLogger(TransactionProcessor.class);
     private final FrameBuilder frameBuilder;
     private final FrameRunner frameRunner;
     private final CustomGasCharging gasCharging;
@@ -207,39 +209,17 @@ public class TransactionProcessor {
         final InvolvedParties parties;
         if (transaction.isCreate()) {
             final Address to;
+            final var op = requireNonNull(transaction.hapiCreation());
             if (transaction.isEthereumTransaction()) {
-                final ReadableAccountStore accountStore =
-                        updater.enhancement().nativeOperations().readableAccountStore();
-                var createBody = requireNonNull(transaction.hapiCreation());
-                final var modifiedBodyBuilder = createBody.copyBuilder();
-
-                final Account sponsor = requireNonNull(accountStore.getAccountById(transaction.senderId()));
-                if (sponsor.memo() != null) {
-                    modifiedBodyBuilder.memo(sponsor.memo());
-                }
-                if (sponsor.autoRenewAccountId() != null) {
-                    modifiedBodyBuilder.autoRenewAccountId(sponsor.autoRenewAccountId());
-                }
-                if (sponsor.stakedAccountId() != null) {
-                    modifiedBodyBuilder.stakedAccountId(sponsor.stakedAccountId());
-                }
-                if (sponsor.autoRenewSeconds() > 0) {
-                    modifiedBodyBuilder.autoRenewPeriod(Duration.newBuilder()
-                            .seconds(sponsor.autoRenewSeconds())
-                            .build());
-                }
-                modifiedBodyBuilder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations());
-                modifiedBodyBuilder.declineReward(sponsor.declineReward());
-
-                final var modifiedBody = modifiedBodyBuilder.build();
                 to = Address.contractAddress(sender.getAddress(), sender.getNonce());
-                updater.setupAliasedTopLevelCreate(modifiedBody, to);
+                updater.setupAliasedTopLevelCreate(sponsorCustomizedCreation(op, sender.toNativeAccount()), to);
             } else {
-                to = updater.setupTopLevelCreate(transaction.hapiCreation());
+                to = updater.setupTopLevelCreate(op);
             }
             parties = new InvolvedParties(sender, relayer, to);
         } else {
             final var to = updater.getHederaAccount(transaction.contractIdOrThrow());
+            logger.info("@ {} -> to: {}", transaction.contractIdOrThrow(), to);
             if (maybeLazyCreate(transaction, to, config)) {
                 // Presumably these checks _could_ be done later as part of the message
                 // call, but historically we have failed fast when they do not pass
@@ -259,6 +239,7 @@ public class TransactionProcessor {
             }
         }
         if (transaction.isEthereumTransaction()) {
+            validateTrue(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE);
             parties.sender().incrementNonce();
         }
         return parties;

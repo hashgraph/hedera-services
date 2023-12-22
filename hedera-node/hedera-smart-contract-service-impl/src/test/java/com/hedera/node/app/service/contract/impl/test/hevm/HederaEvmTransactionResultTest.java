@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOGS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
@@ -33,6 +35,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_RE
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_STORAGE_ACCESSES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TWO_STORAGE_ACCESSES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WEI_NETWORK_GAS_PRICE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCall;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -54,7 +57,6 @@ import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -77,14 +79,9 @@ class HederaEvmTransactionResultTest {
     @Mock
     private StorageAccessTracker accessTracker;
 
-    @BeforeEach
-    void setUp() {
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.isEmpty()).willReturn(true);
-    }
-
     @Test
     void finalStatusFromHaltUsesCorrespondingStatusIfFromCustom() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(SELF_DESTRUCT_TO_SELF));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame, null);
@@ -95,6 +92,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void finalStatusFromHaltUsesCorrespondingStatusIfFromStandard() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame, null);
@@ -105,6 +103,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void finalStatusFromInsufficientGasHaltImplemented() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame, null);
@@ -113,6 +112,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void finalStatusFromMissingAddressHaltImplemented() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason())
                 .willReturn(Optional.of(CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
@@ -121,7 +121,21 @@ class HederaEvmTransactionResultTest {
     }
 
     @Test
+    void finalStatusFromWrongNonceAbortTranslated() {
+        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), WRONG_NONCE);
+        assertEquals(WRONG_NONCE, subject.finalStatus());
+    }
+
+    @Test
+    void finalStatusFromIpbAbortTranslated() {
+        final var subject =
+                HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), INSUFFICIENT_PAYER_BALANCE);
+        assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.finalStatus());
+    }
+
+    @Test
     void givenAccessTrackerIncludesFullContractStorageChangesAndNonNullNoncesOnSuccess() {
+        withFrameSetup();
         given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(accessTracker);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         final var pendingWrites = List.of(TWO_STORAGE_ACCESSES);
@@ -155,6 +169,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void givenEthTxDataIncludesSpecialFields() {
+        withFrameSetup();
         given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(accessTracker);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         final var pendingWrites = List.of(TWO_STORAGE_ACCESSES);
@@ -193,6 +208,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void givenAccessTrackerIncludesReadStorageAccessesOnlyOnFailure() {
+        withFrameSetup();
         given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(accessTracker);
         given(accessTracker.getJustReads()).willReturn(SOME_STORAGE_ACCESSES);
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
@@ -205,6 +221,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void withoutAccessTrackerReturnsNullStateChanges() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
 
@@ -216,6 +233,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void QueryResultOnSuccess() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getLogs()).willReturn(BESU_LOGS);
         given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
@@ -234,6 +252,7 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void QueryResultOnHalt() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
 
@@ -244,11 +263,17 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void QueryResultOnRevert() {
+        withFrameSetup();
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
 
         final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame, null);
         final var protoResult = result.asQueryResult();
         assertEquals(SOME_REVERT_REASON.toString(), protoResult.errorMessage());
+    }
+
+    private void withFrameSetup() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
     }
 }
