@@ -396,12 +396,13 @@ public class HandleHederaOperations implements HederaOperations {
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         // add additional create record fields
         recordBuilder
-                .accountID(null) // in mono we don't have accountID set for contract creations
                 .contractID(contractId)
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
                         .evmAddress(evmAddress)
-                        .build());
+                        .build())
+                .accountID(null); // in mono we don't have accountID set for contract creations
+
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
