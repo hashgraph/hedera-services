@@ -31,8 +31,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
@@ -49,7 +47,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @Singleton
 public class CustomGasCharging {
-    private static final Logger logger = LogManager.getLogger(CustomGasCharging.class);
     private final GasCalculator gasCalculator;
 
     @Inject
@@ -98,7 +95,11 @@ public class CustomGasCharging {
      * Tries to charge gas for the given transaction based on the pre-fetched sender and relayer accounts,
      * within the given context and world updater.
      *
-     * <p>Even if there are gas charges, still returns the intrinsic gas cost of the transaction.
+     * <p><b>IMPORTANT:</b> Applies <i>any</i> charges only if <i>all</i> charges will succeed. This lets us
+     * avoid reverting the root updater in the case of insufficient balances; which is nice since this
+     * updater will contain non-gas fees we want to keep intact (for operations other than {@code ContractCall}).
+     *
+     * <p>Even if there are no gas charges, still returns the intrinsic gas cost of the transaction.
      *
      * @param sender  the sender account
      * @param relayer the relayer account
@@ -114,6 +115,11 @@ public class CustomGasCharging {
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
+        requireNonNull(sender);
+        requireNonNull(context);
+        requireNonNull(worldUpdater);
+        requireNonNull(transaction);
+
         final var intrinsicGas =
                 gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), transaction.isCreate());
         if (context.isNoopGasContext()) {
@@ -121,8 +127,8 @@ public class CustomGasCharging {
         }
         validateTrue(transaction.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
         if (transaction.isEthereumTransaction()) {
-            final var allowanceUsed =
-                    chargeWithRelayer(sender, requireNonNull(relayer), context, worldUpdater, transaction);
+            requireNonNull(relayer);
+            final var allowanceUsed = chargeWithRelayer(sender, relayer, context, worldUpdater, transaction);
             return new GasCharges(intrinsicGas, allowanceUsed);
         } else {
             chargeWithOnlySender(sender, context, worldUpdater, transaction);
@@ -135,11 +141,10 @@ public class CustomGasCharging {
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
-        final var gasCost = transaction.gasCostGiven(context.gasPrice());
-        final var upfrontCost = transaction.upfrontCostGiven(context.gasPrice());
-        // We validate up-front cost here just for consistency with existing code
-        validateTrue(sender.getBalance().toLong() >= upfrontCost, INSUFFICIENT_PAYER_BALANCE);
-        validateAndCharge(gasCost, sender, worldUpdater);
+        validateTrue(
+                sender.getBalance().toLong() >= transaction.upfrontCostGiven(context.gasPrice()),
+                INSUFFICIENT_PAYER_BALANCE);
+        worldUpdater.collectFee(sender.hederaId(), transaction.gasCostGiven(context.gasPrice()));
     }
 
     private long chargeWithRelayer(
@@ -149,41 +154,24 @@ public class CustomGasCharging {
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
         final var gasCost = transaction.gasCostGiven(context.gasPrice());
-        logger.info("Start sender balance {} (value {})", sender.getBalance(), transaction.value());
+        final long senderGasCost;
         final long relayerGasCost;
         if (transaction.requiresFullRelayerAllowance()) {
-            validateTrue(transaction.maxGasAllowance() >= gasCost, INSUFFICIENT_TX_FEE);
-            validateAndCharge(gasCost, requireNonNull(relayer), worldUpdater);
+            senderGasCost = 0L;
             relayerGasCost = gasCost;
         } else if (transaction.offeredGasPrice() >= context.gasPrice()) {
-            validateAndCharge(gasCost, sender, worldUpdater);
+            senderGasCost = gasCost;
             relayerGasCost = 0L;
         } else {
+            senderGasCost = transaction.offeredGasCost();
             relayerGasCost = gasCost - transaction.offeredGasCost();
-            validateTrue(transaction.maxGasAllowance() >= relayerGasCost, INSUFFICIENT_TX_FEE);
-            validateAndCharge(
-                    transaction.offeredGasCost(), relayerGasCost, sender, requireNonNull(relayer), worldUpdater);
         }
-        logger.info("Post-charging sender balance {} (value {})", sender.getBalance(), transaction.value());
-        validateTrue(sender.getBalance().toLong() >= transaction.value(), INSUFFICIENT_PAYER_BALANCE);
+        // Ensure all up-front charges are payable (including any to-be-collected value sent with the initial frame)
+        validateTrue(transaction.maxGasAllowance() >= relayerGasCost, INSUFFICIENT_TX_FEE);
+        validateTrue(relayer.getBalance().toLong() >= relayerGasCost, INSUFFICIENT_PAYER_BALANCE);
+        validateTrue(sender.getBalance().toLong() >= senderGasCost + transaction.value(), INSUFFICIENT_PAYER_BALANCE);
+        worldUpdater.collectFee(relayer.hederaId(), relayerGasCost);
+        worldUpdater.collectFee(sender.hederaId(), senderGasCost);
         return relayerGasCost;
-    }
-
-    private void validateAndCharge(
-            final long amount, @NonNull final HederaEvmAccount payer, @NonNull final HederaWorldUpdater worldUpdater) {
-        validateTrue(payer.getBalance().toLong() >= amount, INSUFFICIENT_PAYER_BALANCE);
-        worldUpdater.collectFee(payer.hederaId(), amount);
-    }
-
-    private void validateAndCharge(
-            final long aAmount,
-            final long bAmount,
-            @NonNull final HederaEvmAccount aPayer,
-            @NonNull final HederaEvmAccount bPayer,
-            @NonNull final HederaWorldUpdater worldUpdater) {
-        validateTrue(aPayer.getBalance().toLong() >= aAmount, INSUFFICIENT_PAYER_BALANCE);
-        validateTrue(bPayer.getBalance().toLong() >= bAmount, INSUFFICIENT_PAYER_BALANCE);
-        worldUpdater.collectFee(aPayer.hederaId(), aAmount);
-        worldUpdater.collectFee(bPayer.hederaId(), bAmount);
     }
 }

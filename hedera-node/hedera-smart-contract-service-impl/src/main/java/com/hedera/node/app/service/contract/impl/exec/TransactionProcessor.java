@@ -19,17 +19,18 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
+import static com.hedera.node.app.service.contract.impl.exec.failure.AbortException.validateTrueOrAbort;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.sponsorCustomizedCreation;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -39,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -78,8 +80,8 @@ public class TransactionProcessor {
     /**
      * Records the two or three parties involved in a transaction.
      *
-     * @param sender          the externally-operated account that signed the transaction (AKA the "origin")
-     * @param relayer         if non-null, the account relayed an Ethereum transaction on behalf of the sender
+     * @param sender the externally-operated account that signed the transaction (AKA the "origin")
+     * @param relayer if non-null, the account relayed an Ethereum transaction on behalf of the sender
      * @param receiverAddress the address of the account receiving the top-level call
      */
     private record InvolvedParties(
@@ -94,13 +96,14 @@ public class TransactionProcessor {
      * Process the given transaction, returning the result of running it to completion
      * and committing to the given updater.
      *
-     * @param transaction     the transaction to process
-     * @param updater         the world updater to commit to
+     * @param transaction the transaction to process
+     * @param updater the world updater to commit to
      * @param feesOnlyUpdater if base commit fails, a fees-only updater
-     * @param context         the context to use
-     * @param tracer          the tracer to use
-     * @param config          the node configuration
+     * @param context the context to use
+     * @param tracer the tracer to use
+     * @param config the node configuration
      * @return the result of running the transaction to completion
+     * @throws AbortException if processing failed before initiating the EVM transaction
      */
     public HederaEvmTransactionResult processTransaction(
             @NonNull final HederaEvmTransaction transaction,
@@ -109,8 +112,23 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        // Setup for the EVM transaction; thrown HandleException's will propagate back to the workflow
         final var parties = computeInvolvedParties(transaction, updater, config);
+        try {
+            return processTransactionWithParties(
+                    transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
+        } catch (HandleException e) {
+            throw new AbortException(e.getStatus(), parties.senderId());
+        }
+    }
+
+    private HederaEvmTransactionResult processTransactionWithParties(
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
+            @NonNull final HederaEvmContext context,
+            @NonNull final ActionSidecarContentTracer tracer,
+            @NonNull final Configuration config,
+            @NonNull final InvolvedParties parties) {
         final var gasCharges =
                 gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         final var initialFrame = frameBuilder.buildInitialFrameWith(
@@ -191,8 +209,8 @@ public class TransactionProcessor {
      * {@link HederaWorldUpdater#setupAliasedTopLevelCreate(ContractCreateTransactionBody, Address)}
      *
      * @param transaction the transaction to set up
-     * @param updater     the updater for the transaction
-     * @param config      the current node configuration
+     * @param updater the updater for the transaction
+     * @param config the current node configuration
      * @return the involved parties determined while setting up the transaction
      */
     private InvolvedParties computeInvolvedParties(
@@ -200,11 +218,12 @@ public class TransactionProcessor {
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
         final var sender = updater.getHederaAccount(transaction.senderId());
-        validateTrue(sender != null, INVALID_ACCOUNT_ID);
+        validateTrueOrAbort(sender != null, INVALID_ACCOUNT_ID, transaction.senderId());
+        final var senderId = sender.hederaId();
         HederaEvmAccount relayer = null;
         if (transaction.isEthereumTransaction()) {
             relayer = updater.getHederaAccount(requireNonNull(transaction.relayerId()));
-            validateTrue(relayer != null, INVALID_ACCOUNT_ID);
+            validateTrueOrAbort(relayer != null, INVALID_ACCOUNT_ID, senderId);
         }
         final InvolvedParties parties;
         if (transaction.isCreate()) {
@@ -223,23 +242,23 @@ public class TransactionProcessor {
             if (maybeLazyCreate(transaction, to, config)) {
                 // Presumably these checks _could_ be done later as part of the message
                 // call, but historically we have failed fast when they do not pass
-                validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
+                validateTrueOrAbort(transaction.hasValue(), INVALID_CONTRACT_ID, senderId);
                 final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
-                validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
+                validateTrueOrAbort(isEvmAddress(alias), INVALID_CONTRACT_ID, senderId);
 
                 // do not attempt to lazy create account with alias that is a long zero address
-                validateTrue(!isLongZeroAddress(alias.toByteArray()), INVALID_CONTRACT_ID);
+                validateTrueOrAbort(!isLongZeroAddress(alias.toByteArray()), INVALID_CONTRACT_ID, senderId);
 
                 parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
                 updater.setupTopLevelLazyCreate(parties.receiverAddress);
             } else {
-                validateTrue(to != null, INVALID_CONTRACT_ID);
+                validateTrueOrAbort(to != null, INVALID_CONTRACT_ID, senderId);
                 parties =
                         new InvolvedParties(sender, relayer, requireNonNull(to).getAddress());
             }
         }
         if (transaction.isEthereumTransaction()) {
-            validateTrue(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE);
+            validateTrueOrAbort(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE, senderId);
             parties.sender().incrementNonce();
         }
         return parties;

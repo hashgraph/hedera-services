@@ -220,7 +220,6 @@ class TransactionProcessorTest {
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
@@ -276,7 +275,6 @@ class TransactionProcessorTest {
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(senderAccount.getNonce()).willReturn(NONCE);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
@@ -352,7 +350,6 @@ class TransactionProcessorTest {
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         transaction.gasLimit(),
                         SENDER_ID,
@@ -420,7 +417,6 @@ class TransactionProcessorTest {
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
                         eq(transaction.gasLimit()),
                         eq(SENDER_ID),
@@ -480,7 +476,6 @@ class TransactionProcessorTest {
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
                 .willReturn(CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(senderAccount.getNonce()).willReturn(NONCE);
         given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frameBuilder.buildInitialFrameWith(
@@ -539,7 +534,6 @@ class TransactionProcessorTest {
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
-        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         willThrow(new ResourceExhaustedException(MAX_CHILD_RECORDS_EXCEEDED))
                 .given(frameRunner)
                 .runToCompletion(
@@ -590,6 +584,7 @@ class TransactionProcessorTest {
 
     private void givenSenderAccount() {
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
     }
 
     private void givenRelayerAccount() {
