@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
@@ -30,7 +29,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -57,7 +55,6 @@ public class DuplicateManagementTest extends HapiSuite {
     private static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
-    private static final String ACTIVE_PROFILE_PROPERTY = "hedera.profiles.active";
 
     public static void main(String... args) {
         new DuplicateManagementTest().runSuiteSync();
@@ -155,12 +152,9 @@ public class DuplicateManagementTest extends HapiSuite {
                                         .transfers(includingDeduction("node payment", TO))));
     }
 
-    @HapiTest
     final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
-        return propertyPreservingHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
-                .preserving(ACTIVE_PROFILE_PROPERTY)
+        return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
-                        overriding(ACTIVE_PROFILE_PROPERTY, "DEV"),
                         cryptoCreate(CIVILIAN).balance(100 * 100_000_000L),
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO, 100_000_000L)))
