@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -207,7 +208,9 @@ public class EthereumSuite extends HapiSuite {
                                     .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
                             allRunFor(spec, call);
                         }),
-                        getTxnRecord("createTokenTxn").logged());
+                        // Quick assertion to verify top-level HAPI fees were still charged after aborting
+                        getTxnRecord("createTokenTxn")
+                                .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))));
     }
 
     @HapiTest
