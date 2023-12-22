@@ -470,9 +470,6 @@ public class EthereumSuite extends HapiSuite {
                                 .exposingNumTo(num -> contractID.set(asHexedSolidityAddress(0, 0, num)))
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(SUCCESS),
-                        withOpContext((spec, opLog) -> {
-                            opLog.info("contractID created 0.0.{}", contractID.get());
-                        }),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, "getBalance")
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
