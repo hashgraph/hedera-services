@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -74,7 +74,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
         final var codeCopyOf = "codeCopyOf";
         final var account = "account";
 
-        return onlyDefaultHapiSpec("VerifiesExistence")
+        return defaultHapiSpec("VerifiesExistence")
                 .given(
                         snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         cryptoCreate(account),
