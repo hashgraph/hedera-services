@@ -73,18 +73,23 @@ class ScheduleEqualityVirtualKeyTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        final ByteBuffer verify = ByteBuffer.allocate(Long.BYTES);
+
+        verify.putLong(longKey);
+        verify.rewind();
 
         subject.serialize(buffer);
+        buffer.rewind();
 
-        verify(buffer).putLong(longKey);
+        assertEquals(buffer, verify);
     }
 
     @Test
     void deserializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-
-        given(buffer.getLong()).willReturn(longKey);
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(longKey);
+        buffer.rewind();
 
         ScheduleEqualityVirtualKey key = new ScheduleEqualityVirtualKey();
 
