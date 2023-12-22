@@ -17,12 +17,14 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.tokenuri;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SERIAL_NO;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
@@ -49,5 +51,20 @@ class TokenUriCallTest extends HtsCallTestBase {
                         .encodeElements(new String(CIVILIAN_OWNED_NFT.metadata().toByteArray()))
                         .array()),
                 result.getOutput());
+    }
+
+    @Test
+    void revertsWhenTokenIsNotERC721() {
+        // given
+        subject = new TokenUriCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+        given(nativeOperations.getNft(FUNGIBLE_TOKEN.tokenId().tokenNum(), NFT_SERIAL_NO))
+                .willReturn(null);
+
+        // when
+        final var result = subject.execute().fullResult().result();
+
+        // then
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(Bytes.wrap(ResponseCodeEnum.INVALID_TOKEN_ID.name().getBytes()), result.getOutput());
     }
 }

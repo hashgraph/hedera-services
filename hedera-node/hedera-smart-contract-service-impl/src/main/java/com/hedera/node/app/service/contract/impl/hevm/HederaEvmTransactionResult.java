@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.hevm;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
@@ -75,6 +76,7 @@ public record HederaEvmTransactionResult(
     private static final Bytes INSUFFICIENT_GAS_REASON = Bytes.wrap(INSUFFICIENT_GAS.name());
     private static final Bytes INVALID_CONTRACT_REASON = Bytes.wrap(INVALID_CONTRACT_ID.name());
     private static final Bytes MAX_CHILD_RECORDS_EXCEEDED_REASON = Bytes.wrap(MAX_CHILD_RECORDS_EXCEEDED.name());
+    private static final Bytes INSUFFICIENT_TX_FEE_REASON = Bytes.wrap(INSUFFICIENT_TX_FEE.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -141,6 +143,8 @@ public record HederaEvmTransactionResult(
                 return INVALID_CONTRACT_ID;
             } else if (revertReason.equals(MAX_CHILD_RECORDS_EXCEEDED_REASON)) {
                 return MAX_CHILD_RECORDS_EXCEEDED;
+            } else if (revertReason.equals(INSUFFICIENT_TX_FEE_REASON)) {
+                return INSUFFICIENT_TX_FEE;
             } else {
                 return CONTRACT_REVERT_EXECUTED;
             }

@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 class SystemContractUtilsTest {
     private static final long gasUsed = 0L;
     private static final Bytes result = Bytes.EMPTY;
+    private static final com.hedera.pbj.runtime.io.buffer.Bytes contractCallResult =
+            com.hedera.pbj.runtime.io.buffer.Bytes.wrap("Contract Call Result");
     private static final ContractID contractID =
             ContractID.newBuilder().contractNum(111).build();
     private static final String errorMessage = ResponseCodeEnum.FAIL_INVALID.name();
@@ -62,6 +64,19 @@ class SystemContractUtilsTest {
                 .contractID(contractID)
                 .build();
         final var actual = SystemContractUtils.contractFunctionResultFailedFor(gasUsed, errorMessage, contractID);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void validateFailedContractResultsForProto() {
+        final var expected = ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .errorMessage(errorMessage)
+                .contractID(contractID)
+                .contractCallResult(contractCallResult)
+                .build();
+        final var actual = SystemContractUtils.contractFunctionResultFailedForProto(
+                gasUsed, errorMessage, contractID, contractCallResult);
         assertThat(actual).isEqualTo(expected);
     }
 }

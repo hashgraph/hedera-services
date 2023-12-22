@@ -107,15 +107,11 @@ class CounterAdapterTest {
         final Metric metric = new DefaultCounter(new Counter.Config(CATEGORY, NAME).withDescription(DESCRIPTION));
 
         // then
-        assertThatThrownBy(() -> new CounterAdapter(null, metric, GLOBAL)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new CounterAdapter(null, metric, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new CounterAdapter(registry, null, GLOBAL))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new CounterAdapter(registry, null, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new CounterAdapter(registry, metric, null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new CounterAdapter(null, metric, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new CounterAdapter(null, metric, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new CounterAdapter(registry, null, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new CounterAdapter(registry, null, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new CounterAdapter(registry, metric, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -158,7 +154,7 @@ class CounterAdapterTest {
         final NodeId nodeId = new NodeId(1L);
 
         // then
-        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(NullPointerException.class);
     }
 }

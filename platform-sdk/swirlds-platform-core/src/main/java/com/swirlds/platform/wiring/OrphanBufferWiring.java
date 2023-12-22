@@ -52,7 +52,7 @@ public record OrphanBufferWiring(
                 taskScheduler.buildInputWire("unordered events"),
                 taskScheduler.buildInputWire("minimum generation non ancient"),
                 taskScheduler.buildInputWire("clear"),
-                taskScheduler.getOutputWire().buildSplitter(),
+                taskScheduler.getOutputWire().buildSplitter("orphanBufferSplitter", "event lists"),
                 taskScheduler::flush);
     }
 
