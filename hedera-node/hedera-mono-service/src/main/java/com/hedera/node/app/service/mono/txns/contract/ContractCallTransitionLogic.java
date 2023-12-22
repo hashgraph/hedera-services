@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
@@ -237,6 +238,19 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         }
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
+        }
+        // Do some sanity checking in advance to ensure that the target is a valid contract
+        // Missing entity num is a valid target for lazy create.  Tokens are also valid targets
+        final var target = targetOf(op);
+        if (!target.equals(EntityNum.MISSING_NUM)
+                && !entityAccess.isTokenAccount(target.toId().asEvmAddress())
+                && op.getAmount() == 0) {
+            try {
+                final var receiver = accountStore.loadContract(target.toId());
+                validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
+            } catch (InvalidTransactionException e) {
+                return e.getResponseCode();
+            }
         }
         return OK;
     }

@@ -367,10 +367,6 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("org.mockito:mockito-inline", "org.mockito.inline") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
     module("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core") {
         exportAllPackages()
         requireAllDefinedDependencies()

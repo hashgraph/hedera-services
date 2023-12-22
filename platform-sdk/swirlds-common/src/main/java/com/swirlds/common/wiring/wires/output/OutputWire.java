@@ -18,10 +18,10 @@ package com.swirlds.common.wiring.wires.output;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
+import com.swirlds.common.wiring.transformers.WireFilter;
+import com.swirlds.common.wiring.transformers.WireListSplitter;
+import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.transformers.internal.AdvancedWireTransformer;
-import com.swirlds.common.wiring.transformers.internal.WireFilter;
-import com.swirlds.common.wiring.transformers.internal.WireListSplitter;
-import com.swirlds.common.wiring.transformers.internal.WireTransformer;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -130,15 +130,23 @@ public abstract class OutputWire<OUT> {
      * data that comes out of the wire will be inserted into the filter). The output wire of the filter is returned by
      * this method.
      *
-     * @param name      the name of the filter
-     * @param predicate the predicate that filters the output of this wire
+     * @param filterName      the name of the filter
+     * @param filterInputName the label for the input wire going into the filter
+     * @param predicate       the predicate that filters the output of this wire
      * @return the output wire of the filter
      */
     @NonNull
-    public OutputWire<OUT> buildFilter(@NonNull final String name, @NonNull final Predicate<OUT> predicate) {
-        final WireFilter<OUT> filter =
-                new WireFilter<>(model, Objects.requireNonNull(name), Objects.requireNonNull(predicate));
-        solderTo(name, filter);
+    public OutputWire<OUT> buildFilter(
+            @NonNull final String filterName,
+            @NonNull final String filterInputName,
+            @NonNull final Predicate<OUT> predicate) {
+
+        Objects.requireNonNull(filterName);
+        Objects.requireNonNull(filterInputName);
+        Objects.requireNonNull(predicate);
+
+        final WireFilter<OUT> filter = new WireFilter<>(model, filterName, filterInputName, predicate);
+        solderTo(filter.getInputWire());
         return filter.getOutputWire();
     }
 
@@ -153,10 +161,14 @@ public abstract class OutputWire<OUT> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public <ELEMENT> OutputWire<ELEMENT> buildSplitter() {
-        final String splitterName = name + "_splitter";
-        final WireListSplitter<ELEMENT> splitter = new WireListSplitter<>(model, splitterName);
-        solderTo(splitterName, (Consumer<OUT>) splitter);
+    public <ELEMENT> OutputWire<ELEMENT> buildSplitter(
+            @NonNull final String splitterName, @NonNull final String splitterInputName) {
+
+        Objects.requireNonNull(splitterName);
+        Objects.requireNonNull(splitterInputName);
+
+        final WireListSplitter<ELEMENT> splitter = new WireListSplitter<>(model, splitterName, splitterInputName);
+        solderTo((InputWire<OUT>) splitter.getInputWire());
         return splitter.getOutputWire();
     }
 
@@ -165,26 +177,33 @@ public abstract class OutputWire<OUT> {
      * (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of the
      * transformer is returned by this method.
      *
-     * @param name        the name of the transformer
-     * @param transformer the function that transforms the output of this wire into the output of the transformer.
-     *                    Called once per data item. Null data returned by this method his not forwarded.
-     * @param <NEW_OUT>   the output type of the transformer
+     * @param transformerName the name of the transformer
+     * @param transformer     the function that transforms the output of this wire into the output of the transformer.
+     *                        Called once per data item. Null data returned by this method his not forwarded.
+     * @param <NEW_OUT>       the output type of the transformer
      * @return the output wire of the transformer
      */
     @NonNull
     public <NEW_OUT> OutputWire<NEW_OUT> buildTransformer(
-            @NonNull final String name, @NonNull final Function<OUT, NEW_OUT> transformer) {
+            @NonNull final String transformerName,
+            @NonNull final String transformerInputName,
+            @NonNull final Function<OUT, NEW_OUT> transformer) {
+
+        Objects.requireNonNull(transformerName);
+        Objects.requireNonNull(transformerInputName);
+        Objects.requireNonNull(transformer);
+
         final WireTransformer<OUT, NEW_OUT> wireTransformer =
-                new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transformer));
-        solderTo(name, wireTransformer);
+                new WireTransformer<>(model, transformerName, transformerInputName, transformer);
+        solderTo(wireTransformer.getInputWire());
         return wireTransformer.getOutputWire();
     }
 
     /**
      * Build a {@link AdvancedWireTransformer}. The input wire to the transformer is automatically soldered to this
      * output wire (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of
-     * the transformer is returned by this method. Similar to {@link #buildTransformer(String, Function)}, but instead
-     * of the transformer method being called once per data item, it is called once per output per data item.
+     * the transformer is returned by this method. Similar to {@link #buildTransformer(String, String, Function)}, but
+     * instead of the transformer method being called once per data item, it is called once per output per data item.
      *
      * @param name      the name of the transformer
      * @param transform the function that transforms the output of this wire into the output of the transformer, called
@@ -211,8 +230,8 @@ public abstract class OutputWire<OUT> {
     /**
      * Build a {@link AdvancedWireTransformer}. The input wire to the transformer is automatically soldered to this
      * output wire (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of
-     * the transformer is returned by this method. Similar to {@link #buildTransformer(String, Function)}, but instead
-     * of the transformer method being called once per data item, it is called once per output per data item.
+     * the transformer is returned by this method. Similar to {@link #buildTransformer(String, String, Function)}, but
+     * instead of the transformer method being called once per data item, it is called once per output per data item.
      *
      * <p>
      * This method is very similar to {@link #buildAdvancedTransformer(String, Function, Consumer)}, but with a
