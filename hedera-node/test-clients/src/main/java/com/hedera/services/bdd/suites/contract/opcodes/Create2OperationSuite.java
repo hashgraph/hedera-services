@@ -1219,7 +1219,10 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES),
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                NONDETERMINISTIC_TRANSACTION_FEES),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
                         contractCall(contract, "buildCreator", salt)

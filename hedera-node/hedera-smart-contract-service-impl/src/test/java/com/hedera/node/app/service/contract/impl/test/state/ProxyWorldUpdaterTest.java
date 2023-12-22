@@ -221,7 +221,8 @@ class ProxyWorldUpdaterTest {
         given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
         given(evmFrameState.getAccount(PERMITTED_ADDRESS_CALLER)).willReturn(proxyEvmAccount);
         given(evmFrameState.isHollowAccount(EIP_1014_ADDRESS)).willReturn(true);
-        given(proxyEvmAccount.hederaContractId()).willReturn(ContractID.newBuilder().contractNum(999L).build());
+        given(proxyEvmAccount.hederaContractId())
+                .willReturn(ContractID.newBuilder().contractNum(999L).build());
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
         subject.finalizeHollowAccount(EIP_1014_ADDRESS, PERMITTED_ADDRESS_CALLER);
         verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
