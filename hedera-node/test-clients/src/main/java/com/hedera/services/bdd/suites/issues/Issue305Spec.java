@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -107,7 +108,11 @@ public class Issue305Spec extends HapiSuite {
         final List<TransactionID> submittedTxnIds = new ArrayList<>();
 
         return propertyPreservingHapiSpec("CongestionMultipliersRefreshOnPropertyUpdate")
-                .preserving("fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec")
+                .preserving(
+                        "fees.percentCongestionMultipliers",
+                        "fees.minCongestionPeriod",
+                        "contracts.maxGasPerSec",
+                        "contracts.throttle.throttleByGas")
                 .given(
                         cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(multipurposeContract),
@@ -119,10 +124,11 @@ public class Issue305Spec extends HapiSuite {
                                 .sending(ONE_HBAR)
                                 .via(preCongestionTxn),
                         getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
-                        overridingThree(
+                        overridingAllOf(Map.of(
                                 "contracts.maxGasPerSec", "3_000_000",
                                 "fees.percentCongestionMultipliers", "1,5x",
-                                "fees.minCongestionPeriod", "1"))
+                                "fees.minCongestionPeriod", "1",
+                                "contracts.throttle.throttleByGas", "true")))
                 .when(withOpContext((spec, opLog) -> {
                     // We submit 2.5 seconds of transactions with a 1 second congestion period, so
                     // we should see a 5x multiplier in effect at some point here
