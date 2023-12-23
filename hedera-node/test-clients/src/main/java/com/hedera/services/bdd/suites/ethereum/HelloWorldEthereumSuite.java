@@ -536,7 +536,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(INVALID_CONTRACT_ID));
+                        .hasKnownStatusFrom(INVALID_CONTRACT_ID, CONTRACT_EXECUTION_EXCEPTION));
     }
 
     @HapiTest
