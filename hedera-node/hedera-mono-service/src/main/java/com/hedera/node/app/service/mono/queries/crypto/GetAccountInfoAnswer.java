@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.queries.AnswerService;
@@ -52,14 +53,17 @@ public class GetAccountInfoAnswer implements AnswerService {
     private final OptionValidator optionValidator;
     private final AliasManager aliasManager;
     private final RewardCalculator rewardCalculator;
+    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public GetAccountInfoAnswer(
             final OptionValidator optionValidator,
             final AliasManager aliasManager,
+            final GlobalDynamicProperties dynamicProperties,
             final RewardCalculator rewardCalculator) {
         this.optionValidator = optionValidator;
         this.aliasManager = aliasManager;
+        this.dynamicProperties = dynamicProperties;
         this.rewardCalculator = rewardCalculator;
     }
 
@@ -85,8 +89,13 @@ public class GetAccountInfoAnswer implements AnswerService {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
                 final AccountID id = op.getAccountID();
-                final var optionalInfo =
-                        Objects.requireNonNull(view).infoForAccount(id, aliasManager, rewardCalculator);
+                final var optionalInfo = Objects.requireNonNull(view)
+                        .infoForAccount(
+                                id,
+                                aliasManager,
+                                dynamicProperties.maxTokensRelsPerInfoQuery(),
+                                rewardCalculator,
+                                dynamicProperties.areTokenBalancesEnabledInQueries());
                 if (optionalInfo.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setAccountInfo(optionalInfo.get());

@@ -18,12 +18,14 @@ package com.hedera.node.app.service.contract.impl.hevm;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.errorMessageFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
@@ -77,6 +79,8 @@ public record HederaEvmTransactionResult(
     private static final Bytes INVALID_CONTRACT_REASON = Bytes.wrap(INVALID_CONTRACT_ID.name());
     private static final Bytes MAX_CHILD_RECORDS_EXCEEDED_REASON = Bytes.wrap(MAX_CHILD_RECORDS_EXCEEDED.name());
     private static final Bytes INSUFFICIENT_TX_FEE_REASON = Bytes.wrap(INSUFFICIENT_TX_FEE.name());
+    private static final Bytes INSUFFICIENT_PAYER_BALANCE_REASON = Bytes.wrap(INSUFFICIENT_PAYER_BALANCE.name());
+    private static final Bytes WRONG_NONCE_REASON = Bytes.wrap(WRONG_NONCE.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -145,6 +149,10 @@ public record HederaEvmTransactionResult(
                 return MAX_CHILD_RECORDS_EXCEEDED;
             } else if (revertReason.equals(INSUFFICIENT_TX_FEE_REASON)) {
                 return INSUFFICIENT_TX_FEE;
+            } else if (revertReason.equals(WRONG_NONCE_REASON)) {
+                return WRONG_NONCE;
+            } else if (revertReason.equals(INSUFFICIENT_PAYER_BALANCE_REASON)) {
+                return INSUFFICIENT_PAYER_BALANCE;
             } else {
                 return CONTRACT_REVERT_EXECUTED;
             }

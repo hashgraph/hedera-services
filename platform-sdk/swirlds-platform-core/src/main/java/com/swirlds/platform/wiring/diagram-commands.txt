@@ -4,6 +4,7 @@
 Groups high level grouping of components and component groups. Substitutes known spammy wires.
 
 pcli diagram \
+    -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
@@ -21,6 +22,7 @@ pcli diagram \
 Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide things like transformers and splitters.
 
 pcli diagram \
+    -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \

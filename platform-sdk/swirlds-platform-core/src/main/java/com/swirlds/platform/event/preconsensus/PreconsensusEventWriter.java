@@ -28,6 +28,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * An object capable of writing preconsensus events to disk.
+ * <p>
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public interface PreconsensusEventWriter extends Startable, Stoppable {
     Logger logger = LogManager.getLogger();

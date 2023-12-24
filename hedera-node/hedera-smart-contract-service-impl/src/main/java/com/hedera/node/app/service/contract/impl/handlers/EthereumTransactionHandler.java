@@ -19,10 +19,8 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -35,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.mono.fees.calculation.ethereum.txns.EthereumTransactionResourceUsage;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -46,7 +43,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -93,12 +89,6 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
-        final var hevmTransactionFactory = component.contextTransactionProcessor().hevmTransactionFactory;
-        final var hevmTransaction = hevmTransactionFactory.fromHapiTransaction(context.body());
-
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        final var sender = accountStore.getAccountById(Objects.requireNonNull(hevmTransaction.senderId()));
-
         // Assemble the appropriate top-level record for the result
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
@@ -108,9 +98,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
 
         final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()))
-                .status(outcome.status())
-                .feeChargedToPayer(outcome.tinybarGasCost());
-
+                .status(outcome.status());
         if (ethTxData.hasToAddress()) {
             // The Ethereum transaction was a top-level MESSAGE_CALL
             recordBuilder.contractID(outcome.recipientId()).contractCallResult(outcome.result());
@@ -118,9 +106,8 @@ public class EthereumTransactionHandler implements TransactionHandler {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
-
         recordBuilder.withTinybarGasFee(outcome.tinybarGasCost());
-        validateTrue(sender.ethereumNonce() == ethTxData.nonce(), WRONG_NONCE);
+
         throwIfUnsuccessful(outcome.status());
     }
 
