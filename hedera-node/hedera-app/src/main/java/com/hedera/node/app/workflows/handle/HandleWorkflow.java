@@ -646,6 +646,11 @@ public class HandleWorkflow {
             return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
         }
 
+        // Check if pre-handle was successful
+        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
+
         // Check if the transaction is privileged and if the payer has the required privileges
         final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
@@ -668,11 +673,6 @@ public class HandleWorkflow {
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
-        }
-
-        // Check if pre-handle was successful
-        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
-            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
         }
 
         return new ValidationResult(SO_FAR_SO_GOOD, OK);
