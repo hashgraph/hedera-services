@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -81,6 +82,7 @@ public record HederaEvmTransactionResult(
     private static final Bytes INSUFFICIENT_TX_FEE_REASON = Bytes.wrap(INSUFFICIENT_TX_FEE.name());
     private static final Bytes INSUFFICIENT_PAYER_BALANCE_REASON = Bytes.wrap(INSUFFICIENT_PAYER_BALANCE.name());
     private static final Bytes WRONG_NONCE_REASON = Bytes.wrap(WRONG_NONCE.name());
+    private static final Bytes CONTRACT_EXECUTION_EXCEPTION_REASON = Bytes.wrap(CONTRACT_EXECUTION_EXCEPTION.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -153,6 +155,8 @@ public record HederaEvmTransactionResult(
                 return WRONG_NONCE;
             } else if (revertReason.equals(INSUFFICIENT_PAYER_BALANCE_REASON)) {
                 return INSUFFICIENT_PAYER_BALANCE;
+            } else if (revertReason.equals(CONTRACT_EXECUTION_EXCEPTION_REASON)) {
+                return CONTRACT_EXECUTION_EXCEPTION;
             } else {
                 return CONTRACT_REVERT_EXECUTED;
             }

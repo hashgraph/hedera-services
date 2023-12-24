@@ -1410,7 +1410,7 @@ public class ContractCallSuite extends HapiSuite {
         final var contract = "Fuse";
         return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract).gas(600_000))
-                .when(contractCall(contract, "light").via("lightTxn").scrambleTxnBody(tx -> tx))
+                .when(contractCall(contract, "light").via("lightTxn").withTxnTransform(tx -> tx))
                 .then(getTxnRecord("lightTxn").logged());
     }
 

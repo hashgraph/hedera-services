@@ -36,6 +36,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hederahashgraph.api.proto.java.NodeAddress;
@@ -102,6 +103,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 unauthorizedAccountCannotUpdateExchangeRates());
     }
 
+    @BddMethodIsNotATest
     final HapiSpec specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount, final String specialFile, final String property, final String expected) {
         return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
@@ -140,6 +142,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         });
     }
 
+    @BddMethodIsNotATest
     final HapiSpec specialAccountCanUpdateSpecialFile(
             final String specialAccount, final String specialFile, final String target, final String replacement) {
         return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
@@ -201,6 +204,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return ArrayUtils.addAll(accountBalanceUnchanged, opsArray);
     }
 
+    @BddMethodIsNotATest
     final HapiSpec unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
         return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
                 .given(cryptoCreate("unauthorizedAccount"))
