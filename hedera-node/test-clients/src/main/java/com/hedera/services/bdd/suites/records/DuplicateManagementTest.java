@@ -134,7 +134,7 @@ public class DuplicateManagementTest extends HapiSuite {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(CIVILIAN),
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO, ONE_HBAR)))
                 .when(

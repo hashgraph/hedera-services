@@ -597,11 +597,6 @@ public class HandleWorkflow {
         final var txBody = txInfo.txBody();
         boolean isPayerHollow;
 
-        // Check if pre-handle was successful
-        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
-            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
-        }
-
         // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
         // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
         // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
@@ -614,12 +609,19 @@ public class HandleWorkflow {
                     DUPLICATE_TRANSACTION);
         }
 
-        // Check the status and solvency of the payer
-
+        // Check the status and solvency of the payer (assuming their signature is valid)
         try {
             final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
             isPayerHollow = isHollow(payer);
+            // Check all signature verifications. This will also wait, if validation is still ongoing.
+            // If the payer is hollow the key will be null, so we skip the payer signature verification.
+            if (!isPayerHollow) {
+                final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
+                if (payerKeyVerification.failed()) {
+                    return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
+                }
+            }
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
         } catch (final InsufficientServiceFeeException e) {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
         } catch (final InsufficientNonFeeDebitsException e) {
@@ -653,15 +655,6 @@ public class HandleWorkflow {
             return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
-        // Check all signature verifications. This will also wait, if validation is still ongoing.
-        // If the payer is hollow the key will be null, so we skip the payer signature verification.
-        if (!isPayerHollow) {
-            final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
-            if (payerKeyVerification.failed()) {
-                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
-            }
-        }
-
         // verify all the keys
         for (final var key : preHandleResult.getRequiredKeys()) {
             final var verification = verifier.verificationFor(key);
@@ -675,6 +668,11 @@ public class HandleWorkflow {
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
+        }
+
+        // Check if pre-handle was successful
+        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
         }
 
         return new ValidationResult(SO_FAR_SO_GOOD, OK);
