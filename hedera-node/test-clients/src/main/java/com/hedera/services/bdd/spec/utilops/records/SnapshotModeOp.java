@@ -50,7 +50,6 @@ import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -290,6 +289,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             boolean placeholderFound = false;
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
+                if (parsedItem.isPropertyOverride()) {
+                    // Property overrides vary with the previous contents of 0.0.121
+                    continue;
+                }
                 final var body = parsedItem.itemBody();
                 if (body.hasNodeStakeUpdate()) {
                     // We cannot ever expect to match node stake update export sequencing
@@ -431,20 +434,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
 
-            final boolean isFileUpdate = FileUpdateTransactionBody.class.isAssignableFrom(expectedType);
-            final boolean isForFile121 =
-                    FileID.newBuilder().setFileNum(121).build().equals(expectedField.getValue());
-            // skip matching FileUpdate for properties file 121 since depending on if leaky tests are run before or not,
-            // the FileUpdate contents can be different
-            if (isFileUpdate && isForFile121) {
-                return;
-            }
-
             if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
-                //                System.out.println("YES");
                 continue;
             }
-            //            System.out.println("NO");
             matchValues(
                     expectedName,
                     expectedField.getValue(),
