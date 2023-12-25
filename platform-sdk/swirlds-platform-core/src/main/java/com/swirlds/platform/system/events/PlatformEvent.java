@@ -18,8 +18,10 @@ package com.swirlds.platform.system.events;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import com.swirlds.platform.event.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * @deprecated This interface will be removed at a later date. Use {@link Event} or {@link ConsensusEvent} instead.
@@ -64,14 +66,6 @@ public interface PlatformEvent extends ConsensusEvent {
     Instant getConsensusTimestamp();
 
     /**
-     * Node ID of the otherParent. null if otherParent doesn't exist.
-     *
-     * @return Other parent event's ID
-     */
-    @Nullable
-    NodeId getOtherId();
-
-    /**
      * This event's parent event. null if none exists.
      *
      * @return The parent event of this event
@@ -83,7 +77,8 @@ public interface PlatformEvent extends ConsensusEvent {
      *
      * @return The other parent event
      */
-    PlatformEvent getOtherParent();
+    @NonNull
+    List<EventImpl> getOtherParents();
 
     /**
      * This event's generation, which is 1 plus max of parents' generations.

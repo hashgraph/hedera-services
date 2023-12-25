@@ -19,11 +19,11 @@ package com.swirlds.platform.event;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -101,8 +101,10 @@ public final class EventStringBuilder {
         if (isNull()) {
             return this;
         }
-        sb.append(" op");
-        appendShortEvent(unhashedData.getOtherId(), hashedData.getOtherParentGen(), hashedData.getOtherParentHash());
+        for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
+            sb.append(" op");
+            appendShortEvent(otherParent.getCreator(), otherParent.getGeneration(), otherParent.getHash());
+        }
         return this;
     }
 

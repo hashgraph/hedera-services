@@ -31,13 +31,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements BaseEvent, ChatterEvent {
+public class GossipEvent implements BaseEvent, ChatterEvent, Iterable<EventDescriptor> {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
     private static final int MAX_SIG_LENGTH = 384;
 
@@ -97,8 +98,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -156,8 +155,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
             final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
             unhashedData = new BaseEventUnhashedData(null, signature);
         }
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         timeReceived = Instant.now();
     }
 
@@ -232,6 +229,18 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     public void setSenderId(@NonNull final NodeId senderId) {
         this.senderId = senderId;
+    }
+
+    /**
+     * Get an iterator over this event's parents. Iteration order is self parent (if present) followed by other parents
+     * in the order they appear in the serialized event.
+     *
+     * @return an iterator over this event's parents
+     */
+    @NonNull
+    @Override
+    public Iterator<EventDescriptor> iterator() {
+        return new GossipEventParentIterator(this);
     }
 
     /**

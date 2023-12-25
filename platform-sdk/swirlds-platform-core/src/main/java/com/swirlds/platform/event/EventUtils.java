@@ -19,7 +19,6 @@ package com.swirlds.platform.event;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.PlatformEvent;

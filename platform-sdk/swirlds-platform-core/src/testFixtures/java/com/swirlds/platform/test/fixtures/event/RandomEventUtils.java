@@ -21,7 +21,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
@@ -122,7 +123,7 @@ public class RandomEventUtils {
                 BaseEventHashedData hashedData,
                 BaseEventUnhashedData unhashedData,
                 EventImpl selfParent,
-                EventImpl otherParent);
+                List<EventImpl> otherParents);
     }
 
     public static <T extends EventImpl> T randomEvent(
@@ -148,7 +149,7 @@ public class RandomEventUtils {
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
                 otherParent != null ? otherParent.getCreatorId() : NodeId.UNDEFINED_NODE_ID, sig);
 
-        return constructor.construct(hashedData, unhashedData, selfParent, otherParent);
+        return constructor.construct(hashedData, unhashedData, selfParent, List.of(otherParent));
     }
 
     /**
@@ -173,7 +174,7 @@ public class RandomEventUtils {
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
                 otherParent != null ? otherParent.getCreatorId() : NodeId.UNDEFINED_NODE_ID, sig);
 
-        return new IndexedEvent(hashedData, unhashedData, selfParent, otherParent);
+        return new IndexedEvent(hashedData, unhashedData, selfParent, List.of(otherParent));
     }
 
     public static BaseEventHashedData randomEventHashedData(

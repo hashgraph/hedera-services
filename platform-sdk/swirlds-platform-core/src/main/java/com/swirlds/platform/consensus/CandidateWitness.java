@@ -19,7 +19,7 @@ package com.swirlds.platform.consensus;
 import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 
 import com.swirlds.common.utility.IntReference;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;

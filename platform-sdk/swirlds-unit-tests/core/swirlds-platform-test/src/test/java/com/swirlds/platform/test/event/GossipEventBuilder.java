@@ -21,8 +21,8 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -32,6 +32,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 public class GossipEventBuilder {
@@ -239,7 +240,7 @@ public class GossipEventBuilder {
     }
 
     public EventImpl buildEventImpl() {
-        final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), getOtherParentImpl());
+        final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), List.of(getOtherParentImpl()));
         event.setConsensus(consensus);
         return event;
     }

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.observers;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 
 public class PreConsensusObserver extends SimpleEventTracker implements PreConsensusEventObserver {

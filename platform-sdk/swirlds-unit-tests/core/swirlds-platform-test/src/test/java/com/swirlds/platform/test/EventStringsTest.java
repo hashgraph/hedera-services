@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -72,11 +72,11 @@ class EventStringsTest {
         BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(new NodeId(opId), new byte[0]);
         printAssert(
                 EventStrings.toShortString(new EventImpl(hashedData, unhashedData)),
-                String.format("%d,%d", id, BaseEventHashedData.calculateGeneration(spGen, opGen)),
+                String.format("%d,%d", id, hashedData.getGeneration()),
                 "should have creator and generation");
         printAssert(
                 EventStrings.toShortString(new GossipEvent(hashedData, unhashedData)),
-                String.format("%d,%d", id, BaseEventHashedData.calculateGeneration(spGen, opGen)),
+                String.format("%d,%d", id, hashedData.getGeneration()),
                 "should have creator and generation");
         printAssert(
                 EventStrings.toMediumString(new EventImpl(hashedData, unhashedData)),

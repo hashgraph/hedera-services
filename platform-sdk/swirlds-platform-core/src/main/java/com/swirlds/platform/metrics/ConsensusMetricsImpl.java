@@ -29,7 +29,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.stats.AverageAndMax;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -128,10 +128,10 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      * @param selfId  the {@link NodeId} of this node
      * @param metrics a reference to the metrics-system
      * @throws NullPointerException if any of the following parameters are {@code null}.
-     *     <ul>
-     *       <li>{@code selfId}</li>
-     *       <li>{@code metrics}</li>
-     *     </ul>
+     *                              <ul>
+     *                                <li>{@code selfId}</li>
+     *                                <li>{@code metrics}</li>
+     *                              </ul>
      */
     public ConsensusMetricsImpl(final NodeId selfId, final Metrics metrics) {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");

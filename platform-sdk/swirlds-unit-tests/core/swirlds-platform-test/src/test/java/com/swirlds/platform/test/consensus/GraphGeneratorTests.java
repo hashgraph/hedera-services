@@ -177,7 +177,10 @@ public class GraphGeneratorTests {
 
         int count = 0;
         for (final IndexedEvent event : events) {
-            if (Objects.equals(event.getOtherId(), nodeId)) {
+            if (!event.getOtherParents().isEmpty()) {
+                continue;
+            }
+            if (Objects.equals(event.getOtherParents().get(0).getCreatorId(), nodeId)) {
                 count++;
             }
         }

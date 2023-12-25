@@ -162,7 +162,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      * @return the other parent's NodeId
      */
     @Nullable
-    public NodeId getOtherId() {
+    public NodeId getOtherId() { // TODO remove test only
         return otherId;
     }
 
@@ -173,23 +173,5 @@ public class BaseEventUnhashedData implements SelfSerializable {
      */
     public byte[] getSignature() {
         return signature;
-    }
-
-    /**
-     * Synchronize the creator data between the hashed event's other parent data and the creatorId.  This method is to
-     * support backwards compatibility with the previous event serialization format.
-     *
-     * @param event the event to update
-     * @deprecated This method should be deleted when we are no longer supporting the previous event serialization
-     * format.
-     */
-    public void updateOtherParentEventDescriptor(@NonNull final BaseEventHashedData event) {
-        if (event.hasOtherParent()) {
-            if (otherId == null) {
-                otherId = event.getOtherParents().get(0).getCreator();
-            } else {
-                event.getOtherParents().get(0).setCreator(otherId);
-            }
-        }
     }
 }
