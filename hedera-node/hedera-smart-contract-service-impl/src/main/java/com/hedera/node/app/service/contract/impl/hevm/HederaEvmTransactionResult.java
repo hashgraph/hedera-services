@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
@@ -83,6 +84,7 @@ public record HederaEvmTransactionResult(
     private static final Bytes INSUFFICIENT_PAYER_BALANCE_REASON = Bytes.wrap(INSUFFICIENT_PAYER_BALANCE.name());
     private static final Bytes WRONG_NONCE_REASON = Bytes.wrap(WRONG_NONCE.name());
     private static final Bytes CONTRACT_EXECUTION_EXCEPTION_REASON = Bytes.wrap(CONTRACT_EXECUTION_EXCEPTION.name());
+    private static final Bytes INVALID_ACCOUNT_ID_REASON = Bytes.wrap(INVALID_ACCOUNT_ID.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -157,6 +159,8 @@ public record HederaEvmTransactionResult(
                 return INSUFFICIENT_PAYER_BALANCE;
             } else if (revertReason.equals(CONTRACT_EXECUTION_EXCEPTION_REASON)) {
                 return CONTRACT_EXECUTION_EXCEPTION;
+            } else if (revertReason.equals(INVALID_ACCOUNT_ID_REASON)) {
+                return INVALID_ACCOUNT_ID;
             } else {
                 return CONTRACT_REVERT_EXECUTED;
             }

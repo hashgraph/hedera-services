@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.hevm;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
@@ -125,6 +126,12 @@ class HederaEvmTransactionResultTest {
     void finalStatusFromWrongNonceAbortTranslated() {
         final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), WRONG_NONCE);
         assertEquals(WRONG_NONCE, subject.finalStatus());
+    }
+
+    @Test
+    void finalStatusFromInvalidAccountIdAbortTranslated() {
+        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), INVALID_ACCOUNT_ID);
+        assertEquals(INVALID_ACCOUNT_ID, subject.finalStatus());
     }
 
     @Test

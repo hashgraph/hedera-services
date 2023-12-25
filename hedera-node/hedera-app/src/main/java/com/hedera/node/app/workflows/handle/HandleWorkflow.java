@@ -291,7 +291,7 @@ public class HandleWorkflow {
         // the user transaction
         blockRecordManager.advanceConsensusClock(consensusNow, state);
 
-        TransactionBody txBody = null;
+        TransactionBody txBody;
         AccountID payer = null;
         Fees fees = null;
         try {
