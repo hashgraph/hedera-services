@@ -172,6 +172,14 @@ public class FrameUtils {
         return frames.hasNext() ? Optional.of(frames.next()) : Optional.empty();
     }
 
+    /**
+     * Given a frame and an address, returns whether any frame in its
+     * stack has the given receiver address.
+     *
+     * @param frame the frame whose stack to travers
+     * @param address the receiver address to seek
+     * @return if the stack includes a frame with the given receive
+     */
     public static boolean stackIncludesActiveAddress(
             @NonNull final MessageFrame frame, @NonNull final Address address) {
         final var iter = frame.getMessageFrameStack().iterator();

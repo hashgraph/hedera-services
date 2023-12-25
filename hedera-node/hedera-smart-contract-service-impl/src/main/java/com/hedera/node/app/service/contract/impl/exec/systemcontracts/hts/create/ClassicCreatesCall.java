@@ -53,16 +53,14 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ClassicCreatesCall extends AbstractHtsCall {
-    private static final Logger logger = LogManager.getLogger(ClassicCreatesCall.class);
     /**
      * The mono-service stipulated gas cost for a token creation (remaining fee is collected by sent value)
      */
@@ -91,6 +89,8 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         this.nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
     }
 
+    private record LegacyActivation(long contractNum, Bytes pbjAddress, Address besuAddress) {}
+
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         if (frame.getValue().lessThan(Wei.of(nonGasCost))) {
@@ -108,7 +108,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         }
 
         final var treasuryAccount =
-                nativeOperations().getAccount(token.treasury().accountNum());
+                nativeOperations().getAccount(token.treasuryOrThrow().accountNumOrThrow());
         if (treasuryAccount == null) {
             return externalizeUnsuccessfulResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
@@ -116,23 +116,10 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             return externalizeUnsuccessfulResult(INVALID_EXPIRATION_TIME, gasCalculator.viewGasRequirement());
         }
 
-        final var property =
-                configOf(frame).getConfigData(ContractsConfig.class).keysLegacyActivations();
-        // @TODO converter to parse the data in more consumable way
-        final var propertyContractId =
-                Long.parseLong(property.substring(property.indexOf("[") + 1, property.indexOf("]")));
-        final var legacyActivationAddress =
-                com.hedera.pbj.runtime.io.buffer.Bytes.wrap(asEvmAddress(propertyContractId));
-
         // Choose a dispatch verification strategy based on whether the legacy activation address is active
-        final var dispatchStrategy = stackIncludesActiveAddress(frame, pbjToBesuAddress(legacyActivationAddress))
-                ? new EitherOrVerificationStrategy(
-                        verificationStrategy,
-                        new ActiveContractVerificationStrategy(
-                                propertyContractId, legacyActivationAddress, false, UseTopLevelSigs.NO))
-                : verificationStrategy;
+        final var dispatchVerificationStrategy = verificationStrategyFor(frame);
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticCreate, dispatchStrategy, spenderId, ContractCallRecordBuilder.class);
+                .dispatch(syntheticCreate, dispatchVerificationStrategy, spenderId, ContractCallRecordBuilder.class);
         recordBuilder.status(standardized(recordBuilder.status()));
 
         final var customFees =
@@ -146,19 +133,19 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
 
-            if (isFungible && customFees.size() == 0) {
+            if (isFungible && customFees.isEmpty()) {
                 encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
                         .encodeElements(
                                 (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
                                 headlongAddressOf(recordBuilder.tokenID()));
-            } else if (isFungible && customFees.size() > 0) {
+            } else if (isFungible && !customFees.isEmpty()) {
                 encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                         .getOutputs()
                         .encodeElements(
                                 (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
                                 headlongAddressOf(recordBuilder.tokenID()));
-            } else if (customFees.size() == 0) {
+            } else if (customFees.isEmpty()) {
                 encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .getOutputs()
                         .encodeElements(
@@ -175,11 +162,33 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         }
     }
 
+    private VerificationStrategy verificationStrategyFor(@NonNull final MessageFrame frame) {
+        final var legacyActivation = legacyActivationIn(frame);
+
+        // Choose a dispatch verification strategy based on whether the legacy
+        // activation address is active (somewhere on the stack)
+        return stackIncludesActiveAddress(frame, legacyActivation.besuAddress())
+                ? new EitherOrVerificationStrategy(
+                        verificationStrategy,
+                        new ActiveContractVerificationStrategy(
+                                legacyActivation.contractNum(),
+                                legacyActivation.pbjAddress(),
+                                false,
+                                UseTopLevelSigs.NO))
+                : verificationStrategy;
+    }
+
+    private LegacyActivation legacyActivationIn(@NonNull final MessageFrame frame) {
+        final var literal = configOf(frame).getConfigData(ContractsConfig.class).keysLegacyActivations();
+        final var contractNum = Long.parseLong(literal.substring(literal.indexOf("[") + 1, literal.indexOf("]")));
+        final var pbjAddress = com.hedera.pbj.runtime.io.buffer.Bytes.wrap(asEvmAddress(contractNum));
+        return new LegacyActivation(contractNum, pbjAddress, pbjToBesuAddress(pbjAddress));
+    }
+
     // @TODO extract externalizeResult() calls into a single location on a higher level
     private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
         final var result = gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
         final var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-
         enhancement
                 .systemOperations()
                 .externalizeResult(

@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
@@ -33,9 +35,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall;
@@ -59,9 +61,6 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
     @Mock
     private AddressIdConverter addressIdConverter;
-
-    @Mock
-    private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
     private ContractCallRecordBuilder recordBuilder;
@@ -274,6 +273,24 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     }
 
     @Test
+    void requiresNonGasCostToBeProvidedAsValue() {
+        commonGivens(200_000L, 99_999L, true);
+        given(recordBuilder.status()).willReturn(SUCCESS);
+        given(systemContractOperations.externalizePreemptedDispatch(any(), eq(INSUFFICIENT_TX_FEE)))
+                .willReturn(recordBuilder);
+
+        final var result = subject.execute(frame).fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+                        .getOutputs()
+                        .encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS)
+                        .array()),
+                result.getOutput());
+    }
+
+    @Test
     void createFungibleTokenUnhappyPathRevertsWithReason() {
         commonGivens();
         given(recordBuilder.status()).willReturn(TOKEN_HAS_NO_SUPPLY_KEY);
@@ -285,28 +302,38 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     }
 
     private void commonGivens() {
-        given(frame.getValue()).willReturn(Wei.ZERO);
+        commonGivens(0L, 0L, false);
+    }
+
+    private void commonGivens(long baseCost, long value, boolean shouldBePreempted) {
+        given(frame.getValue()).willReturn(Wei.of(value));
+        given(gasCalculator.canonicalPriceInTinybars(any(), any())).willReturn(baseCost);
+        System.out.println(gasCalculator.canonicalPriceInTinybars(TransactionBody.DEFAULT, AccountID.DEFAULT));
         stack.push(frame);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
-        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
+
+        if (!shouldBePreempted) {
+            given(frame.getMessageFrameStack()).willReturn(stack);
+            given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+            given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow()))
+                    .willReturn(ALIASED_SOMEBODY);
+            given(systemContractOperations.dispatch(
+                            any(TransactionBody.class),
+                            eq(verificationStrategy),
+                            eq(A_NEW_ACCOUNT_ID),
+                            eq(ContractCallRecordBuilder.class)))
+                    .willReturn(recordBuilder);
+        }
 
         subject = new ClassicCreatesCall(
-                systemContractGasCalculator,
+                gasCalculator,
                 mockEnhancement(),
                 PRETEND_CREATE_TOKEN,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);
 
-        given(systemContractOperations.dispatch(
-                        any(TransactionBody.class),
-                        eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
-                .willReturn(recordBuilder);
         lenient().when(recordBuilder.tokenID()).thenReturn(FUNGIBLE_TOKEN_ID);
     }
 }
