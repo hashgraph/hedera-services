@@ -77,18 +77,7 @@ public class StakePeriodManager {
         if (prevConsensusSecs != currentConsensusSecs) {
             currentStakePeriod = StakingRewardsApi.stakePeriodAt(consensusNow, stakingPeriodMins);
             prevConsensusSecs = currentConsensusSecs;
-            log.info(
-                    "ENTERING IF currentStakePeriod consensusNow {}, prevConsensusSecs {}, currentStakePeriod {}, stakingPeriodMins {}",
-                    consensusNow,
-                    prevConsensusSecs,
-                    currentStakePeriod,
-                    stakingPeriodMins);
         }
-        log.info(
-                "ENTERING currentStakePeriod consensusNow {}, prevConsensusSecs {}, currentStakePeriod {}",
-                consensusNow,
-                prevConsensusSecs,
-                currentStakePeriod);
         return currentStakePeriod;
     }
 
@@ -201,26 +190,10 @@ public class StakePeriodManager {
             long period = 0;
             if ((originalAccount != null && originalAccount.hasStakedAccountId()) || stakeMetaChanged) {
                 // We just started staking to a node today
-                period = currentStakePeriod(consensusNow);
-                log.info(
-                        "ENTERING IF: Updating stake period start for account {} (original: {}, rewarded: {}, stakeMetaChanged: {}), Period : {} ",
-                        modifiedAccount,
-                        originalAccount,
-                        rewarded,
-                        stakeMetaChanged,
-                        period);
-                return period;
+                return currentStakePeriod(consensusNow);
             } else if (rewarded) {
                 // If we were just rewarded, stake period start is yesterday
-                period = currentStakePeriod(consensusNow) - 1;
-                log.info(
-                        "ENTERING ELSE: Updating stake period start for account {} (original: {}, rewarded: {}, stakeMetaChanged: {}), Period : {} ",
-                        modifiedAccount,
-                        originalAccount,
-                        rewarded,
-                        stakeMetaChanged,
-                        period);
-                return period;
+                return currentStakePeriod(consensusNow) - 1;
             }
         }
         return -1;

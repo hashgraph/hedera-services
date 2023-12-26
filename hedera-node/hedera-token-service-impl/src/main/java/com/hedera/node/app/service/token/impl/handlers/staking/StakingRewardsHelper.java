@@ -97,14 +97,7 @@ public class StakingRewardsHelper {
         final var hasStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
         // We do this for backward compatibility with mono-service
         final var isCalledContract = modifiedAccount.smartContract();
-        final var isRewardSituation = (isCalledContract || hasBalanceChange || hasStakeMetaChanges);
-        log.info(
-                "isRewardSituation {}: isCalledContract {}, hasBalanceChange {}, hasStakeMetaChanges {}",
-                isRewardSituation,
-                isCalledContract,
-                hasBalanceChange,
-                hasStakeMetaChanges);
-        return isRewardSituation;
+        return (isCalledContract || hasBalanceChange || hasStakeMetaChanges);
     }
 
     /**

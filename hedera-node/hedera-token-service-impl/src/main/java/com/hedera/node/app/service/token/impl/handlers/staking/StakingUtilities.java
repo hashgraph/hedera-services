@@ -29,6 +29,7 @@ public class StakingUtilities {
     }
 
     public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
+    public static final long NO_STAKE_PERIOD_START = -1;
 
     public static long roundedToHbar(final long value) {
         return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;

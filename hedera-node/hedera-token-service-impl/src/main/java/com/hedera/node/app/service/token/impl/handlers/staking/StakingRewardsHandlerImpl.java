@@ -277,16 +277,10 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                                             originalAccount, stakingRewardStore, consensusNow)));
             final var stakePeriodStart = stakePeriodManager.startUpdateFor(
                     originalAccount, modifiedAccount, wasRewarded, containStakeMetaChanges, consensusNow);
-            log.info(
-                    "Account {} has earned {} tinybars in rewards with stakePeriodStart {}",
-                    id,
-                    reward,
-                    stakePeriodStart);
             if (stakePeriodStart != -1) {
                 final var copy = modifiedAccount.copyBuilder();
                 copy.stakePeriodStart(stakePeriodStart);
                 writableStore.put(copy.build());
-                log.info("Updated account {}", writableStore.get(modifiedAccount.accountId()));
             }
         }
     }
@@ -457,13 +451,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final var initialStakedToMe = account.stakedToMe();
             final var finalStakedToMe = initialStakedToMe + roundedFinalBalance;
             if (finalStakedToMe < 0) {
-                log.warn("StakedToMe for account {} is negative after reward distribution, set it to 0", stakee);
+                log.error("StakedToMe for account {} is negative after reward distribution, set it to 0", stakee);
             }
             final var copy = account.copyBuilder()
                     .stakedToMe(finalStakedToMe < 0 ? 0 : finalStakedToMe)
                     .build();
             writableStore.put(copy);
-            log.info("Updated stakedToMe for {} account, with {}", copy, finalStakedToMe);
         }
     }
 }

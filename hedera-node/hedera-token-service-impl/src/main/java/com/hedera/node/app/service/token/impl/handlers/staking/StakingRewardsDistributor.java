@@ -97,7 +97,8 @@ public class StakingRewardsDistributor {
                     } while (beneficiary.deleted());
                 }
             }
-            // Even if the account has decl;ineReward set, it should be in the rewardsPaid map with 0 value
+            // Even if the account has declineReward set or if reward is 0, it should still
+            // be added to the rewardsPaid map
             final var mutableBeneficiary = writableStore.get(beneficiary.accountId());
             // even if reward is zero it will be added to rewardsPaid
             if (reward > 0) {

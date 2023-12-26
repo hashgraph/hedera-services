@@ -64,13 +64,7 @@ public interface StakingRewardsApi {
             return 0L;
         }
         final var rewardSumHistory = nodeStakingInfo.rewardSumHistory();
-        final var reward = rewardFor(account, rewardSumHistory, currentStakePeriod, stakePeriodStart);
-        log.info(
-                "Account {} has earned {} tinybars in rewards with stakePeriodStart {}",
-                account,
-                reward,
-                stakePeriodStart);
-        return reward;
+        return rewardFor(account, rewardSumHistory, currentStakePeriod, stakePeriodStart);
     }
 
     /**
@@ -193,17 +187,13 @@ public interface StakingRewardsApi {
 
             // Two-step computation; first, the reward from the last period the account changed its
             // stake in...
-            final var reward = account.stakeAtStartOfLastRewardedPeriod()
+            return account.stakeAtStartOfLastRewardedPeriod()
                             / HBARS_TO_TINYBARS
                             * (rewardFromMinus1Sum - rewardFromSum)
                     // ...and second, the reward for all following periods
                     + totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromMinus1Sum);
-            log.info("Inside IF {}", reward);
-            return reward;
         } else {
-            final var reward = totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
-            log.info("Inside ELSE {}", reward);
-            return reward;
+            return totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
         }
     }
 

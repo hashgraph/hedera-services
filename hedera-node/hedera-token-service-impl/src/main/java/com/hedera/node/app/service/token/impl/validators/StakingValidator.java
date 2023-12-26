@@ -129,13 +129,8 @@ public class StakingValidator {
         // If the stakedId is not sentinel values, then validate the accountId is present in account store
         // or nodeId is valid
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
-            log.info("stakedAccountIdInOp {}", stakedAccountIdInOp);
             validateTrue(accountStore.getAccountById(requireNonNull(stakedAccountIdInOp)) != null, INVALID_STAKING_ID);
         } else if (stakedIdKind.equals("STAKED_NODE_ID")) {
-            log.info(
-                    "stakedNodeIdInOp {} , with info {} ",
-                    stakedNodeIdInOp,
-                    networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)));
             validateTrue(networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)) != null, INVALID_STAKING_ID);
         }
     }
