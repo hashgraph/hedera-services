@@ -21,13 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.errorMessageFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
@@ -67,7 +65,8 @@ public record HederaEvmTransactionResult(
         @Nullable ExceptionalHaltReason haltReason,
         @Nullable Bytes revertReason,
         @NonNull List<Log> logs,
-        @Nullable ContractStateChanges stateChanges) {
+        @Nullable ContractStateChanges stateChanges,
+        @Nullable ResponseCodeEnum finalStatus) {
     public HederaEvmTransactionResult {
         requireNonNull(senderId);
         requireNonNull(output);
@@ -82,9 +81,7 @@ public record HederaEvmTransactionResult(
     private static final Bytes MAX_CHILD_RECORDS_EXCEEDED_REASON = Bytes.wrap(MAX_CHILD_RECORDS_EXCEEDED.name());
     private static final Bytes INSUFFICIENT_TX_FEE_REASON = Bytes.wrap(INSUFFICIENT_TX_FEE.name());
     private static final Bytes INSUFFICIENT_PAYER_BALANCE_REASON = Bytes.wrap(INSUFFICIENT_PAYER_BALANCE.name());
-    private static final Bytes WRONG_NONCE_REASON = Bytes.wrap(WRONG_NONCE.name());
     private static final Bytes CONTRACT_EXECUTION_EXCEPTION_REASON = Bytes.wrap(CONTRACT_EXECUTION_EXCEPTION.name());
-    private static final Bytes INVALID_ACCOUNT_ID_REASON = Bytes.wrap(INVALID_ACCOUNT_ID.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -138,7 +135,9 @@ public record HederaEvmTransactionResult(
      * @return the status
      */
     public ResponseCodeEnum finalStatus() {
-        if (haltReason != null) {
+        if (finalStatus != null) {
+            return finalStatus;
+        } else if (haltReason != null) {
             return CustomExceptionalHaltReason.statusFor(haltReason);
         } else if (revertReason != null) {
             if (revertReason.equals(MAX_STORAGE_EXCEEDED_REASON)) {
@@ -153,14 +152,10 @@ public record HederaEvmTransactionResult(
                 return MAX_CHILD_RECORDS_EXCEEDED;
             } else if (revertReason.equals(INSUFFICIENT_TX_FEE_REASON)) {
                 return INSUFFICIENT_TX_FEE;
-            } else if (revertReason.equals(WRONG_NONCE_REASON)) {
-                return WRONG_NONCE;
             } else if (revertReason.equals(INSUFFICIENT_PAYER_BALANCE_REASON)) {
                 return INSUFFICIENT_PAYER_BALANCE;
             } else if (revertReason.equals(CONTRACT_EXECUTION_EXCEPTION_REASON)) {
                 return CONTRACT_EXECUTION_EXCEPTION;
-            } else if (revertReason.equals(INVALID_ACCOUNT_ID_REASON)) {
-                return INVALID_ACCOUNT_ID;
             } else {
                 return CONTRACT_REVERT_EXECUTED;
             }
@@ -212,7 +207,8 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 requireNonNull(logs),
-                stateChanges);
+                stateChanges,
+                null);
     }
 
     /**
@@ -238,7 +234,8 @@ public record HederaEvmTransactionResult(
                 frame.getExceptionalHaltReason().orElse(null),
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
-                stateReadsFrom(frame));
+                stateReadsFrom(frame),
+                null);
     }
 
     /**
@@ -265,6 +262,7 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.wrap(reason.name()),
                 Collections.emptyList(),
+                null,
                 null);
     }
 
@@ -293,7 +291,8 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.wrap(reason.name().getBytes()),
                 List.of(),
-                null);
+                null,
+                reason);
     }
 
     private ContractFunctionResult withMaybeEthFields(
