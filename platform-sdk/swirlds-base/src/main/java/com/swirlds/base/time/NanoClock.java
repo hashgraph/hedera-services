@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb;
+package com.swirlds.base.time;
 
 import java.time.Clock;
 import java.time.Instant;
