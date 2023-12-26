@@ -587,8 +587,9 @@ public class SwirldsPlatform implements Platform {
 
         components.add(stateManagementComponent);
 
+        //TODO move to wiring
         final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
-                new PreconsensusSystemTransactionManager();
+                new PreconsensusSystemTransactionManager(null);
         preconsensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
 
@@ -638,7 +639,6 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 currentAddressBook,
                 selfId,
-                preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 platformStatusManager,

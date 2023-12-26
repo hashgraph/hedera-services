@@ -98,6 +98,8 @@ public class PlatformCoordinator {
      * Future work: this method should be expanded to coordinate the clearing of the entire system
      */
     public void clear() {
+        //TODO clear collector
+
         // Phase 1: pause
         // Pause the linked event intake and event creator, to prevent any new events from making it through the intake
         // pipeline.

@@ -20,6 +20,7 @@ import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionHandler;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
@@ -36,7 +37,7 @@ class PreConsensusSystemTransactionManagerTests {
             throw new IllegalStateException("this is intentionally thrown");
         };
 
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager();
+        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager(new NoOpMetrics());
         manager.addHandler(DummySystemTransaction.class, consumer);
 
         assertDoesNotThrow(() -> manager.handleEvent(newDummyEvent(1)));
@@ -50,7 +51,7 @@ class PreConsensusSystemTransactionManagerTests {
         PreconsensusSystemTransactionHandler<DummySystemTransaction> consumer =
                 (dummySystemTransaction, aLong) -> handleCount.getAndIncrement();
 
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager();
+        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager(new NoOpMetrics());
         manager.addHandler(DummySystemTransaction.class, consumer);
 
         manager.handleEvent(newDummyEvent(0));
@@ -63,7 +64,7 @@ class PreConsensusSystemTransactionManagerTests {
     @Test
     @DisplayName("tests handling system transactions, where no handle method has been defined")
     void testNoHandleMethod() {
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager();
+        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager(new NoOpMetrics());
 
         assertDoesNotThrow(() -> manager.handleEvent(newDummyEvent(1)), "should not throw");
     }

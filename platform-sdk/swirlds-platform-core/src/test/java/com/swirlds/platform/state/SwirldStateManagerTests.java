@@ -55,7 +55,6 @@ class SwirldStateManagerTests {
                 platformContext,
                 addressBook,
                 new NodeId(0L),
-                mock(PreconsensusSystemTransactionManager.class),
                 mock(ConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
