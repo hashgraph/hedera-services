@@ -189,6 +189,14 @@ public interface EvmFrameState {
     Hash getTokenRedirectCodeHash(@NonNull Address address);
 
     /**
+     * Returns the native account with the given number.
+     *
+     * @param number the account number
+     * @return the native account
+     */
+    com.hedera.hapi.node.state.token.Account getNativeAccount(long number);
+
+    /**
      * Returns the nonce for the account with the given number.
      *
      * @param number the account number
