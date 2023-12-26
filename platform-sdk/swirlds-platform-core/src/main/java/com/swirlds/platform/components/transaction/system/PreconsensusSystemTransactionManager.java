@@ -16,12 +16,16 @@
 
 package com.swirlds.platform.components.transaction.system;
 
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +49,18 @@ public class PreconsensusSystemTransactionManager {
      */
     private final Map<Class<?>, List<PreconsensusSystemTransactionHandler<SystemTransaction>>> handlers =
             new HashMap<>();
+
+    /** The amount of time it takes to handle a single event from the pre-consensus event queue. */
+    private final AverageTimeStat preConsHandleTime;
+
+    public PreconsensusSystemTransactionManager(@NonNull final Metrics metrics) {
+        preConsHandleTime = new AverageTimeStat(
+                metrics,
+                ChronoUnit.MICROS,
+                INTERNAL_CATEGORY,
+                "preConsHandleMicros",
+                "average time it takes to handle a pre-consensus event from q4 (in microseconds)");
+    }
 
     /**
      * Add a handle method
@@ -102,12 +118,18 @@ public class PreconsensusSystemTransactionManager {
      * @param event the pre-consensus event
      */
     public void handleEvent(@NonNull final EventImpl event) {
-        // no pre-consensus handling methods have been registered
-        if (handlers.isEmpty()) {
-            return;
-        }
+        final long startTime = System.nanoTime();
 
-        event.systemTransactionIterator()
-                .forEachRemaining(transaction -> handleTransaction(event.getCreatorId(), transaction));
+        try{
+            // no pre-consensus handling methods have been registered
+            if (handlers.isEmpty() || event.isEmpty()) {
+                return;
+            }
+
+            event.systemTransactionIterator()
+                    .forEachRemaining(transaction -> handleTransaction(event.getCreatorId(), transaction));
+        }finally {
+            preConsHandleTime.update(startTime, System.nanoTime());
+        }
     }
 }

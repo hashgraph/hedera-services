@@ -23,7 +23,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -72,11 +71,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private final UptimeTracker uptimeTracker;
 
     /**
-     * Handles system transactions pre-consensus
-     */
-    private final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
-
-    /**
      * Handles system transactions post-consensus
      */
     private final ConsensusSystemTransactionManager consensusSystemTransactionManager;
@@ -92,7 +86,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      * @param platformContext                      the platform context
      * @param addressBook                          the address book
      * @param selfId                               this node's id
-     * @param preconsensusSystemTransactionManager the manager for pre-consensus system transactions
      * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
      * @param swirldStateMetrics                   metrics related to SwirldState
      * @param statusActionSubmitter                enables submitting platform status actions
@@ -103,7 +96,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
             @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -113,7 +105,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.preconsensusSystemTransactionManager = Objects.requireNonNull(preconsensusSystemTransactionManager);
         this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(statusActionSubmitter);
@@ -159,19 +150,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
 
             stats.preHandleTime(startTime, System.nanoTime());
         }
-    }
-
-    /**
-     * Prehandles system transactions.
-     *
-     * @param event the event to handle
-     */
-    public void prehandleSystemTransactions(final EventImpl event) {
-        final long startTime = System.nanoTime();
-
-        preconsensusSystemTransactionManager.handleEvent(event);
-
-        stats.preConsensusHandleTime(startTime, System.nanoTime());
     }
 
     /**
