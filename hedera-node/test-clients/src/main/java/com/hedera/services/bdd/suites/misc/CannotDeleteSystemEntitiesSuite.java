@@ -182,6 +182,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
+    @BddMethodIsNotATest
     final HapiSpec normalUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount) {
         return defaultHapiSpec("normalUserCannotDeleteSystemAccounts")
                 .given(newKeyNamed("normalKey"), cryptoCreate("unluckyReceiver").balance(0L))
