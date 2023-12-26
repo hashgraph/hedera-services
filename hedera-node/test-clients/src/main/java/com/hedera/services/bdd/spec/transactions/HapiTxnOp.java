@@ -183,7 +183,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                         // lifecycle has ended
                         return true;
                     } else {
-                        throw new HapiTxnCheckStateException("Unable to resolve txn status!");
+                        throw new HapiTxnCheckStateException("Unable to resolve txn status!" + msg);
                     }
                 }
             }

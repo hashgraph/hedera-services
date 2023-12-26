@@ -193,6 +193,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
 
             handle = builder.start().toHandle();
         } catch (Exception e) {
+            logger.error(e);
             throw new RuntimeException("node " + nodeId + ": Unable to start!", e);
         }
     }
