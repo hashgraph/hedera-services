@@ -107,7 +107,6 @@ public class StakingPeriodTimeHook {
             @NonNull final TokenContext tokenContext) {
         final var stakingPeriod =
                 tokenContext.configuration().getConfigData(StakingConfig.class).periodMins();
-        logger.info("Staking period is {} minutes", stakingPeriod);
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {

@@ -344,12 +344,7 @@ public class StakingSuite extends HapiSuite {
         final long bobPendingRewardsCase1 = rewardSumHistoryCase1 * (ONE_HUNDRED_HBARS / TINY_PARTS_PER_WHOLE);
 
         return defaultHapiSpec("SecondOrderRewardSituationsWork")
-                .given(
-//                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
-//                        overriding(PER_HBAR_REWARD_RATE, "" + 3_333_333),
-//                        overriding(REWARD_BALANCE_THRESHOLD, "" + 0),
-//                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS))
-                )
+                .given()
                 .when( // period 1
                         cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(BOB).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
@@ -404,6 +399,64 @@ public class StakingSuite extends HapiSuite {
                                 .hasChildRecordCount(0)
                                 .hasStakingFeesPaid()
                                 //                                .hasPaidStakingRewards(List.of())
+                                .logged());
+    }
+
+    @HapiTest
+    @Order(13)
+    final HapiSpec pendingRewardsPaidBeforeStakedToMeUpdates() {
+        return defaultHapiSpec("PendingRewardsPaidBeforeStakedToMeUpdates")
+                .given(
+                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
+                        overriding(PER_HBAR_REWARD_RATE, "" + ONE_HBAR),
+                        overriding(REWARD_BALANCE_THRESHOLD, "" + 0),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)))
+                .when( // period 1
+                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(CAROL).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
+                .then(
+                        /* --- period 2 - paid_rewards 0 for first period --- */
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
+                                .via(FIRST_TRANSFER),
+                        getTxnRecord(FIRST_TRANSFER)
+                                .andAllChildRecords()
+                                .countStakingRecords()
+                                .stakingFeeExempted()
+                                .hasChildRecordCount(1)
+                                .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
+                        // alice - 100, carol - 100
+                        /* --- third period reward eligible from period 2--- */
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                        cryptoUpdate(CAROL).newStakedAccountId(ALICE).via("stakedIdUpdate"),
+                        getTxnRecord("stakedIdUpdate")
+                                .andAllChildRecords()
+                                .hasChildRecordCount(1)
+                                .countStakingRecords()
+                                .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+                                .hasPaidStakingRewardsCount(2)
+                                .hasPaidStakingRewards(
+                                        List.of(Pair.of(ALICE, 100 * ONE_HBAR), Pair.of(CAROL, 100 * ONE_HBAR))),
+                        // alice - 200, stakedToMe - 200
+                        // carol - 200
+                        /* fourth period */
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
+                                .via("fourthPeriod"),
+                        getTxnRecord("fourthPeriod")
+                                .andAllChildRecords()
+                                .countStakingRecords()
+                                .logged(),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HBAR)).via("aliceFirstXfer"),
+                        getTxnRecord("aliceFirstXfer")
+                                .hasPaidStakingRewards(List.of(Pair.of(ALICE, 100 * ONE_HBAR)))
+                                .logged(),
+                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+
+                        /* fifth period */
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HBAR)).via("aliceSecondXfer"),
+                        getTxnRecord("aliceSecondXfer")
+                                .hasPaidStakingRewards(List.of(Pair.of(ALICE, 400 * ONE_HBAR)))
                                 .logged());
     }
 

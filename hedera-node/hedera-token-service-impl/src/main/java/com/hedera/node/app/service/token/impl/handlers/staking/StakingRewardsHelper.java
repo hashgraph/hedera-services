@@ -59,7 +59,7 @@ public class StakingRewardsHelper {
      * @param specialRewardReceivers
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
-    public static Set<AccountID> getPossibleRewardReceivers(
+    public static Set<AccountID> getAllRewardReceivers(
             final WritableAccountStore writableAccountStore, final Set<AccountID> specialRewardReceivers) {
         final var possibleRewardReceivers = new LinkedHashSet<>(specialRewardReceivers);
         for (final AccountID id : writableAccountStore.modifiedAccountsInState()) {

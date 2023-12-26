@@ -316,7 +316,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final StakingRewardsHandlerImpl impl = new StakingRewardsHandlerImpl(rewardsPayer, manager, stakeInfoHelper);
 
-        assertThat(impl.shouldUpdateStakeStart(account, true, 0L, readableRewardsStore, consensusInstant))
+        assertThat(impl.shouldUpdateStakeAtStartOfLastRewardPeriod(
+                        account, true, 0L, readableRewardsStore, consensusInstant))
                 .isTrue();
     }
 

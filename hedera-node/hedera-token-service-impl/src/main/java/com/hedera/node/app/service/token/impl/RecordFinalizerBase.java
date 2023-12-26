@@ -71,14 +71,12 @@ public class RecordFinalizerBase {
             final var netHbarChange = modifiedAcct.tinybarBalance() - persistedBalance;
             if (netHbarChange != 0) {
                 netHbarBalance += netHbarChange;
-                log.info("Net hbar change for account {} is {}", modifiedAcctId, netHbarChange);
                 hbarChanges.put(modifiedAcctId, netHbarChange);
             }
         }
         // Since this is a finalization handler, we should have already succeeded in handling the transaction in a
         // handler before getting here. Therefore, if the sum is non-zero, something went wrong, and we'll respond with
         // FAIL_INVALID
-        log.info("Net hbar balance {}", netHbarBalance);
         validateTrue(netHbarBalance == 0, FAIL_INVALID);
 
         return hbarChanges;
