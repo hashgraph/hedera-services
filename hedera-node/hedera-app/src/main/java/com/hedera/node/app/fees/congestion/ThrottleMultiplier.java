@@ -100,7 +100,7 @@ public class ThrottleMultiplier {
 
     /**
      * Rebuilds the object's internal state based on its dependencies expectations.
-     * Must be called every time when the suppliers {@link throttleSource} or {@link multiplierSupplier} are updated.
+     * Must be called every time when the suppliers {@code throttleSource} or {@code multiplierSupplier} are updated.
      */
     public void resetExpectations() {
         activeThrottles = throttleSource.get();

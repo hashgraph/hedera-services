@@ -32,7 +32,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.9"
+        default: "21.0.1"
   push:
     branches:
       - develop
@@ -55,7 +55,7 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: ${{ inputs.java-distribution || 'temurin' }}
-      java-version: ${{ inputs.java-version || '17.0.9' }}
+      java-version: ${{ inputs.java-version || '21.0.1' }}
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
