@@ -420,6 +420,7 @@ jobs:
           name: HAPI Test (Restart) Network Logs
           path: |
             hedera-node/test-clients/build/hapi-test/**/output/**
+            hedera-node/test-clients/build/hapi-test/*.log
 
       - name: HAPI Testing (Node Death Reconnect)
         id: gradle-hapi-nd-reconnect
@@ -442,9 +443,10 @@ jobs:
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && inputs.enable-network-log-capture && !cancelled() }}
         with:
-          name: HAPI Test (Time Consuming) Network Logs
+          name: HAPI Test (Node Death Reconnect) Network Logs
           path: |
             hedera-node/test-clients/build/hapi-test/**/output/**
+            hedera-node/test-clients/build/hapi-test/*.log
 
       - name: E2E Testing
         id: gradle-eet
