@@ -39,9 +39,6 @@ import java.util.Objects;
  */
 public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
 
-    // TODO refactor platform code to not directly call into this class
-    // TODO does this deserve to have an interface for getters and setters?
-
     public static final long CLASS_ID = 0x52cef730a11cb6dfL;
 
     /**
@@ -72,8 +69,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     private long round = GENESIS_ROUND;
 
     /**
-     * running hash of the hashes of all consensus events have there been throughout all of history, up through the
-     * round received that this SignedState represents.
+     * The running hash of the hashes of all events have reached consensus up through the round that this SignedState
+     * represents.
      */
     private Hash hashEventsCons;
 
@@ -81,11 +78,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * the consensus timestamp for this signed state
      */
     private Instant consensusTimestamp;
-
-    /**
-     * the minimum generation of famous witnesses per round
-     */
-    //    private List<MinGenInfo> minGenInfo; // TOD make sure it's ok to remove this
 
     /**
      * The version of the application software that was responsible for creating this state.
@@ -119,7 +111,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     private Instant freezeTime;
 
     /**
-     * the last freezeTime based on which the nodes were frozen
+     * the last time when a freeze was performed
      */
     private Instant lastFrozenTime;
 
@@ -235,6 +227,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the creation version
      */
+    @Nullable
     public SoftwareVersion getCreationSoftwareVersion() {
         return creationSoftwareVersion;
     }
@@ -244,14 +237,14 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param creationVersion the creation version
      */
-    public void setCreationSoftwareVersion(final SoftwareVersion creationVersion) {
-        this.creationSoftwareVersion = creationVersion;
+    public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
+        this.creationSoftwareVersion = Objects.requireNonNull(creationVersion);
     }
 
     /**
      * Get the address book.
      */
-    @NonNull
+    @Nullable
     public AddressBook getAddressBook() {
         return addressBook;
     }
@@ -305,7 +298,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return a running hash of events
      */
-    public Hash getHashEventsCons() {
+    @Nullable
+    public Hash getRunningEventHash() {
         return hashEventsCons;
     }
 
@@ -314,8 +308,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param hashEventsCons a running hash of events
      */
-    public void setHashEventsCons(final Hash hashEventsCons) {
-        this.hashEventsCons = hashEventsCons;
+    public void setHashEventsCons(@NonNull final Hash hashEventsCons) {
+        this.hashEventsCons = Objects.requireNonNull(hashEventsCons);
     }
 
     /**
@@ -324,6 +318,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return a consensus timestamp
      */
+    @Nullable
     public Instant getConsensusTimestamp() {
         return consensusTimestamp;
     }
@@ -334,11 +329,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param consensusTimestamp a consensus timestamp
      */
-    public void setConsensusTimestamp(final Instant consensusTimestamp) {
-        this.consensusTimestamp = consensusTimestamp;
+    public void setConsensusTimestamp(@NonNull final Instant consensusTimestamp) {
+        this.consensusTimestamp = Objects.requireNonNull(consensusTimestamp);
     }
-
-    // TODO remove methods that are not simple getters and setters
 
     /**
      * Get the minimum event generation for each node within this state.
@@ -359,7 +352,12 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        for (final MinGenInfo info : getMinGenInfo()) {
+        final List<MinGenInfo> minGenInfo = getMinGenInfo();
+        if (minGenInfo == null) {
+            throw new IllegalStateException("No MinGen info found in state for round " + round);
+        }
+
+        for (final MinGenInfo info : minGenInfo) {
             if (info.round() == round) {
                 return info.minimumGeneration();
             }
@@ -373,6 +371,12 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
+
+        final List<MinGenInfo> minGenInfo = getMinGenInfo();
+        if (minGenInfo == null) {
+            throw new IllegalStateException("No MinGen info found in state for round " + round);
+        }
+
         return getMinGenInfo().stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
@@ -384,7 +388,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param epochHash the epoch hash of this state
      */
-    public void setEpochHash(final Hash epochHash) {
+    public void setEpochHash(@Nullable final Hash epochHash) {
         this.epochHash = epochHash;
     }
 
@@ -403,7 +407,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param nextEpochHash the next epoch hash of this state
      */
-    public void setNextEpochHash(final Hash nextEpochHash) {
+    public void setNextEpochHash(@Nullable final Hash nextEpochHash) {
         this.nextEpochHash = nextEpochHash;
     }
 
@@ -412,6 +416,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the next epoch hash of this state
      */
+    @Nullable
     public Hash getNextEpochHash() {
         return nextEpochHash;
     }
@@ -446,6 +451,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * @return the consensus snapshot for this round
      */
+    @Nullable
     public ConsensusSnapshot getSnapshot() {
         return snapshot;
     }
@@ -453,8 +459,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * @param snapshot the consensus snapshot for this round
      */
-    public void setSnapshot(final ConsensusSnapshot snapshot) {
-        this.snapshot = snapshot;
+    public void setSnapshot(@NonNull final ConsensusSnapshot snapshot) {
+        this.snapshot = Objects.requireNonNull(snapshot);
     }
 
     /**
@@ -493,7 +499,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param lastFrozenTime the last freezeTime based on which the nodes were frozen
      */
-    @Nullable
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         this.lastFrozenTime = lastFrozenTime;
     }
@@ -503,7 +508,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the uptime data
      */
-    @NonNull
+    @Nullable
     public UptimeDataImpl getUptimeData() {
         return uptimeData;
     }

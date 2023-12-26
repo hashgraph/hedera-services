@@ -462,7 +462,7 @@ public class SignedState implements SignedStateInfo {
      * @return the hash of the consensus events in this state
      */
     public @NonNull Hash getHashEventsCons() {
-        return state.getPlatformState().getHashEventsCons();
+        return state.getPlatformState().getRunningEventHash();
     }
 
     /**

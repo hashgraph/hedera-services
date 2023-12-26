@@ -41,7 +41,7 @@ public final class NetworkLogicModule {
 
     @Provides
     @Singleton
-    public static Supplier<PlatformState> provideDualState(PlatformStateAccessor platformStateAccessor) {
+    public static Supplier<PlatformState> providePlatformState(PlatformStateAccessor platformStateAccessor) {
         return platformStateAccessor::getPlatformState;
     }
 

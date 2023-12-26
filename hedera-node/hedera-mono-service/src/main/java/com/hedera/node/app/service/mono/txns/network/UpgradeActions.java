@@ -100,18 +100,18 @@ public class UpgradeActions {
     }
 
     public void scheduleFreezeOnlyAt(final Instant freezeTime) {
-        withNonNullDualState("schedule freeze", ds -> ds.setFreezeTime(freezeTime));
+        withNonNullPlatformState("schedule freeze", ds -> ds.setFreezeTime(freezeTime));
     }
 
     public void scheduleFreezeUpgradeAt(final Instant freezeTime) {
-        withNonNullDualState("schedule freeze", ds -> {
+        withNonNullPlatformState("schedule freeze", ds -> {
             ds.setFreezeTime(freezeTime);
             writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
         });
     }
 
     public void abortScheduledFreeze() {
-        withNonNullDualState("abort freeze", ds -> {
+        withNonNullPlatformState("abort freeze", ds -> {
             ds.setFreezeTime(null);
             writeCheckMarker(FREEZE_ABORTED_MARKER);
         });
@@ -119,7 +119,7 @@ public class UpgradeActions {
 
     public boolean isFreezeScheduled() {
         final var ans = new AtomicBoolean();
-        withNonNullDualState("check freeze schedule", ds -> {
+        withNonNullPlatformState("check freeze schedule", ds -> {
             final var freezeTime = ds.getFreezeTime();
             ans.set(freezeTime != null && !freezeTime.equals(ds.getLastFrozenTime()));
         });
@@ -183,10 +183,10 @@ public class UpgradeActions {
         extractSoftwareUpgrade(archiveData).join();
     }
 
-    private void withNonNullDualState(final String actionDesc, final Consumer<PlatformState> action) {
-        final var curDualState = platformState.get();
-        Objects.requireNonNull(curDualState, "Cannot " + actionDesc + " without access to the dual state");
-        action.accept(curDualState);
+    private void withNonNullPlatformState(final String actionDesc, final Consumer<PlatformState> action) {
+        final var curPlatformState = platformState.get();
+        Objects.requireNonNull(curPlatformState, "Cannot " + actionDesc + " without access to the platform state");
+        action.accept(curPlatformState);
     }
 
     private void writeCheckMarker(final String file) {

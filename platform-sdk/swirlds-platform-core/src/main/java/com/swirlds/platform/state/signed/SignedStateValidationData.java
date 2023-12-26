@@ -49,7 +49,7 @@ public record SignedStateValidationData(
                 that.getRound(),
                 that.getConsensusTimestamp(),
                 addressBook == null ? null : addressBook.getHash(),
-                that.getHashEventsCons(),
+                that.getRunningEventHash(),
                 that.getEpochHash());
     }
 

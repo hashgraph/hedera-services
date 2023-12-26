@@ -118,7 +118,7 @@ public interface HederaInjectionComponent {
 
     ThrottleManager throttleManager();
 
-    PlatformStateUpdateFacility dualStateUpdateFacility();
+    PlatformStateUpdateFacility platformStateUpdateFacility();
 
     GenesisRecordsConsensusHook genesisRecordsConsensusHook();
 
