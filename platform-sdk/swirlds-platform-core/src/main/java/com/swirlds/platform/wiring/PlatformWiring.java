@@ -47,6 +47,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -128,7 +129,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 stateSignatureCollectorWiring);
 
         signedStateFileManagerWiring =
-                SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
+                SignedStateFileManagerWiring.create(model, schedulers.signedStateFileManagerScheduler());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
@@ -179,6 +180,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .eventOutput()
                 .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
+        stateSignatureCollectorWiring.getReservedStateOutput().solderTo(
+                signedStateFileManagerWiring.saveToDiskFilter());
 
         solderNonAncientEventWindow();
         linkedEventIntakeWiring
@@ -209,7 +212,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final TransactionPool transactionPool) {
+            @NonNull final TransactionPool transactionPool,
+            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus) {
 
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
@@ -218,6 +222,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
         stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
+
+        //TODO for below, we need to filter out older states and non-complete ones
+        stateSignatureCollectorWiring
+                .getReservedStateOutput()
+                .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
+        stateSignatureCollectorWiring
+                .getReservedStateOutput()
+                .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setState);
     }
 
     /**

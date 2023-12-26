@@ -151,6 +151,7 @@ public class StateSignatureCollectorWiring {
     }
 
     public OutputWire<ReservedSignedState> getReservedStateOutput() {
+        //TODO add a state reserver
         return reservedStateOutput;
     }
 

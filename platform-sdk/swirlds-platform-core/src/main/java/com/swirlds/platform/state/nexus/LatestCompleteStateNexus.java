@@ -63,6 +63,8 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
         // Any state older than this is unconditionally removed, even if it is the latest
         final long earliestPermittedRound = newStateRound - stateConfig.roundsToKeepForSigning() + 1;
 
+        //TODO this is actually not thread safe
+
         // Is the latest complete round older than the earliest permitted round?
         if (getRound() < earliestPermittedRound) {
             // Yes, so remove it

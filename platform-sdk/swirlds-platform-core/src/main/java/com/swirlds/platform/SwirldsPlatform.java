@@ -509,6 +509,8 @@ public class SwirldsPlatform implements Platform {
                 swirldName);
 
         transactionPool = new TransactionPool(platformContext);
+        final LatestCompleteStateNexus latestCompleteState =
+                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
         // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
@@ -516,12 +518,21 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
 
-        final LatestCompleteStateNexus latestCompleteState =
-                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
+//        platformWiring.wireExternalComponents(
+//                preconsensusEventWriter,
+//                platformStatusManager,
+//                appCommunicationComponent,
+//                transactionPool,
+//                latestCompleteState);
+//
+//        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
+//        platformWiring.bind(signedStateFileManager, stateSigner);
+
+
         savedStateController = new SavedStateController(stateConfig);
         final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
-            // the app comm component will reserve the state, this should be done by the wiring in the future
-            appCommunicationComponent.newLatestCompleteStateEvent(ss);
+            // the app comm component expects a state to be reserved for it
+            appCommunicationComponent.newLatestCompleteStateEvent(ss.reserve("AppCommunicationComponent newLatestCompleteStateEvent"));
             // the nexus expects a state to be reserved for it
             // in the future, all of these reservations will be done by the wiring
             latestCompleteState.setState(ss.reserve("setting latest complete state"));

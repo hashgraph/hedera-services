@@ -48,7 +48,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent implements PlatformComponent, NewLatestCompleteStateConsumer, IssConsumer {
+public class AppCommunicationComponent implements PlatformComponent, IssConsumer {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
@@ -100,20 +100,17 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
                         stateSavingResult.freezeState()));
     }
 
-    @Override
-    public void newLatestCompleteStateEvent(@NonNull final SignedState signedState) {
-        // the state is reserved now before it is added to the queue
+    public void newLatestCompleteStateEvent(@NonNull final ReservedSignedState reservedSignedState) {
+        // the state is reserved by the caller
         // it will be released by the notification engine after the app consumes it
         // this is done by latestCompleteStateAppNotify()
         // if the state does not make into the queue, it will be released below
-        final ReservedSignedState reservedSignedState =
-                signedState.reserve("AppCommunicationComponent newLatestCompleteStateEvent");
         final boolean success = asyncLatestCompleteStateQueue.offer(reservedSignedState);
         if (!success) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Unable to add new latest complete state task (state round = {}) to {} because it is full",
-                    signedState.getRound(),
+                    reservedSignedState.get().getRound(),
                     asyncLatestCompleteStateQueue.getName());
             reservedSignedState.close();
         }

@@ -181,11 +181,6 @@ public class SignedStateManager {
         return null;
     }
 
-    public synchronized void handlePreconsensusScopedSystemTransaction(
-            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
-        handlePreconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
-    }
-
     /**
      * An observer of pre-consensus state signatures.
      *
@@ -226,11 +221,6 @@ public class SignedStateManager {
             handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
         }
         return null;
-    }
-
-    public synchronized void handlePostconsensusScopedSystemTransaction(
-            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
-        handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
     }
 
     /**
