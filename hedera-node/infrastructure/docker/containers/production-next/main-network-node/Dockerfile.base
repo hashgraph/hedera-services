@@ -4,6 +4,7 @@
 #
 ########################################################################################################################
 ARG UBUNTU_TAG="lunar-20231128"
+ARG SOURCE_DATE_EPOCH="0"
 
 ########################################################################################################################
 #
@@ -11,6 +12,7 @@ ARG UBUNTU_TAG="lunar-20231128"
 #
 ########################################################################################################################
 FROM ubuntu:${UBUNTU_TAG} AS operating-system-base
+ARG SOURCE_DATE_EPOCH
 
 # Define Standard Environment Variables
 ENV LANG C.UTF-8
@@ -51,6 +53,16 @@ RUN groupadd --gid 2000 hedera && \
 # Configure SUDO support
 RUN echo >> /etc/sudoers && \
     echo "%hedera ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# === Workarounds below will not be needed when https://github.com/moby/buildkit/pull/3560 is merged ===
+# Limit the timestamp upper bound to SOURCE_DATE_EPOCH.
+# Workaround for https://github.com/moby/buildkit/issues/3180
+RUN find $( ls / | grep -E -v "^(dev|mnt|proc|sys)$" ) \
+  -newermt "@${SOURCE_DATE_EPOCH}" -writable -xdev \
+  | xargs touch --date="@${SOURCE_DATE_EPOCH}" --no-dereference
+
+FROM scratch AS final-image
+COPY --from=operating-system-base / /
 
 # Define Volume Bindpoints
 VOLUME "/opt/hgcapp/accountBalances"
