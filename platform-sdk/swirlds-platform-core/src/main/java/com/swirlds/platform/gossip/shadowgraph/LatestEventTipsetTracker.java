@@ -36,6 +36,7 @@ public class LatestEventTipsetTracker {
 
     private final TipsetTracker tipsetTracker;
     private final NodeId selfId;
+    private final AddressBook addressBook;
     private Tipset latestSelfEventTipset;
 
     /**
@@ -53,6 +54,7 @@ public class LatestEventTipsetTracker {
 
         this.tipsetTracker = new TipsetTracker(time, addressBook);
         this.selfId = Objects.requireNonNull(selfId);
+        this.addressBook = addressBook;
     }
 
     /**
@@ -80,6 +82,12 @@ public class LatestEventTipsetTracker {
      * @param event The event to insert.
      */
     public synchronized void addEvent(final EventImpl event) {
+        if (!addressBook.contains(event.getCreatorId())) {
+            // Ignore this event. Possible in scenarios where a node is removed or a state is moved from a
+            // network with a different address book.
+            return;
+        }
+
         final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
         if (event.getSelfParent() != null) {
             parentDescriptors.add(event.getSelfParent().getBaseEvent().getDescriptor());
