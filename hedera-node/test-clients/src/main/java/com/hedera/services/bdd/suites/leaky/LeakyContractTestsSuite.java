@@ -88,6 +88,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
@@ -156,7 +158,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFo
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
-import static com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite.depositAmount;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
@@ -242,6 +243,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
     public static final String FALSE = "false";
+    private static final long depositAmount = 20_000L;
     public static final int GAS_TO_OFFER = 1_000_000;
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
     private static final String PAYER = "payer";
@@ -862,6 +864,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         childRecordsCheck(transferTokenWithNegativeAmountTxn, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     final HapiSpec getErc20TokenNameExceedingLimits() {
         final var REDUCED_NETWORK_FEE = 1L;
         final var REDUCED_NODE_FEE = 1L;
@@ -915,7 +918,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountDetails(ACCOUNT)
                                 .has(accountDetailsWith()
                                         .balanceLessThan(
-                                                INIT_ACCOUNT_BALANCE - REDUCED_NETWORK_FEE - REDUCED_NODE_FEE)));
+                                                INIT_ACCOUNT_BALANCE - REDUCED_NETWORK_FEE - REDUCED_NODE_FEE)),
+                        uploadDefaultFeeSchedules(GENESIS));
     }
 
     @HapiTest
@@ -1749,14 +1753,25 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                         .adminKey(THRESHOLD))
                                 .toArray(HapiSpecOperation[]::new)))
                 .when()
-                .then(sourcing(() -> contractCallWithFunctionAbi(
-                                "0.0." + (createdFileNum.get() + createBurstSize),
-                                getABIFor(FUNCTION, "addNthFib", contract),
-                                targets,
-                                12L)
-                        .payingWith(GENESIS)
-                        .gas(300_000L)
-                        .via(callTxn)));
+                .then(
+                        sourcing(() -> ifHapiTest(contractCallWithFunctionAbi(
+                                        "0.0." + (createdFileNum.get() + createBurstSize),
+                                        getABIFor(FUNCTION, "addNthFib", contract),
+                                        targets,
+                                        12L)
+                                .payingWith(GENESIS)
+                                .gas(300_000L)
+                                .via(callTxn))),
+                        ifNotHapiTest(contractCallWithFunctionAbi(
+                                        "0.0." + (createdFileNum.get() + createBurstSize),
+                                        getABIFor(FUNCTION, "addNthFib", contract),
+                                        targets,
+                                        12L)
+                                .payingWith(GENESIS)
+                                .gas(300_000L)
+                                // This will fail the semantics validity check that verifies existence of the contract,
+                                .hasPrecheck(INVALID_CONTRACT_ID)
+                                .via(callTxn)));
     }
 
     @HapiTest
