@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -32,6 +35,7 @@ import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.inject.Singleton;
@@ -68,7 +72,10 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
         final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
 
         // This process should only run ONCE, when a node receives its first transaction after startup
-        if (blockStore.getLastBlockInfo().consTimeOfLastHandledTxn() != null) return;
+        //        if (blockStore.getLastBlockInfo().consTimeOfLastHandledTxn() != null) return;
+
+        // Not sure about this condition
+        if (blockStore.getLastBlockInfo().migrationRecordsStreamed()) return;
 
         // First we set consensusTimeOfLastHandledTxn so that this process won't run again
         final var consensusTime = context.consensusTime();
@@ -159,6 +166,19 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
             var txnBuilder =
                     Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
             recordBuilder.transaction(txnBuilder.build());
+
+            var balance = account.tinybarBalance();
+            if (balance != 0) {
+                var accountID = AccountID.newBuilder()
+                        .accountNum(account.accountId().accountNumOrElse(0L))
+                        .shardNum(account.accountId().shardNum())
+                        .realmNum(account.accountId().realmNum())
+                        .build();
+
+                recordBuilder.transferList(TransferList.newBuilder()
+                        .accountAmounts(asAccountAmounts(Map.of(accountID, balance)))
+                        .build());
+            }
 
             log.debug("Queued synthetic CryptoCreate for {} account {}", recordMemo, account);
         }
