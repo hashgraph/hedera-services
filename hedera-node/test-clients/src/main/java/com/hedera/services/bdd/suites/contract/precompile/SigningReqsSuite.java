@@ -130,7 +130,6 @@ public class SigningReqsSuite extends HapiSuite {
                                 .refusingEthConversion()),
                         getTxnRecord(SECOND_CREATE_TXN)
                                 .andAllChildRecords()
-                                .logged()
                                 .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))))
                 .then(
                         childRecordsCheck(
