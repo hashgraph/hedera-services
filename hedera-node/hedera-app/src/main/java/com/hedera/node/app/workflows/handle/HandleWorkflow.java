@@ -601,6 +601,10 @@ public class HandleWorkflow {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
             final long nodeID) {
+        if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+            // We can stop immediately if the pre-handle result was a node due diligence failure
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
 
         final var txInfo = preHandleResult.txInfo();
         final var payerID = txInfo.payerID();
