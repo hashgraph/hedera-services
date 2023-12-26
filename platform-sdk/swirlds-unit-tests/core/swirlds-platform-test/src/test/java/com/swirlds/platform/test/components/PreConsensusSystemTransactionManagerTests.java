@@ -17,55 +17,30 @@
 package com.swirlds.platform.test.components;
 
 import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyEvent;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionHandler;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class PreConsensusSystemTransactionManagerTests {
 
     @Test
-    @DisplayName("tests that exceptions are handled gracefully")
-    void testHandleExceptions() {
-        PreconsensusSystemTransactionHandler<DummySystemTransaction> consumer = (dummySystemTransaction, aLong) -> {
-            throw new IllegalStateException("this is intentionally thrown");
-        };
-
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager(new NoOpMetrics());
-        manager.addHandler(DummySystemTransaction.class, consumer);
-
-        assertDoesNotThrow(() -> manager.handleEvent(newDummyEvent(1)));
-    }
-
-    @Test
     @DisplayName("tests handling system transactions")
     void testHandle() {
-        final AtomicInteger handleCount = new AtomicInteger(0);
+        final PreconsensusSystemTransactionManager<DummySystemTransaction> manager = new PreconsensusSystemTransactionManager<>(
+                DummySystemTransaction.class);
 
-        PreconsensusSystemTransactionHandler<DummySystemTransaction> consumer =
-                (dummySystemTransaction, aLong) -> handleCount.getAndIncrement();
+        final List<ScopedSystemTransaction<DummySystemTransaction>> transactions = new ArrayList<>();
+        transactions.addAll(manager.handleEvent(newDummyEvent(0)));
+        transactions.addAll(manager.handleEvent(newDummyEvent(1)));
+        transactions.addAll(manager.handleEvent(newDummyEvent(2)));
 
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager(new NoOpMetrics());
-        manager.addHandler(DummySystemTransaction.class, consumer);
-
-        manager.handleEvent(newDummyEvent(0));
-        manager.handleEvent(newDummyEvent(1));
-        manager.handleEvent(newDummyEvent(2));
-
-        assertEquals(3, handleCount.get(), "incorrect number of handle calls");
-    }
-
-    @Test
-    @DisplayName("tests handling system transactions, where no handle method has been defined")
-    void testNoHandleMethod() {
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager(new NoOpMetrics());
-
-        assertDoesNotThrow(() -> manager.handleEvent(newDummyEvent(1)), "should not throw");
+        assertEquals(3,transactions.size(), "incorrect number of transactions returned");
     }
 }

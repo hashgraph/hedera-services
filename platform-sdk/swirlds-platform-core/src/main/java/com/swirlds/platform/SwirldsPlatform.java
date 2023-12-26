@@ -68,7 +68,6 @@ import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -587,11 +586,9 @@ public class SwirldsPlatform implements Platform {
 
         components.add(stateManagementComponent);
 
-        //TODO move to wiring
-        final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
-                new PreconsensusSystemTransactionManager(null);
-        preconsensusSystemTransactionManager.addHandler(
-                StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
+        //TODO these details are needed by the wiring
+//        preconsensusSystemTransactionManager.addHandler(
+//                StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
 
         final ConsensusSystemTransactionManager consensusSystemTransactionManager =
                 new ConsensusSystemTransactionManager();

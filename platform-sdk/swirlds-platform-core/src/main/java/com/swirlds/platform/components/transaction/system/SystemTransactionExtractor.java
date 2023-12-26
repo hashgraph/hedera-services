@@ -29,6 +29,7 @@ import java.util.List;
  * A simple utility for extracting and filtering system transactions from events.
  */
 public final class SystemTransactionExtractor {
+    //TODO Replace this with the instance version of the class
 
     private SystemTransactionExtractor() {}
 
