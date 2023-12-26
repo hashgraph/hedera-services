@@ -4,16 +4,18 @@
 #
 ########################################################################################################################
 ARG UBUNTU_TAG="lunar-20231128"
+ARG SOURCE_DATE_EPOCH="0"
 
 ########################################################################################################################
 #
 # Setup Ephemeral Java Downloader Layer
 #
 ########################################################################################################################
-FROM ubuntu:${UBUNTU_TAG} AS java-builder
+FROM ubuntu:${UBUNTU_TAG} AS java-builder-interim
+# Define Build Arguments
+ARG SOURCE_DATE_EPOCH
 
 # Define Standard Environment Variables
-ENV LC_ALL C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -60,12 +62,29 @@ RUN set -eux; \
     	  ; \
     rm -f /tmp/openjdk.tar.gz /usr/local/java/lib/src.zip;
 
+########################################
+####    Deterministic Build Hack    ####
+########################################
+
+# === Workarounds below will not be needed when https://github.com/moby/buildkit/pull/4057 is merged ===
+# NOTE: PR #4057 has been merged but will not be available until the v0.13.x series of releases.
+# Limit the timestamp upper bound to SOURCE_DATE_EPOCH.
+# Workaround for https://github.com/moby/buildkit/issues/3180
+RUN find $( ls / | grep -E -v "^(dev|mnt|proc|sys)$" ) \
+  -newermt "@${SOURCE_DATE_EPOCH}" -writable -xdev \
+  | xargs touch --date="@${SOURCE_DATE_EPOCH}" --no-dereference
+
+FROM scratch AS java-builder
+COPY --from=java-builder-interim / /
+
 ########################################################################################################################
 #
 # Setup OS Base Layer
 #
 ########################################################################################################################
-FROM ubuntu:${UBUNTU_TAG} AS operating-system-base
+FROM ubuntu:${UBUNTU_TAG} AS operating-system-base-interim
+# Define Build Arguments
+ARG SOURCE_DATE_EPOCH
 
 # Define Standard Environment Variables
 ENV LANG C.UTF-8
@@ -107,40 +126,70 @@ RUN groupadd --gid 2000 hedera && \
 RUN echo >> /etc/sudoers && \
     echo "%hedera ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Define Volume Bindpoints
-VOLUME "/opt/hgcapp/accountBalances"
-VOLUME "/opt/hgcapp/eventsStreams"
-VOLUME "/opt/hgcapp/recordStreams"
-VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/config"
-VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/diskFs"
-VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/keys"
-VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/onboard"
-VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/stats"
-VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/saved"
-VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade"
+########################################
+####    Deterministic Build Hack    ####
+########################################
 
-########################################################################################################################
-#
-# Setup Java Base Layer
-#
-########################################################################################################################
-FROM operating-system-base AS java-base
+# === Workarounds below will not be needed when https://github.com/moby/buildkit/pull/4057 is merged ===
+# NOTE: PR #4057 has been merged but will not be available until the v0.13.x series of releases.
+# Limit the timestamp upper bound to SOURCE_DATE_EPOCH.
+# Workaround for https://github.com/moby/buildkit/issues/3180
+RUN find $( ls / | grep -E -v "^(dev|mnt|proc|sys)$" ) \
+  -newermt "@${SOURCE_DATE_EPOCH}" -writable -xdev \
+  | xargs touch --date="@${SOURCE_DATE_EPOCH}" --no-dereference
 
-# Define Standard Environment Variables
-ENV JAVA_VERSION "jdk-21.0.1+12"
-ENV JAVA_HOME /usr/local/java
-ENV PATH ${JAVA_HOME}/bin:${PATH}
-
-COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
+FROM scratch AS operating-system-base
+COPY --from=operating-system-base-interim / /
 
 ########################################################################################################################
 #
 # Setup Production Container Image
 #
 ########################################################################################################################
-FROM java-base AS production-image
+FROM operating-system-base AS production-image-interim
+# Define Build Arguments
+ARG SOURCE_DATE_EPOCH
 
-# Define Environment Variables
+# Define Standard Environment Variables
+ENV JAVA_VERSION "jdk-21.0.1+12"
+ENV JAVA_HOME /usr/local/java
+ENV PATH ${JAVA_HOME}/bin:${PATH}
+
+# Install Java
+COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
+
+# Add SDK components
+COPY sdk/data/apps/* /opt/hgcapp/services-hedera/HapiApp2.0/data/apps/
+COPY sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
+
+# Add the entrypoint script
+ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
+
+# Ensure proper file permissions
+RUN chmod -R +x /opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh && \
+    chown -R 2000:2000 /opt/hgcapp/services-hedera/HapiApp2.0
+
+########################################
+####    Deterministic Build Hack    ####
+########################################
+
+# === Workarounds below will not be needed when https://github.com/moby/buildkit/pull/4057 is merged ===
+# NOTE: PR #4057 has been merged but will not be available until the v0.13.x series of releases.
+# Limit the timestamp upper bound to SOURCE_DATE_EPOCH.
+# Workaround for https://github.com/moby/buildkit/issues/3180
+RUN find $( ls / | grep -E -v "^(dev|mnt|proc|sys)$" ) \
+  -newermt "@${SOURCE_DATE_EPOCH}" -writable -xdev \
+  | xargs touch --date="@${SOURCE_DATE_EPOCH}" --no-dereference
+
+FROM scratch AS production-image
+COPY --from=production-image-interim / /
+
+# Define Standard Environment Variables
+ENV JAVA_VERSION "jdk-21.0.1+12"
+ENV JAVA_HOME /usr/local/java
+ENV PATH ${JAVA_HOME}/bin:${PATH}
+
+# Define Application Specific Variables
 ENV JAVA_HEAP_MIN ""
 ENV JAVA_HEAP_MAX ""
 ENV JAVA_OPTS ""
@@ -153,16 +202,17 @@ ENV MALLOC_ARENA_MAX 4
 # Log Folder Name Override
 ENV LOG_DIR_NAME ""
 
-# Add SDK components
-COPY sdk/data/apps/* /opt/hgcapp/services-hedera/HapiApp2.0/data/apps/
-COPY sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
-
-# Add the entrypoint script
-ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
-
-# Ensure proper file permissions
-RUN chmod -R +x /opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh && \
-    chown -R 2000:2000 /opt/hgcapp/services-hedera/HapiApp2.0
+# Define Volume Bindpoints
+VOLUME "/opt/hgcapp/accountBalances"
+VOLUME "/opt/hgcapp/eventsStreams"
+VOLUME "/opt/hgcapp/recordStreams"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/config"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/diskFs"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/keys"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/onboard"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/stats"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/saved"
+VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade"
 
 # Expose TCP/UDP Port Definitions
 EXPOSE 50111/tcp 50211/tcp 50212/tcp
