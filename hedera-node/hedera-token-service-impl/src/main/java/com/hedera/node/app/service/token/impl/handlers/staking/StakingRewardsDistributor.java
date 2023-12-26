@@ -97,13 +97,13 @@ public class StakingRewardsDistributor {
                     } while (beneficiary.deleted());
                 }
             }
-
-            if (!beneficiary.declineReward() && reward > 0) {
-                final var mutableBeneficiary = writableStore.get(beneficiary.accountId());
-                // even if reward is zero it will be added to rewardsPaid
+            // Even if the account has decl;ineReward set, it should be in the rewardsPaid map with 0 value
+            final var mutableBeneficiary = writableStore.get(beneficiary.accountId());
+            // even if reward is zero it will be added to rewardsPaid
+            if (reward > 0) {
                 applyReward(reward, mutableBeneficiary, writableStore);
-                rewardsPaid.merge(receiverId, reward, Long::sum);
             }
+            rewardsPaid.merge(receiverId, reward, Long::sum);
         }
         return rewardsPaid;
     }

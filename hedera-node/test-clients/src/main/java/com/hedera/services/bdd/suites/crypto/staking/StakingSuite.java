@@ -111,18 +111,17 @@ public class StakingSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 setUp(),
-                //                losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation(),
-                //                evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation(),
-                //                stakingMetadataUpdateIsRewardOpportunity(),
-                secondOrderRewardSituationsWork()
-                //                endOfStakingPeriodRecTest(),
-                //                rewardsOfDeletedAreRedirectedToBeneficiary(),
-                //                canBeRewardedWithoutMinStakeIfSoConfigured(),
-                //                zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
-                //                autoRenewalsCanTriggerStakingRewards(),
-                //                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries(),
-                //                zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds()
-                );
+                losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation(),
+                evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation(),
+                stakingMetadataUpdateIsRewardOpportunity(),
+                secondOrderRewardSituationsWork(),
+                endOfStakingPeriodRecTest(),
+                rewardsOfDeletedAreRedirectedToBeneficiary(),
+                canBeRewardedWithoutMinStakeIfSoConfigured(),
+                zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
+                autoRenewalsCanTriggerStakingRewards(),
+                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries(),
+                zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds());
     }
 
     @HapiTest
@@ -346,17 +345,18 @@ public class StakingSuite extends HapiSuite {
 
         return defaultHapiSpec("SecondOrderRewardSituationsWork")
                 .given(
-                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
-                        overriding(PER_HBAR_REWARD_RATE, "" + 3_333_333),
-                        overriding(REWARD_BALANCE_THRESHOLD, "" + 0),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)))
-                .when(
+//                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
+//                        overriding(PER_HBAR_REWARD_RATE, "" + 3_333_333),
+//                        overriding(REWARD_BALANCE_THRESHOLD, "" + 0),
+//                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS))
+                )
+                .when( // period 1
                         cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(BOB).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
                 .then(
-                        /* --- paid_rewards 0 for first period --- */
+                        /* --- period 2 - paid_rewards 0 for first period --- */
                         cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)).via(FIRST_TRANSFER),
                         getTxnRecord(FIRST_TRANSFER)
                                 .andAllChildRecords()
@@ -370,7 +370,7 @@ public class StakingSuite extends HapiSuite {
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).via("endOfStakingPeriodXfer"),
                         getAccountInfo(ALICE)
-                                .has(accountWith().stakedNodeId(0L).pendingRewards(666666600L)) // was before 666666600L
+                                .has(accountWith().stakedNodeId(0L).pendingRewards(666666600L))
                                 .logged(),
                         getAccountInfo(BOB)
                                 .has(accountWith().stakedNodeId(0L).pendingRewards(333333300L))
@@ -471,11 +471,7 @@ public class StakingSuite extends HapiSuite {
     @Order(4)
     final HapiSpec stakingMetadataUpdateIsRewardOpportunity() {
         return defaultHapiSpec("stakingMetadataUpdateIsRewardOpportunity")
-                .given(
-                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
-                        overriding(PER_HBAR_REWARD_RATE, "" + 3_333_333),
-                        overriding(REWARD_BALANCE_THRESHOLD, "" + 0),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)))
+                .given()
                 .when(
                         cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),

@@ -20,4 +20,5 @@ module com.hedera.node.app.service.token {
     requires com.hedera.node.app.service.evm;
     requires com.github.spotbugs.annotations;
     requires com.swirlds.common;
+    requires transitive org.apache.logging.log4j;
 }

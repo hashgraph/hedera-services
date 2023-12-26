@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -87,26 +88,20 @@ public class StakingRewardsHelper {
     private static boolean isRewardSituation(
             @NonNull final Account modifiedAccount, @Nullable final Account originalAccount) {
         requireNonNull(modifiedAccount);
-        if (originalAccount == null) {
+        if (originalAccount == null || !originalAccount.hasStakedNodeId()) {
             return false;
         }
-        final var hasStakedToMeUpdate = modifiedAccount.stakedToMe() != originalAccount.stakedToMe();
+
+        // stakedToMe changes are captured in possibleRewardReceivers
         final var hasBalanceChange = modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance();
-        final var hasStakeMetaChanges = (modifiedAccount.declineReward() != originalAccount.declineReward())
-                || (modifiedAccount.stakedId() != originalAccount.stakedId());
+        final var hasStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
         // We do this for backward compatibility with mono-service
-        // TODO: Also check that the HAPI operation was a ContractCreate/ContractCall/EthereumTransaction
         final var isCalledContract = modifiedAccount.smartContract();
-        final var isStakedToNode = originalAccount.stakedNodeIdOrElse(-1L) >= 0L;
-        final var isRewardSituation =
-                isStakedToNode && (isCalledContract || hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges);
+        final var isRewardSituation = (isCalledContract || hasBalanceChange || hasStakeMetaChanges);
         log.info(
-                "isRewardSituation {}: isStakedToNode {}, isCalledContract {}, hasStakedToMeUpdate {}, "
-                        + "hasBalanceChange {}, hasStakeMetaChanges {}",
+                "isRewardSituation {}: isCalledContract {}, hasBalanceChange {}, hasStakeMetaChanges {}",
                 isRewardSituation,
-                isStakedToNode,
                 isCalledContract,
-                hasStakedToMeUpdate,
                 hasBalanceChange,
                 hasStakeMetaChanges);
         return isRewardSituation;

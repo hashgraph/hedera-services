@@ -53,7 +53,7 @@ public class StakingUtilities {
         }
         final var differDeclineReward = originalAccount.declineReward() != modifiedAccount.declineReward();
         final var differStakedNodeId =
-                !originalAccount.stakedNodeIdOrElse(0L).equals(modifiedAccount.stakedNodeIdOrElse(0L));
+                !originalAccount.stakedNodeIdOrElse(-1L).equals(modifiedAccount.stakedNodeIdOrElse(-1L));
         final var differStakeAccountId = !originalAccount
                 .stakedAccountIdOrElse(AccountID.DEFAULT)
                 .equals(modifiedAccount.stakedAccountIdOrElse(AccountID.DEFAULT));
