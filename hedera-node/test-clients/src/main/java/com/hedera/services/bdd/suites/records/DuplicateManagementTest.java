@@ -152,6 +152,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                         .transfers(includingDeduction("node payment", TO))));
     }
 
+    @HapiTest
     final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
         return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
