@@ -429,9 +429,6 @@ class HandleHederaOperationsTest {
                 .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
-        given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
-                .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
@@ -456,11 +453,7 @@ class HandleHederaOperationsTest {
         var txnBody = TransactionBody.newBuilder()
                 .ethereumTransaction(EthereumTransactionBody.DEFAULT)
                 .build();
-        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
-        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
-        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.body()).willReturn(txnBody);
         subject.deleteAliasedContract(CANONICAL_ALIAS);
         verify(tokenServiceApi)
                 .deleteContract(

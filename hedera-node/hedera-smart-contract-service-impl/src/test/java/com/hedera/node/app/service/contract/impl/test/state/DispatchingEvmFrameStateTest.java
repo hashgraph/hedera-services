@@ -407,8 +407,8 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
-    void returnsNullForMissing() {
-        assertNull(subject.getAccount(LONG_ZERO_ADDRESS));
+    void throwsIfAccountMissing() {
+        assertThrows(IllegalArgumentException.class, () -> subject.getAddress(ACCOUNT_NUM));
     }
 
     @Test
