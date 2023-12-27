@@ -16,17 +16,16 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-
 import java.security.PublicKey;
 import java.util.List;
-
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 /**
  * Utilities for constructing AddressBook needed for tests

@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_
 import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_NODE_ID;
 import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.UNSET;
 
-import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -108,8 +107,7 @@ public enum StakeIdChangeType {
 
     public static StakeIdChangeType forCase(
             @Nullable final Account currentAccount, @NonNull final Account modifiedAccount) {
-        final var curStakedIdCase =
-                currentAccount == null ? UNSET : getCurrentStakedIdCase(currentAccount);
+        final var curStakedIdCase = currentAccount == null ? UNSET : getCurrentStakedIdCase(currentAccount);
         final var newStakedIdCase = getCurrentStakedIdCase(modifiedAccount);
 
         // Ends with staking to a node

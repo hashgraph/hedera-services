@@ -54,6 +54,7 @@ import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
@@ -740,23 +741,27 @@ public final class Hedera implements SwirldMain {
             @NonNull final MerkleHederaState state,
             @NonNull AddressBook configAddressBook,
             @NonNull final PlatformContext context) {
-        final var readableStoreFactory = new ReadableStoreFactory(state);
-        // Get all nodeIds added in the config.txt
-        Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
-        final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
-        final var allNodeIds = stakingInfoStore.getAll();
-        for (final var nodeId : allNodeIds) {
-            final var stakingInfo = stakingInfoStore.get(nodeId);
-            NodeId id = new NodeId(nodeId.longValue());
-            // ste weight for the nodes that exist in state and remove from
-            // nodes given in config.txt. This is needed to recognize newly added nodes
-            configAddressBook.updateWeight(id, stakingInfo.weight());
-            configNodeIds.remove(id);
+        final var tokenServiceState = state.createReadableStates(TokenService.NAME);
+        if (!tokenServiceState.isEmpty()) {
+            final var readableStoreFactory = new ReadableStoreFactory(state);
+            // Get all nodeIds added in the config.txt
+            Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
+            final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
+            final var allNodeIds = stakingInfoStore.getAll();
+            for (final var nodeId : allNodeIds) {
+                final var stakingInfo = stakingInfoStore.get(nodeId);
+                NodeId id = new NodeId(nodeId.longValue());
+                // ste weight for the nodes that exist in state and remove from
+                // nodes given in config.txt. This is needed to recognize newly added nodes
+                configAddressBook.updateWeight(id, stakingInfo.weight());
+                configNodeIds.remove(id);
+            }
+            // for any newly added nodes that doesn't exist in state, weight should be set to 0
+            // irrespective of the weight provided in config.txt
+            configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
+        } else {
+            logger.warn("Token service state is empty");
         }
-
-        // for any newly added nodes that doesn't exist in state, weight should be set to 0
-        // irrespective of the weight provided in config.txt
-        configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
     }
 
     /*==================================================================================================================

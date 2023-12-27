@@ -209,7 +209,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 builder.stakedAccountId(op.stakedAccountId());
             }
         } else if (op.hasStakedNodeId()) {
-            if(SENTINEL_NODE_ID == op.stakedNodeId()) {
+            if (SENTINEL_NODE_ID == op.stakedNodeId()) {
                 builder.stakedNodeId(SENTINEL_NODE_ID);
             } else {
                 builder.stakedNodeId(op.stakedNodeId());
