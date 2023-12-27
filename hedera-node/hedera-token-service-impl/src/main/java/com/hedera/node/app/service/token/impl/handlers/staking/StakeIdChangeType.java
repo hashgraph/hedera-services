@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_
 import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_NODE_ID;
 import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.UNSET;
 
+import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -108,8 +109,8 @@ public enum StakeIdChangeType {
     public static StakeIdChangeType forCase(
             @Nullable final Account currentAccount, @NonNull final Account modifiedAccount) {
         final var curStakedIdCase =
-                currentAccount == null ? UNSET : currentAccount.stakedId().kind();
-        final var newStakedIdCase = modifiedAccount.stakedId().kind();
+                currentAccount == null ? UNSET : getCurrentStakedIdCase(currentAccount);
+        final var newStakedIdCase = getCurrentStakedIdCase(modifiedAccount);
 
         // Ends with staking to a node
         if (newStakedIdCase.equals(STAKED_NODE_ID)) {
@@ -139,6 +140,17 @@ public enum StakeIdChangeType {
             } else {
                 return FROM_NODE_TO_ABSENT;
             }
+        }
+    }
+
+    private static Account.StakedIdOneOfType getCurrentStakedIdCase(final Account account) {
+        final var kind = account.stakedId().kind();
+        if (kind.equals(STAKED_NODE_ID)) {
+            return account.stakedNodeIdOrElse(-1L) == -1L ? UNSET : STAKED_NODE_ID;
+        } else if (kind.equals(STAKED_ACCOUNT_ID)) {
+            return account.stakedAccountId() == null ? UNSET : STAKED_ACCOUNT_ID;
+        } else {
+            return UNSET;
         }
     }
 

@@ -16,10 +16,16 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.state.merkle.AddresBookUtils.createPretendBookFrom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
@@ -29,10 +35,14 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 class MerkleHederaStateTest extends MerkleTestBase {
@@ -54,6 +65,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
     private final AtomicBoolean onMigrateCalled = new AtomicBoolean(false);
     private final AtomicBoolean onPreHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
+    private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
 
     /**
      * Start with an empty Merkle Tree, but with the "fruit" map and metadata created and ready to
@@ -65,7 +77,10 @@ class MerkleHederaStateTest extends MerkleTestBase {
         hederaMerkle = new MerkleHederaState(
                 (tree, state) -> onPreHandleCalled.set(true),
                 (evt, meta, state) -> onHandleCalled.set(true),
-                (state, platform, dual, trigger, version) -> onMigrateCalled.set(true));
+                (state, platform, dual, trigger, version) -> onMigrateCalled.set(true),
+                (state, configAddressBook, context) -> {
+                    onUpdateWeightCalled.set(true);
+                });
     }
 
     /** Looks for a merkle node with the given label */
@@ -695,7 +710,8 @@ class MerkleHederaStateTest extends MerkleTestBase {
                         assertThat(round).isSameAs(evt);
                         onHandleCalled.set(true);
                     },
-                    (s, p, d, t, v) -> {});
+                    (s, p, d, t, v) -> {},
+                    (s, p, d) -> {});
 
             state.handleConsensusRound(round, dualState);
             assertThat(onHandleCalled).isTrue();
@@ -752,6 +768,18 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.copy();
             assertThatThrownBy(() -> hederaMerkle.createWritableStates(FRUIT_STATE_KEY))
                     .isInstanceOf(MutabilityException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Handling updateWeight Tests")
+    final class UpdateWeightTest {
+        @Test
+        @DisplayName("The onUpdateWeight handler is called when a updateWeight is called")
+        void onUpdateWeightCalled() {
+            assertThat(onUpdateWeightCalled).isFalse();
+            hederaMerkle.updateWeight(Mockito.mock(AddressBook.class), Mockito.mock(PlatformContext.class));
+            assertThat(onUpdateWeightCalled).isTrue();
         }
     }
 }

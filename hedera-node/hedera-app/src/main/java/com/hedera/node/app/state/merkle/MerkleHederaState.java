@@ -146,6 +146,13 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private OnStateInitialized onInit;
 
     /**
+     * This callback is invoked whenever the updateWeight is called.
+     *
+     * <p>This reference is moved forward to the working mutable state.
+     */
+    private OnUpdateWeight onUpdateWeight;
+
+    /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
@@ -161,10 +168,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     public MerkleHederaState(
             @NonNull final PreHandleListener onPreHandle,
             @NonNull final HandleConsensusRoundListener onHandleConsensusRound,
-            @NonNull final OnStateInitialized onInit) {
+            @NonNull final OnStateInitialized onInit,
+            @NonNull final OnUpdateWeight onUpdateWeight) {
         this.onPreHandle = requireNonNull(onPreHandle);
         this.onHandleConsensusRound = requireNonNull(onHandleConsensusRound);
         this.onInit = requireNonNull(onInit);
+        this.onUpdateWeight = requireNonNull(onUpdateWeight);
         this.classId = CLASS_ID;
     }
 
@@ -202,26 +211,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         this.onInit.onStateInitialized(this, platform, dualState, trigger, deserializedVersion);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public AddressBook updateWeight(
             @NonNull final AddressBook configAddressBook, @NonNull final PlatformContext context) {
-        //        throwIfImmutable();
-        //        // Get all nodeIds added in the config.txt
-        //        Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
-        //        final var stakingInfoState = getChild(findNodeIndex(TokenService.NAME, STAKING_INFO_KEY));
-        //        final var stakingInfoStore = new ReadableStakingInfoStoreImpl(stakingInfoState);
-        //        stakingInfo().forEach((nodeNum, stakingInfo) -> {
-        //            NodeId nodeId = new NodeId(nodeNum.longValue());
-        //            // ste weight for the nodes that exist in state and remove from
-        //            // nodes given in config.txt. This is needed to recognize newly added nodes
-        //            configAddressBook.updateWeight(nodeId, stakingInfo.getWeight());
-        //            configNodeIds.remove(nodeId);
-        //        });
-        //
-        //        // for any newly added nodes that doesn't exist in state, weight should be set to 0
-        //        // irrespective of the weight provided in config.txt
-        //        configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
+        this.onUpdateWeight.updateWeight(this, configAddressBook, context);
         return configAddressBook;
     }
 

@@ -33,6 +33,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -208,7 +209,11 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 builder.stakedAccountId(op.stakedAccountId());
             }
         } else if (op.hasStakedNodeId()) {
-            builder.stakedNodeId(op.stakedNodeId());
+            if(SENTINEL_NODE_ID == op.stakedNodeId()) {
+                builder.stakedNodeId(SENTINEL_NODE_ID);
+            } else {
+                builder.stakedNodeId(op.stakedNodeId());
+            }
         }
         return builder;
     }
