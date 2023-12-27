@@ -22,18 +22,16 @@ import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Wiring for the state signature collector.
@@ -70,13 +68,7 @@ public class StateSignatureCollectorWiring {
                         model,
                         "preConsensusTransformer",
                         "pre-consensus events",
-                        e -> Optional.ofNullable(SystemTransactionExtractor.getScopedSystemTransactions(e))
-                                .orElse(List.of())
-                                .stream()
-                                .filter(Objects::nonNull)
-                                .map(SystemTransactionExtractor::stateSignatureTransactionFilter)
-                                .filter(Objects::nonNull)
-                                .toList());
+                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleEvent);
         preConsensusEventInput = preConsensusTransformer.getInputWire();
         preConsSigInput = taskScheduler.buildInputWire("pre-consensus state signature transactions");
         preConsensusTransformer.getOutputWire().solderTo(preConsSigInput);
@@ -89,14 +81,7 @@ public class StateSignatureCollectorWiring {
                 model,
                 "gossipEventTransformer",
                 "consensus events",
-                r -> r.getConsensusEvents().stream()
-                        .map(EventImpl::getBaseEvent)
-                        .map(SystemTransactionExtractor::getScopedSystemTransactions)
-                        .filter(Objects::nonNull)
-                        .flatMap(List::stream)
-                        .map(SystemTransactionExtractor::stateSignatureTransactionFilter)
-                        .filter(Objects::nonNull)
-                        .toList());
+                new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         postConsensusEventInput = postConsensusTransformer.getInputWire();
         postConsSigInput = taskScheduler.buildInputWire("post-consensus state signature transactions");
         postConsensusTransformer.getOutputWire().solderTo(postConsSigInput);
@@ -146,7 +131,7 @@ public class StateSignatureCollectorWiring {
         return reservedStateInput;
     }
 
-    public InputWire<ConsensusRound> getPostConsensusEventInput() {
+    public InputWire<ConsensusRound> getConsensusRoundInput() {
         return postConsensusEventInput;
     }
 

@@ -19,21 +19,20 @@ package com.swirlds.platform.test.components;
 import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class PreConsensusSystemTransactionManagerTests {
+class SystemTransactionExtractorTests {
 
     @Test
     @DisplayName("tests handling system transactions")
     void testHandle() {
-        final PreconsensusSystemTransactionManager<DummySystemTransaction> manager = new PreconsensusSystemTransactionManager<>(
+        final SystemTransactionExtractor<DummySystemTransaction> manager = new SystemTransactionExtractor<>(
                 DummySystemTransaction.class);
 
         final List<ScopedSystemTransaction<DummySystemTransaction>> transactions = new ArrayList<>();

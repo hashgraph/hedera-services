@@ -46,6 +46,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -115,6 +116,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 ApplicationTransactionPrehandlerWiring.create(schedulers.applicationTransactionPrehandlerScheduler());
         stateSignatureCollectorWiring =
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
+        signedStateFileManagerWiring =
+                SignedStateFileManagerWiring.create(model, schedulers.signedStateFileManagerScheduler());
+        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
 
         platformCoordinator = new PlatformCoordinator(
                 eventHasherWiring,
@@ -350,6 +354,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
         return signedStateFileManagerWiring.dumpStateToDisk();
+    }
+
+    @NonNull
+    public InputWire<GossipEvent> getSignatureCollectorPreconsEventInput() {
+        return stateSignatureCollectorWiring.preconsensusEventInput();
+    }
+
+    @NonNull
+    public InputWire<ConsensusRound> getSignatureCollectorConsensusInput() {
+        return stateSignatureCollectorWiring.getConsensusRoundInput();
+    }
+
+    @NonNull
+    public InputWire<ReservedSignedState> getSignatureCollectorStateInput() {
+        return stateSignatureCollectorWiring.getReservedStateInput();
     }
 
     /**

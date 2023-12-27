@@ -16,61 +16,50 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * A simple utility for extracting and filtering system transactions from events.
+ * Extracts a particular type of system transaction from an event or a  round.
  */
-public final class SystemTransactionExtractor {
-    //TODO Replace this with the instance version of the class
+public class SystemTransactionExtractor<T extends SystemTransaction> {
+    final Class<T> systemTransactionType;
 
-    private SystemTransactionExtractor() {}
 
-    /**
-     * Extract all system transactions from the given event.
-     *
-     * @param event the event to extract system transactions from
-     * @return the system transactions contained within the event
-     */
-    @Nullable
-    public static List<ScopedSystemTransaction<?>> getScopedSystemTransactions(@NonNull final GossipEvent event) {
+    public SystemTransactionExtractor(final Class<T> systemTransactionType) {
+        this.systemTransactionType = Objects.requireNonNull(systemTransactionType);
+    }
+
+    public List<ScopedSystemTransaction<T>> handleRound(@NonNull final ConsensusRound round) {
+        return round.getConsensusEvents().stream()
+                .map(this::handleEvent)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<ScopedSystemTransaction<T>> handleEvent(@NonNull final BaseEvent event) {
+        // no transactions to transform
         final var transactions = event.getHashedData().getTransactions();
         if (transactions == null) {
             return null;
         }
 
-        final List<ScopedSystemTransaction<?>> scopedTransactions = new ArrayList<>();
+        final List<ScopedSystemTransaction<T>> scopedTransactions = new ArrayList<>();
 
         for (final Transaction transaction : event.getHashedData().getTransactions()) {
-            if (transaction instanceof final SystemTransaction systemTransaction) {
+            if (systemTransactionType.isInstance(transaction)) {
                 scopedTransactions.add(
-                        new ScopedSystemTransaction<>(event.getHashedData().getCreatorId(), systemTransaction));
+                        new ScopedSystemTransaction<>(event.getHashedData().getCreatorId(), (T) transaction));
             }
         }
-
-        return scopedTransactions;
-    }
-
-    /**
-     * Filter system transactions for state signature transactions.
-     *
-     * @param scopedTransaction the transaction to filter and cast
-     * @return the state signature transaction, or null if the transaction is not a state signature transaction
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable
-    public static ScopedSystemTransaction<StateSignatureTransaction> stateSignatureTransactionFilter(
-            @NonNull final ScopedSystemTransaction<?> scopedTransaction) {
-        if (scopedTransaction.transaction() instanceof StateSignatureTransaction) {
-            return (ScopedSystemTransaction<StateSignatureTransaction>) scopedTransaction;
-        }
-        return null;
+        return scopedTransactions.isEmpty() ? null : scopedTransactions;
     }
 }
