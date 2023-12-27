@@ -121,6 +121,7 @@ import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -341,8 +342,8 @@ public class SwirldsPlatform implements Platform {
     private final AsyncEventCreationManager eventCreator;
 
     /**
-     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND}
-     * if no reconnect state has been received since startup.
+     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
+     * been received since startup.
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
@@ -440,7 +441,18 @@ public class SwirldsPlatform implements Platform {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(syncMetrics, currentAddressBook.getSize());
+        this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId);
+
+        final LatestEventTipsetTracker latestEventTipsetTracker;
+        final boolean enableEventFiltering = platformContext
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .filterLikelyDuplicates();
+        if (enableEventFiltering) {
+            latestEventTipsetTracker = new LatestEventTipsetTracker(time, currentAddressBook, selfId);
+        } else {
+            latestEventTipsetTracker = null;
+        }
 
         this.keysAndCerts = keysAndCerts;
 
@@ -608,6 +620,7 @@ public class SwirldsPlatform implements Platform {
 
         final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
                 platformContext,
+                time,
                 threadManager,
                 getSelfId(),
                 this,
@@ -652,8 +665,18 @@ public class SwirldsPlatform implements Platform {
                 .build());
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-        final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+
+        final Consumer<EventImpl> preconsensusEventHandlerConsumer;
+        final Clearable preconsensusEventHandlerClear;
+        if (eventConfig.useLegacyIntake()) {
+            final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
+                    metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+            preconsensusEventHandlerConsumer = preConsensusEventHandler::preconsensusEvent;
+            preconsensusEventHandlerClear = preConsensusEventHandler;
+        } else {
+            preconsensusEventHandlerConsumer = event -> {};
+            preconsensusEventHandlerClear = null;
+        }
 
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
@@ -672,7 +695,7 @@ public class SwirldsPlatform implements Platform {
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
-                new ShadowGraphEventObserver(shadowGraph),
+                new ShadowGraphEventObserver(shadowGraph, latestEventTipsetTracker),
                 consensusRoundHandler,
                 addedEventMetrics,
                 eventIntakeMetrics,
@@ -724,7 +747,8 @@ public class SwirldsPlatform implements Platform {
                 eventObserverDispatcher,
                 eventIntakePhaseTimer,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent,
+                latestEventTipsetTracker,
+                preconsensusEventHandlerConsumer,
                 intakeEventCounter);
 
         final List<GossipEventValidator> validators = new ArrayList<>();
@@ -767,12 +791,11 @@ public class SwirldsPlatform implements Platform {
             final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
             final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
                     platformContext,
-                    threadManager,
                     time,
                     consensusRef::get,
                     eventObserverDispatcher,
                     shadowGraph,
-                    preConsensusEventHandler::preconsensusEvent,
+                    latestEventTipsetTracker,
                     intakeEventCounter);
 
             final EventCreationManager eventCreationManager = buildEventCreationManager(
@@ -783,6 +806,7 @@ public class SwirldsPlatform implements Platform {
                     selfId,
                     appVersion,
                     transactionPool,
+                    this::getIntakeQueueSize,
                     platformStatusManager::getCurrentStatus,
                     latestReconnectRound::get);
 
@@ -793,7 +817,9 @@ public class SwirldsPlatform implements Platform {
                     orphanBuffer,
                     inOrderLinker,
                     linkedEventIntake,
-                    eventCreationManager);
+                    eventCreationManager,
+                    swirldStateManager,
+                    signedStateManager);
 
             intakeHandler = platformWiring.getEventInput()::put;
         }
@@ -845,6 +871,7 @@ public class SwirldsPlatform implements Platform {
                 appVersion,
                 epochHash,
                 shadowGraph,
+                latestEventTipsetTracker,
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
@@ -912,7 +939,7 @@ public class SwirldsPlatform implements Platform {
                     List.of(
                             Pair.of(pauseEventCreation, "eventCreator"),
                             Pair.of(gossip, "gossip"),
-                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                            Pair.of(preconsensusEventHandlerClear, "preConsensusEventHandler"),
                             Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                             Pair.of(transactionPool, "transactionPool")));
         } else {
@@ -922,7 +949,6 @@ public class SwirldsPlatform implements Platform {
                             Pair.of(intakeQueue, "intakeQueue"),
                             Pair.of(platformWiring, "platformWiring"),
                             Pair.of(shadowGraph, "shadowGraph"),
-                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                             Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                             Pair.of(transactionPool, "transactionPool")));
         }
@@ -936,6 +962,15 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
+    }
+
+    /**
+     * Get the current size of the intake queue. Helper method to break a circular dependency.
+     *
+     * @return the current size of the intake queue
+     */
+    private int getIntakeQueueSize() {
+        return intakeQueue.size();
     }
 
     /**
@@ -1072,6 +1107,9 @@ public class SwirldsPlatform implements Platform {
                             signedState.getEvents().clone()),
                     // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
                     consensusRef.get().getMinRoundGeneration());
+
+            // Intentionally don't bother initiating the latestEventTipsetTracker here. We don't support this
+            // code path way any more.
         } else {
             shadowGraph.startFromGeneration(consensusRef.get().getMinGenerationNonAncient());
         }

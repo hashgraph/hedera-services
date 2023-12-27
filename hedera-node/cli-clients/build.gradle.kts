@@ -25,7 +25,6 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
-    runtimeOnly("org.mockito.inline")
 }
 
 tasks.shadowJar {
