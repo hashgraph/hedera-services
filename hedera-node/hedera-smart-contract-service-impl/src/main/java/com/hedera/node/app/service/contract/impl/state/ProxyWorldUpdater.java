@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -192,13 +191,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         contractId = enhancement.operations().shardAndRealmValidated(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
-            if (isLongZeroAddress(contractId.evmAddressOrThrow().toByteArray())) {
-                var contractNum =
-                        numberOfLongZero(contractId.evmAddressOrThrow().toByteArray());
-                address = evmFrameState.getAddress(contractNum);
-            } else {
-                address = pbjToBesuAddress(contractId.evmAddressOrThrow());
-            }
+            address = pbjToBesuAddress(contractId.evmAddressOrThrow());
         } else {
             try {
                 address = evmFrameState.getAddress(contractId.contractNumOrElse(0L));
@@ -303,6 +296,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public void finalizeHollowAccount(@NonNull final Address address, @NonNull final Address parent) {
+        // (FUTURE) Since for mono-service parity we externalize a ContractCreate populated with the
+        // contract-specific Hedera properties of the parent, we should either (1) actually set those
+        // properties on the finalized hollow account with those properties; or (2) stop adding them
+        // to the externalized creation record
         evmFrameState.finalizeHollowAccount(address);
         // Reset pending creation to null, as a CREATE2 operation "collided" with an existing
         // hollow account instead of creating a truly new contract
@@ -518,13 +515,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             @Nullable final Address origin,
             @Nullable final ContractCreateTransactionBody body,
             @Nullable final Address alias) {
-        long number;
-        if (alias != null && isHollowAccount(alias)) {
-            var contractID = getHederaContractId(alias);
-            number = contractID.contractNum();
-        } else {
-            number = enhancement.operations().peekNextEntityNumber();
-        }
+        final var number = enhancement.operations().peekNextEntityNumber();
         pendingCreation = new PendingCreation(
                 alias == null ? asLongZeroAddress(number) : alias,
                 number,

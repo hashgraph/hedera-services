@@ -253,6 +253,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * are a few other properties that need to be set to "convert" an account into a contract.
      *
      * @param address the hollow account to be finalized as a contract
+     * @param parent the address of the "parent" account finalizing the hollow account
      */
     void finalizeHollowAccount(@NonNull Address address, @NonNull Address parent);
 
