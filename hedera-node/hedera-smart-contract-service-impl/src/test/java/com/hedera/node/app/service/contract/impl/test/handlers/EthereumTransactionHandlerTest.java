@@ -32,9 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
@@ -140,11 +138,6 @@ class EthereumTransactionHandlerTest {
         given(component.contextTransactionProcessor()).willReturn(contextTransactionProcessor);
         given(hevmTransactionFactory.fromHapiTransaction(handleContext.body())).willReturn(HEVM_CREATION);
 
-        final AccountID senderId = HEVM_CREATION.senderId();
-        final var parsedAccount = Account.newBuilder().accountId(senderId).build();
-
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(readableAccountStore.getAccountById(HEVM_CREATION.senderId())).willReturn(parsedAccount);
         given(transactionProcessor.processTransaction(
                         HEVM_CREATION,
                         baseProxyWorldUpdater,
@@ -170,7 +163,7 @@ class EthereumTransactionHandlerTest {
         given(recordBuilder.contractCallResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.feeChargedToPayer(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
+        given(recordBuilder.withTinybarGasFee(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
@@ -192,7 +185,7 @@ class EthereumTransactionHandlerTest {
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITHOUT_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.feeChargedToPayer(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
+        given(recordBuilder.withTinybarGasFee(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }

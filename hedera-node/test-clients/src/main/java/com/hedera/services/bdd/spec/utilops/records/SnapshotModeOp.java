@@ -127,6 +127,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // Keys are also regenerated every test execution
             "ed25519",
             "ECDSA_secp256k1",
+            // Ethereum data depends on ECDSA keys
+            "ethereum_data",
+            "ethereum_hash",
             // Plus some other fields that we might prefer to make deterministic
             "symbol",
             // Bloom field in ContractCall result
@@ -287,6 +290,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             boolean placeholderFound = false;
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
+                if (parsedItem.isPropertyOverride()) {
+                    // Property overrides vary with the previous contents of 0.0.121
+                    continue;
+                }
                 final var body = parsedItem.itemBody();
                 if (body.hasNodeStakeUpdate()) {
                     // We cannot ever expect to match node stake update export sequencing
@@ -427,11 +434,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Mismatched field names ('" + expectedName + "' vs '" + actualName + "' between expected "
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
+
             if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
-                //                System.out.println("YES");
                 continue;
             }
-            //            System.out.println("NO");
             matchValues(
                     expectedName,
                     expectedField.getValue(),
@@ -581,7 +587,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Amount '" + expected + "' and '" + actual
                                 + "' varied by more than " + maxVariation + " tinybar - "
                                 + mismatchContext.get());
-            } else if ("accountNum".equals(fieldName) && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
+            } else if (("accountNum".equals(fieldName) || "contractNum".equals(fieldName))
+                    && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());

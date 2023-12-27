@@ -501,6 +501,7 @@ public class TestHelpers {
             INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
+            null,
             null);
 
     public static final StorageAccesses ONE_STORAGE_ACCESSES =

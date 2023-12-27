@@ -99,7 +99,7 @@ public class StateSignatureCollectorWiring {
         Objects.requireNonNull(signedStateManager);
 
         stateSignatureTransactionInput.bind(scopedTransaction -> {
-            signedStateManager.handlePostconsensusSignatureTransaction(
+            signedStateManager.handlePreconsensusSignatureTransaction(
                     scopedTransaction.submitterId(), scopedTransaction.transaction());
         });
     }

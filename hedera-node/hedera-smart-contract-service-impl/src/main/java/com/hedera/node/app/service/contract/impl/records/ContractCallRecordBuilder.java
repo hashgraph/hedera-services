@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -56,6 +57,13 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder contractID(@Nullable ContractID contractId);
+
+    /**
+     * Returns the token id created.
+     *
+     * @return the token id created
+     */
+    TokenID tokenID();
 
     /**
      * Tracks the result of a top-level contract call.
