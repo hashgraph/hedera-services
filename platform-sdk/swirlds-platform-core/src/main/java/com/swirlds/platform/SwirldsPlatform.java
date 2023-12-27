@@ -179,6 +179,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -586,19 +587,17 @@ public class SwirldsPlatform implements Platform {
 
         components.add(stateManagementComponent);
 
-        //TODO these details are needed by the wiring
-//        preconsensusSystemTransactionManager.addHandler(
-//                StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
-
         final ConsensusSystemTransactionManager consensusSystemTransactionManager =
                 new ConsensusSystemTransactionManager();
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn, v) ->
                         consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
-        consensusSystemTransactionManager.addHandler(
-                StateSignatureTransaction.class,
-                (ignored, nodeId, txn, v) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+        BiConsumer<State, ConsensusRound> consensusSystemTransactionConsumer =
+                (state, round) -> {
+                    consensusSystemTransactionManager.handleRound(state, round);
+                    platformWiring.getSignatureCollectorConsensusInput().put(round);
+                };
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -636,7 +635,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 currentAddressBook,
                 selfId,
-                consensusSystemTransactionManager,
+                consensusSystemTransactionConsumer,
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 platformStatusManager,
                 initialState.getState(),

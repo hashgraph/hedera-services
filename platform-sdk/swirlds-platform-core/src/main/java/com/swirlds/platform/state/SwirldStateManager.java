@@ -39,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
@@ -73,7 +74,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     /**
      * Handles system transactions post-consensus
      */
-    private final ConsensusSystemTransactionManager consensusSystemTransactionManager;
+    private final BiConsumer<State, ConsensusRound> consensusSystemTransactionManager;
 
     /**
      * The current software version.
@@ -96,7 +97,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
+            @NonNull final BiConsumer<State, ConsensusRound> consensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final State state,
@@ -166,7 +167,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
                 state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        consensusSystemTransactionManager.handleRound(state, round);
+        consensusSystemTransactionManager.accept(state, round);
         updateEpoch();
     }
 

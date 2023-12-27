@@ -218,9 +218,14 @@ public class SignedStateManager {
     public synchronized List<ReservedSignedState> handlePostconsensusScopedSystemTransactions(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
-            handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
+            handlePostconsensusSignatureTransaction(transaction);
         }
         return null;
+    }
+
+    public synchronized void handlePostconsensusSignatureTransaction(
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
+        handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
     }
 
     /**
