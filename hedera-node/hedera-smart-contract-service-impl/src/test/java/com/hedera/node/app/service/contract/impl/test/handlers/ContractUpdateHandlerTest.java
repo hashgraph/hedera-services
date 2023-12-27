@@ -430,6 +430,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void verifyTheCorrectOutsideValidatorsAndUpdateContractAPIAreCalled() {
         doReturn(attributeValidator).when(context).attributeValidator();
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
+        when(contract.accountIdOrThrow()).thenReturn(AccountID.newBuilder().accountNum(666).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(contract.stakedId()).thenReturn(new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, null));
         when(context.expiryValidator()).thenReturn(expiryValidator);
@@ -640,7 +641,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void handleWhenTargetIdContainOnlyEvmAddress() {
         doReturn(attributeValidator).when(context).attributeValidator();
         when(accountStore.getContractById(targetContractWithEvmAddress)).thenReturn(contract);
-        when(contract.accountId())
+        when(contract.accountIdOrThrow())
                 .thenReturn(AccountID.newBuilder().accountNum(999L).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(contract.stakedId()).thenReturn(new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, null));

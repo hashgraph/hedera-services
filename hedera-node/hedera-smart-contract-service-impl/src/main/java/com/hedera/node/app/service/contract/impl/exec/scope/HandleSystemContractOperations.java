@@ -117,10 +117,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         if (transaction != null && transaction.body() != null) {
             childRecordBuilder.transaction(transaction);
             if (transaction.body().transactionID() != null) {
-                childRecordBuilder
-                        .transactionID(transaction.body().transactionID())
-                        .status(responseStatus)
-                        .contractCallResult(result);
+                childRecordBuilder.status(responseStatus).contractCallResult(result);
             }
         } else {
             externalizeResult(result, responseStatus);

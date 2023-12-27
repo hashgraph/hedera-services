@@ -157,7 +157,6 @@ class HandleSystemContractOperationsTest {
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
-        given(recordBuilder.transactionID(transaction.body().transactionID())).willReturn(recordBuilder);
         given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
 
@@ -165,7 +164,6 @@ class HandleSystemContractOperationsTest {
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS, transaction);
 
         // then
-        verify(recordBuilder).transactionID(transaction.body().transactionID());
         verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
     }
