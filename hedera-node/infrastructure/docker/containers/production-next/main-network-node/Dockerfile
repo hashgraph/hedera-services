@@ -21,7 +21,9 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
 # Install basic OS utilities for building
-RUN apt-get update && \
+RUN --mount=type=bind,source=./repro-sources-list.sh,target=/usr/local/bin/repro-sources-list.sh \
+    repro-sources-list.sh && \
+    apt-get update && \
 	apt-get install --yes --no-install-recommends tar gzip curl ca-certificates && \
     apt-get autoclean --yes && \
     apt-get clean all --yes && \
@@ -92,7 +94,9 @@ ENV LC_ALL C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install basic OS utilities
-RUN apt-get update && \
+RUN --mount=type=bind,source=./repro-sources-list.sh,target=/usr/local/bin/repro-sources-list.sh \
+    repro-sources-list.sh && \
+    apt-get update && \
     apt-get install -y tar gzip openssl zlib1g libsodium23 libreadline8 sudo netcat-traditional net-tools && \
     apt-get autoclean --yes && \
     apt-get clean all --yes && \
