@@ -313,9 +313,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTrackingDeletion(
-            @NonNull final Address deleted, @NonNull final Address beneficiary) {
-        return evmFrameState.tryTrackingDeletion(deleted, beneficiary);
+    public Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull final Address deleted, @NonNull final Address beneficiary, @NonNull final MessageFrame frame) {
+        return evmFrameState.tryTrackingSelfDestructBeneficiary(deleted, beneficiary, frame);
     }
 
     /**

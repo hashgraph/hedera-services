@@ -295,6 +295,7 @@ class TokenServiceApiImplTest {
                 .build());
         final var expectedSummary = new ContractChangeSummary(
                 new ArrayList<>(List.of(OTHER_CONTRACT_ID_BY_NUM)),
+                List.of(),
                 new ArrayList<>(List.of(
                         new ContractNonceInfo(CONTRACT_ID_BY_NUM, 124L),
                         new ContractNonceInfo(OTHER_CONTRACT_ID_BY_NUM, 1L))));

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
+import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideHederaEvmContext;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -35,10 +37,12 @@ import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
@@ -51,6 +55,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -108,6 +113,20 @@ class TransactionModuleTest {
                 ProxyWorldUpdater.class,
                 TransactionModule.provideFeesOnlyUpdater(enhancement, factory).get());
         verify(hederaOperations).begin();
+    }
+
+    @Test
+    void providesExpectedEvmContext() {
+        final var recordBuilder = mock(DeleteCapableTransactionRecordBuilder.class);
+        final var gasCalculator = mock(SystemContractGasCalculator.class);
+        final var blocks = mock(HederaEvmBlocks.class);
+        given(hederaOperations.gasPriceInTinybars()).willReturn(123L);
+        given(context.recordBuilder(DeleteCapableTransactionRecordBuilder.class))
+                .willReturn(recordBuilder);
+        final var result = provideHederaEvmContext(context, tinybarValues, gasCalculator, hederaOperations, blocks);
+        assertSame(blocks, result.blocks());
+        assertSame(123L, result.gasPrice());
+        assertSame(recordBuilder, result.deleteCapableTransactionRecordBuilder());
     }
 
     @Test
