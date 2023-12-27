@@ -776,9 +776,6 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl accountID(@NonNull final AccountID accountID) {
-        if (customizer.shouldSuppressAccountId()) {
-            return this;
-        }
         requireNonNull(accountID, "accountID must not be null");
         transactionReceiptBuilder.accountID(accountID);
         return this;
@@ -808,6 +805,8 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl contractID(@Nullable final ContractID contractID) {
+        // Ensure we don't externalize as an account creation too
+        transactionReceiptBuilder.accountID((AccountID) null);
         transactionReceiptBuilder.contractID(contractID);
         return this;
     }

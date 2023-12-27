@@ -107,9 +107,10 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         return account.getNonce() > 0 || account.getCode().size() > 0;
     }
 
+    @Override
     protected void revert(final MessageFrame frame) {
         super.revert(frame);
-        // clear child records form any succeeded operations when revert
+        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
         ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

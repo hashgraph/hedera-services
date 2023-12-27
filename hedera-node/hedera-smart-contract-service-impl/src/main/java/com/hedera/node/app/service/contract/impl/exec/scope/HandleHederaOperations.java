@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationL
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.*;
@@ -38,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -47,7 +47,6 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -305,14 +304,8 @@ public class HandleHederaOperations implements HederaOperations {
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final ContractID contractId =
-                ContractID.newBuilder().evmAddress(evmAddress).build();
-
-        tokenServiceApi.deleteContract(contractId);
-        // Externalize only on ethereum calls
-        if (context.body().hasEthereumTransaction()) {
-            addContractDeleteChildRecord(contractId);
-        }
+        tokenServiceApi.deleteContract(
+                ContractID.newBuilder().evmAddress(evmAddress).build());
     }
 
     /**
@@ -321,10 +314,8 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void deleteUnaliasedContract(final long number) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final ContractID contractId =
-                ContractID.newBuilder().contractNum(number).build();
-
-        tokenServiceApi.deleteContract(contractId);
+        tokenServiceApi.deleteContract(
+                ContractID.newBuilder().contractNum(number).build());
     }
 
     /**
@@ -332,7 +323,6 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public List<Long> getModifiedAccountNumbers() {
-        // TODO - remove this method, isn't needed
         return Collections.emptyList();
     }
 
@@ -349,39 +339,21 @@ public class HandleHederaOperations implements HederaOperations {
                 AccountID.newBuilder().accountNum(contractNumber).build());
     }
 
-    private void addContractDeleteChildRecord(final ContractID contractId) {
-        final var childRecordBuilder = context.addChildRecordBuilder(ContractDeleteRecordBuilder.class);
-        childRecordBuilder.contractID(contractId).transaction(Transaction.DEFAULT);
-    }
-
     @Override
     public void externalizeHollowAccountMerge(
             @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
-
         final var accountStore = context.readableStore(ReadableAccountStore.class);
-        final var parentAccount = accountStore.getContractById(parentId);
-
-        if (parentAccount != null && contractId.contractNum() != null) {
-            // build proper contract create body
-            final var bodyToExternalize = synthContractCreationFromParent(
-                    ContractID.newBuilder()
-                            .contractNum(contractId.contractNum())
-                            .build(),
-                    parentAccount);
-
-            // add record builder
-            var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
-            recordBuilder
-                    .contractID(contractId)
-                    .status(SUCCESS)
-                    .transaction(SingleTransactionRecordBuilder.transactionWith(TransactionBody.newBuilder()
-                            .contractCreateInstance(bodyToExternalize)
-                            .build()))
-                    .contractCreateResult(ContractFunctionResult.newBuilder()
-                            .contractID(contractId)
-                            .evmAddress(evmAddress)
-                            .build());
-        }
+        final var parent = requireNonNull(accountStore.getContractById(parentId));
+        context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
+                .contractID(contractId)
+                .status(SUCCESS)
+                .transaction(transactionWith(TransactionBody.newBuilder()
+                        .contractCreateInstance(synthContractCreationFromParent(contractId, parent))
+                        .build()))
+                .contractCreateResult(ContractFunctionResult.newBuilder()
+                        .contractID(contractId)
+                        .evmAddress(evmAddress)
+                        .build());
     }
 
     @Override
@@ -411,57 +383,39 @@ public class HandleHederaOperations implements HederaOperations {
                 (bodyToExternalize == null)
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
                         : contractBodyCustomizerFor(bodyToExternalize));
+        // TODO - deal with MAX_ENTITIES_IN_PRICE_REGIME_CREATED
+        if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
+            throw new AssertionError("Not implemented");
+        }
+        // On success we add extra information on the created contract
         final var contractId = ContractID.newBuilder().contractNum(number).build();
-        // add additional create record fields
         recordBuilder
                 .contractID(contractId)
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
                         .evmAddress(evmAddress)
                         .build());
-        // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
-            throw new AssertionError("Not implemented");
-        }
-        // Then use the TokenService API to mark the created account as a contract
+        // Mark the created account as a contract with the given auto-renew account id
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder().accountNum(number).build();
-
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
     private ExternalizedRecordCustomizer contractBodyCustomizerFor(@NonNull final ContractCreateTransactionBody op) {
-        return new ExternalizedRecordCustomizer() {
-            @Override
-            public Transaction apply(Transaction transaction) {
-                try {
-                    final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                            transaction.signedTransactionBytes().toReadableSequentialData());
-                    final var body = TransactionBody.PROTOBUF.parseStrict(
-                            signedTransaction.bodyBytes().toReadableSequentialData());
-                    // todo add check for hollow accounts
-                    if (!body.hasCryptoCreateAccount()) {
-                        throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
-                    }
-                    final var finishedBody =
-                            body.copyBuilder().contractCreateInstance(op).build();
-                    final var finishedSignedTransaction = signedTransaction
-                            .copyBuilder()
-                            .bodyBytes(TransactionBody.PROTOBUF.toBytes(finishedBody))
-                            .build();
-                    return transaction
-                            .copyBuilder()
-                            .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(finishedSignedTransaction))
-                            .build();
-                } catch (IOException internal) {
-                    // This should never happen
-                    throw new UncheckedIOException(internal);
+        return transaction -> {
+            try {
+                final var dispatchedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                        transaction.signedTransactionBytes().toReadableSequentialData());
+                final var dispatchedBody = TransactionBody.PROTOBUF.parseStrict(
+                        dispatchedTransaction.bodyBytes().toReadableSequentialData());
+                if (!dispatchedBody.hasCryptoCreateAccount()) {
+                    throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
                 }
-            }
-
-            @Override
-            public boolean shouldSuppressAccountId() {
-                return true;
+                return transactionWith(
+                        dispatchedBody.copyBuilder().contractCreateInstance(op).build());
+            } catch (IOException e) {
+                // Should be impossible
+                throw new UncheckedIOException(e);
             }
         };
     }

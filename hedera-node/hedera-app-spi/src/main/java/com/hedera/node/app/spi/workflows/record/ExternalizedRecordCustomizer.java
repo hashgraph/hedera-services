@@ -61,8 +61,4 @@ public interface ExternalizedRecordCustomizer extends UnaryOperator<Transaction>
     default boolean shouldSuppressRecord() {
         return false;
     }
-
-    default boolean shouldSuppressAccountId() {
-        return false;
-    }
 }

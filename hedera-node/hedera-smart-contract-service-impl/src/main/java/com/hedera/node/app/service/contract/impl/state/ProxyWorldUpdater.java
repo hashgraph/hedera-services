@@ -302,14 +302,15 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccount(@NonNull final Address alias, @NonNull final Address parent) {
-        evmFrameState.finalizeHollowAccount(alias);
-        // add child record on merge
+    public void finalizeHollowAccount(@NonNull final Address address, @NonNull final Address parent) {
+        evmFrameState.finalizeHollowAccount(address);
+        // Reset pending creation to null, as a CREATE2 operation "collided" with an existing
+        // hollow account instead of creating a truly new contract
         pendingCreation = null;
-        var contractId = getHederaContractId(alias);
-        var parentId = getHederaContractId(parent);
-        var evmAddress = aliasFrom(alias);
-        enhancement.operations().externalizeHollowAccountMerge(contractId, parentId, evmAddress);
+        enhancement
+                .operations()
+                .externalizeHollowAccountMerge(
+                        getHederaContractId(address), getHederaContractId(parent), aliasFrom(address));
     }
 
     @Override
