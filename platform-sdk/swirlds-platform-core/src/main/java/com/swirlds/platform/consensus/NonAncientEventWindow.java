@@ -29,8 +29,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class NonAncientEventWindow {
 
     /**
-     * The undefined NonAncientEventWindow. This constant is used initialize NonAncientEventWindow variables before
-     * receiving the actual value.
+     * The initial NonAncientEventWindow. This constant is used to initialize NonAncientEventWindow variables before
+     * receiving an updated value.
      */
     public static NonAncientEventWindow INITIAL_EVENT_WINDOW = new NonAncientEventWindow(
             ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION);
