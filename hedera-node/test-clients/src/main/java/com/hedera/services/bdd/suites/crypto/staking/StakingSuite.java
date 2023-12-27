@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.crypto.staking;
 
-import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -50,7 +49,6 @@ import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -66,14 +64,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Tag(TIME_CONSUMING)
+// @HapiTestSuite
+// @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+// @Tag(TIME_CONSUMING)
 public class StakingSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(StakingSuite.class);

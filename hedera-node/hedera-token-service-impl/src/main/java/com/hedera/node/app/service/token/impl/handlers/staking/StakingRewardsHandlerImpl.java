@@ -169,33 +169,40 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 // Even if the stakee's total stake hasn't changed, we still want to
                 // trigger a reward situation whenever the staker balance changes
                 if (modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance()) {
-                    if (specialRewardReceivers == null) {
-                        specialRewardReceivers = new LinkedHashSet<>();
-                    }
-                    specialRewardReceivers.add(modifiedAccount.stakedAccountId());
+                    specialRewardReceivers =
+                            updateSpecialRewardReceivers(specialRewardReceivers, modifiedAccount, writableStore);
                 }
             } else {
                 if (scenario.withdrawsFromAccount()) {
-                    if (specialRewardReceivers == null) {
-                        // Always trigger a reward situation for the old stakee when they are
-                        // losing an indirect staker, even if it doesn't change their total stake
-                        specialRewardReceivers = new LinkedHashSet<>();
-                    }
-                    final var curStakedAccountId = originalAccount.stakedAccountId();
-                    specialRewardReceivers.add(curStakedAccountId);
+                    specialRewardReceivers =
+                            updateSpecialRewardReceivers(specialRewardReceivers, originalAccount, writableStore);
                 }
                 if (scenario.awardsToAccount()) {
-                    if (specialRewardReceivers == null) {
-                        // Always trigger a reward situation for the new stakee when they are
-                        // gaining an indirect staker, even if it doesn't change their total stake
-                        specialRewardReceivers = new LinkedHashSet<>();
-                    }
-                    final var newStakedAccountId = modifiedAccount.stakedAccountId();
-                    specialRewardReceivers.add(newStakedAccountId);
+                    specialRewardReceivers =
+                            updateSpecialRewardReceivers(specialRewardReceivers, modifiedAccount, writableStore);
                 }
             }
         }
         return specialRewardReceivers == null ? Collections.emptySet() : specialRewardReceivers;
+    }
+
+    @NonNull
+    private Set<AccountID> updateSpecialRewardReceivers(
+            @Nullable Set<AccountID> specialRewardReceivers,
+            @NonNull final Account account,
+            @NonNull final WritableAccountStore accountStore) {
+        if (specialRewardReceivers == null) {
+            // Always trigger a reward situation for the new stakee when they are
+            // gaining an indirect staker, even if it doesn't change their total stake
+            specialRewardReceivers = new LinkedHashSet<>();
+        }
+        final var stakedAccountId = account.stakedAccountId();
+        final var stakedAccount = accountStore.getOriginalValue(stakedAccountId);
+        // if the special reward receiver account is not staked to a node, it will not need to receive reward
+        if (stakedAccount != null && stakedAccount.hasStakedNodeId()) {
+            specialRewardReceivers.add(stakedAccountId);
+        }
+        return specialRewardReceivers;
     }
 
     /**
@@ -252,16 +259,11 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             if (containStakeMetaChanges) {
                 final var copy = modifiedAccount.copyBuilder();
                 copy.stakeAtStartOfLastRewardedPeriod(NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE);
-                log.info("stakeAtStartOfLastRewardedPeriod  set to -1 for account {}", originalAccount);
                 writableStore.put(copy.build());
             } else if (shouldUpdateStakeAtStartOfLastRewardPeriod(
                     originalAccount, rewardSituation, reward, stakingRewardStore, consensusNow)) {
                 final var copy = modifiedAccount.copyBuilder();
                 copy.stakeAtStartOfLastRewardedPeriod(roundedToHbar(totalStake(originalAccount)));
-                log.info(
-                        "stakeAtStartOfLastRewardedPeriod {} for account {}",
-                        roundedToHbar(totalStake(originalAccount)),
-                        originalAccount);
                 writableStore.put(copy.build());
             }
 
