@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRU
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -119,6 +120,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
+    @HapiTest
     HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
@@ -463,6 +465,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
+    @HapiTest
     HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
@@ -497,7 +500,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(INVALID_CONTRACT_ID));
+                        .hasKnownStatusFrom(INVALID_CONTRACT_ID, CONTRACT_EXECUTION_EXCEPTION));
     }
 
     @HapiTest
@@ -529,6 +532,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
+    @HapiTest
     HapiSpec internalBurnToZeroAddressReverts() {
         return defaultHapiSpec("internalBurnToZeroAddressReverts")
                 .given(

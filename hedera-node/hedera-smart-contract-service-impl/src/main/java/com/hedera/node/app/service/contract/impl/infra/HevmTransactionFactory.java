@@ -36,6 +36,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asChainIdBytes;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -168,7 +169,7 @@ public class HevmTransactionFactory {
         return new HederaEvmTransaction(
                 payer,
                 null,
-                body.contractIDOrThrow(),
+                asPriorityId(body.contractIDOrThrow(), accountStore),
                 NOT_APPLICABLE,
                 body.functionParameters(),
                 null,
@@ -198,7 +199,11 @@ public class HevmTransactionFactory {
         return new HederaEvmTransaction(
                 senderId,
                 relayerId,
-                ContractID.newBuilder().evmAddress(Bytes.wrap(ethTxData.to())).build(),
+                asPriorityId(
+                        ContractID.newBuilder()
+                                .evmAddress(Bytes.wrap(ethTxData.to()))
+                                .build(),
+                        accountStore),
                 ethTxData.nonce(),
                 ethTxData.hasCallData() ? Bytes.wrap(ethTxData.callData()) : Bytes.EMPTY,
                 Bytes.wrap(ethTxData.chainId()),

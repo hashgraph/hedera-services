@@ -219,6 +219,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         return validatedAccount(number).ethereumNonce();
     }
 
+    @Override
+    public com.hedera.hapi.node.state.token.Account getNativeAccount(final long number) {
+        return validatedAccount(number);
+    }
+
     /**
      * {@inheritDoc}
      */

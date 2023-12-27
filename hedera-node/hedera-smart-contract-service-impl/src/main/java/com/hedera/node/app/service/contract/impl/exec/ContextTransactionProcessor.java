@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EV
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -58,7 +59,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     private final ActionSidecarContentTracer tracer;
     private final RootProxyWorldUpdater rootProxyWorldUpdater;
-    private final HevmTransactionFactory hevmTransactionFactory;
+    public final HevmTransactionFactory hevmTransactionFactory;
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
     private final Map<HederaEvmVersion, TransactionProcessor> processors;
 
@@ -107,11 +108,10 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     result.finalStatus(),
                     result.recipientId(),
                     result.gasPrice());
-        } catch (HandleException abort) {
-            // try to resolve the sender if it is an alias
-            var sender = feesOnlyUpdater.get().getHederaAccount(hevmTransaction.senderId());
-            var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
-            final var result = HederaEvmTransactionResult.fromAborted(senderId, hevmTransaction, abort.getStatus());
+        } catch (AbortException e) {
+            // Commit any HAPI fees that were charged before aborting
+            rootProxyWorldUpdater.commit();
+            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
             return new CallOutcome(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
                     result.finalStatus(),
