@@ -34,7 +34,6 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,8 +53,6 @@ class RecordListBuilderTest extends AppTestBase {
             .withValue("consensus.handle.maxFollowingRecords", MAX_CHILDREN)
             .getOrCreateConfig();
     private static final int EXPECTED_CHILD_NANO_INCREMENT = 0;
-    private static final int EXPECTED_CHILD_NANO_INCREMENT_SCHEDULED =
-            Math.toIntExact(CONFIGURATION.getConfigData(ConsensusConfig.class).handleMaxPrecedingRecords());
 
     @SuppressWarnings("ConstantConditions")
     @Test
