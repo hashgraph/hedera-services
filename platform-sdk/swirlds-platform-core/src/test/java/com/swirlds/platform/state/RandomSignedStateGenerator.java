@@ -165,7 +165,7 @@ public class RandomSignedStateGenerator {
         final PlatformState platformState = stateInstance.getPlatformState();
 
         platformState.setRound(roundInstance);
-        platformState.setHashEventsCons(hashEventsConsInstance);
+        platformState.setRunningEventHash(hashEventsConsInstance);
         platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);

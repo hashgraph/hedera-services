@@ -360,7 +360,7 @@ public final class EventRecoveryWorkflow {
         final PlatformState platformState = newState.getPlatformState();
 
         platformState.setRound(round.getRoundNum());
-        platformState.setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round));
+        platformState.setRunningEventHash(getHashEventsCons(previousState.get().getHashEventsCons(), round));
         platformState.setConsensusTimestamp(currentRoundTimestamp);
         platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                 round.getRoundNum(),

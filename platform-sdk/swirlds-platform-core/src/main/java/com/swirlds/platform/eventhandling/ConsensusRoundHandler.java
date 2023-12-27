@@ -462,7 +462,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         final PlatformState platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
         final Hash runningHash = eventsConsRunningHash.getFutureHash().getAndRethrow();
-        platformState.setHashEventsCons(runningHash);
+        platformState.setRunningEventHash(runningHash);
     }
 
     private void createSignedState() throws InterruptedException {

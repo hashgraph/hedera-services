@@ -116,7 +116,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
             newPlatformState.setAddressBook(platformState.getAddressBook());
             newPlatformState.setPreviousAddressBook(platformState.getPreviousAddressBook());
             newPlatformState.setRound(platformData.getRound());
-            newPlatformState.setHashEventsCons(platformData.getHashEventsCons());
+            newPlatformState.setRunningEventHash(platformData.getHashEventsCons());
             newPlatformState.setConsensusTimestamp(platformData.getConsensusTimestamp());
             newPlatformState.setCreationSoftwareVersion(platformData.getCreationSoftwareVersion());
             newPlatformState.setEpochHash(platformData.getEpochHash());

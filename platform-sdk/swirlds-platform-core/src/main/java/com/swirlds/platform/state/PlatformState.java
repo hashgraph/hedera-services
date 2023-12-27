@@ -72,7 +72,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * The running hash of the hashes of all events have reached consensus up through the round that this SignedState
      * represents.
      */
-    private Hash hashEventsCons;
+    private Hash runningEventHash;
 
     /**
      * the consensus timestamp for this signed state
@@ -132,7 +132,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.addressBook = that.addressBook.copy();
         this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
-        this.hashEventsCons = that.hashEventsCons;
+        this.runningEventHash = that.runningEventHash;
         this.consensusTimestamp = that.consensusTimestamp;
         this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
@@ -176,7 +176,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(addressBook, false);
         out.writeSerializable(previousAddressBook, true);
         out.writeLong(round);
-        out.writeSerializable(hashEventsCons, false);
+        out.writeSerializable(runningEventHash, false);
         out.writeInstant(consensusTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
@@ -195,7 +195,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         addressBook = in.readSerializable(false, AddressBook::new);
         previousAddressBook = in.readSerializable(true, AddressBook::new);
         round = in.readLong();
-        hashEventsCons = in.readSerializable(false, Hash::new);
+        runningEventHash = in.readSerializable(false, Hash::new);
         consensusTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
         epochHash = in.readSerializable(false, Hash::new);
@@ -300,16 +300,16 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Nullable
     public Hash getRunningEventHash() {
-        return hashEventsCons;
+        return runningEventHash;
     }
 
     /**
      * Set the running hash of all events that have been applied to this state since the beginning of time.
      *
-     * @param hashEventsCons a running hash of events
+     * @param runningEventHash a running hash of events
      */
-    public void setHashEventsCons(@NonNull final Hash hashEventsCons) {
-        this.hashEventsCons = Objects.requireNonNull(hashEventsCons);
+    public void setRunningEventHash(@Nullable final Hash runningEventHash) {
+        this.runningEventHash = runningEventHash;
     }
 
     /**
