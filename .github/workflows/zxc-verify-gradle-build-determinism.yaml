@@ -32,7 +32,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.9"
+        default: "21.0.1"
 
     secrets:
       gradle-cache-username:
@@ -147,7 +147,7 @@ jobs:
           - [self-hosted, Linux, medium, ephemeral]
           - [self-hosted, Linux, large, ephemeral]
     steps:
-      - name: Set git to use LF
+      - name: Standardize Git Line Endings
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf

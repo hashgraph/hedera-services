@@ -88,12 +88,17 @@ public class RecordCreationSuite extends HapiSuite {
                 submittingNodeStillPaidIfServiceFeesOmitted());
     }
 
+    @HapiTest
     final HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
-        return defaultHapiSpec("submittingNodeStillPaidIfServiceFeesOmitted")
+        return propertyPreservingHapiSpec("submittingNodeStillPaidIfServiceFeesOmitted")
+                .preserving(STAKING_FEES_NODE_REWARD_PERCENTAGE, STAKING_FEES_STAKING_REWARD_PERCENTAGE)
                 .given(
+                        overridingTwo(
+                                STAKING_FEES_NODE_REWARD_PERCENTAGE, "10",
+                                STAKING_FEES_STAKING_REWARD_PERCENTAGE, "10"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO_ACCOUNT, ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate(PAYER),
@@ -141,13 +146,18 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
+    @HapiTest
     final HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
         final String comfortingMemo = THIS_IS_OK_IT_S_FINE_IT_S_WHATEVER;
         final String disquietingMemo = "\u0000his is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
-        return defaultHapiSpec("SubmittingNodeChargedNetworkFeeForLackOfDueDiligence")
+        return propertyPreservingHapiSpec("SubmittingNodeChargedNetworkFeeForLackOfDueDiligence")
+                .preserving(STAKING_FEES_NODE_REWARD_PERCENTAGE, STAKING_FEES_STAKING_REWARD_PERCENTAGE)
                 .given(
+                        overridingTwo(
+                                STAKING_FEES_NODE_REWARD_PERCENTAGE, "10",
+                                STAKING_FEES_STAKING_REWARD_PERCENTAGE, "10"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO_ACCOUNT, ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate(PAYER),

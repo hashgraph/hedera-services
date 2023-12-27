@@ -56,12 +56,14 @@ public record SignedStateFileManagerWiring(
                 scheduler
                         .getOutputWire()
                         .buildTransformer(
-                                "extract oldestMinimumGenerationOnDisk",
+                                "extractOldestMinimumGenerationOnDisk",
+                                "state saving result",
                                 StateSavingResult::oldestMinimumGenerationOnDisk),
                 scheduler
                         .getOutputWire()
                         .buildTransformer(
-                                "to StateWrittenToDiskAction",
+                                "toStateWrittenToDiskAction",
+                                "state saving result",
                                 ssr -> new StateWrittenToDiskAction(ssr.round(), ssr.freezeState())));
     }
 
