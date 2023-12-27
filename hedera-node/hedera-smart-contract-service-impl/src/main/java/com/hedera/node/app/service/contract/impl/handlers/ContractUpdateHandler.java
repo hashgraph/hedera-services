@@ -54,6 +54,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -97,7 +98,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                 || op.hasProxyAccountID()
                 || op.hasAutoRenewPeriod()
                 || op.hasFileID()
-                || op.memoOrElse("").length() > 0;
+                || !op.memoOrElse("").isEmpty();
     }
 
     private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
@@ -113,25 +114,19 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
         validateSemantics(toBeUpdated, context, op, accountStore);
-        final var changed = update(toBeUpdated, context, op);
-
+        final var changed = update(requireNonNull(toBeUpdated), context, op);
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
-        // Target may have only evm address and this way can't pass fuzzy matching
-        if (target.contractNum() == null && toBeUpdated.accountId() != null) {
-            var contractId = target.copyBuilder()
-                    .contractNum(toBeUpdated.accountId().accountNum())
-                    .build();
-            context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(contractId);
-        } else {
-            context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(target);
-        }
+        context.recordBuilder(ContractUpdateRecordBuilder.class)
+                .contractID(ContractID.newBuilder()
+                        .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
+                        .build());
     }
 
     private void validateSemantics(
-            Account contract,
-            HandleContext context,
-            ContractUpdateTransactionBody op,
-            ReadableAccountStore accountStore) {
+            @Nullable final Account contract,
+            @NonNull final HandleContext context,
+            @NonNull final ContractUpdateTransactionBody op,
+            @NonNull final ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
         validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
 
