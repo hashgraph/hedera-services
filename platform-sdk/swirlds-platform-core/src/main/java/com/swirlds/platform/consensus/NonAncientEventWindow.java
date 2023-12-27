@@ -16,23 +16,54 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Determines the window of rounds between the pending consensus round and the minimum round non-ancient. Provides the
- * following information:
- * <ol>
- *     <li> latestConsensusRound - the latest round to have come to consensus.</li>
- *     <li> minRoundNonAncient - the ancient threshold based on event birth round</li>
- *     <li> minGenNonAncient - the ancient threshold based on event generation</li>
- *     <li> pendingConsensusRound - the current round coming to consensus, i.e. 1  + the latestConsensusRound</li>
- * </ol>
- * <p>
- * FUTURE WORK: Remove minGenNonAncient once we throw the switch to using minRoundNonAncient as the ancient threshold.
+ * Determines the non-ancient lower bound (inclusive) on events and communicates the window of rounds between the
+ * pendingConsensusRound and the minimumRoundNonAncient (inclusive).
  */
-public record NonAncientEventWindow(long latestConsensusRound, long minRoundNonAncient, long minGenNonAncient) {
+public class NonAncientEventWindow {
+
+    /**
+     * The undefined NonAncientEventWindow. This constant is used initialize NonAncientEventWindow variables before
+     * receiving the actual value.
+     */
+    public static NonAncientEventWindow INITIAL_EVENT_WINDOW = new NonAncientEventWindow(
+            ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION);
+
+    private final long latestConsensusRound;
+    private final long minRoundNonAncient;
+    private final long minGenNonAncient;
+
+    /**
+     * Create a new NonAncientEventWindow with the given bounds. The latestConsensusRound must be greater than or equal
+     * to the first round of consensus.  If the minimum round non-ancient is set to a number lower than the first round
+     * of consensus, the first round of consensus is used instead.  The minGenNonAncient value must be greater than or
+     * equal to the first generation for events.
+     *
+     * @param latestConsensusRound the latest round that has come to consensus
+     * @param minRoundNonAncient   the minimum round that is non-ancient
+     * @param minGenNonAncient     the minimum generation that is non-ancient
+     * @throws IllegalArgumentException if the latestConsensusRound is less than the first round of consensus or if the
+     *                                  minGenNonAncient value is less than the first generation for events.
+     */
+    public NonAncientEventWindow(long latestConsensusRound, long minRoundNonAncient, long minGenNonAncient) {
+        if (latestConsensusRound < ConsensusConstants.ROUND_FIRST) {
+            throw new IllegalArgumentException(
+                    "The latest consensus round cannot be less than the first round of consensus.");
+        }
+        if (minGenNonAncient < EventConstants.FIRST_GENERATION) {
+            throw new IllegalArgumentException(
+                    "the minimum generation non-ancient cannot be lower than the first generation for events.");
+        }
+        this.latestConsensusRound = latestConsensusRound;
+        this.minRoundNonAncient = Math.max(minRoundNonAncient, ConsensusConstants.ROUND_FIRST);
+        this.minGenNonAncient = minGenNonAncient;
+    }
 
     /**
      * @return the pending round coming to consensus, i.e. 1  + the latestConsensusRound
@@ -42,28 +73,67 @@ public record NonAncientEventWindow(long latestConsensusRound, long minRoundNonA
     }
 
     /**
+     * @return the lower bound of the non-ancient event window
+     */
+    public long getLowerBound() {
+        // FUTURE WORK: return minRoundNonAncient once we switch from minGenNonAncient.
+        return minGenNonAncient;
+    }
+
+    /**
      * Determines if the given event is ancient.
      *
      * @param event the event to check for being ancient.
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final GossipEvent event) {
-        // use minimum generation non-ancient until we throw the switch to using minimum round non-ancient
+        // FUTURE WORK: use generation until we throw the switch to using round
         return event.getGeneration() < minGenNonAncient;
     }
 
-    public static NonAncientEventWindow create(
-            final long latestConsensusRound,
-            final long minGenNonAncient,
-            @NonNull final PlatformContext platformContext) {
+    /**
+     * Determines if the given event is ancient.
+     *
+     * @param event the event to check for being ancient.
+     * @return true if the event is ancient, false otherwise.
+     */
+    public boolean isAncient(EventDescriptor event) {
+        // FUTURE WORK: use generation until we throw the switch to using round
+        return event.getGeneration() < minGenNonAncient;
+    }
+
+    /**
+     * Determines if the given long value is ancient.
+     *
+     * @param testValue the value to check for being ancient.
+     * @return true if the value is ancient, false otherwise.
+     */
+    public boolean isAncient(long testValue) {
+        // FUTURE WORK: use generation until we throw the switch to using round
+        return testValue < minGenNonAncient;
+    }
+
+    /**
+     * Create a NonAncientEventWindow by calculating the minRoundNonAncient value from the latestConsensusRound and
+     * roundsNonAncient.
+     *
+     * @param latestConsensusRound the latest round that has come to consensus
+     * @param minGenNonAncient     the minimum generation that is non-ancient
+     * @param roundsNonAncient     the number of rounds that are non-ancient
+     * @return the new NonAncientEventWindow
+     */
+    public static NonAncientEventWindow createUsingRoundsNonAncient(
+            final long latestConsensusRound, final long minGenNonAncient, final long roundsNonAncient) {
         return new NonAncientEventWindow(
-                latestConsensusRound,
-                latestConsensusRound
-                        - platformContext
-                                .getConfiguration()
-                                .getConfigData(ConsensusConfig.class)
-                                .roundsNonAncient()
-                        + 1,
-                minGenNonAncient);
+                latestConsensusRound, latestConsensusRound - roundsNonAncient + 1, minGenNonAncient);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("latestConsensusRound", latestConsensusRound)
+                .append("minRoundNonAncient", minRoundNonAncient)
+                .append("minGenNonAncient", minGenNonAncient)
+                .toString();
     }
 }

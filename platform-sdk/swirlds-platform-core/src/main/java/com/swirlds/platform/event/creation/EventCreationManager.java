@@ -140,7 +140,6 @@ public class EventCreationManager {
      * @param nonAncientEventWindow the non-ancient event window
      */
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
-        creator.setMinimumGenerationNonAncient(nonAncientEventWindow.minGenNonAncient());
+        creator.setNonAncientEventWindow(nonAncientEventWindow);
     }
 }

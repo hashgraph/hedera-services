@@ -95,9 +95,9 @@ public class InOrderLinker {
     private final Map<Hash, EventImpl> parentHashMap = new HashMap<>(INITIAL_CAPACITY);
 
     /**
-     * The current minimum generation required for an event to be non-ancient.
+     * The current non-ancient event window.
      */
-    private long minimumGenerationNonAncient = 0;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -159,7 +159,7 @@ public class InOrderLinker {
     private EventImpl getParentToLink(
             @NonNull final GossipEvent child, @NonNull final Hash parentHash, final long claimedParentGeneration) {
 
-        if (claimedParentGeneration < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(claimedParentGeneration)) {
             // ancient parents don't need to be linked
             return null;
         }
@@ -221,7 +221,7 @@ public class InOrderLinker {
      */
     @Nullable
     public EventImpl linkEvent(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             // This event is ancient, so we don't need to link it.
             this.intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -248,11 +248,11 @@ public class InOrderLinker {
      * @param nonAncientEventWindow the non-ancient event window
      */
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
-        this.minimumGenerationNonAncient = nonAncientEventWindow.minGenNonAncient();
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
         parentDescriptorMap.shiftWindow(
-                minimumGenerationNonAncient, (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
+                nonAncientEventWindow.getLowerBound(),
+                (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
     }
 
     /**

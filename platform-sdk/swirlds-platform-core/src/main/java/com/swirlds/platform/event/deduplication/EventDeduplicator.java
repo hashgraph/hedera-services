@@ -54,9 +54,9 @@ public class EventDeduplicator {
     private static final int INITIAL_CAPACITY = 1024;
 
     /**
-     * The current minimum generation required for an event to be non-ancient.
+     * The current non-ancient event window.
      */
-    private long minimumGenerationNonAncient = 0;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -112,7 +112,7 @@ public class EventDeduplicator {
      */
     @Nullable
     public GossipEvent handleEvent(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -143,10 +143,9 @@ public class EventDeduplicator {
      * @param nonAncientEventWindow the non-ancient event window
      */
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
-        this.minimumGenerationNonAncient = nonAncientEventWindow.minGenNonAncient();
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        observedEvents.shiftWindow(minimumGenerationNonAncient);
+        observedEvents.shiftWindow(nonAncientEventWindow.getLowerBound());
     }
 
     /**

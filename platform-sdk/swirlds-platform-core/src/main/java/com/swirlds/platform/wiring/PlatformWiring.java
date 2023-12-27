@@ -96,8 +96,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
             orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
             inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-            linkedEventIntakeWiring =
-                    LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler(), platformContext);
+            linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
             eventCreationManagerWiring =
                     EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
 

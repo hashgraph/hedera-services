@@ -909,8 +909,13 @@ public class SwirldsPlatform implements Platform {
             if (eventConfig.useLegacyIntake()) {
                 eventLinker.loadFromSignedState(initialState);
             } else {
-                platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.create(
-                        initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
+                platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                        initialState.getRound(),
+                        initialMinimumGenerationNonAncient,
+                        platformContext
+                                .getConfiguration()
+                                .getConfigData(ConsensusConfig.class)
+                                .roundsNonAncient()));
             }
 
             // We don't want to invoke these callbacks until after we are starting up.
@@ -1061,8 +1066,13 @@ public class SwirldsPlatform implements Platform {
         }
 
         try {
-            eventCreator.setMinimumGenerationNonAncient(
-                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
+            eventCreator.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                    signedState.getRound(),
+                    signedState.getMinRoundGeneration(),
+                    platformContext
+                            .getConfiguration()
+                            .getConfigData(ConsensusConfig.class)
+                            .roundsNonAncient()));
 
             // newer states will not have events, so we need to check for null
             if (signedState.getState().getPlatformState().getPlatformData().getEvents() == null) {
@@ -1199,8 +1209,13 @@ public class SwirldsPlatform implements Platform {
                             .inject(new AddressBookUpdate(
                                     signedState.getState().getPlatformState().getPreviousAddressBook(),
                                     signedState.getState().getPlatformState().getAddressBook()));
-                    platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.create(
-                            signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
+                    platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                            signedState.getRound(),
+                            signedState.getMinRoundGeneration(),
+                            platformContext
+                                    .getConfiguration()
+                                    .getConfigData(ConsensusConfig.class)
+                                    .roundsNonAncient()));
                 }
             } finally {
                 intakeQueue.resume();
