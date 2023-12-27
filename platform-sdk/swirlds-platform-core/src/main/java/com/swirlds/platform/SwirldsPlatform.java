@@ -620,6 +620,7 @@ public class SwirldsPlatform implements Platform {
 
         final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
                 platformContext,
+                time,
                 threadManager,
                 getSelfId(),
                 this,

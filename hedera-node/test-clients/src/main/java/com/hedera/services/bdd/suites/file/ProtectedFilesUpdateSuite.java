@@ -109,6 +109,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
     }
 
+    @BddMethodIsNotATest
     final HapiSpec specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount,
             final String specialFile,
@@ -148,6 +149,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
     }
 
+    @BddMethodIsNotATest
     final HapiSpec specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,
@@ -163,6 +165,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                         : (new String(contents).replace(target, replacement)).getBytes());
     }
 
+    @BddMethodIsNotATest
     final HapiSpec specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,

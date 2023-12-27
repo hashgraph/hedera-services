@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CO
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
@@ -93,6 +94,31 @@ class FrameUtilsTest {
         stack.push(initialFrame);
         given(initialFrame.getMessageFrameStack()).willReturn(stack);
         assertFalse(FrameUtils.acquiredSenderAuthorizationViaDelegateCall(initialFrame));
+    }
+
+    @Test
+    void singleFrameStackHasNoActiveAddress() {
+        stack.add(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertFalse(stackIncludesActiveAddress(frame, EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void detectsTargetAddressInTwoFrameStack() {
+        stack.push(initialFrame);
+        stack.add(frame);
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertTrue(stackIncludesActiveAddress(frame, EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void detectsLackOfTargetAddressInTwoFrameStack() {
+        stack.push(initialFrame);
+        stack.add(frame);
+        given(frame.getRecipientAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertFalse(stackIncludesActiveAddress(frame, EIP_1014_ADDRESS));
     }
 
     @Test

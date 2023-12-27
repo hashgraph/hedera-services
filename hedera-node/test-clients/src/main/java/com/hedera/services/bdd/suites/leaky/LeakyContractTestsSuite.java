@@ -1260,6 +1260,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     final HapiSpec etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
         return propertyPreservingHapiSpec("etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
