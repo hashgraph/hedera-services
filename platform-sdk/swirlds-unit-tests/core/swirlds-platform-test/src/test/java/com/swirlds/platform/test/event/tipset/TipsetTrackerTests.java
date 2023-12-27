@@ -146,7 +146,7 @@ class TipsetTrackerTests {
             final NonAncientEventWindow nonAncientEventWindow =
                     new NonAncientEventWindow(1, 0, minimumGenerationNonAncient);
             tracker.setNonAncientEventWindow(nonAncientEventWindow);
-            assertEquals(minimumGenerationNonAncient, tracker.getNonAncientEventWindow());
+            assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
                 if (fingerprint.getGeneration() < minimumGenerationNonAncient) {
                     assertNull(tracker.getTipset(fingerprint));
