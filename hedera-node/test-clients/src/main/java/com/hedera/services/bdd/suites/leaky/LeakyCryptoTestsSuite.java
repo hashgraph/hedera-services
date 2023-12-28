@@ -77,13 +77,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
@@ -159,6 +156,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -319,7 +317,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
     }
 
-    // Cannot be enabled as HapiTest because long term schedule transactions is not implemented in mod service
+    @BddMethodIsNotATest
     final HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
                 .given(
@@ -447,7 +445,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then();
     }
 
-    // Cannot be enabled as HapiTest because tokens.maxPerAccount is not being used in mod service
+    @BddMethodIsNotATest
     final HapiSpec maxAutoAssociationSpec() {
         final int MONOGAMOUS_NETWORK = 1;
         final int maxAutoAssociations = 100;
@@ -471,7 +469,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
 
-    // Cannot be enabled as HapiTest because expiration is not implemented in mod service
+    @BddMethodIsNotATest
     public HapiSpec canDissociateFromMultipleExpiredTokens() {
         final var civilian = "civilian";
         final long initialSupply = 100L;
@@ -1009,7 +1007,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, ALLOW_SKIPPED_ENTITY_IDS),
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                        // ALLOW_SKIPPED_ENTITY_IDS),
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",

@@ -237,7 +237,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         if (!relationships.isEmpty()
                 || alreadyUsedAutomaticAssociations.isPresent()
                 || !absentRelationships.isEmpty()
-                || expectations.isPresent()
+                || (expectations.isPresent() && expectations.get().hasTokenAssociationExpectation())
                 || registryEntry.isPresent()) {
             final var detailsLookup = QueryVerbs.getAccountDetails(
                             "0.0." + actualInfo.getAccountID().getAccountNum())

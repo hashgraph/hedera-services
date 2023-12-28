@@ -126,7 +126,6 @@ final class ReconnectTest {
                     .build();
 
             final MerkleCryptography cryptography = MerkleCryptoFactory.getInstance();
-            cryptography.digestSync(signedState.getState().getPlatformState());
             cryptography.digestSync(signedState.getState());
 
             final ReconnectLearner receiver = buildReceiver(
