@@ -34,9 +34,9 @@ import java.util.function.Supplier;
  * is not thread safe!
  * <p>
  * The class is defined as a singleton that provides the current configuration. By default the configuration has no
- * config sources. Therefore the default values will be used for all values of config data records (see {@link
- * ConfigData}). A new config can be set by calling the {@link #setConfiguration(Configuration)} method. That should be
- * done once in the browser or for unit tests and nowhere else!
+ * config sources. Therefore the default values will be used for all values of config data records (see
+ * {@link ConfigData}). A new config can be set by calling the {@link #setConfiguration(Configuration)} method. That
+ * should be done once in the browser or for unit tests and nowhere else!
  *
  * @deprecated Will be removed once we have the Platform Context in place or all mentioned problems have been refactored
  */
@@ -58,12 +58,21 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     }
 
     /**
+     * Sets the configuration. This method should only be called in the browser at startup or at unit tests.
+     *
+     * @param configuration the new configuration
+     */
+    public static void setConfiguration(final Configuration configuration) {
+        getInstance().setConfigurationInstance(configuration);
+    }
+
+    /**
      * Sets the config. This method should only be called in the browser at startup or at unit tests
      *
      * @param configuration the new configuration
      * @throws NullPointerException in case {@code configuration} parameter is {@code null}
      */
-    public void setConfiguration(final Configuration configuration) {
+    private void setConfigurationInstance(final Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 

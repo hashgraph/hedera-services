@@ -1061,20 +1061,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         return platform;
     }
 
-    /**
-     * Because this method returns a {@code ReservedSignedState}, <b>make sure to close it when done!</b>
-     *
-     * @param path the path to the signed state file
-     * @throws IOException if the file cannot be read
-     */
-    private static ReservedSignedState loadSignedState(final String path) throws IOException {
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
-        final var signedPair = SignedStateFileReader.readStateFile(platformContext, Paths.get(path));
-        // Because it's possible we are loading old data, we cannot check equivalence of the hash.
-        return signedPair.reservedSignedState();
-    }
-
     private void mockAllMaps(final MerkleMap<?, ?> mockMm, final VirtualMap<?, ?> mockVm) {
         subject.setChild(StateChildIndices.ACCOUNTS, mockMm);
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, mockMm);

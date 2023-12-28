@@ -100,7 +100,7 @@ public class DefaultConfiguration {
         }
 
         final Configuration configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
+        ConfigurationHolder.setConfiguration(configuration);
 
         return configuration;
     }

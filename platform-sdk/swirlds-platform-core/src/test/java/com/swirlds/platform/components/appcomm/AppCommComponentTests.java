@@ -38,6 +38,7 @@ import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -53,8 +54,7 @@ public class AppCommComponentTests {
     private final PlatformContext context;
 
     public AppCommComponentTests() {
-        context = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+        context = TestPlatformContextBuilder.create().build();
     }
 
     @Test

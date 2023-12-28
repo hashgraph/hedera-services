@@ -171,7 +171,7 @@ public class TestConfigBuilder {
         try (final Locked ignore = configLock.lock()) {
             if (configuration == null) {
                 configuration = builder.build();
-                ConfigurationHolder.getInstance().setConfiguration(configuration);
+                ConfigurationHolder.setConfiguration(configuration);
             }
             return configuration;
         }

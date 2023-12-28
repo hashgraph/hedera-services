@@ -840,9 +840,6 @@ class VirtualPipelineTests {
     @DisplayName("Flush Throttle")
     void flushThrottle() throws InterruptedException {
 
-        // Save the previous settings
-        final Configuration originalConfig = ConfigurationHolder.getInstance().get();
-
         final int preferredQueueSize = 2;
         final int throttleStepSize = 10;
         final int maxThrottle = 100; // For the purposes of this test, this should be a multiple of throttleStepSize
@@ -851,7 +848,7 @@ class VirtualPipelineTests {
                 .withValue(VirtualMapConfig_.FLUSH_THROTTLE_STEP_SIZE, throttleStepSize + "ms")
                 .withValue(VirtualMapConfig_.MAXIMUM_FLUSH_THROTTLE_PERIOD, maxThrottle + "ms")
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(config);
+        ConfigurationHolder.setConfiguration(config);
 
         final Deque<DummyVirtualRoot> copies = new LinkedList<>();
 
@@ -919,9 +916,6 @@ class VirtualPipelineTests {
         while (!copies.isEmpty()) {
             copies.removeFirst().release();
         }
-
-        // Put settings back the way they were before
-        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     @Test

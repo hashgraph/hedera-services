@@ -78,7 +78,7 @@ final class StaticPlatformBuilder {
         }
         staticSetupCompleted = true;
 
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
+        ConfigurationHolder.setConfiguration(configuration);
 
         // Setup logging, using the configuration to tell us the location of the log4j2.xml
         final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
