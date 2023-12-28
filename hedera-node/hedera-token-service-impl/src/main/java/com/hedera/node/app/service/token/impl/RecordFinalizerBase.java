@@ -35,8 +35,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Base class for both {@link com.hedera.node.app.service.token.records.ParentRecordFinalizer} and {@link
@@ -44,8 +42,6 @@ import org.apache.logging.log4j.Logger;
  * classes.
  */
 public class RecordFinalizerBase {
-
-    Logger log = LogManager.getLogger(RecordFinalizerBase.class);
     protected static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
 
