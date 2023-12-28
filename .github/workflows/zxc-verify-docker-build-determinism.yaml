@@ -157,11 +157,11 @@ jobs:
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: |
           mkdir -p "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data"
-          
+
           echo "::group::Copying Library Artifacts"
             cp -Rvf "${{ github.workspace }}/hedera-node/data/lib" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data/"
           echo "::endgroup::"
-          
+
           echo "::group::Copying Application Artifacts"
             cp -Rvf "${{ github.workspace }}/hedera-node/data/apps" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data/"
           echo "::endgroup::"

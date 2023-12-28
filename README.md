@@ -1,4 +1,4 @@
-[![Build Application](https://github.com/hashgraph/hedera-services/actions/workflows/node-flow-build-application.yaml/badge.svg?branch=develop)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-build-application.yaml)
+[![Node: Build Application](https://github.com/hashgraph/hedera-services/actions/workflows/node-flow-build-application.yaml/badge.svg)](https://github.com/hashgraph/hedera-services/actions/workflows/node-flow-build-application.yaml)
 [![Artifact Determinism](https://github.com/hashgraph/hedera-services/actions/workflows/flow-artifact-determinism.yaml/badge.svg)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-artifact-determinism.yaml)
 [![Node: Performance Tests](https://github.com/hashgraph/hedera-services/actions/workflows/flow-node-performance-tests.yaml/badge.svg)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-node-performance-tests.yaml)
 
@@ -19,7 +19,7 @@ nodes in the [Hedera public network](https://hedera.com).
 
 ## JVM
 An [Eclipse Adoptium](https://adoptium.net/) build of the Java 21 JDK is required. If an Adoptium JDK is not installed,
-the Gradle build will download an appropriate Adoptium JDK. The JDK version used to execute Gradle must be Java 21+ in 
+the Gradle build will download an appropriate Adoptium JDK. The JDK version used to execute Gradle must be Java 21+ in
 order for the `checkAllModuleInfo` task to succeed.
 
 ## Solidity
