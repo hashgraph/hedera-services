@@ -114,8 +114,10 @@ public class Browser {
             return;
         }
 
-        final Path log4jPath =
-                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
+        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create().withConfigDataType(PathsConfig.class)
+                .build().getConfigData(PathsConfig.class);
+
+        final Path log4jPath = defaultPathsConfig.getLogPath();
         try {
             Log4jSetup.startLoggingFramework(log4jPath).await();
         } catch (final InterruptedException e) {

@@ -41,7 +41,7 @@ import java.util.function.Supplier;
  * @deprecated Will be removed once we have the Platform Context in place or all mentioned problems have been refactored
  */
 @Deprecated(forRemoval = true)
-public final class ConfigurationHolder implements Supplier<Configuration> {
+public final class ConfigurationHolder {
 
     private static final ConfigurationHolder INSTANCE = new ConfigurationHolder();
 
@@ -77,16 +77,6 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     }
 
     /**
-     * Returns the configuration
-     *
-     * @return the configuration
-     */
-    @Override
-    public Configuration get() {
-        return configuration;
-    }
-
-    /**
      * Convenience method for {@link Configuration#getConfigData(Class)}.
      *
      * @param type the data type
@@ -94,6 +84,6 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * @return the data instance
      */
     public static <T extends Record> T getConfigData(final Class<T> type) {
-        return INSTANCE.get().getConfigData(type);
+        return INSTANCE.configuration.getConfigData(type);
     }
 }
