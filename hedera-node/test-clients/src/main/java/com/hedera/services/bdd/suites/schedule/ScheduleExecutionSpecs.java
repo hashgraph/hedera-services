@@ -117,6 +117,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -134,8 +135,12 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleExecutionSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
     private static final String A_TOKEN = "token";
@@ -262,15 +267,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 suiteCleanup()));
     }
 
-    final HapiSpec suiteCleanup() {
-        return defaultHapiSpec("suiteCleanup")
-                .given()
-                .when()
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(SCHEDULING_WHITELIST, defaultWhitelist)));
-    }
-
+    @HapiTest
+    @Order(1)
     final HapiSpec suiteSetup() {
         // Managing whitelist for these is error-prone, so just whitelist everything by default.
         final List<String> whitelistNames = new LinkedList<>();
@@ -286,8 +284,11 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .overridingProps(Map.of(SCHEDULING_WHITELIST, whitelistAll)));
     }
 
+
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(18)
     final HapiSpec scheduledBurnFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
                 .given(
@@ -313,6 +314,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(23)
     final HapiSpec scheduledMintFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledMintFailsWithInvalidTxBody")
                 .given(
@@ -341,6 +344,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(24)
     final HapiSpec scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledMintWithInvalidTokenThrowsUnresolvableSigners")
                 .given(overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM), cryptoCreate(SCHEDULE_PAYER))
@@ -354,6 +358,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(35)
     final HapiSpec scheduledUniqueBurnFailsWithInvalidBatchSize() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidBatchSize")
                 .given(
@@ -387,6 +392,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(34)
     final HapiSpec scheduledUniqueBurnExecutesProperly() {
         return defaultHapiSpec("ScheduledUniqueBurnExecutesProperly")
                 .given(
@@ -463,6 +469,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(39)
     final HapiSpec scheduledUniqueMintFailsWithInvalidMetadata() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidMetadata")
                 .given(
@@ -491,6 +498,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(36)
     final HapiSpec scheduledUniqueBurnFailsWithInvalidNftId() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidNftId")
                 .given(
@@ -515,6 +523,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(20)
     final HapiSpec scheduledBurnForUniqueSucceedsWithExistingAmount() {
         return defaultHapiSpec("scheduledBurnForUniqueSucceedsWithExistingAmount")
                 .given(
@@ -542,6 +551,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(19)
     final HapiSpec scheduledBurnForUniqueFailsWithInvalidAmount() {
         return defaultHapiSpec("ScheduledBurnForUniqueFailsWithInvalidAmount")
                 .given(
@@ -578,6 +589,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(38)
     final HapiSpec scheduledUniqueMintFailsWithInvalidBatchSize() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidBatchSize")
                 .given(
@@ -617,6 +629,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(22)
     final HapiSpec scheduledMintFailsWithInvalidAmount() {
         final var zeroAmountTxn = "zeroAmountTxn";
         return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
@@ -646,6 +660,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(37)
     final HapiSpec scheduledUniqueMintExecutesProperly() {
         return defaultHapiSpec("ScheduledUniqueMintExecutesProperly")
                 .given(
@@ -725,6 +740,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(21)
     final HapiSpec scheduledMintExecutesProperly() {
         return defaultHapiSpec("ScheduledMintExecutesProperly")
                 .given(
@@ -797,6 +813,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(17)
     final HapiSpec scheduledBurnExecutesProperly() {
         return defaultHapiSpec("ScheduledBurnExecutesProperly")
                 .given(
@@ -870,6 +887,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(40)
     final HapiSpec scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact() {
         final String xToken = "XXX";
         final String validSchedule = "withLiveAccount";
@@ -921,6 +939,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(41)
     final HapiSpec scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withLiveToken";
@@ -975,6 +994,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(43)
     final HapiSpec scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withUnfrozenAccount";
@@ -1031,6 +1051,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(44)
     final HapiSpec scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withKycedToken";
@@ -1086,6 +1107,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(47)
     final HapiSpec scheduledXferFailingWithUnassociatedAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withAssociatedToken";
@@ -1137,6 +1159,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(45)
     final HapiSpec scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withZeroNetTokenChange";
@@ -1187,6 +1211,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(46)
     final HapiSpec scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String yToken = "YYY";
@@ -1246,6 +1272,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(42)
     final HapiSpec scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String yToken = "YYY";
@@ -1306,6 +1334,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(29)
     final HapiSpec scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidSize";
@@ -1348,6 +1377,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(28)
     final HapiSpec scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidChunkTxnId";
@@ -1401,6 +1431,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(27)
     final HapiSpec scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidChunkNumber";
@@ -1449,6 +1480,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(30)
     final HapiSpec scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
         String civilianPayer = PAYER;
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
@@ -1488,6 +1520,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // @todo('9974') Need to work out why this succeeds instead
     //      of failing with UNRESOLVABLE_REQUIRED_SIGNERS
+    @HapiTest
+    @Order(31)
     final HapiSpec scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned() {
         String adminKey = ADMIN;
         String mutableTopic = "XXX";
@@ -1514,6 +1548,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(2)
     final HapiSpec executionTriggersOnceTopicHasSatisfiedSubmitKey() {
         String adminKey = ADMIN;
         String submitKey = "submit";
@@ -1552,6 +1587,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(3)
     final HapiSpec executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
@@ -1587,6 +1623,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
     @HapiTest
+    @Order(14)
     final HapiSpec executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithDefaultPayerWorks")
@@ -1644,7 +1681,9 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 }));
     }
 
-    // @todo('9977') Need to figure out why the ending balance does not match expected
+    // @todo('9977') Need to figure out why the ending balance does not match ex
+    @HapiTest
+    @Order(13)
     final HapiSpec executionWithDefaultPayerButNoFundsFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
@@ -1683,6 +1722,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(11)
     final HapiSpec executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1721,6 +1761,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9977') Need to figure out why the ending balance does not match expected
+    @HapiTest
+    @Order(8)
     final HapiSpec executionWithCustomPayerButNoFundsFails() {
         long balance = 0L;
         long noBalance = 0L;
@@ -1754,6 +1796,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9977') Need to figure out why the ending balance does not match expected
+    @HapiTest
+    @Order(12)
     final HapiSpec executionWithDefaultPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
@@ -1780,6 +1824,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9977') Need to figure out why the ending balance does not match expected
+    @Order(7)
+    @HapiTest
     final HapiSpec executionWithCustomPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
@@ -1817,6 +1863,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(4)
     final HapiSpec executionWithCryptoInsufficientAccountBalanceFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
@@ -1851,6 +1898,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(5)
     final HapiSpec executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
@@ -1887,6 +1935,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(16)
     final HapiSpec executionWithTokenInsufficientAccountBalanceFails() {
         String xToken = "XXX";
         String invalidSchedule = "withInsufficientTokenTransfer";
@@ -1922,6 +1971,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // This should not be run for modular service due to key gathering behavior differences.
     // c.f. Issue #9970 for explanation
+    @HapiTest
+    @Order(15)
     final HapiSpec executionWithInvalidAccountAmountsFails() {
         long transferAmount = 100;
         long senderBalance = 1000L;
@@ -1960,6 +2011,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
     @HapiTest
+    @Order(10)
     final HapiSpec executionWithCustomPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorks")
@@ -2027,6 +2079,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
     @HapiTest
+    @Order(6)
     final HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerAndAdminKeyWorks")
@@ -2096,6 +2149,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
     @HapiTest
+    @Order(9)
     final HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWhoSignsAtCreationAsPayerWorks")
@@ -2191,6 +2245,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // Currently this cannot be run as HapiTest because it stops the captive nodes.
+    @BddMethodIsNotATest
     final HapiSpec scheduledFreezeWorksAsExpected() {
         final byte[] poeticUpgradeHash = ScheduleUtils.getPoeticUpgradeHash();
 
@@ -2233,6 +2288,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // Currently this cannot be run as HapiTest because it stops the captive nodes.
+    @BddMethodIsNotATest
     final HapiSpec scheduledFreezeWithUnauthorizedPayerFails(boolean isLongTermEnabled) {
         final byte[] poeticUpgradeHash = ScheduleUtils.getPoeticUpgradeHash();
 
@@ -2304,6 +2360,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9973') Need to work out why this does not actually execute
+    @HapiTest
+    @Order(26)
     final HapiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpected")
                 .given(
@@ -2336,6 +2394,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9973') Work out permissioned file update issues
+    @HapiTest
+    @Order(25)
     final HapiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFails")
@@ -2370,6 +2430,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9973') Work out permissioned file update issues
+    @HapiTest
+    @Order(33)
     final HapiSpec scheduledSystemDeleteWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpected")
@@ -2403,6 +2465,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(32)
     final HapiSpec scheduledSystemDeleteUnauthorizedPayerFails(boolean isLongTermEnabled) {
 
         if (isLongTermEnabled) {
@@ -2563,6 +2626,18 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                     "~7x multiplier should be in affect!");
                         }));
     }
+
+    @HapiTest
+    @Order(48)
+    final HapiSpec suiteCleanup() {
+        return defaultHapiSpec("suiteCleanup")
+                .given()
+                .when()
+                .then(fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of(SCHEDULING_WHITELIST, defaultWhitelist)));
+    }
+
 
     private <T extends Record> T getTestConfig(Class<T> configClass) {
         final TestConfigBuilder builder = new TestConfigBuilder(configClass);
