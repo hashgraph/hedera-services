@@ -122,6 +122,7 @@ public class NonAncientEventWindow {
      * @param roundsNonAncient     the number of rounds that are non-ancient
      * @return the new NonAncientEventWindow
      */
+    @NonNull
     public static NonAncientEventWindow createUsingRoundsNonAncient(
             final long latestConsensusRound, final long minGenNonAncient, final long roundsNonAncient) {
         return new NonAncientEventWindow(
