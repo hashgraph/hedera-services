@@ -77,5 +77,4 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
         @ConfigProperty(defaultValue = "false") boolean useLegacyIntake,
-        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold) {
-}
+        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold) {}
