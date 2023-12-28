@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.crypto;
 
 import static com.swirlds.common.crypto.Cryptography.DEFAULT_DIGEST_TYPE;
 import static com.swirlds.common.crypto.Cryptography.DEFAULT_SET_HASH;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyException;
@@ -25,9 +26,13 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.internal.MerkleCryptoEngine;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -37,14 +42,26 @@ import java.util.concurrent.Future;
 public interface MerkleCryptography {
 
     /**
-     * Computes a cryptographic hash for the {@link MerkleInternal} instance. The hash is passed to the object
-     * by calling {@link Hashable#setHash(Hash)}. Convenience method that defaults to {@link DigestType#SHA_384} message
+     * Create a new merkle crypto engine.
+     *
+     * @param configuration the configuration
+     * @param cryptography  the cryptography
+     * @return the new merkle crypto engine
+     */
+    @NonNull
+    static MerkleCryptography create(
+            @NonNull final Configuration configuration, @NonNull final Cryptography cryptography) {
+        return new MerkleCryptoEngine(
+                getStaticThreadManager(), cryptography, configuration.getConfigData(CryptoConfig.class));
+    }
+
+    /**
+     * Computes a cryptographic hash for the {@link MerkleInternal} instance. The hash is passed to the object by
+     * calling {@link Hashable#setHash(Hash)}. Convenience method that defaults to {@link DigestType#SHA_384} message
      * digests.
      *
-     * @param node
-     * 		the MerkleInternal to hash
-     * @throws CryptographyException
-     * 		if an unrecoverable error occurs while computing the digest
+     * @param node the MerkleInternal to hash
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
     default Hash digestSync(final MerkleInternal node) {
         return digestSync(node, DEFAULT_DIGEST_TYPE);
@@ -58,18 +75,14 @@ public interface MerkleCryptography {
     }
 
     /**
-     * Computes a cryptographic hash for the {@link MerkleInternal} instance. The hash is passed to the object
-     * by calling {@link Hashable#setHash(Hash)} if setHash is true.
+     * Computes a cryptographic hash for the {@link MerkleInternal} instance. The hash is passed to the object by
+     * calling {@link Hashable#setHash(Hash)} if setHash is true.
      *
-     * @param node
-     * 		the MerkleInternal to hash
-     * @param digestType
-     * 		the type of digest used to compute the hash
-     * @param setHash
-     * 		should be set to true if the calculated should be assigned to the node
+     * @param node       the MerkleInternal to hash
+     * @param digestType the type of digest used to compute the hash
+     * @param setHash    should be set to true if the calculated should be assigned to the node
      * @return the cryptographic hash for the {@link MerkleInternal} object
-     * @throws CryptographyException
-     * 		if an unrecoverable error occurs while computing the digest
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
     Hash digestSync(final MerkleInternal node, final DigestType digestType, boolean setHash);
 
@@ -81,43 +94,34 @@ public interface MerkleCryptography {
     }
 
     /**
-     * Computes a cryptographic hash for the {@link MerkleInternal} instance. Requires a list of child hashes,
-     * as it is possible that the MerkleInternal has not yet been given its children. The hash is passed to the object
-     * by calling {@link Hashable#setHash(Hash)} if setHash is true.
+     * Computes a cryptographic hash for the {@link MerkleInternal} instance. Requires a list of child hashes, as it is
+     * possible that the MerkleInternal has not yet been given its children. The hash is passed to the object by calling
+     * {@link Hashable#setHash(Hash)} if setHash is true.
      *
-     * @param node
-     * 		the MerkleInternal to hash
-     * @param childHashes
-     * 		a list of the hashes of this node's children
-     * @param setHash
-     * 		should be set to true if the calculated should be assigned to the node
+     * @param node        the MerkleInternal to hash
+     * @param childHashes a list of the hashes of this node's children
+     * @param setHash     should be set to true if the calculated should be assigned to the node
      * @return the cryptographic hash for the {@link MerkleInternal} object
      */
     Hash digestSync(final MerkleInternal node, final List<Hash> childHashes, boolean setHash);
 
     /**
-     * Computes a cryptographic hash for the {@link MerkleLeaf} instance. The hash is passed to the object
-     * by calling {@link Hashable#setHash(Hash)}.
+     * Computes a cryptographic hash for the {@link MerkleLeaf} instance. The hash is passed to the object by calling
+     * {@link Hashable#setHash(Hash)}.
      *
-     * @param leaf
-     * 		the {@link MerkleLeaf} to hash
-     * @param digestType
-     * 		the type of digest used to compute the hash
-     * @throws CryptographyException
-     * 		if an unrecoverable error occurs while computing the digest
+     * @param leaf       the {@link MerkleLeaf} to hash
+     * @param digestType the type of digest used to compute the hash
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
     Hash digestSync(MerkleLeaf leaf, DigestType digestType);
 
     /**
-     * Computes a cryptographic hash for the {@link MerkleNode} instance. The hash is passed to the object
-     * by calling {@link Hashable#setHash(Hash)}.
+     * Computes a cryptographic hash for the {@link MerkleNode} instance. The hash is passed to the object by calling
+     * {@link Hashable#setHash(Hash)}.
      *
-     * @param node
-     * 		the {@link MerkleNode} to hash
-     * @param digestType
-     * 		the type of digest used to compute the hash
-     * @throws CryptographyException
-     * 		if an unrecoverable error occurs while computing the digest
+     * @param node       the {@link MerkleNode} to hash
+     * @param digestType the type of digest used to compute the hash
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
     default Hash digestSync(MerkleNode node, DigestType digestType) {
         if (node.isLeaf()) {
@@ -130,10 +134,8 @@ public interface MerkleCryptography {
     /**
      * Compute the hash of the merkle tree synchronously on the caller's thread.
      *
-     * @param root
-     * 		the root of the tree to hash
-     * @param digestType
-     * 		the type of digest used to compute the hash
+     * @param root       the root of the tree to hash
+     * @param digestType the type of digest used to compute the hash
      * @return The hash of the tree.
      */
     Hash digestTreeSync(final MerkleNode root, final DigestType digestType);
@@ -141,8 +143,7 @@ public interface MerkleCryptography {
     /**
      * Same as {@link #digestTreeSync(MerkleNode, DigestType)}  with DigestType set to SHA_384
      *
-     * @param root
-     * 		the root of the tree to hash
+     * @param root the root of the tree to hash
      * @return the cryptographic hash for the {@link MerkleNode} object
      */
     default Hash digestTreeSync(final MerkleNode root) {
@@ -152,10 +153,8 @@ public interface MerkleCryptography {
     /**
      * Compute the hash of the merkle tree on multiple worker threads.
      *
-     * @param root
-     * 		the root of the tree to hash
-     * @param digestType
-     * 		the type of digest used to compute the hash
+     * @param root       the root of the tree to hash
+     * @param digestType the type of digest used to compute the hash
      * @return the {@link com.swirlds.common.merkle.hash.FutureMerkleHash} for the {@link MerkleNode} object
      */
     Future<Hash> digestTreeAsync(final MerkleNode root, final DigestType digestType);
@@ -163,8 +162,7 @@ public interface MerkleCryptography {
     /**
      * Same as {@link #digestTreeAsync(MerkleNode, DigestType)}  with DigestType set to SHA_384
      *
-     * @param root
-     * 		the root of the tree to hash
+     * @param root the root of the tree to hash
      * @return the {@link com.swirlds.common.merkle.hash.FutureMerkleHash} for the {@link MerkleNode} object
      */
     default Future<Hash> digestTreeAsync(final MerkleNode root) {
