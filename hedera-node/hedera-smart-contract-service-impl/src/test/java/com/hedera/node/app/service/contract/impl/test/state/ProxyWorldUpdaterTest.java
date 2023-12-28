@@ -493,9 +493,9 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesDeletionTrackingAttempt() {
         final var haltReason = Optional.<ExceptionalHaltReason>of(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
-        given(evmFrameState.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS))
+        given(evmFrameState.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame))
                 .willReturn(haltReason);
-        assertSame(haltReason, subject.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS));
+        assertSame(haltReason, subject.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame));
     }
 
     @Test

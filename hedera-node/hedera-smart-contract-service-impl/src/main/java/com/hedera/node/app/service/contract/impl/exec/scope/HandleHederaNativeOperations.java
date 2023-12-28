@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static java.util.Objects.requireNonNull;
@@ -41,6 +42,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A fully-mutable {@link HederaNativeOperations} implemented with a {@link HandleContext}.
@@ -166,8 +168,13 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      * {@inheritDoc}
      */
     @Override
-    public void trackDeletion(final long deletedNumber, final long beneficiaryNumber) {
-        // TODO - implement after merging upstream
+    public void trackSelfDestructBeneficiary(
+            final long deletedNumber, final long beneficiaryNumber, @NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        selfDestructBeneficiariesFor(frame)
+                .addBeneficiaryForDeletedAccount(
+                        AccountID.newBuilder().accountNum(deletedNumber).build(),
+                        AccountID.newBuilder().accountNum(beneficiaryNumber).build());
     }
 
     @Override

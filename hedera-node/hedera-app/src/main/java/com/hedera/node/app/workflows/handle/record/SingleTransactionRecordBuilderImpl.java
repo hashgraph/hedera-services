@@ -1081,16 +1081,14 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @param deletedAccountID the deleted account ID
      * @param beneficiaryForDeletedAccount the beneficiary account ID
-     * @return the builder
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl addBeneficiaryForDeletedAccount(
+    public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
         requireNonNull(deletedAccountID, "deletedAccountID must not be null");
         requireNonNull(beneficiaryForDeletedAccount, "beneficiaryForDeletedAccount must not be null");
         deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
-        return this;
     }
 
     /**

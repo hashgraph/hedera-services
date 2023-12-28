@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.state;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.state.PlatformState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,22 +26,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DualStateAccessorTest {
+class PlatformStateAccessorTest {
     @Mock
-    private SwirldDualState dualState;
+    private PlatformState platformState;
 
     @Test
     void beanMethodsWork() {
         // setup:
-        final var subject = new DualStateAccessor();
+        final var subject = new PlatformStateAccessor();
 
         // expect:
-        assertNull(subject.getDualState());
+        assertNull(subject.getPlatformState());
 
         // and when:
-        subject.setDualState(dualState);
+        subject.setPlatformState(platformState);
 
         // expect:
-        Assertions.assertSame(dualState, subject.getDualState());
+        Assertions.assertSame(platformState, subject.getPlatformState());
     }
 }

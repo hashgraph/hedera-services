@@ -67,6 +67,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
@@ -406,8 +407,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTrackingDeletion(
-            @NonNull final Address deleted, @NonNull final Address beneficiary) {
+    public Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull final Address deleted, @NonNull final Address beneficiary, @NonNull final MessageFrame frame) {
+        requireNonNull(deleted);
+        requireNonNull(beneficiary);
+        requireNonNull(frame);
         if (deleted.equals(beneficiary)) {
             return Optional.of(SELF_DESTRUCT_TO_SELF);
         }
@@ -423,7 +427,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (deletedAccount.numPositiveTokenBalances() > 0) {
             return Optional.of(CONTRACT_STILL_OWNS_NFTS);
         }
-        nativeOperations.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
+        nativeOperations.trackSelfDestructBeneficiary(
+                deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number, frame);
         return Optional.empty();
     }
 

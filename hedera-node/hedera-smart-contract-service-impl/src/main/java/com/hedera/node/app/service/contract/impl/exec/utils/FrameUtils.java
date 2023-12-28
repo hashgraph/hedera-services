@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,6 +40,7 @@ public class FrameUtils {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
     public static final String TRACKER_CONTEXT_VARIABLE = "storageAccessTracker";
     public static final String TINYBAR_VALUES_CONTEXT_VARIABLE = "tinybarValues";
+    public static final String SELF_DESTRUCT_BENEFICIARIES = "selfDestructBeneficiaries";
     public static final String PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE = "propagatedCallFailure";
     public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
 
@@ -107,6 +109,22 @@ public class FrameUtils {
 
     public static @NonNull TinybarValues tinybarValuesFor(@NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(TINYBAR_VALUES_CONTEXT_VARIABLE);
+    }
+
+    /**
+     * Returns a record builder able to track the beneficiaries of {@code SELFDESTRUCT} operations executed
+     * so far in the frame's EVM transaction.
+     *
+     * <p>Note it does not matter if we track a {@code SELFDESTRUCT} that is later reverted; we just need to
+     * be sure that for the committed self-destructs, we know what beneficiary they used so the staking logic
+     * can redirect rewards as appropriate.
+     *
+     * @param frame the frame whose EVM transaction we are tracking beneficiaries in
+     * @return the record builder able to track beneficiary ids
+     */
+    public static @NonNull DeleteCapableTransactionRecordBuilder selfDestructBeneficiariesFor(
+            @NonNull final MessageFrame frame) {
+        return requireNonNull(initialFrameOf(frame).getContextVariable(SELF_DESTRUCT_BENEFICIARIES));
     }
 
     public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(
