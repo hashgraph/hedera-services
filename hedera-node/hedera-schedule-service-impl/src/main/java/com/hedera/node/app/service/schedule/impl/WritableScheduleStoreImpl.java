@@ -146,7 +146,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
     }
-
+    /** @inheritDoc */
     @Override
     public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
         for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
