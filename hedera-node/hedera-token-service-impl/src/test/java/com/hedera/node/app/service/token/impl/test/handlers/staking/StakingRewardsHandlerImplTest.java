@@ -315,7 +315,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(manager.firstNonRewardableStakePeriod(readableRewardsStore, consensusInstant))
                 .willReturn(3L);
         given(account.stakePeriodStart()).willReturn(2L);
-        given(account.hasStakedNodeId()).willReturn(true);
 
         final StakingRewardsHandlerImpl impl = new StakingRewardsHandlerImpl(rewardsPayer, manager, stakeInfoHelper);
 
