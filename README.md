@@ -1,5 +1,8 @@
-[![Build Application](https://github.com/hashgraph/hedera-services/actions/workflows/node-flow-build-application.yaml/badge.svg?branch=develop)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-build-application.yaml)
-[![codecov](https://codecov.io/github/hashgraph/hedera-services/coverage.svg?branch=master&token=ZPMV8C93DV)](README.md)
+[![Node: Build Application](https://github.com/hashgraph/hedera-services/actions/workflows/node-flow-build-application.yaml/badge.svg)](https://github.com/hashgraph/hedera-services/actions/workflows/node-flow-build-application.yaml)
+[![Artifact Determinism](https://github.com/hashgraph/hedera-services/actions/workflows/flow-artifact-determinism.yaml/badge.svg)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-artifact-determinism.yaml)
+[![Node: Performance Tests](https://github.com/hashgraph/hedera-services/actions/workflows/flow-node-performance-tests.yaml/badge.svg)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-node-performance-tests.yaml)
+
+[![codecov](https://codecov.io/gh/hashgraph/hedera-services/graph/badge.svg?token=ZPMV8C93DV)](https://codecov.io/gh/hashgraph/hedera-services)
 [![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-services?sort=semver&label=version)](README.md)
 [![Made With](https://img.shields.io/badge/made_with-java-blue)](https://github.com/hashgraph/hedera-services/)
 [![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](hedera-node/docs/gradle-quickstart.md)
@@ -15,7 +18,9 @@ nodes in the [Hedera public network](https://hedera.com).
 * _hedera-node/_ - implementation of Hedera services on the Platform.
 
 ## JVM
-JDK 17 is required. The Temurin builds of [Eclipse Adoptium](https://adoptium.net/) are strongly recommended.
+An [Eclipse Adoptium](https://adoptium.net/) build of the Java 21 JDK is required. If an Adoptium JDK is not installed,
+the Gradle build will download an appropriate Adoptium JDK. The JDK version used to execute Gradle must be Java 21+ in
+order for the `checkAllModuleInfo` task to succeed.
 
 ## Solidity
 Hedera Contracts support `pragma solidity <=0.8.9`.
