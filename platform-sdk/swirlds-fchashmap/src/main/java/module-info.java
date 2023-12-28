@@ -3,7 +3,6 @@
  */
 module com.swirlds.fchashmap {
     requires transitive com.swirlds.common;
-    requires transitive com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
 
     exports com.swirlds.fchashmap;
