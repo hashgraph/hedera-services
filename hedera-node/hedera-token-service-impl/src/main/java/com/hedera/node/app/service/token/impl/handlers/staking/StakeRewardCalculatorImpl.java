@@ -43,13 +43,10 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
     /** {@inheritDoc} */
     @Override
     public long computePendingReward(
-            @Nullable final Account account,
+            @NonNull final Account account,
             @NonNull final WritableStakingInfoStore stakingInfoStore,
             @NonNull final ReadableNetworkStakingRewardsStore rewardsStore,
             @NonNull final Instant consensusNow) {
-        if (account == null) {
-            return 0;
-        }
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
         if (!stakePeriodManager.isRewardable(effectiveStart, rewardsStore, consensusNow)) {
             return 0;

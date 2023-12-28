@@ -204,6 +204,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         }
         if (op.hasStakedAccountId()) {
             // 0.0.0 is used a sentinel value for removing staked account id
+            // Once https://github.com/hashgraph/pbj/issues/160 this is closed, reset stakedId to UNSET
             if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
                 builder.stakedAccountId((AccountID) null);
             } else {
@@ -211,6 +212,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             }
         } else if (op.hasStakedNodeId()) {
             // -1 is used a sentinel value for removing staked node id
+            // Once https://github.com/hashgraph/pbj/issues/160 this is closed, reset stakedId to UNSET
             if (SENTINEL_NODE_ID == op.stakedNodeId()) {
                 builder.stakedNodeId(SENTINEL_NODE_ID);
             } else {

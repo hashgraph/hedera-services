@@ -28,15 +28,12 @@ import java.time.Instant;
 import java.time.ZoneId;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class manages the current stake period and the previous stake period.
  */
 @Singleton
 public class StakePeriodManager {
-    private static final Logger log = LogManager.getLogger(StakePeriodManager.class);
     // Sentinel value for a field that wasn't applicable to this transaction
     public static final long NA = Long.MIN_VALUE;
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");

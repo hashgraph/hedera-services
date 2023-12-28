@@ -93,7 +93,6 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid, rewardReceivers);
         // Decrease staking reward account balance by rewardPaid amount
         decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
-        log.info("Rewards paid are {}", rewardsPaid);
         return rewardsPaid;
     }
 
@@ -383,7 +382,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final long reward,
             @NonNull final ReadableNetworkStakingRewardsStore stakingRewardStore,
             @NonNull final Instant consensusNow) {
-        if (account == null || !account.hasStakedNodeId() || account.declineReward()) {
+        if (account == null
+                || account.stakedNodeIdOrElse(SENTINEL_NODE_ID) == SENTINEL_NODE_ID
+                || account.declineReward()) {
             // If the account is created in this transaction, or it is not staking to a node,
             // or it has chosen to decline reward, we don't need to remember stakeStart,
             // because it can't receive reward today
