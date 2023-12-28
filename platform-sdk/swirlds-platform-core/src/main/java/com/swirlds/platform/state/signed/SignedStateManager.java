@@ -204,10 +204,8 @@ public class SignedStateManager implements SignedStateFinder {
         }
 
         if (firstStateTimestamp.get() == null) {
-            firstStateTimestamp.set(
-                    signedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
-            firstStateRound.set(
-                    signedState.getState().getPlatformState().getPlatformData().getRound());
+            firstStateTimestamp.set(signedState.getState().getPlatformState().getConsensusTimestamp());
+            firstStateRound.set(signedState.getState().getPlatformState().getRound());
         }
 
         // Double check that the signatures on this state are valid.

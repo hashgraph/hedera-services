@@ -32,8 +32,8 @@ import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         hederaMerkle = new MerkleHederaState(
                 (tree, state) -> onPreHandleCalled.set(true),
                 (evt, meta, state) -> onHandleCalled.set(true),
-                (state, platform, dual, trigger, version) -> onMigrateCalled.set(true),
+                (state, platform, platformState, trigger, version) -> onMigrateCalled.set(true),
                 (state, configAddressBook, context) -> {
                     onUpdateWeightCalled.set(true);
                 });
@@ -694,7 +694,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
-            final var dualState = Mockito.mock(SwirldDualState.class);
+            final var platformState = Mockito.mock(PlatformState.class);
             final var state = new MerkleHederaState(
                     (tree, st) -> onPreHandleCalled.set(true),
                     (evt, meta, provider) -> {
@@ -704,7 +704,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
                     (s, p, d, t, v) -> {},
                     (s, p, d) -> {});
 
-            state.handleConsensusRound(round, dualState);
+            state.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();
         }
     }
@@ -719,11 +719,11 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
-            final var dualState = Mockito.mock(SwirldDualState.class);
-            assertThrows(MutabilityException.class, () -> hederaMerkle.handleConsensusRound(round, dualState));
+            final var platformState = Mockito.mock(PlatformState.class);
+            assertThrows(MutabilityException.class, () -> hederaMerkle.handleConsensusRound(round, platformState));
 
             // But the copy does
-            copy.handleConsensusRound(round, dualState);
+            copy.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();
         }
 

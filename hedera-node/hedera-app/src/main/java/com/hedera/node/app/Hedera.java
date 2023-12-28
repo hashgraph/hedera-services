@@ -87,11 +87,11 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -375,7 +375,7 @@ public final class Hedera implements SwirldMain {
     private void onStateInitialized(
             @NonNull final MerkleHederaState state,
             @NonNull final Platform platform,
-            @NonNull final SwirldDualState dualState,
+            @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousVersion) {
         // Initialize the configuration from disk. We must do this BEFORE we run migration, because the various
@@ -412,7 +412,7 @@ public final class Hedera implements SwirldMain {
         }
 
         //noinspection ConstantValue
-        assert dualState != null : "Platform should never pass a null dual state";
+        assert platformState != null : "Platform should never pass a null platform state";
         logger.info(
                 "Initializing Hedera state with trigger {} and previous version {}",
                 () -> trigger,
@@ -454,11 +454,11 @@ public final class Hedera implements SwirldMain {
         // assertion will hold true.
         assert configProvider != null : "Config Provider *must* have been set by now!";
 
-        // Some logging on what we found about freeze in the dual state
+        // Some logging on what we found about freeze in the platform state
         logger.info(
-                "Dual state includes freeze time={} and last frozen={}",
-                dualState.getFreezeTime(),
-                dualState.getLastFrozenTime());
+                "Platform state includes freeze time={} and last frozen={}",
+                platformState.getFreezeTime(),
+                platformState.getLastFrozenTime());
     }
     /**
      * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
@@ -725,9 +725,9 @@ public final class Hedera implements SwirldMain {
      * called.
      */
     private void onHandleConsensusRound(
-            @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
+            @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
-        daggerApp.handleWorkflow().handleRound(state, dualState, round);
+        daggerApp.handleWorkflow().handleRound(state, platformState, round);
     }
 
     /**
