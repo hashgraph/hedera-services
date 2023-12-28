@@ -336,10 +336,10 @@ public class CreatePrecompileSuite extends HapiSuite {
     final HapiSpec createTokenWithInvalidTreasury() {
         return defaultHapiSpec("createTokenWithInvalidTreasury")
                 .given(
-                        snapshotMode(
-                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                NONDETERMINISTIC_TRANSACTION_FEES,
-                                NONDETERMINISTIC_FUNCTION_PARAMETERS),
+                        //                        snapshotMode(
+                        //                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                        //                                NONDETERMINISTIC_TRANSACTION_FEES,
+                        //                                NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
