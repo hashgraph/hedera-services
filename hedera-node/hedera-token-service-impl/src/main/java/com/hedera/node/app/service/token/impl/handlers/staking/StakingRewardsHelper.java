@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static java.util.Objects.requireNonNull;
@@ -88,7 +89,7 @@ public class StakingRewardsHelper {
     private static boolean isRewardSituation(
             @NonNull final Account modifiedAccount, @Nullable final Account originalAccount) {
         requireNonNull(modifiedAccount);
-        if (originalAccount == null || !originalAccount.hasStakedNodeId()) {
+        if (originalAccount == null || originalAccount.stakedNodeIdOrElse(SENTINEL_NODE_ID) == SENTINEL_NODE_ID) {
             return false;
         }
 

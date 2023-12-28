@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
@@ -53,8 +54,9 @@ public class StakingUtilities {
                     || modifiedAccount.declineReward();
         }
         final var differDeclineReward = originalAccount.declineReward() != modifiedAccount.declineReward();
-        final var differStakedNodeId =
-                !originalAccount.stakedNodeIdOrElse(-1L).equals(modifiedAccount.stakedNodeIdOrElse(-1L));
+        final var differStakedNodeId = !originalAccount
+                .stakedNodeIdOrElse(SENTINEL_NODE_ID)
+                .equals(modifiedAccount.stakedNodeIdOrElse(SENTINEL_NODE_ID));
         final var differStakeAccountId = !originalAccount
                 .stakedAccountIdOrElse(AccountID.DEFAULT)
                 .equals(modifiedAccount.stakedAccountIdOrElse(AccountID.DEFAULT));

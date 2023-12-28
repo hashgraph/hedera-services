@@ -178,7 +178,6 @@ public interface StakingRewardsApi {
         if (rewardFrom == 0) {
             return 0;
         }
-        log.info("RewardFrom is {}", rewardFrom);
 
         final var firstRewardSum = rewardSumHistory.get(0);
         final var rewardFromSum = rewardSumHistory.get(rewardFrom);

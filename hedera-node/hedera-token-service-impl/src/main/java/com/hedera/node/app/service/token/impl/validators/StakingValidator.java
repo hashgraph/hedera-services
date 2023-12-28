@@ -29,16 +29,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Validations needed for staking related fields in token operations
  */
 @Singleton
 public class StakingValidator {
-    Logger log = LogManager.getLogger(StakingValidator.class);
-
     @Inject
     public StakingValidator() {
         // Dagger2
