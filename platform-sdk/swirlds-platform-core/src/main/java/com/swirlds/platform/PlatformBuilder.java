@@ -34,6 +34,8 @@ import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -195,6 +197,10 @@ public final class PlatformBuilder {
     @NonNull
     public Platform build() {
         final Configuration configuration = buildConfiguration();
+        final Cryptography cryptography = Cryptography.create(configuration);
+
+        // For backwards compatibility with the old static access pattern.
+        CryptographyHolder.set(cryptography);
 
         final boolean firstTimeSetup = doStaticSetup(configuration, configPath);
 
@@ -203,7 +209,8 @@ public final class PlatformBuilder {
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(selfId, getMetricsProvider(), configuration);
+        final PlatformContext platformContext =
+                new DefaultPlatformContext(selfId, getMetricsProvider(), configuration, cryptography);
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);
