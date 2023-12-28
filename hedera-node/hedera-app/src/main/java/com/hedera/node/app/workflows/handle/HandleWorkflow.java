@@ -296,13 +296,14 @@ public class HandleWorkflow {
         // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
         // the user transaction
         blockRecordManager.advanceConsensusClock(consensusNow, state);
-
+        // Look for any expired schedules and delete them when new block is created
         if (switchedBlocks) {
             final var firstSecondToExpire =
                     blockRecordManager.firstConsTimeOfLastBlock().getEpochSecond();
             final var lastSecondToExpire = consensusNow.getEpochSecond();
             final var scheduleStore =
                     new WritableStoreFactory(stack, ScheduleService.NAME).getStore(WritableScheduleStore.class);
+            // purge all expired schedules between the first consensus time of last block and the current consensus time
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
         }
 
