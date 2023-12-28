@@ -46,12 +46,15 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
+    private final Logger log = LogManager.getLogger(AbstractScheduleHandler.class);
     protected static final String NULL_CONTEXT_MESSAGE =
             "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
 
@@ -228,6 +231,12 @@ abstract class AbstractScheduleHandler {
                                 (expiration != Schedule.DEFAULT.calculatedExpirationSecond()
                                         ? Instant.ofEpochSecond(expiration)
                                         : Instant.MAX);
+                        log.info(
+                                "Schedule {} is valid for execution with calculatedExpiration {}, "
+                                        + "consensus time {}",
+                                scheduleToValidate.scheduleId(),
+                                calculatedExpiration,
+                                effectiveConsensusTime);
                         if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
                             result = ResponseCodeEnum.OK;
                         } else {

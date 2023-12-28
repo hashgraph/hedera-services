@@ -128,14 +128,18 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final Instant currentConsensusTime = context.consensusNow();
         final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
+        final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         // Note: We must store the original ScheduleCreate transaction body in the Schedule so that we can compare
         //       those bytes to any new ScheduleCreate transaction for detecting duplicate ScheduleCreate
         //       transactions.  SchedulesByEquality is the virtual map for that task
         final TransactionBody currentTransaction = context.body();
         if (currentTransaction.hasScheduleCreate()) {
+            final var expirationSeconds = isLongTermEnabled
+                    ? schedulingConfig.maxExpirationFutureSeconds()
+                    : ledgerConfig.scheduleTxExpiryTimeSecs();
             final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
-                    currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
+                    currentTransaction, currentConsensusTime, expirationSeconds);
             checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
             context.attributeValidator()

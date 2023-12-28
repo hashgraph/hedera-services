@@ -38,4 +38,6 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     public Schedule getForModify(final ScheduleID idToFind);
 
     public void put(Schedule scheduleToAdd);
+
+    void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire);
 }
