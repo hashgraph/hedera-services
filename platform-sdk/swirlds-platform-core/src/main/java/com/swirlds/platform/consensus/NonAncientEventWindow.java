@@ -51,7 +51,8 @@ public class NonAncientEventWindow {
      * @throws IllegalArgumentException if the latestConsensusRound is less than the first round of consensus or if the
      *                                  minGenNonAncient value is less than the first generation for events.
      */
-    public NonAncientEventWindow(final long latestConsensusRound, final long minRoundNonAncient, final long minGenNonAncient) {
+    public NonAncientEventWindow(
+            final long latestConsensusRound, final long minRoundNonAncient, final long minGenNonAncient) {
         if (latestConsensusRound < ConsensusConstants.ROUND_FIRST) {
             throw new IllegalArgumentException(
                     "The latest consensus round cannot be less than the first round of consensus.");
