@@ -51,7 +51,7 @@ public class NonAncientEventWindow {
      * @throws IllegalArgumentException if the latestConsensusRound is less than the first round of consensus or if the
      *                                  minGenNonAncient value is less than the first generation for events.
      */
-    public NonAncientEventWindow(long latestConsensusRound, long minRoundNonAncient, long minGenNonAncient) {
+    public NonAncientEventWindow(final long latestConsensusRound, final long minRoundNonAncient, final long minGenNonAncient) {
         if (latestConsensusRound < ConsensusConstants.ROUND_FIRST) {
             throw new IllegalArgumentException(
                     "The latest consensus round cannot be less than the first round of consensus.");
@@ -97,7 +97,7 @@ public class NonAncientEventWindow {
      * @param event the event to check for being ancient.
      * @return true if the event is ancient, false otherwise.
      */
-    public boolean isAncient(EventDescriptor event) {
+    public boolean isAncient(@NonNull final EventDescriptor event) {
         // FUTURE WORK: use generation until we throw the switch to using round
         return event.getGeneration() < minGenNonAncient;
     }
@@ -108,7 +108,7 @@ public class NonAncientEventWindow {
      * @param testValue the value to check for being ancient.
      * @return true if the value is ancient, false otherwise.
      */
-    public boolean isAncient(long testValue) {
+    public boolean isAncient(final long testValue) {
         // FUTURE WORK: use generation until we throw the switch to using round
         return testValue < minGenNonAncient;
     }
@@ -122,6 +122,7 @@ public class NonAncientEventWindow {
      * @param roundsNonAncient     the number of rounds that are non-ancient
      * @return the new NonAncientEventWindow
      */
+    @NonNull
     public static NonAncientEventWindow createUsingRoundsNonAncient(
             final long latestConsensusRound, final long minGenNonAncient, final long roundsNonAncient) {
         return new NonAncientEventWindow(
