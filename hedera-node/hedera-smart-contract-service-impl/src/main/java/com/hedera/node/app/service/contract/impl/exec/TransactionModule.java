@@ -51,6 +51,7 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import dagger.Binds;
 import dagger.Module;
@@ -132,6 +133,7 @@ public interface TransactionModule {
     @Provides
     @TransactionScope
     static HederaEvmContext provideHederaEvmContext(
+            @NonNull final HandleContext context,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaOperations hederaOperations,
@@ -141,7 +143,8 @@ public interface TransactionModule {
                 false,
                 hederaEvmBlocks,
                 tinybarValues,
-                systemContractGasCalculator);
+                systemContractGasCalculator,
+                context.recordBuilder(DeleteCapableTransactionRecordBuilder.class));
     }
 
     @Provides
