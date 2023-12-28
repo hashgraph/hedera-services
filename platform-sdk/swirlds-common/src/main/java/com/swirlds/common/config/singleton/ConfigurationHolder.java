@@ -63,7 +63,7 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * @param configuration the new configuration
      */
     public static void setConfiguration(final Configuration configuration) {
-        getInstance().setConfigurationInstance(configuration);
+        INSTANCE.setConfigurationInstance(configuration);
     }
 
     /**
@@ -87,15 +87,6 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     }
 
     /**
-     * Returns the singleton instance
-     *
-     * @return the singleton instance
-     */
-    public static ConfigurationHolder getInstance() {
-        return INSTANCE;
-    }
-
-    /**
      * Convenience method for {@link Configuration#getConfigData(Class)}.
      *
      * @param type the data type
@@ -103,6 +94,6 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * @return the data instance
      */
     public static <T extends Record> T getConfigData(final Class<T> type) {
-        return getInstance().get().getConfigData(type);
+        return INSTANCE.get().getConfigData(type);
     }
 }

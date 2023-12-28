@@ -82,6 +82,7 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -501,6 +502,7 @@ public class TestHelpers {
             INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
+            null,
             null);
 
     public static final StorageAccesses ONE_STORAGE_ACCESSES =
@@ -697,7 +699,7 @@ public class TestHelpers {
             @NonNull final HederaEvmBlocks blocks,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator);
+        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator, null);
     }
 
     public static HederaEvmContext wellKnownContextWith(
@@ -705,7 +707,17 @@ public class TestHelpers {
             final boolean staticCall,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues, systemContractGasCalculator);
+        return new HederaEvmContext(
+                NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues, systemContractGasCalculator, null);
+    }
+
+    public static HederaEvmContext wellKnownContextWith(
+            @NonNull final HederaEvmBlocks blocks,
+            @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull DeleteCapableTransactionRecordBuilder recordBuilder) {
+        return new HederaEvmContext(
+                NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
