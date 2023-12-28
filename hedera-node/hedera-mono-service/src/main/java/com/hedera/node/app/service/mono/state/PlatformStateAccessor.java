@@ -16,24 +16,24 @@
 
 package com.hedera.node.app.service.mono.state;
 
-import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.state.PlatformState;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class DualStateAccessor {
-    private SwirldDualState dualState = null;
+public class PlatformStateAccessor {
+    private PlatformState platformState = null;
 
     @Inject
-    public DualStateAccessor() {
+    public PlatformStateAccessor() {
         // Default constructor
     }
 
-    public SwirldDualState getDualState() {
-        return dualState;
+    public PlatformState getPlatformState() {
+        return platformState;
     }
 
-    public void setDualState(SwirldDualState dualState) {
-        this.dualState = dualState;
+    public void setPlatformState(PlatformState platformState) {
+        this.platformState = platformState;
     }
 }

@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSA
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SELF_DESTRUCT_BENEFICIARIES;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
@@ -34,6 +35,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -113,18 +115,18 @@ public class FrameBuilder {
     @SuppressWarnings("unchecked")
     private Map<String, Object> contextVariablesFrom(
             @NonNull final Configuration config, @NonNull final HederaEvmContext context) {
-        final var contractsConfig = config.getConfigData(ContractsConfig.class);
-        final var needsStorageTracker = contractsConfig.sidecars().contains(CONTRACT_STATE_CHANGE);
-        final var contextEntries = new Map.Entry<?, ?>[needsStorageTracker ? 5 : 4];
-        contextEntries[0] = Map.entry(CONFIG_CONTEXT_VARIABLE, config);
-        contextEntries[1] = Map.entry(TINYBAR_VALUES_CONTEXT_VARIABLE, context.tinybarValues());
-        contextEntries[2] =
-                Map.entry(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE, context.systemContractGasCalculator());
-        contextEntries[3] = Map.entry(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE, new PropagatedCallFailureReference());
-        if (needsStorageTracker) {
-            contextEntries[4] = Map.entry(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
+        final Map<String, Object> contextEntries = new HashMap<>();
+        contextEntries.put(CONFIG_CONTEXT_VARIABLE, config);
+        contextEntries.put(TINYBAR_VALUES_CONTEXT_VARIABLE, context.tinybarValues());
+        contextEntries.put(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE, context.systemContractGasCalculator());
+        contextEntries.put(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE, new PropagatedCallFailureReference());
+        if (config.getConfigData(ContractsConfig.class).sidecars().contains(CONTRACT_STATE_CHANGE)) {
+            contextEntries.put(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
         }
-        return Map.ofEntries((Map.Entry<String, ?>[]) contextEntries);
+        if (context.isDeleteCapable()) {
+            contextEntries.put(SELF_DESTRUCT_BENEFICIARIES, context.deleteCapableTransactionRecordBuilder());
+        }
+        return contextEntries;
     }
 
     private MessageFrame finishedAsCreate(

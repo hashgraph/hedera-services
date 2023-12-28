@@ -52,11 +52,11 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
@@ -190,14 +190,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState dualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
         // At some point this method will no longer be defined on SwirldState2, because we want to move
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,
         // we simply call the callback handler, which is implemented by the app.
-        this.onInit.onStateInitialized(this, platform, dualState, trigger, deserializedVersion);
+        this.onInit.onStateInitialized(this, platform, platformState, trigger, deserializedVersion);
     }
 
     /**
@@ -307,10 +307,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.onConsensusRound(round, swirldDualState, this);
+            onHandleConsensusRound.onConsensusRound(round, platformState, this);
         }
     }
 

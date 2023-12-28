@@ -34,7 +34,7 @@ import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.state.PlatformState;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,14 +47,14 @@ import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DualStateUpdateFacilityTest implements TransactionFactory {
+class PlatformStateUpdateFacilityTest implements TransactionFactory {
     private FakeHederaState state;
 
-    private DualStateUpdateFacility subject;
+    private PlatformStateUpdateFacility subject;
     private AtomicReference<Timestamp> freezeTimeBackingStore;
 
     @Mock(strictness = Strictness.LENIENT)
-    private SwirldDualState dualState;
+    private PlatformState platformState;
 
     @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
@@ -68,11 +68,11 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
 
         state = new FakeHederaState().addService(FreezeService.NAME, Map.of(FREEZE_TIME_KEY, freezeTimeBackingStore));
 
-        doAnswer(answer -> when(dualState.getFreezeTime()).thenReturn(answer.getArgument(0)))
-                .when(dualState)
+        doAnswer(answer -> when(platformState.getFreezeTime()).thenReturn(answer.getArgument(0)))
+                .when(platformState)
                 .setFreezeTime(any(Instant.class));
 
-        subject = new DualStateUpdateFacility();
+        subject = new PlatformStateUpdateFacility();
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -82,10 +82,11 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> subject.handleTxBody(null, dualState, txBody))
+        assertThatThrownBy(() -> subject.handleTxBody(null, platformState, txBody))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, null, txBody)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, dualState, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, platformState, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -96,7 +97,7 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
                 .build();
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, dualState, txBody))
+        Assertions.assertThatCode(() -> subject.handleTxBody(state, platformState, txBody))
                 .doesNotThrowAnyException();
     }
 
@@ -109,10 +110,10 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, dualState, txBody.build());
+        subject.handleTxBody(state, platformState, txBody.build());
 
         // then
-        assertEquals(freezeTime.seconds(), dualState.getFreezeTime().getEpochSecond());
-        assertEquals(freezeTime.nanos(), dualState.getFreezeTime().getNano());
+        assertEquals(freezeTime.seconds(), platformState.getFreezeTime().getEpochSecond());
+        assertEquals(freezeTime.nanos(), platformState.getFreezeTime().getNano());
     }
 }
