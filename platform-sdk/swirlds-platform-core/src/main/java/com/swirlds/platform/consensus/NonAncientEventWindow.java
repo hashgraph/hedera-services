@@ -97,7 +97,7 @@ public class NonAncientEventWindow {
      * @param event the event to check for being ancient.
      * @return true if the event is ancient, false otherwise.
      */
-    public boolean isAncient(EventDescriptor event) {
+    public boolean isAncient(@NonNull final EventDescriptor event) {
         // FUTURE WORK: use generation until we throw the switch to using round
         return event.getGeneration() < minGenNonAncient;
     }
