@@ -117,7 +117,7 @@ public class TipsetTracker {
             // enter this bock of code. This log is here as a canary to alert us if we somehow do.
             ancientEventLogger.error(
                     EXCEPTION.getMarker(),
-                    "Rejecting ancient event from {} with generation {}. " + "Current non-ancient event window is {}",
+                    "Rejecting ancient event from {} with generation {}. Current non-ancient event window is {}",
                     eventDescriptor.getCreator(),
                     eventDescriptor.getGeneration(),
                     nonAncientEventWindow);
