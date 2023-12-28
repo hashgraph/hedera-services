@@ -75,11 +75,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var accountsConfig = context.configuration().getConfigData(AccountsConfig.class);
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
         final var consensusNow = context.consensusTime();
-
+        // When an account StakedIdType is FROM_ACCOUNT or TO_ACCOUNT, we need to assess if the staked accountId
+        // could be in a reward situation. So add those staked accountIds to the list of possible reward receivers
         final var specialRewardReceivers = getStakedToMeRewardReceivers(writableStore);
-        // Get list of possible reward receivers and pay rewards to them
+        // In addition to the above set, iterate through all modifications in state and
+        // get list of possible reward receivers which are staked to node
         final var rewardReceivers = getAllRewardReceivers(writableStore, specialRewardReceivers);
-        log.info("Reward receivers are {}", rewardReceivers);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
@@ -147,6 +148,13 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         }
     }
 
+    /**
+     * Gets the special reward receivers. If an account is staked to an account, the stakedAccountId should be added
+     * to assess if that account is staked to a node, to trigger rewards. Even if the tinybarBalance of the account
+     * doesn't change in the transaction, we still want to check if it is a reward situation for the staked account.
+     * @param writableStore The store to write to for updated values
+     * @return the special reward receivers
+     */
     public Set<AccountID> getStakedToMeRewardReceivers(@NonNull final WritableAccountStore writableStore) {
         // If there is a FROM_ACCOUNT_ or _TO_ACCOUNT stake change scenario, the set of modified
         // accounts in the writable store can change inside the body of the for loop below; so we
@@ -173,10 +181,14 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                             updateSpecialRewardReceivers(specialRewardReceivers, modifiedAccount, writableStore);
                 }
             } else {
+                // When withdrawing from account stakedId, we are interested to assess the original account
+                // that has stakedAccountId
                 if (scenario.withdrawsFromAccount()) {
                     specialRewardReceivers =
                             updateSpecialRewardReceivers(specialRewardReceivers, originalAccount, writableStore);
                 }
+                // When adding from stakedAccountId to an account, we are interested to assess the modified account
+                // that has new stakedAccountId
                 if (scenario.awardsToAccount()) {
                     specialRewardReceivers =
                             updateSpecialRewardReceivers(specialRewardReceivers, modifiedAccount, writableStore);
@@ -186,6 +198,14 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         return specialRewardReceivers == null ? Collections.emptySet() : specialRewardReceivers;
     }
 
+    /**
+     * Updates specialRewardReceivers set with the stakedAccountId of the account, when the stakedAccountId is
+     * staked to a node.
+     * @param specialRewardReceivers the set of special reward receivers
+     * @param account the account to check
+     * @param accountStore the account store
+     * @return the updated special reward receivers
+     */
     @NonNull
     private Set<AccountID> updateSpecialRewardReceivers(
             @Nullable Set<AccountID> specialRewardReceivers,
@@ -214,7 +234,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * @param stakingRewardStore writable staking reward store
      * @param consensusNow       consensus time
      * @param paidRewards        map of account to rewards paid
-     * @param rewardReceivers
+     * @param rewardReceivers   set of reward receivers
      */
     private void adjustStakeMetadata(
             final WritableAccountStore writableStore,
@@ -223,7 +243,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final Instant consensusNow,
             final Map<AccountID, Long> paidRewards,
             final Set<AccountID> rewardReceivers) {
-        log.info("Modified accounts in state {}", writableStore.modifiedAccountsInState());
+        // We need to assess all the accounts modified in state and also possible rewardReceivers
         Set<AccountID> accountsToBeReviewed = writableStore.modifiedAccountsInState();
         if (!writableStore.modifiedAccountsInState().containsAll(rewardReceivers)) {
             accountsToBeReviewed = new LinkedHashSet<>(writableStore.modifiedAccountsInState());
@@ -257,6 +277,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // Check if the stakeAtStartOfLastRewardedPeriod needs to be updated
             // If the account is autoCreated containStakeMetaChanges will not be true
             if (containStakeMetaChanges) {
+                // If there are any stake metadata changes, we need to reset stakeAtStartOfLastRewardedPeriod
                 final var copy = modifiedAccount.copyBuilder();
                 copy.stakeAtStartOfLastRewardedPeriod(NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE);
                 writableStore.put(copy.build());
@@ -347,6 +368,15 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         }
     }
 
+    /**
+     * List of condition sto validate if the account need to update stakeAtStartOfLastRewardedPeriod.
+     * @param account the account
+     * @param isRewarded if the account is rewarded
+     * @param reward the reward amount
+     * @param stakingRewardStore the staking reward store
+     * @param consensusNow the consensus time
+     * @return true if the account need to update stakeAtStartOfLastRewardedPeriod, false otherwise
+     */
     public boolean shouldUpdateStakeAtStartOfLastRewardPeriod(
             @Nullable final Account account,
             final boolean isRewarded,

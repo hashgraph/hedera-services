@@ -760,7 +760,7 @@ public final class Hedera implements SwirldMain {
             // irrespective of the weight provided in config.txt
             configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
         } else {
-            logger.warn("Token service state is empty");
+            logger.warn("Token service state is empty to update weights from StakingInfo Map");
         }
     }
 

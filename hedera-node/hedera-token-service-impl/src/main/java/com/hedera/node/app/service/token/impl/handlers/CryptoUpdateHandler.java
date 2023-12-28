@@ -203,12 +203,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             builder.declineReward(op.declineReward().booleanValue());
         }
         if (op.hasStakedAccountId()) {
+            // 0.0.0 is used a sentinel value for removing staked account id
             if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
                 builder.stakedAccountId((AccountID) null);
             } else {
                 builder.stakedAccountId(op.stakedAccountId());
             }
         } else if (op.hasStakedNodeId()) {
+            // -1 is used a sentinel value for removing staked node id
             if (SENTINEL_NODE_ID == op.stakedNodeId()) {
                 builder.stakedNodeId(SENTINEL_NODE_ID);
             } else {

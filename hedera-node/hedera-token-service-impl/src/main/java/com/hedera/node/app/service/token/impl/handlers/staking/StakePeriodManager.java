@@ -187,7 +187,6 @@ public class StakePeriodManager {
             @NonNull final Instant consensusNow) {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         if (modifiedAccount.hasStakedNodeId()) {
-            long period = 0;
             if ((originalAccount != null && originalAccount.hasStakedAccountId()) || stakeMetaChanged) {
                 // We just started staking to a node today
                 return currentStakePeriod(consensusNow);

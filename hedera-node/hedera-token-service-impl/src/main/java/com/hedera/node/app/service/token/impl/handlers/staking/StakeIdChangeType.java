@@ -141,6 +141,15 @@ public enum StakeIdChangeType {
         }
     }
 
+    /**
+     * Returns the current stakedId case for the given account.
+     * A temporary measure until PBJ supports setting UNSET values for OneOfTypes.
+     * When we use sentinel value to reset the stakedAccountId or stakedNodeId,
+     * we currently don't get UnSET for stakedId().kind() and this causes issues when determining the case.
+     * This method will be removed once PBJ supports setting UNSET values for OneOfTypes.
+     * @param account the account to check
+     * @return the current stakedId case for the given account
+     */
     private static Account.StakedIdOneOfType getCurrentStakedIdCase(final Account account) {
         final var kind = account.stakedId().kind();
         if (kind.equals(STAKED_NODE_ID)) {

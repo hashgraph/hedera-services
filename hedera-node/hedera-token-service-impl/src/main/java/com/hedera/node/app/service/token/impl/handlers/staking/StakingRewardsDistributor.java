@@ -100,6 +100,7 @@ public class StakingRewardsDistributor {
             // Even if the account has declineReward set or if reward is 0, it should still
             // be added to the rewardsPaid map
             final var mutableBeneficiary = writableStore.get(beneficiary.accountId());
+            // If the beneficiary has declineReward set, then the reward is zero
             final var finalReward = beneficiary.declineReward() ? 0 : reward;
             // even if reward is zero it will be added to rewardsPaid
             if (finalReward > 0) {

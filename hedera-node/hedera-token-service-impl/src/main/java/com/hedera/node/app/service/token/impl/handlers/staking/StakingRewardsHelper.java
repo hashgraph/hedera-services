@@ -56,7 +56,7 @@ public class StakingRewardsHelper {
      * and has stakedId or stakedToMe or balance or declineReward changed in this transaction.
      *
      * @param writableAccountStore   The store to write to for updated values and original values
-     * @param specialRewardReceivers
+     * @param specialRewardReceivers The accounts which are staked to a node and are special reward receivers
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
     public static Set<AccountID> getAllRewardReceivers(
@@ -92,7 +92,8 @@ public class StakingRewardsHelper {
             return false;
         }
 
-        // stakedToMe changes are captured in possibleRewardReceivers
+        // No need to check for stakeMetaChanges again here, since they are captured in possibleRewardReceivers
+        // in previous step
         final var hasBalanceChange = modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance();
         final var hasStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
         // We do this for backward compatibility with mono-service

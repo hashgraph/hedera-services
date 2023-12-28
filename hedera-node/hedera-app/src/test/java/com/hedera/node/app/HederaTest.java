@@ -191,7 +191,7 @@ final class HederaTest extends MerkleTestBase {
             hedera.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
 
             // if staking info map has node with 0 weight and a new node is added,
-            // both gets weight of 0
+            // new nodes gets weight of 0
             assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
             assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
         }
@@ -240,8 +240,8 @@ final class HederaTest extends MerkleTestBase {
 
             hedera.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
 
-            // if staking info map has node with 0 weight and a new node is added,
-            // both gets weight of 0
+            // if staking info map has node with 250L weight and a new node is added,
+            // both gets weight of 250L
             assertEquals(250L, pretendAddressBook.getAddress(node0).getWeight());
             assertEquals(250L, pretendAddressBook.getAddress(node1).getWeight());
         }

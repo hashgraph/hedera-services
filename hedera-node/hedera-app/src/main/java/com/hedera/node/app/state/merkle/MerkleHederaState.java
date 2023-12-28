@@ -147,8 +147,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
     /**
      * This callback is invoked whenever the updateWeight is called.
-     *
-     * <p>This reference is moved forward to the working mutable state.
      */
     private OnUpdateWeight onUpdateWeight;
 

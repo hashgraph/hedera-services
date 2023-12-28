@@ -21,7 +21,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A callback that is invoked when platform calls updateWeight.
+ * A callback that is invoked when platform calls updateWeight during upgrade.
  */
 public interface OnUpdateWeight {
     void updateWeight(
