@@ -97,8 +97,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
-                .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()))
-                .status(outcome.status());
+                .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
             // The Ethereum transaction was a top-level MESSAGE_CALL
             recordBuilder.contractID(outcome.recipientId()).contractCallResult(outcome.result());

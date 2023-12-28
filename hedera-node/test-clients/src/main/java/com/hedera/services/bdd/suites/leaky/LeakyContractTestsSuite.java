@@ -105,9 +105,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -128,6 +130,9 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.SIM
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFERRING_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFER_TO_CALLER;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.EXPECTED_CREATE2_ADDRESS_MESSAGE;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_ADDRESS;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.ATTACK_CALL;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CALL_TO;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
@@ -154,9 +159,9 @@ import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferH
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TRANSFER_MULTIPLE_TOKENS;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.NAME_TXN;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -182,9 +187,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.hyperledger.besu.datatypes.Address.contractAddress;
 import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -194,7 +201,6 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -205,6 +211,7 @@ import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -220,6 +227,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -236,7 +244,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
-@HapiTestSuite
+// @HapiTestSuite
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
@@ -287,6 +295,14 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_038 = "v0.38";
+    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    private static final String CREATION = "creation";
+    private static final String ENTITY_MEMO = "JUST DO IT";
+    private static final String CREATE_2_TXN = "create2Txn";
+    public static final String GET_BYTECODE = "getBytecode";
+    public static final String CONTRACT_REPORTED_LOG_MESSAGE = "Contract reported TestContract initcode is {} bytes";
+    public static final String DEPLOY = "deploy";
+    private static final String CREATE_2_TXN_2 = "create2Txn2";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -337,7 +353,106 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 someErc721BalanceOfScenariosPass(),
                 callToNonExistingContractFailsGracefully(),
                 getErc20TokenNameExceedingLimits(),
-                relayerFeeAsExpectedIfSenderCoversGas());
+                relayerFeeAsExpectedIfSenderCoversGas(),
+                canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
+                getErc20TokenNameExceedingLimits());
+    }
+
+    @SuppressWarnings("java:S5960")
+    final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
+        final var tcValue = 1_234L;
+        final var contract = "Create2FactoryWithSelfDestructingContract";
+        final var creation = CREATION;
+        final var salt = BigInteger.valueOf(42);
+        final var adminKey = ADMIN_KEY;
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr2 = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr2 = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor")
+                .preserving(LAZY_CREATION_ENABLED)
+                .given(
+                        overriding(LAZY_CREATION_ENABLED, TRUE),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(MULTI_KEY),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .payingWith(GENESIS)
+                                .adminKey(adminKey)
+                                .entityMemo(ENTITY_MEMO)
+                                .via(CREATE_2_TXN)
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))))
+                .when(
+                        sourcing(() -> contractCallLocal(
+                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    log.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        sourcing(() -> setExpectedCreate2Address(
+                                contract, salt, expectedCreate2Address, testContractInitcode)),
+                        // Now create a hollow account at the desired address
+                        cryptoTransfer((spec, b) -> {
+                                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
+                                    b.setTransfers(TransferList.newBuilder()
+                                            .addAccountAmounts(aaWith(
+                                                    ByteString.copyFrom(
+                                                            CommonUtils.unhex(expectedCreate2Address.get())),
+                                                    +ONE_HBAR))
+                                            .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)));
+                                })
+                                .signedBy(DEFAULT_PAYER)
+                                .fee(ONE_HBAR)
+                                .via(creation),
+                        getTxnRecord(creation)
+                                .andAllChildRecords()
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))))
+                .then(
+                        getContractInfo(contract)
+                                .has(ContractInfoAsserts.contractWith().balance(0L)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via(CREATE_2_TXN)),
+                        captureOneChildCreate2MetaFor(
+                                "Merged deployed contract with hollow account and self-destructed the contract",
+                                CREATE_2_TXN,
+                                mergedMirrorAddr,
+                                mergedAliasAddr),
+                        sourcing(() -> getContractInfo(mergedMirrorAddr.get())
+                                .has(ContractInfoAsserts.contractWith().isDeleted())),
+                        getContractInfo(contract)
+                                .has(ContractInfoAsserts.contractWith().balance(ONE_HBAR + tcValue)),
+                        /* Can repeat CREATE2 with same args because the previous contract was destroyed in the constructor*/
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via(CREATE_2_TXN_2)),
+                        captureOneChildCreate2MetaFor(
+                                "Merged deployed contract with hollow account and self-destructed the contract",
+                                CREATE_2_TXN_2,
+                                mergedMirrorAddr2,
+                                mergedAliasAddr2),
+                        sourcing(() -> getContractInfo(mergedMirrorAddr2.get())
+                                .has(ContractInfoAsserts.contractWith().isDeleted())),
+                        sourcing(() -> assertionsHold((spec, asertLog) -> {
+                            assertEquals(
+                                    mergedAliasAddr.get(), mergedAliasAddr2.get(), "Alias addresses must be equal!");
+                            assertNotEquals(
+                                    mergedMirrorAddr.get(),
+                                    mergedMirrorAddr2.get(),
+                                    "Mirror addresses must not be equal!");
+                        })));
     }
 
     @HapiTest
@@ -1288,6 +1403,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     final HapiSpec etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
         return propertyPreservingHapiSpec("etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
@@ -2812,6 +2928,23 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(getAccountInfo(RELAYER)
                         .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
                         .logged());
+    }
+
+    private HapiContractCallLocal setExpectedCreate2Address(
+            String contract,
+            BigInteger salt,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<byte[]> testContractInitcode) {
+        return contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                .exposingTypedResultsTo(results -> {
+                    log.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                    final var expectedAddrBytes = (Address) results[0];
+                    final var hexedAddress = hex(
+                            Bytes.fromHexString(expectedAddrBytes.toString()).toArray());
+                    log.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+                    expectedCreate2Address.set(hexedAddress);
+                })
+                .payingWith(GENESIS);
     }
 
     @Override

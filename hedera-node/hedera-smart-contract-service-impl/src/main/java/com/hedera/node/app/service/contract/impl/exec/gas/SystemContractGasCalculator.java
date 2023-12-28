@@ -112,6 +112,27 @@ public class SystemContractGasCalculator {
     }
 
     /**
+     * Given a dispatch, returns the canonical price for that dispatch.
+     *
+     * @param body the transaction body to be dispatched
+     * @param payer the payer account
+     * @return the canonical price for that dispatch
+     */
+    public long canonicalPriceInTinybars(@NonNull final TransactionBody body, @NonNull final AccountID payer) {
+        return feeCalculator.applyAsLong(body, payer);
+    }
+
+    /**
+     * Given a gas requirement, returns the equivalent tinybar cost at the current gas price.
+     *
+     * @param gas the gas requirement
+     * @return the equivalent tinybar cost at the current gas price
+     */
+    public long gasCostInTinybars(final long gas) {
+        return gas * tinybarValues.childTransactionTinybarGasPrice();
+    }
+
+    /**
      * Given a tinybar price, returns the equivalent gas requirement at the current gas price.
      *
      * @param tinybarPrice the tinybar price

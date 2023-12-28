@@ -75,8 +75,8 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -196,7 +196,7 @@ class HandleWorkflowTest extends AppTestBase {
     private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
-    private DualStateUpdateFacility dualStateUpdateFacility;
+    private PlatformStateUpdateFacility platformStateUpdateFacility;
 
     @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
@@ -205,7 +205,7 @@ class HandleWorkflowTest extends AppTestBase {
     private Authorizer authorizer;
 
     @Mock
-    private SwirldDualState dualState;
+    private PlatformState platformState;
 
     private HandleWorkflow workflow;
 
@@ -276,7 +276,7 @@ class HandleWorkflowTest extends AppTestBase {
                 childRecordFinalizer,
                 finalizer,
                 systemFileUpdateFacility,
-                dualStateUpdateFacility,
+                platformStateUpdateFacility,
                 solvencyPreCheck,
                 authorizer,
                 networkUtilizationManager);
@@ -301,7 +301,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -322,7 +322,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -343,7 +343,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -364,7 +364,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -385,7 +385,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -406,7 +406,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -427,7 +427,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -448,7 +448,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -469,7 +469,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -490,7 +490,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -511,7 +511,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -532,7 +532,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -553,7 +553,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         null,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -574,7 +574,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         null,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         networkUtilizationManager))
@@ -616,7 +616,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         null,
                         authorizer,
                         networkUtilizationManager))
@@ -637,7 +637,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         null,
                         networkUtilizationManager))
@@ -658,7 +658,7 @@ class HandleWorkflowTest extends AppTestBase {
                         childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
-                        dualStateUpdateFacility,
+                        platformStateUpdateFacility,
                         solvencyPreCheck,
                         authorizer,
                         null))
@@ -672,7 +672,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(platformTxn.isSystem()).thenReturn(true);
 
         // when
-        workflow.handleRound(state, dualState, round);
+        workflow.handleRound(state, platformState, round);
 
         // then
         assertThat(accountsState.isModified()).isFalse();
@@ -689,7 +689,7 @@ class HandleWorkflowTest extends AppTestBase {
                 .willAnswer(invocation -> invocation.getArgument(4));
 
         // when
-        workflow.handleRound(state, dualState, round);
+        workflow.handleRound(state, platformState, round);
 
         // then
         verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -697,7 +697,7 @@ class HandleWorkflowTest extends AppTestBase {
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
         verify(systemFileUpdateFacility).handleTxBody(any(), any());
-        verify(dualStateUpdateFacility).handleTxBody(any(), any(), any());
+        verify(platformStateUpdateFacility).handleTxBody(any(), any(), any());
     }
 
     @Nested
@@ -717,7 +717,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(null);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -731,7 +731,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(PRE_HANDLE_FAILURE_RESULT);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -747,7 +747,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(unknownFailure);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -774,7 +774,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn), eq(preHandleResult));
@@ -787,7 +787,7 @@ class HandleWorkflowTest extends AppTestBase {
             when(platformTxn.getMetadata()).thenReturn(null);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -808,7 +808,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DUE_DILIGENCE_RESULT);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -825,7 +825,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DUE_DILIGENCE_RESULT);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -841,7 +841,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(PreHandleResult.unknownFailure());
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -857,7 +857,7 @@ class HandleWorkflowTest extends AppTestBase {
         // given
         when(platformTxn.getMetadata()).thenReturn(DUE_DILIGENCE_RESULT);
         // when
-        workflow.handleRound(state, dualState, round);
+        workflow.handleRound(state, platformState, round);
 
         // then
         verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -899,7 +899,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(dispatcher, never()).dispatchHandle(any());
@@ -919,7 +919,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(dispatcher, never()).dispatchHandle(any());
@@ -960,7 +960,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1004,7 +1004,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .willAnswer(invocation -> invocation.getArgument(4));
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
@@ -1042,7 +1042,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DuplicateCheckResult.OTHER_NODE);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1062,7 +1062,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(DuplicateCheckResult.SAME_NODE);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1083,7 +1083,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .checkTimeBox(OK_RESULT.txInfo().txBody(), TX_CONSENSUS_NOW);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1113,7 +1113,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .getPayerAccount(any(), eq(ALICE.accountID()));
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1142,7 +1142,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES), eq(FALSE));
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1163,7 +1163,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(false);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1188,7 +1188,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(SystemPrivilege.UNAUTHORIZED);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1213,7 +1213,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(SystemPrivilege.IMPERMISSIBLE);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1239,7 +1239,7 @@ class HandleWorkflowTest extends AppTestBase {
                     .thenReturn(privilege);
 
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1258,7 +1258,7 @@ class HandleWorkflowTest extends AppTestBase {
             doThrow(new HandleException(ResponseCodeEnum.INVALID_SIGNATURE))
                     .when(dispatcher)
                     .dispatchHandle(any());
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1271,7 +1271,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testUnknownFailure() {
             // when
             doThrow(new ArrayIndexOutOfBoundsException()).when(dispatcher).dispatchHandle(any());
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1293,7 +1293,7 @@ class HandleWorkflowTest extends AppTestBase {
             given(preHandleWorkflow.preHandleTransaction(any(), any(), any(), any(), any()))
                     .willAnswer(invocation -> invocation.getArgument(4));
             // when
-            workflow.handleRound(state, dualState, round);
+            workflow.handleRound(state, platformState, round);
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
@@ -1305,7 +1305,7 @@ class HandleWorkflowTest extends AppTestBase {
 
     @Test
     void testConsensusTimeHooksCalled() {
-        workflow.handleRound(state, dualState, round);
+        workflow.handleRound(state, platformState, round);
         verify(genesisRecordsTimeHook).process(notNull());
         verify(stakingPeriodTimeHook).process(notNull(), notNull());
     }
