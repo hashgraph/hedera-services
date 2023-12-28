@@ -328,7 +328,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    @HapiTest
     final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
         final var tcValue = 1_234L;
         final var contract = "Create2FactoryWithSelfDestructingContract";
