@@ -1330,7 +1330,7 @@ public class Create2OperationSuite extends HapiSuite {
                 }));
     }
 
-    private HapiContractCallLocal setExpectedCreate2Address(
+    public static HapiContractCallLocal setExpectedCreate2Address(
             String contract,
             BigInteger salt,
             AtomicReference<String> expectedCreate2Address,
