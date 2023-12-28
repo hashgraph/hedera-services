@@ -108,7 +108,7 @@ public class NonAncientEventWindow {
      * @param testValue the value to check for being ancient.
      * @return true if the value is ancient, false otherwise.
      */
-    public boolean isAncient(long testValue) {
+    public boolean isAncient(final long testValue) {
         // FUTURE WORK: use generation until we throw the switch to using round
         return testValue < minGenNonAncient;
     }
