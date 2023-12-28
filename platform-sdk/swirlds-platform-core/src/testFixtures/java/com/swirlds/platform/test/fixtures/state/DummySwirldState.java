@@ -20,8 +20,8 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
@@ -85,7 +85,7 @@ public class DummySwirldState extends AbstractDummySwirldState implements Swirld
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(final Round round, final PlatformState platformState) {
         // intentionally does nothing
     }
 

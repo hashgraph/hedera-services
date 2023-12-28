@@ -78,18 +78,8 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
                 SignedStateFileReader.readStateFile(platformContext, statePath);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.printf("Replacing platform data %n");
-            reservedSignedState
-                    .get()
-                    .getState()
-                    .getPlatformState()
-                    .getPlatformData()
-                    .setRound(PlatformData.GENESIS_ROUND);
-            reservedSignedState
-                    .get()
-                    .getState()
-                    .getPlatformState()
-                    .getPlatformData()
-                    .setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
+            reservedSignedState.get().getState().getPlatformState().setRound(PlatformData.GENESIS_ROUND);
+            reservedSignedState.get().getState().getPlatformState().setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
             System.out.printf("Hashing state %n");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())
