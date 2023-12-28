@@ -798,10 +798,12 @@ public class ScheduleSignSpecs extends HapiSuite {
                         sleepFor(2000),
                         scheduleSign(TWO_SIG_XFER)
                                 .alsoSigningWith(RECEIVER)
+                                .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
                         scheduleSign(TWO_SIG_XFER)
                                 .alsoSigningWith(RECEIVER)
+                                .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
                         getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),

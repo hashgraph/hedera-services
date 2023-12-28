@@ -544,23 +544,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
             throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
         }
-        // This condition fails, because for lazy-account creation we charge fees, before dispatching the transaction,
-        // and the state will be modified.
 
-        //        if (stack.depth() > 1) {
-        //            throw new IllegalStateException(
-        //                    "Cannot dispatch a preceding transaction when a savepoint has been created");
-        //        }
-
-        // This condition fails, because for auto-account creation we charge fees, before dispatching the transaction,
-        // and the state will be modified.
-
-        //         if (current().isModified()) {
-        //                    throw new IllegalStateException("Cannot dispatch a preceding transaction when the state
-        // has been modified");
-        //         }
-
-        // run the transaction
         final var precedingRecordBuilder = recordBuilderFactory.get();
         dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
 
@@ -652,7 +636,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             return;
         }
 
-        final var childStack = new SavepointStackImpl(current());
         final HederaFunctionality function;
         try {
             function = functionOf(txBody);
@@ -683,6 +666,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             return;
         }
 
+        final var childStack = new SavepointStackImpl(current());
         final var childContext = new HandleContextImpl(
                 txBody,
                 function,
@@ -771,7 +755,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // Note we do NOT want to enforce the "time box" on valid start for
             // transaction ids dispatched by the schedule service, since these ids derive from their
             // ScheduleCreate id, which could have happened long ago
-            Key syntheticPayerKey = payerAccount.keyOrThrow();
+            final var syntheticPayerKey = payerAccount.keyOrThrow();
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
             validateKey(keyVerifier, callback, syntheticPayerKey);
             dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, fee);

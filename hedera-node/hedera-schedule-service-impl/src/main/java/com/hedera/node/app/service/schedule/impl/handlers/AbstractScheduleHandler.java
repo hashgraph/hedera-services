@@ -232,12 +232,12 @@ abstract class AbstractScheduleHandler {
                                         ? Instant.ofEpochSecond(expiration)
                                         : Instant.MAX);
                         log.info(
-                                "Schedule {} is valid for execution with calculatedExpiration {}, "
+                                "Evaluating schedule id {} for execution with calculatedExpiration {}, "
                                         + "consensus time {}",
                                 scheduleToValidate.scheduleId(),
                                 calculatedExpiration,
                                 effectiveConsensusTime);
-                        if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
+                        if (calculatedExpiration.getEpochSecond() >= effectiveConsensusTime.getEpochSecond()) {
                             result = ResponseCodeEnum.OK;
                         } else {
                             // We are past expiration time

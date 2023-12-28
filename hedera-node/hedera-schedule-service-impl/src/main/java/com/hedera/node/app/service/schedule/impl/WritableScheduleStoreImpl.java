@@ -158,6 +158,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
 
                     final ProtoString hash = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
                     schedulesByEqualityMutable.remove(hash);
+                    logger.info("Purging expired schedule {} from state.", schedule.scheduleIdOrThrow());
                 }
                 schedulesByExpirationMutable.remove(second);
             }
