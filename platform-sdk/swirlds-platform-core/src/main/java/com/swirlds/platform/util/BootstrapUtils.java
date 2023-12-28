@@ -26,7 +26,6 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.TransactionConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -119,16 +118,6 @@ public final class BootstrapUtils {
     private static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
 
     private BootstrapUtils() {}
-
-    /**
-     * Load the config for paths
-     *
-     * @return the paths configuration files
-     */
-    public static @NonNull PathsConfig loadPathsConfig() {
-        final PathsConfig pathsConfig = ConfigurationHolder.getConfigData(PathsConfig.class);
-        return pathsConfig;
-    }
 
     /**
      * Load the configuration for the platform.

@@ -18,8 +18,8 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.JarAppConfig;
@@ -93,9 +93,11 @@ public final class ApplicationDefinitionLoader {
         // the line is: app, jarFilename, optionalParameters
         final String appJarFilename = appConfig.jarName();
         // this is a real .jar file, so load from data/apps/
-        Path appJarPath = ConfigurationHolder.getConfigData(PathsConfig.class)
-                .getAppsDirPath()
-                .resolve(appJarFilename);
+        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
+                .withConfigDataType(PathsConfig.class)
+                .build()
+                .getConfigData(PathsConfig.class);
+        final Path appJarPath = defaultPathsConfig.getAppsDirPath().resolve(appJarFilename);
         String mainClassname = "";
         try (final JarFile jarFile = new JarFile(appJarPath.toFile())) {
             final Manifest manifest = jarFile.getManifest();

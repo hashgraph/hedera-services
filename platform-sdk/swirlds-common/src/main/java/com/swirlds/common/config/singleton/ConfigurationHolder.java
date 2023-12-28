@@ -22,7 +22,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * The old Settings API used several static holder classes to support to change the configuration for tests. Next to

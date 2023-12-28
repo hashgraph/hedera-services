@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
@@ -93,14 +92,13 @@ class OrphanEventsIntakeTest {
             final Map<Hash, EventImpl> linkedEventMap = new HashMap<>();
             consensusEvents = new ArrayList<>();
             final Consensus consensus = ConsensusUtils.buildSimpleConsensus(generator.getAddressBook());
+            final PlatformContext platformContext =
+                    TestPlatformContextBuilder.create().build();
             orphanBuffer = new OrphanBufferingLinker(
-                    ConfigurationHolder.getConfigData(ConsensusConfig.class),
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     new ParentFinder(linkedEventMap::get),
                     100_000,
                     mock(IntakeEventCounter.class));
-
-            final PlatformContext platformContext =
-                    TestPlatformContextBuilder.create().build();
 
             intake = new EventIntake(
                     platformContext,

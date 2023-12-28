@@ -19,6 +19,7 @@ package com.swirlds.common.merkle.synchronization;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -70,9 +71,9 @@ public class TeachingSynchronizer {
      * </p>
      *
      * <p>
-     * Although multiple threads may modify this queue, it is still thread safe. This is because only one thread
-     * will attempt to read/write this data structure at any time, and when the thread touching the queue changes
-     * there is a synchronization point that establishes a happens before relationship.
+     * Although multiple threads may modify this queue, it is still thread safe. This is because only one thread will
+     * attempt to read/write this data structure at any time, and when the thread touching the queue changes there is a
+     * synchronization point that establishes a happens before relationship.
      * </p>
      */
     private final Queue<TeacherSubtree> subtrees;
@@ -91,24 +92,18 @@ public class TeachingSynchronizer {
     /**
      * Create a new teaching synchronizer.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param in
-     * 		the input stream
-     * @param out
-     * 		the output stream
-     * @param root
-     * 		the root of the tree
-     * @param breakConnection
-     * 		a method that breaks the connection. Used iff
-     * 		an exception is encountered. Prevents deadlock
-     * 		if there is a thread stuck on a blocking IO
-     * 		operation that will never finish due to a
-     * 		failure.
-     * @param reconnectConfig
-     *      reconnect configuration from platform
+     * @param platformContext the platform context
+     * @param threadManager   responsible for managing thread lifecycles
+     * @param in              the input stream
+     * @param out             the output stream
+     * @param root            the root of the tree
+     * @param breakConnection a method that breaks the connection. Used iff an exception is encountered. Prevents
+     *                        deadlock if there is a thread stuck on a blocking IO operation that will never finish due
+     *                        to a failure.
+     * @param reconnectConfig reconnect configuration from platform
      */
     public TeachingSynchronizer(
+            @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final MerkleDataInputStream in,
@@ -123,7 +118,7 @@ public class TeachingSynchronizer {
         outputStream = Objects.requireNonNull(out, "out must not be null");
 
         subtrees = new LinkedList<>();
-        subtrees.add(new TeacherSubtree(root));
+        subtrees.add(new TeacherSubtree(platformContext, root));
 
         this.breakConnection = breakConnection;
         this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");

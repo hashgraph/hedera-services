@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
@@ -27,7 +28,6 @@ import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.NodeStartPayload;
-import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -80,9 +80,8 @@ final class StaticPlatformBuilder {
 
         ConfigurationHolder.setConfiguration(configuration);
 
-        // Setup logging, using the configuration to tell us the location of the log4j2.xml
-        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
-        final Path log4jPath = pathsConfig.getLogPath();
+        // Setup logging
+        final Path log4jPath = getAbsolutePath("log4j2.xml");
         try {
             Log4jSetup.startLoggingFramework(log4jPath).await();
         } catch (final InterruptedException e) {

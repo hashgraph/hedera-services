@@ -264,6 +264,7 @@ public class SyncGossip extends AbstractGossip {
                                             networkMetrics,
                                             time),
                                     new EmergencyReconnectProtocol(
+                                            platformContext,
                                             time,
                                             threadManager,
                                             notificationEngine,
@@ -277,6 +278,7 @@ public class SyncGossip extends AbstractGossip {
                                             platformStatusManager,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
+                                            platformContext,
                                             threadManager,
                                             otherId,
                                             reconnectThrottle,
