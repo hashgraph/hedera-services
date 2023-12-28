@@ -744,13 +744,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             }
 
             // Check the status and solvency of the payer
-            final var fee = dispatchComputeFees(transactionBody, syntheticPayerId)
+            final var serviceFee = dispatchComputeFees(transactionBody, syntheticPayerId)
                     .copyBuilder()
                     .networkFee(0)
                     .nodeFee(0)
                     .build();
             final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId);
-            solvencyPreCheck.checkSolvency(transactionBody, syntheticPayerId, functionality, payerAccount, fee, true);
+            solvencyPreCheck.checkSolvency(
+                    transactionBody, syntheticPayerId, function, payerAccount, serviceFee, false);
 
             // Note we do NOT want to enforce the "time box" on valid start for
             // transaction ids dispatched by the schedule service, since these ids derive from their
@@ -758,7 +759,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             final var syntheticPayerKey = payerAccount.keyOrThrow();
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
             validateKey(keyVerifier, callback, syntheticPayerKey);
-            dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, fee);
+            dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, serviceFee);
         }
 
         // Given the current HTS system contract interface and ScheduleService
@@ -822,7 +823,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // Check if the transaction is privileged and if the payer has the required privileges
-        final var privileges = authorizer.hasPrivilegedAuthorization(syntheticPayerId, functionality, transactionBody);
+        final var privileges = authorizer.hasPrivilegedAuthorization(syntheticPayerId, function, transactionBody);
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
             throw new PreCheckException(ResponseCodeEnum.AUTHORIZATION_FAILED);
         }
