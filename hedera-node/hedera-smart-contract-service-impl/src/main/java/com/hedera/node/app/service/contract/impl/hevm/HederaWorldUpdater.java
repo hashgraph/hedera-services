@@ -177,11 +177,13 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * Attempts to track the given deletion of an account with the designated beneficiary, returning an optional
      * {@link ExceptionalHaltReason} to indicate whether the deletion could be successfully tracked.
      *
-     * @param deleted     the address of the account being deleted
+     * @param deleted the address of the account being deleted
      * @param beneficiary the address of the beneficiary of the deletion
+     * @param frame
      * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
      */
-    Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
+    Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull Address deleted, @NonNull Address beneficiary, MessageFrame frame);
 
     /**
      * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
