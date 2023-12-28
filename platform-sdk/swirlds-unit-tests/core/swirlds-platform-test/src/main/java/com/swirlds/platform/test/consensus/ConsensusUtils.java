@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
@@ -60,8 +60,11 @@ public abstract class ConsensusUtils {
     }
 
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
-        return new ConsensusImpl(
-                ConfigurationHolder.getConfigData(ConsensusConfig.class), NOOP_CONSENSUS_METRICS, addressBook);
+        final ConsensusConfig consensusConfig = ConfigurationBuilder.create()
+                .withConfigDataType(ConsensusConfig.class)
+                .build()
+                .getConfigData(ConsensusConfig.class);
+        return new ConsensusImpl(consensusConfig, NOOP_CONSENSUS_METRICS, addressBook);
     }
 
     public static void loadEventsIntoGenerator(

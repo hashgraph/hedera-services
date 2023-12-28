@@ -7,5 +7,4 @@ module com.swirlds.fchashmap {
     requires static com.github.spotbugs.annotations;
 
     exports com.swirlds.fchashmap;
-    exports com.swirlds.fchashmap.config;
 }
