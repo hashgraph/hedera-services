@@ -97,7 +97,7 @@ class CustomSelfDestructOperationTest {
         given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(null, Wei.ZERO)).willReturn(123L);
-        given(proxyWorldUpdater.tryTrackingDeletion(TBD, BENEFICIARY))
+        given(proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(TBD, BENEFICIARY, frame))
                 .willReturn(Optional.of(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
         final var expected = new Operation.OperationResult(123L, CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -158,7 +158,8 @@ class CustomSelfDestructOperationTest {
         given(frame.getRecipientAddress()).willReturn(TBD);
         given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(proxyWorldUpdater.tryTrackingDeletion(TBD, BENEFICIARY)).willReturn(Optional.empty());
+        given(proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(TBD, BENEFICIARY, frame))
+                .willReturn(Optional.empty());
         given(proxyWorldUpdater.get(TBD)).willReturn(account);
         given(account.getBalance()).willReturn(INHERITANCE);
     }

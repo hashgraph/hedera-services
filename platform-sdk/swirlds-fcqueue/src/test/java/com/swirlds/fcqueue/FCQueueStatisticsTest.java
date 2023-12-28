@@ -71,6 +71,6 @@ class FCQueueStatisticsTest {
 
     @Test
     void testRegisterWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> FCQueueStatistics.register(null));
+        assertThrows(NullPointerException.class, () -> FCQueueStatistics.register(null));
     }
 }

@@ -27,11 +27,11 @@ val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
 val jacksonVersion = "2.16.0"
 val log4jVersion = "2.21.1"
-val mockitoVersion = "4.11.0"
+val mockitoVersion = "5.8.0"
 val nettyVersion = "4.1.87.Final"
 val prometheusVersion = "0.16.0"
 val protobufVersion = "3.21.7"
-val systemStubsVersion = "2.0.2"
+val systemStubsVersion = "2.1.5"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.4.2"
 
@@ -101,7 +101,6 @@ moduleInfo {
     version("org.junit.platform.engine", "1.9.1")
     version("org.junitpioneer", "2.0.1")
     version("org.mockito", mockitoVersion)
-    version("org.mockito.inline", mockitoVersion)
     version("org.mockito.junit.jupiter", mockitoVersion)
     version("org.opentest4j", "1.2.0")
     version("org.testcontainers", testContainersVersion)

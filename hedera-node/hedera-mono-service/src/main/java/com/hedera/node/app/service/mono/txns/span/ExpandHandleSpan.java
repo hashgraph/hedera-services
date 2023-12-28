@@ -22,15 +22,15 @@ import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction} between the {@link
  * EventExpansion#expandAllSigs(Event, ServicesState)} and {@link
- * ServicesState#handleConsensusRound(Round, SwirldDualState)} platform callbacks.
+ * ServicesState#handleConsensusRound(Round, PlatformState)} platform callbacks.
  *
  * <p>At first this span only tracks the {@link PlatformTxnAccessor} parsed from the transaction
  * contents in an expiring cache. Since the parsing is a pure function of the contents, this is a

@@ -94,12 +94,13 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -113,6 +114,10 @@ import org.apache.logging.log4j.Logger;
 public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
+    private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS = EnumSet.of(
+            HederaFunctionality.CONTRACT_CREATE,
+            HederaFunctionality.CONTRACT_CALL,
+            HederaFunctionality.ETHEREUM_TRANSACTION);
 
     private final NetworkInfo networkInfo;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -129,7 +134,7 @@ public class HandleWorkflow {
     private final ChildRecordFinalizer childRecordFinalizer;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
-    private final DualStateUpdateFacility dualStateUpdateFacility;
+    private final PlatformStateUpdateFacility platformStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
     private final NetworkUtilizationManager networkUtilizationManager;
@@ -151,7 +156,7 @@ public class HandleWorkflow {
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
-            @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
+            @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
@@ -171,8 +176,8 @@ public class HandleWorkflow {
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
-        this.dualStateUpdateFacility =
-                requireNonNull(dualStateUpdateFacility, "dualStateUpdateFacility must not be null");
+        this.platformStateUpdateFacility =
+                requireNonNull(platformStateUpdateFacility, "platformStateUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.networkUtilizationManager =
@@ -186,7 +191,7 @@ public class HandleWorkflow {
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(
-            @NonNull final HederaState state, @NonNull final SwirldDualState dualState, @NonNull final Round round) {
+            @NonNull final HederaState state, @NonNull final PlatformState platformState, @NonNull final Round round) {
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
@@ -217,7 +222,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, dualState, event, creator, platformTxn);
+                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -239,7 +244,7 @@ public class HandleWorkflow {
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
-            @NonNull final SwirldDualState dualState,
+            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -248,13 +253,13 @@ public class HandleWorkflow {
         final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
         // handle user transaction
-        handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
+        handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
     }
 
     private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
-            @NonNull final SwirldDualState dualState,
+            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -286,7 +291,7 @@ public class HandleWorkflow {
         // the user transaction
         blockRecordManager.advanceConsensusClock(consensusNow, state);
 
-        TransactionBody txBody = null;
+        TransactionBody txBody;
         AccountID payer = null;
         Fees fees = null;
         try {
@@ -437,8 +442,14 @@ public class HandleWorkflow {
 
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
-                    // Possibly charge assessed fees for preceding child transactions
-                    if (!recordListBuilder.precedingRecordBuilders().isEmpty()) {
+                    // Possibly charge assessed fees for preceding child transactions; but
+                    // only if not a contract operation, since these dispatches were already
+                    // charged using gas. [FUTURE - stop setting transactionFee in recordBuilder
+                    // at the point of dispatch, so we no longer need this special case here.]
+                    final var isContractOp =
+                            DISPATCHING_CONTRACT_TRANSACTIONS.contains(transactionInfo.functionality());
+                    if (!isContractOp
+                            && !recordListBuilder.precedingRecordBuilders().isEmpty()) {
                         // We intentionally charge fees even if the transaction failed (may need to update
                         // mono-service to this behavior?)
                         final var childFees = recordListBuilder.precedingRecordBuilders().stream()
@@ -468,8 +479,8 @@ public class HandleWorkflow {
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
                     recordBuilder.status(fileUpdateResult);
 
-                    // Notify if dual state was updated
-                    dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
+                    // Notify if platform state was updated
+                    platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
 
                 } catch (final HandleException e) {
                     // In case of a ContractCall when it reverts, the gas charged should not be rolled back
@@ -590,17 +601,16 @@ public class HandleWorkflow {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
             final long nodeID) {
+        if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+            // We can stop immediately if the pre-handle result was a node due diligence failure
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
 
         final var txInfo = preHandleResult.txInfo();
         final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
         boolean isPayerHollow;
-
-        // Check if pre-handle was successful
-        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
-            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
-        }
 
         // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
         // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
@@ -614,12 +624,19 @@ public class HandleWorkflow {
                     DUPLICATE_TRANSACTION);
         }
 
-        // Check the status and solvency of the payer
-
+        // Check the status and solvency of the payer (assuming their signature is valid)
         try {
             final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
             isPayerHollow = isHollow(payer);
+            // Check all signature verifications. This will also wait, if validation is still ongoing.
+            // If the payer is hollow the key will be null, so we skip the payer signature verification.
+            if (!isPayerHollow) {
+                final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
+                if (payerKeyVerification.failed()) {
+                    return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
+                }
+            }
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
         } catch (final InsufficientServiceFeeException e) {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
         } catch (final InsufficientNonFeeDebitsException e) {
@@ -644,6 +661,11 @@ public class HandleWorkflow {
             return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
         }
 
+        // Check if pre-handle was successful
+        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+        }
+
         // Check if the transaction is privileged and if the payer has the required privileges
         final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
@@ -651,15 +673,6 @@ public class HandleWorkflow {
         }
         if (privileges == SystemPrivilege.IMPERMISSIBLE) {
             return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
-        }
-
-        // Check all signature verifications. This will also wait, if validation is still ongoing.
-        // If the payer is hollow the key will be null, so we skip the payer signature verification.
-        if (!isPayerHollow) {
-            final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
-            if (payerKeyVerification.failed()) {
-                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
-            }
         }
 
         // verify all the keys
@@ -685,8 +698,9 @@ public class HandleWorkflow {
 
     /**
      * Rolls back the stack and sets the status of the transaction in case of a failure.
+     *
      * @param rollbackStack whether to rollback the stack. Will be false when the failure is due to a
-     *                      {@link HandleException} that is due to a contract call revert.
+     * {@link HandleException} that is due to a contract call revert.
      * @param status the status to set
      * @param stack the save point stack to rollback
      * @param recordListBuilder the record list builder to revert

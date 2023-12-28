@@ -67,11 +67,10 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
     private void throwIfOld(final SignedState signedState, final SignedStateValidationData previousStateData)
             throws SignedStateInvalidException {
 
-        if (signedState.getState().getPlatformState().getPlatformData().getRound() < previousStateData.round()
+        if (signedState.getState().getPlatformState().getRound() < previousStateData.round()
                 || signedState
                         .getState()
                         .getPlatformState()
-                        .getPlatformData()
                         .getConsensusTimestamp()
                         .isBefore(previousStateData.consensusTimestamp())) {
             logger.error(
