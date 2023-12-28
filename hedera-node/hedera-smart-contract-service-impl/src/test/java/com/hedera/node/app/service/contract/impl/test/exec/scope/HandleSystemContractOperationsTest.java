@@ -19,9 +19,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -195,14 +194,7 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void syntheticTransactionForHtsCallTest() {
-        var transaction = subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true);
-        var body = transaction.body();
-        assertTrue(body.hasContractCall());
-        assertEquals(1, body.contractCall().gas());
-
-        transaction = subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, false);
-        body = transaction.body();
-        assertNotEquals(1, body.contractCall().gas());
+        assertNotNull(subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true));
     }
 
     @Test

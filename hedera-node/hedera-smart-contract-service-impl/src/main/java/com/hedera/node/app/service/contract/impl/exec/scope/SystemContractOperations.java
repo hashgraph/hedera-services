@@ -26,7 +26,6 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -87,9 +86,9 @@ public interface SystemContractOperations {
      * @param result    contract function result
      */
     void externalizeResult(
-            @NonNull final ContractFunctionResult result,
-            @NonNull final ResponseCodeEnum responseStatus,
-            @Nullable Transaction transaction);
+            @NonNull ContractFunctionResult result,
+            @NonNull ResponseCodeEnum responseStatus,
+            @NonNull Transaction transaction);
 
     /**
      * Generate synthetic transaction for child hts call

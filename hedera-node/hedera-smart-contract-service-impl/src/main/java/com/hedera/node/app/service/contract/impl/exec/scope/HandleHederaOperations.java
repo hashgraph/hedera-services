@@ -382,7 +382,7 @@ public class HandleHederaOperations implements HederaOperations {
                 context.payer(),
                 (bodyToExternalize == null)
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
-                        : contractBodyCustomizerFor(bodyToExternalize));
+                        : contractBodyCustomizerFor(number, bodyToExternalize));
         // TODO - deal with MAX_ENTITIES_IN_PRICE_REGIME_CREATED
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
@@ -401,7 +401,8 @@ public class HandleHederaOperations implements HederaOperations {
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
-    private ExternalizedRecordCustomizer contractBodyCustomizerFor(@NonNull final ContractCreateTransactionBody op) {
+    private ExternalizedRecordCustomizer contractBodyCustomizerFor(
+            final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         return transaction -> {
             try {
                 final var dispatchedTransaction = SignedTransaction.PROTOBUF.parseStrict(
@@ -411,8 +412,17 @@ public class HandleHederaOperations implements HederaOperations {
                 if (!dispatchedBody.hasCryptoCreateAccount()) {
                     throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
                 }
-                return transactionWith(
-                        dispatchedBody.copyBuilder().contractCreateInstance(op).build());
+                // For mono-service fidelity, don't set the admin key for a self-managed contract
+                final var adminNum = op.adminKeyOrThrow()
+                        .contractIDOrElse(ContractID.DEFAULT)
+                        .contractNumOrElse(0L);
+                final var isSelfAdmin = adminNum == createdNumber;
+                final var opToExternalize =
+                        isSelfAdmin ? op.copyBuilder().adminKey((Key) null).build() : op;
+                return transactionWith(dispatchedBody
+                        .copyBuilder()
+                        .contractCreateInstance(opToExternalize)
+                        .build());
             } catch (IOException e) {
                 // Should be impossible
                 throw new UncheckedIOException(e);

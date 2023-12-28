@@ -35,7 +35,6 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
@@ -111,17 +110,12 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     public void externalizeResult(
             @NonNull final ContractFunctionResult result,
             @NonNull final ResponseCodeEnum responseStatus,
-            @Nullable Transaction transaction) {
-        final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
-
-        if (transaction != null && transaction.body() != null) {
-            childRecordBuilder.transaction(transaction);
-            if (transaction.body().transactionID() != null) {
-                childRecordBuilder.status(responseStatus).contractCallResult(result);
-            }
-        } else {
-            externalizeResult(result, responseStatus);
-        }
+            @NonNull Transaction transaction) {
+        requireNonNull(transaction);
+        context.addChildRecordBuilder(ContractCallRecordBuilder.class)
+                .transaction(transaction)
+                .status(responseStatus)
+                .contractCallResult(result);
     }
 
     @Override

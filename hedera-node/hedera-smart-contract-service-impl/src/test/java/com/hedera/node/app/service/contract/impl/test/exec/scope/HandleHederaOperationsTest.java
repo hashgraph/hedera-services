@@ -296,9 +296,10 @@ class HandleHederaOperationsTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void createContractWithParentDispatchesAsExpectedThenMarksCreated() throws IOException {
+    void createContractWithNonSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws IOException {
         final var parent = Account.newBuilder()
-                .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
+                .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
                 .declineReward(true)
@@ -308,6 +309,54 @@ class HandleHederaOperationsTest {
                 .build();
         final var pendingId = ContractID.newBuilder().contractNum(666L).build();
         final var synthContractCreation = synthContractCreationFromParent(pendingId, parent);
+        final var synthAccountCreation =
+                synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, synthContractCreation);
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthAccountCreation)
+                .build();
+        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
+                .willReturn(contractCreateRecordBuilder);
+        given(context.dispatchRemovableChildTransaction(
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        captor.capture()))
+                .willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.status()).willReturn(OK);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+
+        subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS);
+
+        assertInternalFinisherAsExpected(captor.getValue(), synthContractCreation);
+        verify(tokenServiceApi)
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void createContractWithSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws IOException {
+        final var parent = Account.newBuilder()
+                .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .stakedNodeId(3)
+                .declineReward(true)
+                .autoRenewSeconds(666L)
+                .maxAutoAssociations(321)
+                .memo("Something")
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthContractCreation = synthContractCreationFromParent(pendingId, parent)
+                .copyBuilder()
+                .adminKey((Key) null)
+                .build();
         final var synthAccountCreation =
                 synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, synthContractCreation);
         final var synthTxn = TransactionBody.newBuilder()
@@ -476,7 +525,7 @@ class HandleHederaOperationsTest {
     void externalizeHollowAccountMerge() {
         // given
         var parentAccount = Account.newBuilder()
-                .accountId(AccountID.DEFAULT)
+                .accountId(AccountID.newBuilder().accountNum(1001).build())
                 .key(Key.DEFAULT)
                 .build();
         var contractId = ContractID.newBuilder().contractNum(1001).build();
