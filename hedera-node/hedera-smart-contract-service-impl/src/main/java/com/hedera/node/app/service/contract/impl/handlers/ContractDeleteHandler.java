@@ -37,6 +37,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.api.TokenServiceApi.FreeAliasOnDeletion;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -99,7 +100,12 @@ public class ContractDeleteHandler implements TransactionHandler {
         final var recordBuilder = context.recordBuilder(ContractDeleteRecordBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
         context.serviceApi(TokenServiceApi.class)
-                .deleteAndTransfer(deletedId, obtainer.accountIdOrThrow(), context.expiryValidator(), recordBuilder);
+                .deleteAndTransfer(
+                        deletedId,
+                        obtainer.accountIdOrThrow(),
+                        context.expiryValidator(),
+                        recordBuilder,
+                        FreeAliasOnDeletion.YES);
         recordBuilder.contractID(asNumericContractId(deletedId));
     }
 

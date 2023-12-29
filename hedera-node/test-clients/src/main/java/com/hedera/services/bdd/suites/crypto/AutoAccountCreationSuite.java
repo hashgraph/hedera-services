@@ -1411,7 +1411,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
     }
 
-    private HapiSpec accountDeleteResetsTheAliasNonce() {
+    @HapiTest
+    final HapiSpec accountDeleteResetsTheAliasNonce() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
