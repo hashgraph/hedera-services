@@ -287,7 +287,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                         context,
                         tinybarValues,
                         systemContractGasCalculator,
-                        component.config().getConfigData(HederaConfig.class)),
+                        component.config().getConfigData(HederaConfig.class),
+                        HederaFunctionality.CONTRACT_CALL),
                 new HandleHederaNativeOperations(context),
                 new HandleSystemContractOperations(context));
         given(proxyUpdater.enhancement()).willReturn(enhancement);
