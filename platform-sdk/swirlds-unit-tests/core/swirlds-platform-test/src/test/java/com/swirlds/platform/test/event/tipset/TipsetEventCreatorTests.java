@@ -899,8 +899,8 @@ class TipsetEventCreatorTests {
     }
 
     /**
-     * Checks that birth round on events is being set.
-     * FUTURE WORK: Update this test to use RosterDiff instead of NonAncientEventWindow
+     * Checks that birth round on events is being set. FUTURE WORK: Update this test to use RosterDiff instead of
+     * NonAncientEventWindow
      */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
@@ -922,8 +922,6 @@ class TipsetEventCreatorTests {
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
-        boolean testPassed = false;
-
         for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
             for (final Address address : addressBook) {
                 if (advancingClock) {
@@ -944,19 +942,14 @@ class TipsetEventCreatorTests {
 
                 final GossipEvent event = eventCreator.maybeCreateEvent();
 
-                if (event != null) {
-                    System.out.println(
-                            "EventBirthRound: " + event.getHashedData().getBirthRound());
+                if (eventIndex == 0) {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    if (eventIndex == 0) {
-                        assertEquals(NonAncientEventWindow.INITIAL_EVENT_WINDOW.pendingConsensusRound(), birthRound);
-                    } else {
-                        assertEquals(pendingConsensusRound, birthRound);
-                    }
-                    testPassed = true;
+                    assertEquals(NonAncientEventWindow.INITIAL_EVENT_WINDOW.pendingConsensusRound(), birthRound);
+                } else if (event != null) {
+                    final long birthRound = event.getHashedData().getBirthRound();
+                    assertEquals(pendingConsensusRound, birthRound);
                 }
             }
         }
-        assertTrue(testPassed);
     }
 }
