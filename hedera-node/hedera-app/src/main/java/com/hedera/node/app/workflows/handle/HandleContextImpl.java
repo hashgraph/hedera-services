@@ -661,7 +661,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     networkInfo().selfNodeInfo().nodeId(),
                     dispatchNeedsHapiPayerChecks(childCategory));
         } catch (final PreCheckException e) {
-            logger.warn("Possible bug: synthetic transaction failed pre-checks", e);
+            // This will happen when the payer for a triggered transaction cannot afford the service fee,
+            // part of normal operations
             childRecordBuilder.status(e.responseCode());
             return;
         }
