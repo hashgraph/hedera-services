@@ -63,7 +63,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignedStateSentinel signedStateSentinel;
 
     private final Consumer<ReservedSignedState> stateSigner;
-    private final Consumer<SignedState> sigCollector; //TODO reserve state before passing it to this consumer
+    private final Consumer<ReservedSignedState> sigCollector; //TODO reserve state before passing it to this consumer
 
     /**
      * @param platformContext                    the platform context
@@ -78,7 +78,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final Consumer<ReservedSignedState> stateSigner,
-            @NonNull final Consumer<SignedState> sigCollector,
+            @NonNull final Consumer<ReservedSignedState> sigCollector,
             final SignedStateMetrics signedStateMetrics) {
 
         Objects.requireNonNull(platformContext);
@@ -116,7 +116,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
             stateSigner.accept(signedState.getAndReserve("signing state from transactions"));
 
-            sigCollector.accept(signedState.get());
+            sigCollector.accept(signedState);
         }
     }
 
@@ -127,7 +127,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public void stateToLoad(final SignedState signedState, final SourceOfSignedState sourceOfSignedState) {
         signedState.setGarbageCollector(signedStateGarbageCollector);
         logHashes(signedState);
-        sigCollector.accept(signedState);
+        sigCollector.accept(signedState.reserve("DefaultStateManagementComponent.stateToLoad"));
     }
 
     /**
