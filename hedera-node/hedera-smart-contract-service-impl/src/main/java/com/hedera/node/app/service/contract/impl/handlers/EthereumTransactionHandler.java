@@ -17,8 +17,11 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -34,6 +37,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
@@ -64,18 +68,20 @@ public class EthereumTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var body = context.body().ethereumTransactionOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
-        final var ethTxData = callDataHydration
-                .tryToHydrate(body, fileStore, hederaConfig.firstUserEntity())
-                .ethTxData();
-        if (ethTxData != null) {
-            // Ignore the return value; we just want to cache the signature for use in handle()
-            ethereumSignatures.computeIfAbsent(ethTxData);
-        }
+        final var hydratedTx = callDataHydration.tryToHydrate(body, fileStore, hederaConfig.firstUserEntity());
+
+        validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
+
+        final var ethTxData = hydratedTx.ethTxData();
+        validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
+
+        // Ignore the return value; we just want to cache the signature for use in handle()
+        ethereumSignatures.computeIfAbsent(ethTxData);
     }
 
     @Override
@@ -83,15 +89,15 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
-        // Run its in-scope transaction and get the outcome
-        final var outcome = component.contextTransactionProcessor().call();
-
         // Assemble the appropriate top-level record for the result
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
+
+        // Run its in-scope transaction and get the outcome
+        final var outcome = component.contextTransactionProcessor().call();
+
         final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
-                .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()))
-                .status(outcome.status());
+                .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
             // The Ethereum transaction was a top-level MESSAGE_CALL
             recordBuilder.contractID(outcome.recipientId()).contractCallResult(outcome.result());
@@ -99,6 +105,8 @@ public class EthereumTransactionHandler implements TransactionHandler {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
+        recordBuilder.withTinybarGasFee(outcome.tinybarGasCost());
+
         throwIfUnsuccessful(outcome.status());
     }
 

@@ -84,6 +84,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class RecordCacheImpl implements HederaRecordCache {
     private static final Logger logger = LogManager.getLogger(RecordCacheImpl.class);
+
     /**
      * This empty History is returned whenever a transaction is known to the deduplication cache, but not yet
      * added to this cache.
@@ -203,7 +204,9 @@ public class RecordCacheImpl implements HederaRecordCache {
     @Override
     public DuplicateCheckResult hasDuplicate(@NonNull TransactionID transactionID, long nodeId) {
         final var history = histories.get(transactionID);
-        if (history == null) {
+        // If there is no history for this transaction id; or all its history consists of
+        // unclassifiable records, return that it is effectively a unique id
+        if (history == null || history.nodeIds().isEmpty()) {
             return DuplicateCheckResult.NO_DUPLICATE;
         }
         return history.nodeIds().contains(nodeId) ? DuplicateCheckResult.SAME_NODE : DuplicateCheckResult.OTHER_NODE;
@@ -244,7 +247,10 @@ public class RecordCacheImpl implements HederaRecordCache {
         // sent the first transaction will get "credit" for all the genesis records. But it will be deterministic, and
         // doesn't actually matter.
         final var history = histories.computeIfAbsent(userTxId, ignored -> new History());
-        history.nodeIds().add(nodeId);
+        final var status = transactionRecord.receiptOrThrow().status();
+        if (!UNCLASSIFIABLE_STATUSES.contains(status)) {
+            history.nodeIds().add(nodeId);
+        }
 
         // Either we add this tx to the main records list if it is a user/preceding transaction, or to the child
         // transactions list of its parent.  Note that scheduled transactions are always child transactions, but

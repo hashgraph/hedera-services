@@ -41,6 +41,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -53,18 +54,18 @@ public final class EventCreationManagerFactory {
     /**
      * Create a new event creation manager (legacy pre-wiring version).
      *
-     * @param platformContext           the platform's context
-     * @param threadManager             manages the creation of new threads
-     * @param time                      provides the wall clock time
-     * @param signer                    can sign with this node's key
-     * @param addressBook               the current address book
-     * @param selfId                    the ID of this node
-     * @param appVersion                the current application version
-     * @param transactionPool           provides transactions to be added to new events
-     * @param eventIntakeQueue          the queue to which new events should be added
-     * @param eventObserverDispatcher   wires together event intake logic
-     * @param platformStatusSupplier    provides the current platform status
-     * @param latestReconnectRound      provides the latest reconnect round
+     * @param platformContext         the platform's context
+     * @param threadManager           manages the creation of new threads
+     * @param time                    provides the wall clock time
+     * @param signer                  can sign with this node's key
+     * @param addressBook             the current address book
+     * @param selfId                  the ID of this node
+     * @param appVersion              the current application version
+     * @param transactionPool         provides transactions to be added to new events
+     * @param eventIntakeQueue        the queue to which new events should be added
+     * @param eventObserverDispatcher wires together event intake logic
+     * @param platformStatusSupplier  provides the current platform status
+     * @param latestReconnectRound    provides the latest reconnect round
      * @return a new event creation manager
      */
     @NonNull
@@ -122,8 +123,8 @@ public final class EventCreationManagerFactory {
                 "Interrupted while attempting to register event with tipset event creator"));
 
         eventObserverDispatcher.addObserver((ConsensusRoundObserver) round -> abortAndThrowIfInterrupted(
-                manager::setMinimumGenerationNonAncient,
-                round.getGenerations().getMinGenerationNonAncient(),
+                manager::setNonAncientEventWindow,
+                round.getNonAncientEventWindow(),
                 "Interrupted while attempting to register minimum generation "
                         + "non-ancient with tipset event creator"));
 
@@ -133,15 +134,16 @@ public final class EventCreationManagerFactory {
     /**
      * Create a new event creation manager.
      *
-     * @param platformContext           the platform's context
-     * @param time                      provides the wall clock time
-     * @param signer                    can sign with this node's key
-     * @param addressBook               the current address book
-     * @param selfId                    the ID of this node
-     * @param appVersion                the current application version
-     * @param transactionPool           provides transactions to be added to new events
-     * @param platformStatusSupplier    provides the current platform status
-     * @param latestReconnectRound      provides the latest reconnect round
+     * @param platformContext        the platform's context
+     * @param time                   provides the wall clock time
+     * @param signer                 can sign with this node's key
+     * @param addressBook            the current address book
+     * @param selfId                 the ID of this node
+     * @param appVersion             the current application version
+     * @param transactionPool        provides transactions to be added to new events
+     * @param getIntakeQueueSize     provides the size of the event intake queue
+     * @param platformStatusSupplier provides the current platform status
+     * @param latestReconnectRound   provides the latest reconnect round
      * @return a new event creation manager
      */
     @NonNull
@@ -153,6 +155,7 @@ public final class EventCreationManagerFactory {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final TransactionPool transactionPool,
+            @NonNull final IntSupplier getIntakeQueueSize,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Supplier<Long> latestReconnectRound) {
 
@@ -178,6 +181,7 @@ public final class EventCreationManagerFactory {
 
         final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
                 new MaximumRateRule(platformContext, time),
+                new BackpressureRule(platformContext, getIntakeQueueSize),
                 new PlatformStatusRule(platformStatusSupplier, transactionPool));
 
         return new EventCreationManager(platformContext, time, eventCreator, eventCreationRules);

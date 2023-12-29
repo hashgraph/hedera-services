@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -54,7 +55,10 @@ public class AppCommComponentTests {
 
     public AppCommComponentTests() {
         context = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+                ConfigurationHolder.getInstance().get(),
+                new NoOpMetrics(),
+                CryptographyHolder.get(),
+                Time.getCurrent());
     }
 
     @Test

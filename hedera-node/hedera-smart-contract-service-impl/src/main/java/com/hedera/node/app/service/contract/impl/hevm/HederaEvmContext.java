@@ -18,6 +18,8 @@ package com.hedera.node.app.service.contract.impl.hevm;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
 public record HederaEvmContext(
@@ -25,12 +27,17 @@ public record HederaEvmContext(
         boolean staticCall,
         HederaEvmBlocks blocks,
         TinybarValues tinybarValues,
-        SystemContractGasCalculator systemContractGasCalculator) {
+        SystemContractGasCalculator systemContractGasCalculator,
+        @Nullable DeleteCapableTransactionRecordBuilder deleteCapableTransactionRecordBuilder) {
     public BlockValues blockValuesOf(final long gasLimit) {
         return blocks.blockValuesOf(gasLimit);
     }
 
     public boolean isNoopGasContext() {
         return staticCall || gasPrice == 0;
+    }
+
+    public boolean isDeleteCapable() {
+        return deleteCapableTransactionRecordBuilder != null;
     }
 }

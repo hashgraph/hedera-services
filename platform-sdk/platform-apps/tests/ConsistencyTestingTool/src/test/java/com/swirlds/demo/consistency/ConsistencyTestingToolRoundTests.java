@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -82,7 +83,12 @@ class ConsistencyTestingToolRoundTests {
         Mockito.when(mockSnapshot.round()).thenReturn(roundReceived);
 
         return new ConsensusRound(
-                mock(AddressBook.class), mockEvents, mock(EventImpl.class), mock(GraphGenerations.class), mockSnapshot);
+                mock(AddressBook.class),
+                mockEvents,
+                mock(EventImpl.class),
+                mock(GraphGenerations.class),
+                mock(NonAncientEventWindow.class),
+                mockSnapshot);
     }
 
     @Test

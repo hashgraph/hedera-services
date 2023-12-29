@@ -92,7 +92,7 @@ public class ThrottleReqsManager {
         return allReqs.stream().map(Pair::getLeft).toList();
     }
 
-    String asReadableRequirements() {
+    public String asReadableRequirements() {
         return "min{" + allReqs.stream().map(this::readable).collect(Collectors.joining(", ")) + "}";
     }
 

@@ -28,6 +28,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A read-only {@link HederaNativeOperations} based on a {@link QueryContext}.
@@ -135,9 +136,11 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
      *
      * @param deletedNumber the number of the deleted contract
      * @param beneficiaryNumber the number of the beneficiary
+     * @param frame the frame in which to track the beneficiary
      */
     @Override
-    public void trackDeletion(final long deletedNumber, final long beneficiaryNumber) {
+    public void trackSelfDestructBeneficiary(
+            final long deletedNumber, final long beneficiaryNumber, @NonNull final MessageFrame frame) {
         throw new UnsupportedOperationException("Cannot track deletion in query context");
     }
 }
