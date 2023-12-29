@@ -193,7 +193,7 @@ jobs:
         run: |
           EXTRACTED_FILE_NAME="${{ steps.commit.outputs.sha }}.tar"
           gunzip "${{ steps.manifest.outputs.name }}"
-          tar -rzvf "${EXTRACTED_FILE_NAME}" -C "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}" sdk
+          tar -rvf "${EXTRACTED_FILE_NAME}" -C "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}" sdk
           gzip "${EXTRACTED_FILE_NAME}"
 
       - name: Upload Baseline
