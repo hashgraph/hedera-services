@@ -73,8 +73,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.SKIP_LOG_INFO_CONTAINING_ADDRESSES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -405,7 +405,7 @@ public class Create2OperationSuite extends HapiSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
-                        SKIP_LOG_INFO_CONTAINING_ADDRESSES)
+                        NONDETERMINISTIC_LOG_DATA)
                 .given(
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
@@ -544,7 +544,7 @@ public class Create2OperationSuite extends HapiSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
-                        SKIP_LOG_INFO_CONTAINING_ADDRESSES)
+                        NONDETERMINISTIC_LOG_DATA)
                 .given(
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),

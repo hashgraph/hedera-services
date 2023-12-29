@@ -86,8 +86,8 @@ public class HandleHederaOperations implements HederaOperations {
     private final ContractsConfig contractsConfig;
     private final HederaConfig hederaConfig;
     private final SystemContractGasCalculator gasCalculator;
-
     private final HandleContext context;
+    private final HederaFunctionality functionality;
 
     @Inject
     public HandleHederaOperations(
@@ -96,13 +96,15 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final HandleContext context,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final HederaConfig hederaConfig) {
+            @NonNull final HederaConfig hederaConfig,
+            @NonNull final HederaFunctionality functionality) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
         this.tinybarValues = requireNonNull(tinybarValues);
         this.hederaConfig = requireNonNull(hederaConfig);
         this.gasCalculator = requireNonNull(gasCalculator);
+        this.functionality = requireNonNull(functionality);
     }
 
     /**
@@ -247,7 +249,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void chargeStorageRent(final long contractNumber, final long amount, final boolean itemizeStoragePayments) {
-        // TODO - implement before enabling contract expiry
+        // (FUTURE) Needed before enabling contract expiry
     }
 
     /**
@@ -288,11 +290,13 @@ public class HandleHederaOperations implements HederaOperations {
     public void createContract(
             final long number, @NonNull final ContractCreateTransactionBody body, @Nullable final Bytes evmAddress) {
         requireNonNull(body);
+        // Note that a EthereumTransaction with a top-level creation still needs to externalize its
+        // implied ContractCreateTransactionBody (unlike ContractCreate, which evidently already does so)
         dispatchAndMarkCreation(
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
-                null,
+                functionality == HederaFunctionality.ETHEREUM_TRANSACTION ? body : null,
                 body.autoRenewAccountId(),
                 evmAddress);
     }
@@ -412,21 +416,53 @@ public class HandleHederaOperations implements HederaOperations {
                 if (!dispatchedBody.hasCryptoCreateAccount()) {
                     throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
                 }
-                // For mono-service fidelity, don't set the admin key for a self-managed contract
-                final var adminNum = op.adminKeyOrThrow()
-                        .contractIDOrElse(ContractID.DEFAULT)
-                        .contractNumOrElse(0L);
-                final var isSelfAdmin = adminNum == createdNumber;
-                final var opToExternalize =
-                        isSelfAdmin ? op.copyBuilder().adminKey((Key) null).build() : op;
                 return transactionWith(dispatchedBody
                         .copyBuilder()
-                        .contractCreateInstance(opToExternalize)
+                        .contractCreateInstance(standardized(createdNumber, op))
                         .build());
             } catch (IOException e) {
                 // Should be impossible
                 throw new UncheckedIOException(e);
             }
         };
+    }
+
+    private ContractCreateTransactionBody standardized(
+            final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
+        var standardAdminKey = op.adminKey();
+        if (op.hasAdminKey()) {
+            final var adminNum =
+                    op.adminKeyOrThrow().contractIDOrElse(ContractID.DEFAULT).contractNumOrElse(0L);
+            // For mono-service fidelity, don't set an explicit admin key for a self-managed contract
+            if (createdNumber == adminNum) {
+                standardAdminKey = null;
+            }
+        }
+        if (needsStandardization(op, standardAdminKey)) {
+            // Initial balance, gas, and initcode are only set on top-level HAPI transactions
+            return new ContractCreateTransactionBody(
+                    com.hedera.hapi.node.contract.codec.ContractCreateTransactionBodyProtoCodec.INITCODE_SOURCE_UNSET,
+                    standardAdminKey,
+                    0L,
+                    0L,
+                    op.proxyAccountID(),
+                    op.autoRenewPeriod(),
+                    op.constructorParameters(),
+                    op.shardID(),
+                    op.realmID(),
+                    op.newRealmAdminKey(),
+                    op.memo(),
+                    op.maxAutomaticTokenAssociations(),
+                    op.autoRenewAccountId(),
+                    op.stakedId(),
+                    op.declineReward());
+        } else {
+            return op;
+        }
+    }
+
+    private boolean needsStandardization(
+            @NonNull final ContractCreateTransactionBody op, @Nullable final Key standardAdminKey) {
+        return op.hasInitcode() || op.gas() > 0L || op.initialBalance() > 0L || standardAdminKey != op.adminKey();
     }
 }

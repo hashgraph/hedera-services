@@ -38,7 +38,7 @@ import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * TODO - a read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
+ * A read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
  */
 @QueryScope
 public class QueryHederaOperations implements HederaOperations {

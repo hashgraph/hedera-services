@@ -21,8 +21,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -117,7 +119,8 @@ class HandleHederaOperationsTest {
                 context,
                 tinybarValues,
                 gasCalculator,
-                DEFAULT_HEDERA_CONFIG);
+                DEFAULT_HEDERA_CONFIG,
+                HederaFunctionality.CONTRACT_CALL);
     }
 
     @Test
@@ -462,6 +465,55 @@ class HandleHederaOperationsTest {
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class));
+        verify(tokenServiceApi)
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
+    }
+
+    @Test
+    void createContractInsideEthereumTransactionWithBodyDispatchesThenMarksAsContract() {
+        subject = new HandleHederaOperations(
+                DEFAULT_LEDGER_CONFIG,
+                DEFAULT_CONTRACTS_CONFIG,
+                context,
+                tinybarValues,
+                gasCalculator,
+                DEFAULT_HEDERA_CONFIG,
+                HederaFunctionality.ETHEREUM_TRANSACTION);
+        final var someBody = ContractCreateTransactionBody.newBuilder()
+                .adminKey(AN_ED25519_KEY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .autoRenewPeriod(SOME_DURATION)
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, someBody))
+                .build();
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
+                .willReturn(contractCreateRecordBuilder);
+        given(context.dispatchRemovableChildTransaction(
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        any(ExternalizedRecordCustomizer.class)))
+                .willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.status()).willReturn(OK);
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+
+        subject.createContract(666L, someBody, CANONICAL_ALIAS);
+
+        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
+        verify(context)
+                .dispatchRemovableChildTransaction(
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        captor.capture());
+        assertNotSame(SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER, captor.getValue());
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }

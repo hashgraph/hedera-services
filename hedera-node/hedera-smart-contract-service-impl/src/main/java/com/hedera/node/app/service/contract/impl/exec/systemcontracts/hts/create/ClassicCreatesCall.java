@@ -185,7 +185,6 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         return new LegacyActivation(contractNum, pbjAddress, pbjToBesuAddress(pbjAddress));
     }
 
-    // @TODO extract externalizeResult() calls into a single location on a higher level
     private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
         final var result = gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
         final var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));

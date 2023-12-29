@@ -40,8 +40,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACC
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.SKIP_LOG_INFO_CONTAINING_ADDRESSES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -109,7 +109,7 @@ public class CreateOperationSuite extends HapiSuite {
         return defaultHapiSpec(
                         "FactoryAndSelfDestructInConstructorContract",
                         NONDETERMINISTIC_TRANSACTION_FEES,
-                        SKIP_LOG_INFO_CONTAINING_ADDRESSES)
+                        NONDETERMINISTIC_LOG_DATA)
                 .given(
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
@@ -132,7 +132,7 @@ public class CreateOperationSuite extends HapiSuite {
         return defaultHapiSpec(
                         "FactoryQuickSelfDestructContract",
                         NONDETERMINISTIC_TRANSACTION_FEES,
-                        SKIP_LOG_INFO_CONTAINING_ADDRESSES)
+                        NONDETERMINISTIC_LOG_DATA)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract),
