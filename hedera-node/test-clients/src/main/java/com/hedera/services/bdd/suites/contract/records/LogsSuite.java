@@ -73,7 +73,6 @@ public class LogsSuite extends HapiSuite {
     final HapiSpec log0Works() {
         return defaultHapiSpec("log0Works")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
@@ -90,7 +89,6 @@ public class LogsSuite extends HapiSuite {
     final HapiSpec log1Works() {
         return defaultHapiSpec("log1Works")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
@@ -110,7 +108,6 @@ public class LogsSuite extends HapiSuite {
     final HapiSpec log2Works() {
         return defaultHapiSpec("log2Works")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
@@ -132,7 +129,6 @@ public class LogsSuite extends HapiSuite {
     final HapiSpec log3Works() {
         return defaultHapiSpec("log3Works")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
@@ -155,7 +151,6 @@ public class LogsSuite extends HapiSuite {
     final HapiSpec log4Works() {
         return defaultHapiSpec("log4Works")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(
