@@ -66,7 +66,7 @@ class SyncFilteringTest {
             final EventImpl event = mock(EventImpl.class);
             final GossipEvent gossipEvent = mock(GossipEvent.class);
             when(event.getBaseEvent()).thenReturn(gossipEvent);
-            lastTime = clock.now();
+            lastTime = clock.instant();
             when(gossipEvent.getTimeReceived()).thenReturn(lastTime);
             final Hash hash = randomHash(random);
             when(event.getBaseHash()).thenReturn(hash);
@@ -125,7 +125,7 @@ class SyncFilteringTest {
         final Duration nonAncestorThreshold = Duration.ofSeconds(3);
 
         clock.reset();
-        while (CompareTo.isLessThan(clock.now().plus(nonAncestorThreshold), clock.now())) {
+        while (CompareTo.isLessThan(clock.instant().plus(nonAncestorThreshold), clock.instant())) {
 
             final Set<EventImpl> expectedEvents = new HashSet<>();
 
@@ -135,14 +135,14 @@ class SyncFilteringTest {
 
             // We only expect non-ancestor events if we've had them for longer than the non-ancestor threshold
             for (final EventImpl event : nonAncestors) {
-                final Duration eventAge = Duration.between(event.getBaseEvent().getTimeReceived(), clock.now());
+                final Duration eventAge = Duration.between(event.getBaseEvent().getTimeReceived(), clock.instant());
                 if (CompareTo.isGreaterThan(eventAge, nonAncestorThreshold)) {
                     expectedEvents.add(event);
                 }
             }
 
             final List<EventImpl> filteredEvents =
-                    SyncUtils.filterLikelyDuplicates(selfId, nonAncestorThreshold, clock.now(), allEvents, null);
+                    SyncUtils.filterLikelyDuplicates(selfId, nonAncestorThreshold, clock.instant(), allEvents, null);
 
             assertEquals(expectedEvents.size(), filteredEvents.size());
             for (final EventImpl event : filteredEvents) {

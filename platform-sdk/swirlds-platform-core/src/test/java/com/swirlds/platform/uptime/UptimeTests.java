@@ -89,7 +89,7 @@ class UptimeTests {
                 when(event.isFamous()).thenReturn(false);
             }
 
-            when(event.getConsensusTimestamp()).thenReturn(time.now());
+            when(event.getConsensusTimestamp()).thenReturn(time.instant());
             time.tick(roundDuration.dividedBy(count));
 
             events.add(event);

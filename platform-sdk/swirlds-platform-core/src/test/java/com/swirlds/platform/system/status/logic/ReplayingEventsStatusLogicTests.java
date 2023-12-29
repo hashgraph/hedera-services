@@ -58,7 +58,7 @@ class ReplayingEventsStatusLogicTests {
     void toObserving() {
         triggerActionAndAssertTransition(
                 logic::processDoneReplayingEventsAction,
-                new DoneReplayingEventsAction(time.now()),
+                new DoneReplayingEventsAction(time.instant()),
                 PlatformStatus.OBSERVING);
     }
 
@@ -77,7 +77,9 @@ class ReplayingEventsStatusLogicTests {
         triggerActionAndAssertNoTransition(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(6L), logic.getStatus());
         triggerActionAndAssertNoTransition(
-                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+                logic::processDoneReplayingEventsAction,
+                new DoneReplayingEventsAction(time.instant()),
+                logic.getStatus());
         // if the state written to disk isn't the freeze state, we shouldn't transition
         triggerActionAndAssertNoTransition(
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(5, false), logic.getStatus());
@@ -109,10 +111,10 @@ class ReplayingEventsStatusLogicTests {
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processSelfEventReachedConsensusAction,
-                new SelfEventReachedConsensusAction(time.now()),
+                new SelfEventReachedConsensusAction(time.instant()),
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, false), logic.getStatus());

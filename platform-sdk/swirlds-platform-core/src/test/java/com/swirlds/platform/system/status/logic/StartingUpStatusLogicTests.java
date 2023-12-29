@@ -75,21 +75,23 @@ class StartingUpStatusLogicTests {
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
     }
 
     @Test
     @DisplayName("Unexpected actions should cause exceptions")
     void unexpectedActions() {
         triggerActionAndAssertException(
-                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+                logic::processDoneReplayingEventsAction,
+                new DoneReplayingEventsAction(time.instant()),
+                logic.getStatus());
         triggerActionAndAssertException(
                 logic::processEmergencyReconnectStartedAction,
                 new EmergencyReconnectStartedAction(),
                 logic.getStatus());
         triggerActionAndAssertException(
                 logic::processSelfEventReachedConsensusAction,
-                new SelfEventReachedConsensusAction(time.now()),
+                new SelfEventReachedConsensusAction(time.instant()),
                 logic.getStatus());
         triggerActionAndAssertException(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());

@@ -52,14 +52,16 @@ class FreezeCompleteStateStatusLogicTests {
         triggerActionAndAssertNoTransition(
                 logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
         triggerActionAndAssertNoTransition(
-                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+                logic::processDoneReplayingEventsAction,
+                new DoneReplayingEventsAction(time.instant()),
+                logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processEmergencyReconnectStartedAction,
                 new EmergencyReconnectStartedAction(),
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processSelfEventReachedConsensusAction,
-                new SelfEventReachedConsensusAction(time.now()),
+                new SelfEventReachedConsensusAction(time.instant()),
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
@@ -74,6 +76,6 @@ class FreezeCompleteStateStatusLogicTests {
         triggerActionAndAssertNoTransition(
                 logic::processCatastrophicFailureAction, new CatastrophicFailureAction(), logic.getStatus());
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
     }
 }

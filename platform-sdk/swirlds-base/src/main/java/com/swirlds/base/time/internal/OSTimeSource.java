@@ -16,31 +16,26 @@
 
 package com.swirlds.base.time.internal;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.InstantSource;
-import java.time.ZoneId;
 
 /**
- * An implementation of {@link Time} that will return the true wall clock time (according to the OS).
- * @deprecated use {@link TimeSource} or {@link InstantSource} instead
+ * An implementation of {@link TimeSource}
  */
-@Deprecated
-public final class OSTime implements Time {
+public final class OSTimeSource implements TimeSource {
 
-    private static final OSTime instance = new OSTime();
+    private static class InstanceHolder {
+        private static final OSTimeSource INSTANCE = new OSTimeSource();
+    }
 
-    private OSTime() {}
+    private OSTimeSource() {}
 
     /**
      * Get a static instance of a standard time implementation.
      */
     @NonNull
-    public static Time getInstance() {
-        return instance;
+    public static TimeSource getInstance() {
+        return InstanceHolder.INSTANCE;
     }
 
     /**
@@ -57,20 +52,5 @@ public final class OSTime implements Time {
     @Override
     public long currentTimeMillis() {
         return System.currentTimeMillis();
-    }
-
-    @Override
-    public Instant instant() {
-        return Instant.now();
-    }
-
-    @Override
-    public long millis() {
-        return System.currentTimeMillis();
-    }
-
-    @Override
-    public Clock withZone(ZoneId zone) {
-        return InstantSource.system().withZone(zone);
     }
 }

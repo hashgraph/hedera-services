@@ -146,17 +146,17 @@ public final class RecoveryTestUtils {
         final List<EventImpl> events = new ArrayList<>();
 
         final FakeTime time = new FakeTime();
-        final Instant stopTime = time.now().plus(timeToSimulate);
+        final Instant stopTime = time.instant().plus(timeToSimulate);
         final Duration timeBetweenEvents =
                 Duration.ofNanos((long) (1.0 * SECONDS_TO_NANOSECONDS / roundsPerSecond / evensPerRound));
 
         long round = firstRound;
         long eventsInRound = 0;
 
-        while (isLessThan(time.now(), stopTime)) {
+        while (isLessThan(time.instant(), stopTime)) {
 
             final long currentRound = round;
-            final Instant now = time.now();
+            final Instant now = time.instant();
             final boolean lastInRound;
 
             time.tick(timeBetweenEvents);

@@ -20,11 +20,12 @@ import com.swirlds.base.time.internal.OSTime;
 import java.time.InstantSource;
 
 /**
- * An API for getting the time. All platform code should utilize this API instead of the raw standard
- * java time APIs. This makes it much easier to simulate time in test environments.
+ * @deprecated users of this class should migrate to {@link TimeSource} for measuring elapsed time or {@link InstantSource} for wall-clock.
  */
+@Deprecated
 public interface Time extends TimeSource, InstantSource {
 
+    @Deprecated
     static Time system() {
         return OSTime.getInstance();
     }

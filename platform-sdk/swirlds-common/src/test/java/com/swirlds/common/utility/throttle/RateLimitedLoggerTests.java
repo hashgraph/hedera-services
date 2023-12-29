@@ -71,11 +71,11 @@ class RateLimitedLoggerTests {
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
-        Instant previousTime = time.now();
+        Instant previousTime = time.instant();
         time.tick(period);
 
         while (count.get() < 100) {
-            final Instant currentTime = time.now();
+            final Instant currentTime = time.instant();
             final Duration elapsed = Duration.between(previousTime, currentTime);
 
             final int initialCount = count.get();
@@ -122,11 +122,11 @@ class RateLimitedLoggerTests {
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
-        Instant previousTime = time.now();
+        Instant previousTime = time.instant();
         time.tick(period);
 
         while (count.get() < 100) {
-            final Instant currentTime = time.now();
+            final Instant currentTime = time.instant();
             final Duration elapsed = Duration.between(previousTime, currentTime);
 
             final int initialCount = count.get();
@@ -173,11 +173,11 @@ class RateLimitedLoggerTests {
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
-        Instant previousTime = time.now();
+        Instant previousTime = time.instant();
         time.tick(period);
 
         while (count.get() < 100) {
-            final Instant currentTime = time.now();
+            final Instant currentTime = time.instant();
             final Duration elapsed = Duration.between(previousTime, currentTime);
 
             final int initialCount = count.get();
@@ -224,11 +224,11 @@ class RateLimitedLoggerTests {
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
-        Instant previousTime = time.now();
+        Instant previousTime = time.instant();
         time.tick(period);
 
         while (count.get() < 100) {
-            final Instant currentTime = time.now();
+            final Instant currentTime = time.instant();
             final Duration elapsed = Duration.between(previousTime, currentTime);
 
             final int initialCount = count.get();
@@ -275,11 +275,11 @@ class RateLimitedLoggerTests {
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
-        Instant previousTime = time.now();
+        Instant previousTime = time.instant();
         time.tick(period);
 
         while (count.get() < 100) {
-            final Instant currentTime = time.now();
+            final Instant currentTime = time.instant();
             final Duration elapsed = Duration.between(previousTime, currentTime);
 
             final int initialCount = count.get();
@@ -326,11 +326,11 @@ class RateLimitedLoggerTests {
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
-        Instant previousTime = time.now();
+        Instant previousTime = time.instant();
         time.tick(period);
 
         while (count.get() < 100) {
-            final Instant currentTime = time.now();
+            final Instant currentTime = time.instant();
             final Duration elapsed = Duration.between(previousTime, currentTime);
 
             final int initialCount = count.get();

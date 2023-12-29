@@ -54,7 +54,7 @@ class ActiveStatusLogicTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PlatformStatusConfig_.ACTIVE_STATUS_DELAY, "5s")
                 .getOrCreateConfig();
-        logic = new ActiveStatusLogic(time.now(), configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new ActiveStatusLogic(time.instant(), configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
@@ -68,26 +68,26 @@ class ActiveStatusLogicTests {
     @DisplayName("Go to CHECKING")
     void toChecking() {
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
 
         time.tick(Duration.ofSeconds(2));
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
 
         // restart the timer that will trigger the status change to checking
         triggerActionAndAssertNoTransition(
                 logic::processSelfEventReachedConsensusAction,
-                new SelfEventReachedConsensusAction(time.now()),
+                new SelfEventReachedConsensusAction(time.instant()),
                 logic.getStatus());
 
         // if the self event reaching consensus successfully restarted the timer, then the status should still be active
         time.tick(Duration.ofSeconds(4));
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
 
         time.tick(Duration.ofSeconds(2));
         triggerActionAndAssertTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), PlatformStatus.CHECKING);
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), PlatformStatus.CHECKING);
     }
 
     @Test
@@ -128,7 +128,9 @@ class ActiveStatusLogicTests {
         triggerActionAndAssertException(
                 logic::processReconnectCompleteAction, new ReconnectCompleteAction(0), logic.getStatus());
         triggerActionAndAssertException(
-                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+                logic::processDoneReplayingEventsAction,
+                new DoneReplayingEventsAction(time.instant()),
+                logic.getStatus());
         triggerActionAndAssertException(
                 logic::processEmergencyReconnectStartedAction,
                 new EmergencyReconnectStartedAction(),

@@ -95,13 +95,6 @@ public class FakeTime implements Time {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public Instant now() {
-        return start.plusNanos(nanoTime());
-    }
-
-    /**
      * Tick forward by a single nanosecond.
      */
     public void tick() {
@@ -162,12 +155,12 @@ public class FakeTime implements Time {
      * Get the fake duration that has elapsed since fake clock was started.
      */
     public Duration elapsed() {
-        return Duration.between(start, now());
+        return Duration.between(start, instant());
     }
 
     @Override
     public Instant instant() {
-        return now();
+        return start.plusNanos(nanoTime());
     }
 
     @Override

@@ -137,7 +137,7 @@ public record NetworkSimulatorParams(
             simulationTime = Duration.ofMillis(simulationTimeInMillis.get());
 
             final TreeMap<Instant, NetworkConfig> networkConfigMap = new TreeMap<>();
-            Instant nextEffectiveTime = time.now();
+            Instant nextEffectiveTime = time.instant();
             for (final NetworkConfig networkConfig : networkConfigs) {
                 networkConfigMap.put(nextEffectiveTime, networkConfig);
                 nextEffectiveTime = nextEffectiveTime.plus(networkConfig.duration());

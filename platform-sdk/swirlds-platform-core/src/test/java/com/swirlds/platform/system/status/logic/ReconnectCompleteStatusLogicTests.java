@@ -148,10 +148,10 @@ class ReconnectCompleteStatusLogicTests {
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(
                 logic::processSelfEventReachedConsensusAction,
-                new SelfEventReachedConsensusAction(time.now()),
+                new SelfEventReachedConsensusAction(time.instant()),
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
         // if the state written is prior to the reconnect state, it should be ignored
         triggerActionAndAssertNoTransition(
                 logic::processStateWrittenToDiskAction,
@@ -165,7 +165,9 @@ class ReconnectCompleteStatusLogicTests {
         triggerActionAndAssertException(
                 logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
         triggerActionAndAssertException(
-                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+                logic::processDoneReplayingEventsAction,
+                new DoneReplayingEventsAction(time.instant()),
+                logic.getStatus());
         triggerActionAndAssertException(
                 logic::processEmergencyReconnectStartedAction,
                 new EmergencyReconnectStartedAction(),

@@ -67,8 +67,8 @@ public class NetworkSimulator {
             final Instant configEffectiveTime = entry.getKey();
             final NetworkConfig networkConfig = entry.getValue();
 
-            final Instant now = time.now();
-            final Instant lastTime = time.now().minus(params.simulationStep());
+            final Instant now = time.instant();
+            final Instant lastTime = time.instant().minus(params.simulationStep());
 
             // if this is the first time step activating this config, move to the next config and return
             if ((now.isAfter(configEffectiveTime) || now.equals(configEffectiveTime))

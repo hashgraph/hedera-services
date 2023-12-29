@@ -336,7 +336,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getHashedData().getTimeCreated(), time.instant());
                 }
 
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
@@ -397,7 +397,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getHashedData().getTimeCreated(), time.instant());
                 }
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
             }
@@ -457,7 +457,7 @@ class TipsetEventCreatorTests {
                     linkAndDistributeEvent(nodes, events, event);
 
                     if (advancingClock) {
-                        assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                        assertEquals(event.getHashedData().getTimeCreated(), time.instant());
                     }
                     validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
 
@@ -541,7 +541,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getHashedData().getTimeCreated(), time.instant());
                 }
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
             }
@@ -644,7 +644,7 @@ class TipsetEventCreatorTests {
                 }
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getHashedData().getTimeCreated(), time.instant());
                 }
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), true);
             }
@@ -699,7 +699,7 @@ class TipsetEventCreatorTests {
             linkAndDistributeEvent(nodes, events, event);
 
             if (advancingClock) {
-                assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                assertEquals(event.getHashedData().getTimeCreated(), time.instant());
             }
         }
     }

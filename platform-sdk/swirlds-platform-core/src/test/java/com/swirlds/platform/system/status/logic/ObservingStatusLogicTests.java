@@ -54,7 +54,7 @@ class ObservingStatusLogicTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PlatformStatusConfig_.OBSERVING_STATUS_DELAY, "5s")
                 .getOrCreateConfig();
-        logic = new ObservingStatusLogic(time.now(), configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new ObservingStatusLogic(time.instant(), configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
@@ -65,26 +65,26 @@ class ObservingStatusLogicTests {
 
         time.tick(Duration.ofSeconds(2));
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
 
         time.tick(Duration.ofSeconds(4));
         triggerActionAndAssertTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), PlatformStatus.FREEZING);
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), PlatformStatus.FREEZING);
     }
 
     @Test
     @DisplayName("Go to CHECKING")
     void toChecking() {
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
 
         time.tick(Duration.ofSeconds(3));
         triggerActionAndAssertNoTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), logic.getStatus());
 
         time.tick(Duration.ofSeconds(3));
         triggerActionAndAssertTransition(
-                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), PlatformStatus.CHECKING);
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.instant()), PlatformStatus.CHECKING);
     }
 
     @Test
@@ -137,7 +137,7 @@ class ObservingStatusLogicTests {
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, false), logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processSelfEventReachedConsensusAction,
-                new SelfEventReachedConsensusAction(time.now()),
+                new SelfEventReachedConsensusAction(time.instant()),
                 logic.getStatus());
     }
 
@@ -147,7 +147,9 @@ class ObservingStatusLogicTests {
         triggerActionAndAssertException(
                 logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
         triggerActionAndAssertException(
-                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+                logic::processDoneReplayingEventsAction,
+                new DoneReplayingEventsAction(time.instant()),
+                logic.getStatus());
         triggerActionAndAssertException(
                 logic::processReconnectCompleteAction, new ReconnectCompleteAction(0), logic.getStatus());
     }

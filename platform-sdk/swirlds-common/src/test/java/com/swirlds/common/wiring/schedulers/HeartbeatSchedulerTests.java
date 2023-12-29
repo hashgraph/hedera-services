@@ -45,7 +45,7 @@ class HeartbeatSchedulerTests {
 
         final AtomicLong counter = new AtomicLong(0);
         heartbeatBindable.bind((time) -> {
-            assertEquals(time, fakeTime.now());
+            assertEquals(time, fakeTime.instant());
             counter.incrementAndGet();
         });
 
@@ -73,7 +73,7 @@ class HeartbeatSchedulerTests {
 
         final AtomicLong counter = new AtomicLong(0);
         heartbeatBindable.bind((time) -> {
-            assertEquals(time, fakeTime.now());
+            assertEquals(time, fakeTime.instant());
             counter.incrementAndGet();
         });
 
@@ -104,19 +104,19 @@ class HeartbeatSchedulerTests {
 
         final AtomicLong counterA = new AtomicLong(0);
         heartbeatBindableA.bind((time) -> {
-            assertEquals(time, fakeTime.now());
+            assertEquals(time, fakeTime.instant());
             counterA.incrementAndGet();
         });
 
         final AtomicLong counterB = new AtomicLong(0);
         heartbeatBindableB.bind((time) -> {
-            assertEquals(time, fakeTime.now());
+            assertEquals(time, fakeTime.instant());
             counterB.incrementAndGet();
         });
 
         final AtomicLong counterC = new AtomicLong(0);
         heartbeatBindableC.bind((time) -> {
-            assertEquals(time, fakeTime.now());
+            assertEquals(time, fakeTime.instant());
             counterC.incrementAndGet();
         });
 

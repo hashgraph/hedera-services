@@ -16,8 +16,12 @@
 
 package com.swirlds.base.time;
 
-import com.swirlds.base.time.internal.OSTime;
+import com.swirlds.base.time.internal.OSTimeSource;
 
+/**
+ * An API for getting the time. All platform code should utilize this API instead of the raw standard
+ * java time APIs. This makes it much easier to simulate time in test environments.
+ */
 public interface TimeSource {
     /**
      * A method that returns the time in nanoseconds. May not start at the epoch.
@@ -36,6 +40,6 @@ public interface TimeSource {
     long currentTimeMillis();
 
     static TimeSource system() {
-        return OSTime.getInstance();
+        return OSTimeSource.getInstance();
     }
 }

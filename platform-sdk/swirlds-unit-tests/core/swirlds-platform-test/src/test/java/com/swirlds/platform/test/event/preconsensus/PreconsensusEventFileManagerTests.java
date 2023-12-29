@@ -721,7 +721,7 @@ class PreconsensusEventFileManagerTests {
         // all files before the middle file have been deleted.
         final Instant endingTime =
                 middleFile.getTimestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
-        while (time.now().isBefore(endingTime)) {
+        while (time.instant().isBefore(endingTime)) {
             manager.pruneOldFiles(lastFile.getMaximumGeneration() + 1);
 
             // Parse files with a new manager to make sure we aren't "cheating" by just
@@ -747,7 +747,7 @@ class PreconsensusEventFileManagerTests {
             if (firstUnPrunedIndex < middleFileIndex
                     && files.get(firstUnPrunedIndex).getMaximumGeneration() < middleFile.getMaximumGeneration()) {
                 assertTrue(CompareTo.isGreaterThanOrEqualTo(
-                        firstUnPrunedFile.getTimestamp().plus(Duration.ofHours(1)), time.now()));
+                        firstUnPrunedFile.getTimestamp().plus(Duration.ofHours(1)), time.instant()));
             }
 
             // Check the file right before the first un-pruned file.
