@@ -95,7 +95,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
+            manager.addReservedState(signedState.reserve("test"));
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 assertNull(lastCompletedState, "no states should be completed in this test");

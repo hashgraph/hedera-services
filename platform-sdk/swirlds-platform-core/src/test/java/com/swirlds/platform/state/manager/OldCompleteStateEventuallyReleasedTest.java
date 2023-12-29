@@ -97,7 +97,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
 
         signedStates.put(0L, stateFromDisk);
         highestRound.set(0);
-        manager.addState(stateFromDisk);
+        manager.addReservedState(stateFromDisk.reserve("test"));
 
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
         final int count = roundsToKeepForSigning * 100;
@@ -111,7 +111,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
+            manager.addReservedState(signedState.reserve("test"));
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
 

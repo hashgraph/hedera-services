@@ -95,7 +95,7 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
+            manager.addReservedState(signedState.reserve("test"));
 
             for (int node = 0; node < addressBook.getSize(); node++) {
                 manager.handlePostconsensusSignatureTransaction(

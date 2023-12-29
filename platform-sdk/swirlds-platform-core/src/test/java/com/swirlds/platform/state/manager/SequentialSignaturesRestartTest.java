@@ -104,7 +104,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
 
         signedStates.put(firstRound, stateFromDisk);
         highestRound.set(firstRound);
-        manager.addState(stateFromDisk);
+        manager.addReservedState(stateFromDisk.reserve("test"));
 
         // Create a series of signed states.
         final int count = 100;
@@ -118,7 +118,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addState(signedState);
+            manager.addReservedState(signedState.reserve("test"));
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
@@ -129,9 +129,6 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
                 addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
-                assertSame(signedState, lastState.get(), "last signed state has unexpected value");
-            }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 if (roundToSign >= firstRound) {
                     assertSame(

@@ -28,6 +28,7 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * A SignedStateManager that is used for unit testing. Since the SignedStateManager is in the process of being broken up
@@ -73,9 +74,10 @@ public class SignedStateManagerTester extends SignedStateManager {
     }
 
     @Override
-    public synchronized void addState(@NonNull final SignedState signedState) {
-        super.addState(signedState);
-        latestSignedState.newIncompleteState(signedState.getRound());
+    public synchronized List<ReservedSignedState> addReservedState(
+            @NonNull final ReservedSignedState reservedSignedState) {
+        latestSignedState.newIncompleteState(reservedSignedState.get().getRound());
+        return super.addReservedState(reservedSignedState);
     }
 
     /**
