@@ -151,11 +151,14 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         while (!immutableState.tryReserve()) {
             immutableState = latestImmutableState.get();
         }
-        transactionHandler.preHandle(event, immutableState.getSwirldState());
-        event.getBaseEvent().signalPrehandleCompletion();
-        immutableState.release();
+        try {
+            transactionHandler.preHandle(event, immutableState.getSwirldState());
+        } finally {
+            event.getBaseEvent().signalPrehandleCompletion();
+            immutableState.release();
 
-        stats.preHandleTime(startTime, System.nanoTime());
+            stats.preHandleTime(startTime, System.nanoTime());
+        }
     }
 
     /**
