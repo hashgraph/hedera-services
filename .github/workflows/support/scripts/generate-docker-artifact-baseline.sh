@@ -2,8 +2,6 @@
 set -o pipefail
 set +e
 
-readonly RELEASE_LIB_PATH="hedera-node/data/lib"
-readonly RELEASE_APPS_PATH="hedera-node/data/apps"
 readonly DOCKER_IMAGE_NAME="main-network-node"
 
 GROUP_ACTIVE="false"
@@ -113,14 +111,6 @@ start_group "Configuring Environment"
       fail "ERROR (Exit Code: ${?})" "${?}"
     fi
   end_task "DONE (Found: ${JQ})"
-
-  start_task "Checking for prebuilt libraries"
-    ls -al "${GITHUB_WORKSPACE}/${RELEASE_LIB_PATH}"/*.jar >/dev/null 2>&1 || fail "ERROR (Exit Code: ${?})" "${?}"
-  end_task "FOUND (Path: ${GITHUB_WORKSPACE}/${RELEASE_LIB_PATH}/*.jar)"
-
-  start_task "Checking for prebuilt applications"
-    ls -al "${GITHUB_WORKSPACE}/${RELEASE_APPS_PATH}"/*.jar >/dev/null 2>&1 || fail "ERROR (Exit Code: ${?})" "${?}"
-  end_task "FOUND (Path: ${GITHUB_WORKSPACE}/${RELEASE_APPS_PATH}/*.jar)"
 end_group
 
 start_group "Prepare the Docker Image Information"
