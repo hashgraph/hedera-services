@@ -19,6 +19,7 @@ package com.swirlds.platform.state.editor;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.cli.utility.CommandBuilder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -64,7 +65,8 @@ public class StateEditor {
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
 
-        platformContext = new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
+        platformContext = new DefaultPlatformContext(
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);
