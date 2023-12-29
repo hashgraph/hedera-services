@@ -238,7 +238,6 @@ public class UpdateDecoder {
                 builder.pauseKey(key);
             }
         });
-
         return TransactionBody.newBuilder().tokenUpdate(builder).build();
     }
 
@@ -273,9 +272,9 @@ public class UpdateDecoder {
             final var keyType = ((BigInteger) tokenKeyTuple.get(KEY_TYPE)).intValue();
             final Tuple keyValueTuple = tokenKeyTuple.get(KEY_VALUE);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(INHERIT_ACCOUNT_KEY);
+            final byte[] ed25519 = keyValueTuple.get(ED25519);
+            final byte[] ecdsaSecp256K1 = keyValueTuple.get(ECDSA_SECP_256K1);
             final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(CONTRACT_ID)));
-            final var ed25519 = (byte[]) keyValueTuple.get(ED25519);
-            final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(ECDSA_SECP_256K1);
             final var delegatableContractId =
                     asNumericContractId(addressIdConverter.convert(keyValueTuple.get(DELEGATABLE_CONTRACT_ID)));
 
@@ -283,10 +282,10 @@ public class UpdateDecoder {
                     keyType,
                     new KeyValueWrapper(
                             inheritAccountKey,
-                            contractId.contractNum() != 0 ? contractId : null,
+                            contractId.contractNumOrThrow() != 0 ? contractId : null,
                             ed25519,
                             ecdsaSecp256K1,
-                            delegatableContractId.contractNum() != 0 ? delegatableContractId : null)));
+                            delegatableContractId.contractNumOrThrow() != 0 ? delegatableContractId : null)));
         }
 
         return tokenKeys;
