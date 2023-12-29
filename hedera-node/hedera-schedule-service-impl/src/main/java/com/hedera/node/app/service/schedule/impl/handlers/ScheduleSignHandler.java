@@ -43,6 +43,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -206,6 +207,13 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
 
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ScheduleSignResourceUsage(
                         new ScheduleOpsUsage(), null)
-                .usageGiven(fromPbj(op), sigValueObj, schedule));
+                .usageGiven(
+                        fromPbj(op),
+                        sigValueObj,
+                        schedule,
+                        feeContext
+                                .configuration()
+                                .getConfigData(LedgerConfig.class)
+                                .scheduleTxExpiryTimeSecs()));
     }
 }

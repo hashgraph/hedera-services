@@ -275,17 +275,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     @Order(1)
     final HapiSpec suiteSetup() {
         // Managing whitelist for these is error-prone, so just whitelist everything by default.
-        final List<String> whitelistNames = new LinkedList<>();
-        for (final HederaFunctionality enumValue : HederaFunctionality.values()) {
-            whitelistNames.add(enumValue.protoName());
-        }
-        final String whitelistAll = String.join(",", whitelistNames);
-        return defaultHapiSpec("suiteSetup")
-                .given()
-                .when()
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(SCHEDULING_WHITELIST, whitelistAll)));
+        return defaultHapiSpec("suiteSetup").given().when().then(addAllToWhitelist());
     }
 
     // This should not be run for modular service due to key gathering behavior differences.
@@ -2727,5 +2717,14 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     private <T extends Record> T getTestConfig(Class<T> configClass) {
         final TestConfigBuilder builder = new TestConfigBuilder(configClass);
         return builder.getOrCreateConfig().getConfigData(configClass);
+    }
+
+    public static HapiSpecOperation addAllToWhitelist() {
+        final List<String> whitelistNames = new LinkedList<>();
+        for (final HederaFunctionality enumValue : HederaFunctionality.values()) {
+            whitelistNames.add(enumValue.protoName());
+        }
+        final String fullWhitelist = String.join(",", whitelistNames);
+        return overriding(SCHEDULING_WHITELIST, fullWhitelist);
     }
 }

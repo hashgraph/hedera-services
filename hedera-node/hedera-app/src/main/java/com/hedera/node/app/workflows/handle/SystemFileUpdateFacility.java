@@ -126,7 +126,7 @@ public class SystemFileUpdateFacility {
             final var permissions =
                     FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
             configProvider.update(networkProperties, permissions);
-            logPropertyAndPermissionsOverrides(networkProperties, permissions);
+            logContentsOf("Network properties", networkProperties);
             backendThrottle.applyGasConfig();
             frontendThrottle.applyGasConfig();
 
@@ -138,8 +138,7 @@ public class SystemFileUpdateFacility {
                     FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
             final var permissions = FileUtilities.getFileContent(state, fileID);
             configProvider.update(networkProperties, permissions);
-            logPropertyAndPermissionsOverrides(networkProperties, permissions);
-            logContentsOf("API Permissions", permissions);
+            logContentsOf("API permissions", permissions);
         } else if (fileNum == config.throttleDefinitions()) {
             final var result = throttleManager.update(FileUtilities.getFileContent(state, fileID));
             backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
@@ -150,12 +149,6 @@ public class SystemFileUpdateFacility {
             return result;
         }
         return SUCCESS;
-    }
-
-    private void logPropertyAndPermissionsOverrides(
-            @NonNull final Bytes propertyOverrides, @NonNull final Bytes permissionOverrides) {
-        logContentsOf("Network properties", propertyOverrides);
-        logContentsOf("API permissions", permissionOverrides);
     }
 
     private void logContentsOf(@NonNull final String configFileName, @NonNull final Bytes contents) {

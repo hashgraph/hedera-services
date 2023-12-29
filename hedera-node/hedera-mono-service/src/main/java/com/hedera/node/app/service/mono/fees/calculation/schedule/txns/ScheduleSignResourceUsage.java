@@ -63,15 +63,18 @@ public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
         }
     }
 
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Schedule schedule) {
+    public FeeData usageGiven(
+            final TransactionBody txn,
+            final SigValueObj svo,
+            final Schedule schedule,
+            final long scheduledTxExpiryTimeSecs) {
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
         if (schedule != null) {
             return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, schedule.calculatedExpirationSecond());
         } else {
             final long latestExpiry =
-                    txn.getTransactionID().getTransactionValidStart().getSeconds()
-                            + properties.scheduledTxExpiryTimeSecs();
+                    txn.getTransactionID().getTransactionValidStart().getSeconds() + scheduledTxExpiryTimeSecs;
             return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, latestExpiry);
         }
     }
