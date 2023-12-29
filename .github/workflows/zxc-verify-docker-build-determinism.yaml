@@ -189,7 +189,12 @@ jobs:
 
       - name: Amend Manifest with Gradle Artifacts
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: tar -rzvf "${{ steps.manifest.outputs.file }}" -C "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}" sdk
+        working-directory: ${{ github.workspace }}/${{ env.DOCKER_MANIFEST_PATH }}
+        run: |
+          EXTRACTED_FILE_NAME="${{ steps.commit.outputs.sha }}.tar"
+          gunzip "${{ steps.manifest.outputs.name }}"
+          tar -rzvf "${EXTRACTED_FILE_NAME}" -C "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}" sdk
+          gzip "${EXTRACTED_FILE_NAME}"
 
       - name: Upload Baseline
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
