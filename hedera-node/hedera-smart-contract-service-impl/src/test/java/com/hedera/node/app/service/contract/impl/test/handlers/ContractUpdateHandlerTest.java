@@ -642,7 +642,6 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(contract.accountIdOrThrow())
                 .thenReturn(AccountID.newBuilder().accountNum(999L).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
-        when(contract.stakedId()).thenReturn(new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, null));
         when(context.expiryValidator()).thenReturn(expiryValidator);
         when(context.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
