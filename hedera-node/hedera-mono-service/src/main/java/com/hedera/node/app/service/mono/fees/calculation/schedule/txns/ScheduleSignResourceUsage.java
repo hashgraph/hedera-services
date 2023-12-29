@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -54,6 +55,19 @@ public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
             final var info = optionalInfo.get();
             return scheduleOpsUsage.scheduleSignUsage(
                     txn, sigUsage, info.getExpirationTime().getSeconds());
+        } else {
+            final long latestExpiry =
+                    txn.getTransactionID().getTransactionValidStart().getSeconds()
+                            + properties.scheduledTxExpiryTimeSecs();
+            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, latestExpiry);
+        }
+    }
+
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Schedule schedule) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+        if (schedule != null) {
+            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, schedule.calculatedExpirationSecond());
         } else {
             final long latestExpiry =
                     txn.getTransactionID().getTransactionValidStart().getSeconds()

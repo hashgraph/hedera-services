@@ -156,6 +156,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                         validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
     }
 
+    @HapiTest
     public HapiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
                 .given(cryptoCreate(UNWILLING_PAYER))
@@ -176,6 +177,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 .status(INSUFFICIENT_TX_FEE)));
     }
 
+    @HapiTest
     public HapiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
                 .given(cryptoCreate(INSOLVENT_PAYER).balance(0L))

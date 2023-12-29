@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -55,8 +56,12 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleExecutionSpecStateful extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecStateful.class);
 
@@ -103,6 +108,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 suiteCleanup()));
     }
 
+    @HapiTest
+    @Order(3)
     final HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))
@@ -112,6 +119,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
+    @Order(1)
     final HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
                 .given(
@@ -142,6 +151,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
+    @HapiTest
+    @Order(2)
     final HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
                 .given(
@@ -172,6 +183,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
+    @HapiTest
+    @Order(4)
     public HapiSpec executionWithTransferListWrongSizedFails() {
         long transferAmount = 1L;
         long senderBalance = 1000L;
@@ -218,6 +231,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         }));
     }
 
+    @HapiTest
+    @Order(5)
     final HapiSpec executionWithTokenTransferListSizeExceedFails() {
         String xToken = "XXX";
         String invalidSchedule = "withMaxTokenTransfer";
@@ -253,6 +268,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
+    @HapiTest
+    @Order(6)
     final HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()

@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
@@ -27,9 +31,13 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
+import com.hedera.node.app.service.mono.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -52,7 +60,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
-
     @Inject
     public ScheduleCreateHandler() {
         super();
@@ -330,5 +337,23 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         } else {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+        final var config = feeContext.configuration();
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ScheduleCreateResourceUsage(
+                        new ScheduleOpsUsage(), null)
+                .usageGiven(
+                        fromPbj(op),
+                        sigValueObj,
+                        schedulingConfig.longTermEnabled(),
+                        ledgerConfig.scheduleTxExpiryTimeSecs()));
     }
 }
