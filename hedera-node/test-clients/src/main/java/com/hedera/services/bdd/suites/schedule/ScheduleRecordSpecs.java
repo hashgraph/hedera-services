@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.exactParticipants;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -39,6 +40,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -102,10 +104,12 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 schedulingTxnIdFieldsNotAllowed()));
     }
 
+    @HapiTest
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
-        return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
+        return onlyDefaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
+                        uploadDefaultFeeSchedules(GENESIS),
                         uploadInitCode(SIMPLE_UPDATE),
                         cryptoCreate(OTHER_PAYER),
                         cryptoCreate(PAYING_SENDER),

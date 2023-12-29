@@ -347,8 +347,12 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var config = feeContext.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
+        final var subType = (op.scheduleCreateOrThrow().hasScheduledTransactionBody()
+                        && op.scheduleCreateOrThrow().scheduledTransactionBody().hasContractCall())
+                ? SubType.SCHEDULE_CREATE_CONTRACT_CALL
+                : SubType.DEFAULT;
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ScheduleCreateResourceUsage(
+        return feeContext.feeCalculator(subType).legacyCalculate(sigValueObj -> new ScheduleCreateResourceUsage(
                         new ScheduleOpsUsage(), null)
                 .usageGiven(
                         fromPbj(op),

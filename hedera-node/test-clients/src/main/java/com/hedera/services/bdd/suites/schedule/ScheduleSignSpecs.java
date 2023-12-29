@@ -791,6 +791,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .alsoSigningWith(SENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(0L))
                 .then(
+                        sleepFor(1000),
                         scheduleSign(TWO_SIG_XFER)
                                 .alsoSigningWith(RECEIVER)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
