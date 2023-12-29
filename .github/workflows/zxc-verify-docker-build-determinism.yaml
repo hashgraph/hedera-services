@@ -308,18 +308,6 @@ jobs:
       - name: Show Docker Info
         run: docker info
 
-      - name: Prepare for Docker Build
-        run: |
-          mkdir -p "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data"
-
-          echo "::group::Copying Library Artifacts"
-            cp -Rvf "${{ github.workspace }}/hedera-node/data/lib" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data/"
-          echo "::endgroup::"
-
-          echo "::group::Copying Application Artifacts"
-            cp -Rvf "${{ github.workspace }}/hedera-node/data/apps" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data/"
-          echo "::endgroup::"
-
       - name: Build Docker Image
         uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
         env:
