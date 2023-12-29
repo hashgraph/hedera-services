@@ -20,6 +20,7 @@ import static com.swirlds.base.ArgumentUtils.throwArgBlank;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
@@ -43,12 +44,12 @@ public class CountPerSecond {
     private final IntegerPairAccumulator<Double> accumulator;
 
     /**
-     * The default constructor, uses the {@link Time#system()}
+     * The default constructor, uses the {@link TimeSource#system()}
      *
      * @param config the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
-        this(metrics, config, new IntegerEpochTime(Time.system()));
+        this(metrics, config, new IntegerEpochTime(TimeSource.system()));
     }
 
     /**

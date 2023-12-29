@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeSource;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -32,7 +31,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     private final StatsSpeedometer speedometer;
 
     public DefaultSpeedometerMetric(final SpeedometerMetric.Config config) {
-        this(config, Time.system());
+        this(config, TimeSource.system());
     }
 
     /**

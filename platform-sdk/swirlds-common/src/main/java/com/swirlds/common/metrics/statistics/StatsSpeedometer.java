@@ -108,11 +108,11 @@ public class StatsSpeedometer implements StatsBuffered {
      */
     @SuppressWarnings("removal")
     public StatsSpeedometer(final double halfLife, final boolean saveHistory) {
-        this(halfLife, saveHistory, Time.system());
+        this(halfLife, saveHistory, TimeSource.system());
     }
 
     /**
-     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}.
+     * This constructor behaves exactly as the regular one, but permits to inject a {@link TimeSource}.
      * It should only be used internally.
      *
      * @param halfLife

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.utility;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -36,7 +35,7 @@ public class StopWatch {
      * Creates a new StopWatch.
      */
     public StopWatch() {
-        this(Time.system());
+        this(TimeSource.system());
     }
 
     /**

@@ -19,7 +19,6 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
@@ -89,7 +88,7 @@ public class SnapshotService implements Startable {
      */
     public SnapshotService(
             final DefaultMetrics globalMetrics, final ScheduledExecutorService executor, final Duration interval) {
-        this(globalMetrics, executor, interval, Time.system());
+        this(globalMetrics, executor, interval, TimeSource.system());
     }
 
     // This method is just for testing and will be removed from the public API at some point.

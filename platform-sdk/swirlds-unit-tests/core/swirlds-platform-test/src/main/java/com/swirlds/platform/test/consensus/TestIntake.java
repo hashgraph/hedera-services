@@ -19,7 +19,7 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.platform.NodeId;
@@ -111,7 +111,7 @@ public class TestIntake implements LoadableFromSignedState {
         intake = new EventIntake(
                 platformContext,
                 getStaticThreadManager(),
-                Time.system(),
+                TimeSource.system(),
                 new NodeId(0L), // only used for logging
                 linker,
                 this::getConsensus,

@@ -18,7 +18,6 @@ package com.swirlds.common.metrics.statistics.internal;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeSource;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntBinaryOperator;
@@ -142,7 +141,7 @@ public class StatsBuffer {
      *                      time it's called
      */
     public StatsBuffer(final int maxBins, final double recentSeconds, final double startDelay) {
-        this(maxBins, recentSeconds, startDelay, Time.system());
+        this(maxBins, recentSeconds, startDelay, TimeSource.system());
     }
 
     public StatsBuffer(

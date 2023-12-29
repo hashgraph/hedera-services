@@ -16,6 +16,8 @@
 
 package com.swirlds.base.time;
 
+import com.swirlds.base.time.internal.OSTime;
+
 public interface TimeSource {
     /**
      * A method that returns the time in nanoseconds. May not start at the epoch.
@@ -32,4 +34,8 @@ public interface TimeSource {
      * @return the current time since the epoch in milliseconds
      */
     long currentTimeMillis();
+
+    static TimeSource system() {
+        return OSTime.getInstance();
+    }
 }

@@ -26,7 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.platform.NodeId;
@@ -73,7 +73,7 @@ class EventIntakeTest {
         final EventIntake intake = new EventIntake(
                 platformContext,
                 getStaticThreadManager(),
-                Time.system(),
+                TimeSource.system(),
                 new NodeId(0L),
                 mock(EventLinker.class),
                 () -> consensus,

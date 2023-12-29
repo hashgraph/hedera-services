@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.statistics;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import com.swirlds.logging.legacy.LogMarker;
@@ -104,11 +103,11 @@ public class StatsRunningAverage implements StatsBuffered {
      */
     @SuppressWarnings("removal")
     public StatsRunningAverage(final double halfLife) {
-        this(halfLife, Time.system());
+        this(halfLife, TimeSource.system());
     }
 
     /**
-     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}.
+     * This constructor behaves exactly as the regular one, but permits to inject a {@link TimeSource}.
      * It should only be used internally.
      *
      * @param halfLife

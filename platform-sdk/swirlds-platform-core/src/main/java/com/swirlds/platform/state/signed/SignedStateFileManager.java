@@ -82,7 +82,7 @@ public class SignedStateFileManager {
      *
      * @param context       the platform context
      * @param metrics       metrics provider
-     * @param instantSource          provides time
+     * @param timeSource    provides time
      * @param mainClassName the main class name of this node
      * @param selfId        the ID of this node
      * @param swirldName    the name of the swirld
