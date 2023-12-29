@@ -189,7 +189,7 @@ jobs:
 
       - name: Amend Manifest with Gradle Artifacts
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        working-directory: ${{ github.workspace }}/${{ env.DOCKER_MANIFEST_PATH }}
+        working-directory: ${{ env.DOCKER_MANIFEST_PATH }}
         run: |
           EXTRACTED_FILE_NAME="${{ steps.commit.outputs.sha }}.tar"
           gunzip "${{ steps.manifest.outputs.name }}"
