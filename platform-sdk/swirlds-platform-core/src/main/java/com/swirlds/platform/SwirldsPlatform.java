@@ -561,7 +561,7 @@ public class SwirldsPlatform implements Platform {
                 dispatchBuilder,
                 this::handleFatalError,
                 platformWiring.getSignStateInput()::put,
-                signedStateManager::addState,
+                platformWiring.getSignatureCollectorStateInput()::put,
                 signedStateMetrics);
 
         final EventHasher eventHasher = new EventHasher(platformContext);
@@ -593,7 +593,7 @@ public class SwirldsPlatform implements Platform {
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn, v) ->
                         consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
-        BiConsumer<State, ConsensusRound> consensusSystemTransactionConsumer =
+        final BiConsumer<State, ConsensusRound> consensusSystemTransactionConsumer =
                 (state, round) -> {
                     consensusSystemTransactionManager.handleRound(state, round);
                     platformWiring.getSignatureCollectorConsensusInput().put(round);
