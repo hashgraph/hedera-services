@@ -176,6 +176,8 @@ public class SingleTransactionRecordBuilderImpl
     // CryptoCreate transactions as ContractCreate synthetic transactions
     private final ExternalizedRecordCustomizer customizer;
 
+    private TokenID tokenID;
+
     /**
      * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
      * and it is asked to be reverted
@@ -333,7 +335,7 @@ public class SingleTransactionRecordBuilderImpl
         transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);
         transactionReceiptBuilder.topicSequenceNumber(0L);
-        transactionRecordBuilder.contractCreateResult((ContractFunctionResult) null);
+        // Note that internal contract creations are removed instead of reversed
         transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionRecordBuilder.alias(Bytes.EMPTY);
         transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
@@ -894,8 +896,13 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
+        this.tokenID = tokenID;
         transactionReceiptBuilder.tokenID(tokenID);
         return this;
+    }
+
+    public TokenID tokenID() {
+        return tokenID;
     }
 
     /**
@@ -1072,16 +1079,14 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @param deletedAccountID the deleted account ID
      * @param beneficiaryForDeletedAccount the beneficiary account ID
-     * @return the builder
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl addBeneficiaryForDeletedAccount(
+    public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
         requireNonNull(deletedAccountID, "deletedAccountID must not be null");
         requireNonNull(beneficiaryForDeletedAccount, "beneficiaryForDeletedAccount must not be null");
         deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
-        return this;
     }
 
     /**

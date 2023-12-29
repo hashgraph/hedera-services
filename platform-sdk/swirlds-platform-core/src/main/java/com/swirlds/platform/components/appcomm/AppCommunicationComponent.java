@@ -125,7 +125,7 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
     private void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 reservedSignedState.get().getSwirldState(),
-                reservedSignedState.get().getState().getSwirldDualState(),
+                reservedSignedState.get().getState().getPlatformState(),
                 reservedSignedState.get().getRound(),
                 reservedSignedState.get().getConsensusTimestamp());
 

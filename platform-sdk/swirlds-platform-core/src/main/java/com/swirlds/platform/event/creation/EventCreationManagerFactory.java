@@ -123,8 +123,8 @@ public final class EventCreationManagerFactory {
                 "Interrupted while attempting to register event with tipset event creator"));
 
         eventObserverDispatcher.addObserver((ConsensusRoundObserver) round -> abortAndThrowIfInterrupted(
-                manager::setMinimumGenerationNonAncient,
-                round.getGenerations().getMinGenerationNonAncient(),
+                manager::setNonAncientEventWindow,
+                round.getNonAncientEventWindow(),
                 "Interrupted while attempting to register minimum generation "
                         + "non-ancient with tipset event creator"));
 

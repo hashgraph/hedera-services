@@ -33,6 +33,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -110,6 +111,7 @@ class EventIntakeTest {
                     List.of(consEvent1, consEvent2),
                     added,
                     generations,
+                    mock(NonAncientEventWindow.class),
                     mock(ConsensusSnapshot.class)));
         });
 

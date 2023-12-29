@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system;
+package com.hedera.node.app.state.merkle;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Contains any data that is either read or written by the platform and the application,
- * and contains methods available to the application
+ * A callback that is invoked when platform calls updateWeight during upgrade.
  */
-public interface SwirldDualState extends DualState {
-
-    /**
-     * Get the node uptime data.
-     */
-    @NonNull
-    UptimeData getUptimeData();
+public interface OnUpdateWeight {
+    void updateWeight(
+            @NonNull final MerkleHederaState state,
+            @NonNull AddressBook configAddressBook,
+            @NonNull final PlatformContext context);
 }

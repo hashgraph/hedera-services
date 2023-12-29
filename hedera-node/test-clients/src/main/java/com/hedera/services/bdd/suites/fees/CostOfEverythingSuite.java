@@ -138,8 +138,11 @@ public class CostOfEverythingSuite extends HapiSuite {
                         validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0));
     }
 
+    @HapiTest
     HapiSpec miscContractCreatesAndCalls() {
-        Object[] donationArgs = new Object[] {2, "Hey, Ma!"};
+        // Note that contracts are prohibited to sending value to system
+        // accounts below 0.0.750
+        Object[] donationArgs = new Object[] {800L, "Hey, Ma!"};
         final var multipurposeContract = "Multipurpose";
         final var lookupContract = "BalanceLookup";
 
@@ -154,18 +157,20 @@ public class CostOfEverythingSuite extends HapiSuite {
                                 .balance(652),
                         contractCreate(lookupContract).payingWith(CIVILIAN).balance(256))
                 .then(
-                        contractCall(multipurposeContract, "believeIn", 256).payingWith(CIVILIAN),
+                        contractCall(multipurposeContract, "believeIn", 256L).payingWith(CIVILIAN),
                         contractCallLocal(multipurposeContract, "pick")
                                 .payingWith(CIVILIAN)
                                 .logged()
                                 .has(resultWith()
                                         .resultThruAbi(
                                                 getABIFor(FUNCTION, "pick", multipurposeContract),
-                                                isLiteralResult(new Object[] {BigInteger.valueOf(256)}))),
+                                                isLiteralResult(new Object[] {256L}))),
                         contractCall(multipurposeContract, "donate", donationArgs)
                                 .payingWith(CIVILIAN),
                         contractCallLocal(lookupContract, "lookup", spec -> new Object[] {
-                                    spec.registry().getAccountID(CIVILIAN).getAccountNum()
+                                    BigInteger.valueOf(spec.registry()
+                                            .getAccountID(CIVILIAN)
+                                            .getAccountNum())
                                 })
                                 .payingWith(CIVILIAN)
                                 .logged());
