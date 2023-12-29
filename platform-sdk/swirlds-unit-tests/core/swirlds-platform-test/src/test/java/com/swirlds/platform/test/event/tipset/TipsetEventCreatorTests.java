@@ -897,4 +897,66 @@ class TipsetEventCreatorTests {
         // that event would be stale at the moment of its creation.
         assertNull(eventCreator.maybeCreateEvent());
     }
+
+    /**
+     * Checks that birth round on events is being set.
+     * FUTURE WORK: Update this test to use RosterDiff instead of NonAncientEventWindow
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @DisplayName("Check setting of birthRound on new events.")
+    void checkSettingEventBirthRound(final boolean advancingClock) {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 10;
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+
+        final FakeTime time = new FakeTime();
+
+        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+
+        final Map<NodeId, SimulatedNode> nodes =
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+
+        final Map<Hash, EventImpl> events = new HashMap<>();
+
+        boolean testPassed = false;
+
+        for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
+            for (final Address address : addressBook) {
+                if (advancingClock) {
+                    time.tick(Duration.ofMillis(10));
+                }
+
+                transactionSupplier.set(generateRandomTransactions(random));
+
+                final NodeId nodeId = address.getNodeId();
+                final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
+
+                final long pendingConsensusRound = eventIndex + 2;
+                if (eventIndex > 0) {
+                    // Set non-ancientEventWindow after creating genesis event from each node.
+                    eventCreator.setNonAncientEventWindow(
+                            new NonAncientEventWindow(pendingConsensusRound - 1, eventIndex - 26, 0));
+                }
+
+                final GossipEvent event = eventCreator.maybeCreateEvent();
+
+                if (event != null) {
+                    System.out.println(
+                            "EventBirthRound: " + event.getHashedData().getBirthRound());
+                    final long birthRound = event.getHashedData().getBirthRound();
+                    if (eventIndex == 0) {
+                        assertEquals(NonAncientEventWindow.INITIAL_EVENT_WINDOW.pendingConsensusRound(), birthRound);
+                    } else {
+                        assertEquals(pendingConsensusRound, birthRound);
+                    }
+                    testPassed = true;
+                }
+            }
+        }
+        assertTrue(testPassed);
+    }
 }

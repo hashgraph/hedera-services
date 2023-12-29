@@ -421,7 +421,8 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                addressBook.getRound(),
+                // FUTURE WORK: Change the setting of birth round to the pendingConsensusRound in received RosterDiff.
+                nonAncientEventWindow.pendingConsensusRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
