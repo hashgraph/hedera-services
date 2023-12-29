@@ -34,27 +34,6 @@ public final class DefaultPlatformContext implements PlatformContext {
     private final Cryptography cryptography;
     private final Time time;
 
-    //    /**
-    //     * Constructor.
-    //     *
-    //     * @param nodeId          the node id
-    //     * @param metricsProvider the metrics provider
-    //     * @param configuration   the configuration
-    //     * @param time            the time
-    //     */
-    //    public DefaultPlatformContext(
-    //            @NonNull final NodeId nodeId,
-    //            @NonNull final PlatformMetricsProvider metricsProvider,
-    //            @NonNull final Configuration configuration,
-    //            @NonNull final Time time) {
-    //
-    //        this.configuration = Objects.requireNonNull(configuration);
-    //        this.metrics = Objects.requireNonNull(metricsProvider)
-    //                .createPlatformMetrics(nodeId);
-    //        this.cryptography = CryptographyHolder.get();
-    //        this.time = Objects.requireNonNull(time);
-    //    }
-
     /**
      * Constructor.
      *
