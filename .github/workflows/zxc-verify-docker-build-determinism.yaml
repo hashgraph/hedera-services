@@ -187,6 +187,10 @@ jobs:
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: ${{ env.DOCKER_MANIFEST_GENERATOR }}
 
+      - name: Amend Manifest with Gradle Artifacts
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+        run: tar -rzvf "${{ steps.manifest.outputs.file }}" -C "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}" sdk
+
       - name: Upload Baseline
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: gsutil cp "${{ steps.manifest.outputs.file }}" "${{ steps.baseline.outputs.file }}"
@@ -205,11 +209,12 @@ jobs:
         # builds to be non-deterministic. Self-hosted runners using Ubuntu 22.04 are unaffected.
         # The Self Hosted Large instance is temporarily disabled because it is running no longer supported version of
         # Ubuntu 18.04. The Large instance will be upgraded to Ubuntu 22.04 in the near future.
+        # Disabled macos-11 runner to minimize the number of concurrent macOS builds due to concurrency issues.
         os:
           #- ubuntu-22.04
           - ubuntu-20.04
           - macos-12
-          - macos-11
+          #- macos-11
           #- windows-2022
           #- windows-2019
           - [self-hosted, Linux, medium, ephemeral]
@@ -229,17 +234,6 @@ jobs:
         uses: actions/setup-python@b64ffcaf5b410884ad320a9cfac8866006a109aa # v4.8.0
         with:
           python-version: 3.9
-
-      - name: Setup Java
-        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
-        with:
-          distribution: ${{ inputs.java-distribution }}
-          java-version: ${{ inputs.java-version }}
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
-        with:
-          cache-disabled: true
 
       - name: Install Skopeo and JQ (Linux)
         if: ${{ runner.os == 'Linux' }}
@@ -281,10 +275,7 @@ jobs:
           cd "${DOCKER_MANIFEST_PATH}"
           gsutil cp "${{ needs.generate-baseline.outputs.file }}" .
           tar -xzf "${{ needs.generate-baseline.outputs.name }}"
-
-      - name: Build Artifacts
-        id: gradle-build
-        run: ./gradlew assemble --scan --no-build-cache
+          mv "sdk" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/"
 
       - name: Set up Docker
         uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0

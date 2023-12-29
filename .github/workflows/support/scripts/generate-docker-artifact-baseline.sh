@@ -156,12 +156,14 @@ end_group
 start_group "Generating Final Release Manifests"
 
   start_task "Generating the manifest archive"
-  tar -czf "${TEMP_DIR}/manifest.tar.gz" -C "${TEMP_DIR}" linux-amd64.manifest.json linux-amd64.layers.json linux-amd64.comparable.json linux-arm64.manifest.json linux-arm64.layers.json linux-arm64.comparable.json >/dev/null 2>&1 || fail "TAR ERROR (Exit Code: ${?})" "${?}"
+    MANIFEST_FILES=("linux-amd64.manifest.json" "linux-amd64.layers.json" "linux-amd64.comparable.json")
+    MANIFEST_FILES+=("linux-arm64.manifest.json" "linux-arm64.layers.json" "linux-arm64.comparable.json")
+    tar -czf "${TEMP_DIR}/manifest.tar.gz" -C "${TEMP_DIR}" "${MANIFEST_FILES[@]}" >/dev/null 2>&1 || fail "TAR ERROR (Exit Code: ${?})" "${?}"
   end_task
 
   start_task "Copying the manifest files"
-  cp "${TEMP_DIR}/manifest.tar.gz" "${MANIFEST_PATH}/${GITHUB_SHA}.tar.gz" || fail "COPY ERROR (Exit Code: ${?})" "${?}"
-  cp "${TEMP_DIR}"/*.json "${MANIFEST_PATH}/" || fail "COPY ERROR (Exit Code: ${?})" "${?}"
+    cp "${TEMP_DIR}/manifest.tar.gz" "${MANIFEST_PATH}/${GITHUB_SHA}.tar.gz" || fail "COPY ERROR (Exit Code: ${?})" "${?}"
+    cp "${TEMP_DIR}"/*.json "${MANIFEST_PATH}/" || fail "COPY ERROR (Exit Code: ${?})" "${?}"
   end_task "DONE (Path: ${MANIFEST_PATH}/${GITHUB_SHA}.tar.gz)"
 
   start_task "Setting Step Outputs"

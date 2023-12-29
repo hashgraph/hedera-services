@@ -137,11 +137,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Disabled MacOS runner testing due to concurrency issues with the Github hosted runners.
         os:
           - ubuntu-22.04
           - ubuntu-20.04
-          - macos-12
-          - macos-11
+          #- macos-12
+          #- macos-11
           - windows-2022
           - windows-2019
           - [self-hosted, Linux, medium, ephemeral]
