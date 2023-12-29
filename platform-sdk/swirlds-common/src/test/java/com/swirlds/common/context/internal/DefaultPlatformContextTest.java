@@ -18,6 +18,7 @@ package com.swirlds.common.context.internal;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -39,12 +40,16 @@ class DefaultPlatformContextTest {
         metricsProvider.createGlobalMetrics();
 
         // when
-        final PlatformContext context =
-                new DefaultPlatformContext(nodeId, metricsProvider, configuration, CryptographyHolder.get());
+        final PlatformContext context = new DefaultPlatformContext(
+                configuration,
+                metricsProvider.createPlatformMetrics(nodeId),
+                CryptographyHolder.get(),
+                Time.getCurrent());
 
         // then
         assertNotNull(context.getConfiguration(), "Configuration must not be null");
         assertNotNull(context.getMetrics(), "Metrics must not be null");
         assertNotNull(context.getCryptography(), "Cryptography must not be null");
+        assertNotNull(context.getTime(), "Time must not be null");
     }
 }

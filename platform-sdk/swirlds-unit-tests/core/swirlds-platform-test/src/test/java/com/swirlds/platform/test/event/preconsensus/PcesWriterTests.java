@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.TransactionConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -268,7 +269,7 @@ class PcesWriterTests {
 
         final Metrics metrics = new NoOpMetrics();
 
-        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get());
+        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
     }
 
     /**

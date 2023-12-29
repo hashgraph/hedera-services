@@ -214,8 +214,8 @@ public final class PlatformBuilder {
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext =
-                new DefaultPlatformContext(selfId, getMetricsProvider(), configuration, cryptography);
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration, getMetricsProvider().createPlatformMetrics(selfId), cryptography, Time.getCurrent());
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);

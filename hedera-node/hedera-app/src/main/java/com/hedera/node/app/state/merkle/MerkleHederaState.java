@@ -47,6 +47,7 @@ import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -59,6 +60,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -144,6 +146,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private OnStateInitialized onInit;
 
     /**
+     * This callback is invoked whenever the updateWeight is called.
+     */
+    private OnUpdateWeight onUpdateWeight;
+
+    /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
@@ -159,10 +166,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     public MerkleHederaState(
             @NonNull final PreHandleListener onPreHandle,
             @NonNull final HandleConsensusRoundListener onHandleConsensusRound,
-            @NonNull final OnStateInitialized onInit) {
+            @NonNull final OnStateInitialized onInit,
+            @NonNull final OnUpdateWeight onUpdateWeight) {
         this.onPreHandle = requireNonNull(onPreHandle);
         this.onHandleConsensusRound = requireNonNull(onHandleConsensusRound);
         this.onInit = requireNonNull(onInit);
+        this.onUpdateWeight = requireNonNull(onUpdateWeight);
         this.classId = CLASS_ID;
     }
 
@@ -198,6 +207,17 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // Instead, this method will be a callback the app registers with the platform. So for now,
         // we simply call the callback handler, which is implemented by the app.
         this.onInit.onStateInitialized(this, platform, platformState, trigger, deserializedVersion);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public AddressBook updateWeight(
+            @NonNull final AddressBook configAddressBook, @NonNull final PlatformContext context) {
+        this.onUpdateWeight.updateWeight(this, configAddressBook, context);
+        return configAddressBook;
     }
 
     /**
