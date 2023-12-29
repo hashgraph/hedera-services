@@ -18,7 +18,6 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -31,6 +30,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -48,10 +48,10 @@ public class EmergencyReconnectTeacher {
     private final ReconnectMetrics reconnectMetrics;
     private final ThreadManager threadManager;
     private final Configuration configuration;
-    private final Time time;
+    private final InstantSource instantSource;
 
     /**
-     * @param time                   provides wall clock time
+     * @param instantSource                   provides wall clock time
      * @param threadManager          responsible for managing thread lifecycles
      * @param stateSupplier          return the state for emergency reconnect
      * @param reconnectSocketTimeout the socket timeout to use when executing a reconnect
@@ -59,13 +59,13 @@ public class EmergencyReconnectTeacher {
      * @param configuration          the configuration for the platform
      */
     public EmergencyReconnectTeacher(
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final ThreadManager threadManager,
             @NonNull final Supplier<ReservedSignedState> stateSupplier,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final Configuration configuration) {
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier must not be null");
         this.reconnectSocketTimeout =
@@ -113,7 +113,7 @@ public class EmergencyReconnectTeacher {
                             connection.getOtherId());
 
                     new ReconnectTeacher(
-                                    time,
+                                    instantSource,
                                     threadManager,
                                     connection,
                                     reconnectSocketTimeout,

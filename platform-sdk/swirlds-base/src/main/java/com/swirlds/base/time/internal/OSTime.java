@@ -18,14 +18,17 @@ package com.swirlds.base.time.internal;
 
 import com.swirlds.base.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.InstantSource;
+import java.time.ZoneId;
 
 /**
  * An implementation of {@link Time} that will return the true wall clock time (according to the OS).
  */
 public final class OSTime implements Time {
 
-    private static final Time instance = new OSTime();
+    private static final OSTime instance = new OSTime();
 
     private OSTime() {}
 
@@ -57,8 +60,22 @@ public final class OSTime implements Time {
      * {@inheritDoc}
      */
     @NonNull
-    @Override
     public Instant now() {
         return Instant.now();
+    }
+
+    @Override
+    public Instant instant() {
+        return Instant.now();
+    }
+
+    @Override
+    public long millis() {
+        return System.currentTimeMillis();
+    }
+
+    @Override
+    public Clock withZone(ZoneId zone) {
+        return InstantSource.system().withZone(zone);
     }
 }

@@ -18,7 +18,6 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
@@ -39,6 +38,7 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -123,7 +123,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
 
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker =
-                new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
+                new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, InstantSource.system());
         initialState(state);
     }
 

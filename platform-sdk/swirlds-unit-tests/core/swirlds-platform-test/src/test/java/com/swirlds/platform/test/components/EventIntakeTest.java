@@ -73,7 +73,7 @@ class EventIntakeTest {
         final EventIntake intake = new EventIntake(
                 platformContext,
                 getStaticThreadManager(),
-                Time.getCurrent(),
+                Time.system(),
                 new NodeId(0L),
                 mock(EventLinker.class),
                 () -> consensus,

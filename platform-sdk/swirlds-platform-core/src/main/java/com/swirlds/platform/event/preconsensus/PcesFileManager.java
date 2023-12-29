@@ -19,7 +19,6 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -29,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +54,7 @@ public class PcesFileManager {
     /**
      * Provides the wall clock time.
      */
-    private final Time time;
+    private final InstantSource instantSource;
 
     private final PreconsensusEventMetrics metrics;
 
@@ -84,7 +84,7 @@ public class PcesFileManager {
      * Constructor
      *
      * @param platformContext the platform context for this node
-     * @param time            provides wall clock time
+     * @param instantSource            provides wall clock time
      * @param files           the files to track
      * @param selfId          the ID of this node
      * @param startingRound   the round number of the initial state of the system
@@ -92,7 +92,7 @@ public class PcesFileManager {
      */
     public PcesFileManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final PcesFileTracker files,
             @NonNull final NodeId selfId,
             final long startingRound)
@@ -108,7 +108,7 @@ public class PcesFileManager {
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.files = Objects.requireNonNull(files);
         this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
         this.minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
@@ -130,7 +130,7 @@ public class PcesFileManager {
                     .set(files.getFirstFile().getMinimumGeneration());
             metrics.getPreconsensusEventFileYoungestGeneration()
                     .set(files.getLastFile().getMaximumGeneration());
-            final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
+            final Duration age = Duration.between(files.getFirstFile().getTimestamp(), instantSource.instant());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         } else {
             metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
@@ -207,7 +207,7 @@ public class PcesFileManager {
         }
 
         final PreconsensusEventFile descriptor = PreconsensusEventFile.of(
-                time.now(),
+                instantSource.instant(),
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
                 maximumGenerationForFile,
@@ -270,7 +270,7 @@ public class PcesFileManager {
      * @throws IOException if there is an error deleting files
      */
     public void pruneOldFiles(final long minimumGeneration) throws IOException {
-        final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
+        final Instant minimumTimestamp = instantSource.instant().minus(minimumRetentionPeriod);
 
         while (files.getFileCount() > 0
                 && files.getFirstFile().getMaximumGeneration() < minimumGeneration
@@ -284,7 +284,7 @@ public class PcesFileManager {
         if (files.getFileCount() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
                     .set(files.getFirstFile().getMinimumGeneration());
-            final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
+            final Duration age = Duration.between(files.getFirstFile().getTimestamp(), instantSource.instant());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }
 

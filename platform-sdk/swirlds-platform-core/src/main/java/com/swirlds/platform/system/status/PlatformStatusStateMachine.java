@@ -20,7 +20,6 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.logging.legacy.payload.PlatformStatusPayload;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
@@ -40,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -58,7 +58,7 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
     /**
      * A source of time
      */
-    private final Time time;
+    private final InstantSource instantSource;
 
     /**
      * Consumes any status changes
@@ -83,20 +83,20 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
     /**
      * Constructor
      *
-     * @param time                 a source of time
+     * @param instantSource                 a source of time
      * @param config               the platform status config
      * @param statusChangeConsumer consumes any status changes
      */
     public PlatformStatusStateMachine(
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final PlatformStatusConfig config,
             @NonNull final Consumer<PlatformStatus> statusChangeConsumer) {
 
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.statusChangeConsumer = Objects.requireNonNull(statusChangeConsumer);
         this.currentStatusLogic = new StartingUpStatusLogic(config);
         this.currentStatus = new AtomicReference<>(currentStatusLogic.getStatus());
-        this.currentStatusStartTime = time.now();
+        this.currentStatusStartTime = instantSource.instant();
     }
 
     /**
@@ -168,7 +168,7 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
         final String previousStatusName = currentStatusLogic.getStatus().name();
         final String newStatusName = newLogic.getStatus().name();
 
-        final Duration statusDuration = Duration.between(currentStatusStartTime, time.now());
+        final Duration statusDuration = Duration.between(currentStatusStartTime, instantSource.instant());
         final UnitFormatter unitFormatter = new UnitFormatter(statusDuration.toMillis(), UNIT_MILLISECONDS);
 
         final String statusChangeMessage = "Platform spent %s in %s. Now in %s"
@@ -181,7 +181,7 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
         currentStatusLogic = newLogic;
         currentStatus.set(currentStatusLogic.getStatus());
 
-        currentStatusStartTime = time.now();
+        currentStatusStartTime = instantSource.instant();
 
         statusChangeConsumer.accept(newLogic.getStatus());
     }

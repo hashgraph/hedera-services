@@ -67,14 +67,14 @@ class ModelTests {
     @Test
     void emptyModelTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
         validateModel(model, false, false);
     }
 
     @Test
     void singleVertexTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -91,7 +91,7 @@ class ModelTests {
     @Test
     void shortChainTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -119,7 +119,7 @@ class ModelTests {
     @Test
     void loopSizeOneTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -141,7 +141,7 @@ class ModelTests {
     @Test
     void loopSizeOneBrokenByInjectionTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -163,7 +163,7 @@ class ModelTests {
     @Test
     void loopSizeTwoTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -190,7 +190,7 @@ class ModelTests {
     @Test
     void loopSizeTwoBrokenByInjectionTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -217,7 +217,7 @@ class ModelTests {
     @Test
     void loopSizeTwoBrokenByMissingBoundTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -244,7 +244,7 @@ class ModelTests {
     @Test
     void loopSizeThreeTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -276,7 +276,7 @@ class ModelTests {
     @Test
     void loopSizeThreeBrokenByInjectionTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -308,7 +308,7 @@ class ModelTests {
     @Test
     void loopSizeThreeBrokenByMissingBoundTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -340,7 +340,7 @@ class ModelTests {
     @Test
     void loopSizeFourTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -378,7 +378,7 @@ class ModelTests {
     @Test
     void loopSizeFourBrokenByInjectionTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -416,7 +416,7 @@ class ModelTests {
     @Test
     void loopSizeFourBrokenByMissingBoundTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -454,7 +454,7 @@ class ModelTests {
     @Test
     void loopSizeFourWithChainTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -532,7 +532,7 @@ class ModelTests {
     @Test
     void loopSizeFourWithChainBrokenByInjectionTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -610,7 +610,7 @@ class ModelTests {
     @Test
     void loopSizeFourWithChainBrokenByMissingBoundTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -688,7 +688,7 @@ class ModelTests {
     @Test
     void multiLoopTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -770,7 +770,7 @@ class ModelTests {
     @Test
     void multiLoopBrokenByInjectionTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -852,7 +852,7 @@ class ModelTests {
     @Test
     void multiLoopBrokenByMissingBoundTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -934,7 +934,7 @@ class ModelTests {
     @Test
     void filterInCycleTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1017,7 +1017,7 @@ class ModelTests {
     @Test
     void transformerInCycleTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1100,7 +1100,7 @@ class ModelTests {
     @Test
     void splitterInCycleTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1181,7 +1181,7 @@ class ModelTests {
     @Test
     void multipleOutputCycleTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1275,7 +1275,7 @@ class ModelTests {
     @Test
     void heartbeatTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1317,7 +1317,7 @@ class ModelTests {
     @Test
     void concurrentAccessingDirectTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1405,7 +1405,7 @@ class ModelTests {
     @Test
     void concurrentAccessingMultipleDirectTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1497,7 +1497,7 @@ class ModelTests {
     @Test
     void concurrentAccessingDirectThroughProxyTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1591,7 +1591,7 @@ class ModelTests {
     @Test
     void multipleSequentialSchedulerTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         /*
 
@@ -1679,7 +1679,7 @@ class ModelTests {
     @Test
     void unboundInputWireTest() {
         final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.system());
 
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").build().cast();

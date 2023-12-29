@@ -18,13 +18,13 @@ package com.swirlds.common.wiring.schedulers.internal;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +36,7 @@ import java.util.Timer;
 public class HeartbeatScheduler implements Startable, Stoppable {
 
     private final StandardWiringModel model;
-    private final Time time;
+    private final InstantSource instantSource;
     private final String name;
     private final Timer timer = new Timer();
     private final List<HeartbeatTask> tasks = new ArrayList<>();
@@ -46,13 +46,15 @@ public class HeartbeatScheduler implements Startable, Stoppable {
      * Constructor.
      *
      * @param model the wiring model containing this heartbeat scheduler
-     * @param time  provides wall clock time
+     * @param instantSource  provides wall clock time
      * @param name  the name of the heartbeat scheduler
      */
     public HeartbeatScheduler(
-            @NonNull final StandardWiringModel model, @NonNull final Time time, @NonNull final String name) {
+            @NonNull final StandardWiringModel model,
+            @NonNull final InstantSource instantSource,
+            @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.name = Objects.requireNonNull(name);
         model.registerVertex(name, TaskSchedulerType.SEQUENTIAL, false);
     }
@@ -84,7 +86,7 @@ public class HeartbeatScheduler implements Startable, Stoppable {
                             + "Requested period: " + period);
         }
 
-        final HeartbeatTask task = new HeartbeatTask(model, name, time, period);
+        final HeartbeatTask task = new HeartbeatTask(model, name, instantSource, period);
         tasks.add(task);
 
         return task.getOutputWire();

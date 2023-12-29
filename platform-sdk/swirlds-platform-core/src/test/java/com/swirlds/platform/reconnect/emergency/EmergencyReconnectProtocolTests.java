@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.notification.NotificationEngine;
@@ -43,6 +42,7 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -99,7 +99,7 @@ public class EmergencyReconnectProtocolTests {
         when(reconnectController.acquireLearnerPermit()).thenReturn(initiateParams.getsPermit);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                Time.getCurrent(),
+                InstantSource.system(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -123,7 +123,7 @@ public class EmergencyReconnectProtocolTests {
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!teacherIsThrottled);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                Time.getCurrent(),
+                InstantSource.system(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -155,7 +155,7 @@ public class EmergencyReconnectProtocolTests {
                 reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                Time.getCurrent(),
+                InstantSource.system(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -203,10 +203,10 @@ public class EmergencyReconnectProtocolTests {
                 .withValue(ReconnectConfig_.MINIMUM_TIME_BETWEEN_RECONNECTS, "0s")
                 .getOrCreateConfig();
         final ReconnectThrottle teacherThrottle =
-                new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
+                new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), InstantSource.system());
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
-                Time.getCurrent(),
+                InstantSource.system(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,

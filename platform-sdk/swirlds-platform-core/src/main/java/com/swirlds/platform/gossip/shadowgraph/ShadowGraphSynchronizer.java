@@ -422,7 +422,7 @@ public class ShadowGraphSynchronizer {
             sendList = filterLikelyDuplicates(
                     selfId,
                     nonAncestorFilterThreshold,
-                    time.now(),
+                    time.instant(),
                     eventsTheyMayNeed,
                     latestEventTipsetTracker.getLatestSelfEventTipset());
             final long endFilterTime = time.nanoTime();

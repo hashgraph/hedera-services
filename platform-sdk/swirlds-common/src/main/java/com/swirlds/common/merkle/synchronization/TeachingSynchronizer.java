@@ -18,7 +18,6 @@ package com.swirlds.common.merkle.synchronization;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -38,6 +37,7 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.SocketException;
+import java.time.InstantSource;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
@@ -86,7 +86,7 @@ public class TeachingSynchronizer {
 
     protected final ReconnectConfig reconnectConfig;
 
-    private final Time time;
+    private final InstantSource instantSource;
 
     /**
      * Create a new teaching synchronizer.
@@ -109,7 +109,7 @@ public class TeachingSynchronizer {
      *      reconnect configuration from platform
      */
     public TeachingSynchronizer(
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final ThreadManager threadManager,
             @NonNull final MerkleDataInputStream in,
             @NonNull final MerkleDataOutputStream out,
@@ -117,7 +117,7 @@ public class TeachingSynchronizer {
             @Nullable final Runnable breakConnection,
             @NonNull final ReconnectConfig reconnectConfig) {
 
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         inputStream = Objects.requireNonNull(in, "in must not be null");
         outputStream = Objects.requireNonNull(out, "out must not be null");
@@ -190,7 +190,8 @@ public class TeachingSynchronizer {
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        new TeacherSendingThread<T>(time, reconnectConfig, workGroup, in, out, subtrees, view, senderIsFinished)
+        new TeacherSendingThread<T>(
+                        instantSource, reconnectConfig, workGroup, in, out, subtrees, view, senderIsFinished)
                 .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
 

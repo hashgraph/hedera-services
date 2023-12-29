@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.simulated;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.test.simulated.config.NetworkConfig;
@@ -24,6 +23,7 @@ import com.swirlds.platform.test.simulated.config.NodeConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * A simple gossip simulation where events are distributed with a delay
  */
 public class SimpleSimulatedGossip {
-    private final Time time;
+    private final InstantSource instantSource;
     /** Map from node id to that node's message handler */
     private final Map<NodeId, GossipMessageHandler> nodes;
 
@@ -53,11 +53,12 @@ public class SimpleSimulatedGossip {
      *
      * @param numNodes the number of nodes in the network
      * @param latency  the latencies between nodes
-     * @param time     the current time
+     * @param instantSource     the current time
      */
-    public SimpleSimulatedGossip(final int numNodes, @NonNull final NetworkLatency latency, @NonNull final Time time) {
+    public SimpleSimulatedGossip(
+            final int numNodes, @NonNull final NetworkLatency latency, @NonNull final InstantSource instantSource) {
         this.latency = Objects.requireNonNull(latency);
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
 
         nodes = new HashMap<>(numNodes);
         inTransit = new HashMap<>(numNodes);
@@ -166,7 +167,9 @@ public class SimpleSimulatedGossip {
     private void sendToPeer(@NonNull final GossipMessage message) {
         final NodeId recipient = message.recipientId();
         final Duration delay = latency.getLatency(message.senderId(), recipient);
-        inTransit.get(recipient).add(new Payload(message, time.now().plus(delay)));
+        inTransit
+                .get(recipient)
+                .add(new Payload(message, instantSource.instant().plus(delay)));
     }
 
     private void sendToAllPeers(@NonNull final GossipMessage message) {
@@ -174,7 +177,9 @@ public class SimpleSimulatedGossip {
         for (final NodeId nodeId : nodes.keySet()) {
             if (nodeId != message.senderId()) {
                 final Duration delay = latency.getLatency(message.senderId(), nodeId);
-                inTransit.get(nodeId).add(new Payload(message, time.now().plus(delay)));
+                inTransit
+                        .get(nodeId)
+                        .add(new Payload(message, instantSource.instant().plus(delay)));
             }
         }
     }
@@ -188,7 +193,7 @@ public class SimpleSimulatedGossip {
             final NodeId nodeId = entry.getKey();
             for (final Iterator<Payload> iterator = queue.iterator(); iterator.hasNext(); ) {
                 final Payload payload = iterator.next();
-                if (!time.now().isBefore(payload.arrivalTime())) {
+                if (!instantSource.instant().isBefore(payload.arrivalTime())) {
                     nodes.get(nodeId)
                             .handleMessageFromWire(payload.gossipMessage().message(), payload.gossipMessage.senderId());
                     delivered.get(nodeId).add(payload.gossipMessage);

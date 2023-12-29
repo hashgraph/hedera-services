@@ -19,7 +19,6 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.platform.NodeId;
@@ -34,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,7 +97,7 @@ public class EventSignatureValidator {
      * Constructor
      *
      * @param platformContext        the platform context
-     * @param time                   a time object, for rate limiting loggers
+     * @param instantSource                   a time object, for rate limiting loggers
      * @param signatureVerifier      a verifier for checking event signatures
      * @param currentSoftwareVersion the current software version
      * @param previousAddressBook    the previous address book
@@ -106,14 +106,14 @@ public class EventSignatureValidator {
      */
     public EventSignatureValidator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
 
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
@@ -121,7 +121,7 @@ public class EventSignatureValidator {
         this.currentAddressBook = Objects.requireNonNull(currentAddressBook);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
-        this.rateLimitedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+        this.rateLimitedLogger = new RateLimitedLogger(logger, instantSource, MINIMUM_LOG_PERIOD);
 
         this.validationFailedAccumulator = platformContext.getMetrics().getOrCreate(VALIDATION_FAILED_CONFIG);
     }

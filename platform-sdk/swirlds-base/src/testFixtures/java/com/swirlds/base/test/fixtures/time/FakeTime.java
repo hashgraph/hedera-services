@@ -19,8 +19,11 @@ package com.swirlds.base.test.fixtures.time;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 
 import com.swirlds.base.time.Time;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
@@ -94,7 +97,6 @@ public class FakeTime implements Time {
     /**
      * {@inheritDoc}
      */
-    @Override
     public Instant now() {
         return start.plusNanos(nanoTime());
     }
@@ -161,5 +163,20 @@ public class FakeTime implements Time {
      */
     public Duration elapsed() {
         return Duration.between(start, now());
+    }
+
+    @Override
+    public Instant instant() {
+        return now();
+    }
+
+    @Override
+    public long millis() {
+        return currentTimeMillis();
+    }
+
+    @Override
+    public Clock withZone(ZoneId zone) {
+        return InstantSource.system().withZone(zone);
     }
 }

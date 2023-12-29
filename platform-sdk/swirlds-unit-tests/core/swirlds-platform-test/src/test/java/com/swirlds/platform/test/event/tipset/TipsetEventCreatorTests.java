@@ -31,7 +31,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -62,6 +61,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -96,7 +96,7 @@ class TipsetEventCreatorTests {
     @NonNull
     private EventCreator buildEventCreator(
             @NonNull final Random random,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId nodeId,
             @NonNull final TransactionSupplier transactionSupplier) {
@@ -110,7 +110,14 @@ class TipsetEventCreatorTests {
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
         return new TipsetEventCreator(
-                platformContext, time, random, signer, addressBook, nodeId, softwareVersion, transactionSupplier);
+                platformContext,
+                instantSource,
+                random,
+                signer,
+                addressBook,
+                nodeId,
+                softwareVersion,
+                transactionSupplier);
     }
 
     /**
@@ -119,7 +126,7 @@ class TipsetEventCreatorTests {
     @NonNull
     private Map<NodeId, SimulatedNode> buildSimulatedNodes(
             @NonNull final Random random,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final AddressBook addressBook,
             @NonNull final TransactionSupplier transactionSupplier) {
 
@@ -130,13 +137,18 @@ class TipsetEventCreatorTests {
         for (final Address address : addressBook) {
 
             final EventCreator eventCreator =
-                    buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
+                    buildEventCreator(random, instantSource, addressBook, address.getNodeId(), transactionSupplier);
 
-            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
+            final TipsetTracker tipsetTracker = new TipsetTracker(instantSource, addressBook);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
-                    platformContext, time, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
+                    platformContext,
+                    instantSource,
+                    addressBook,
+                    address.getNodeId(),
+                    tipsetTracker,
+                    childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),

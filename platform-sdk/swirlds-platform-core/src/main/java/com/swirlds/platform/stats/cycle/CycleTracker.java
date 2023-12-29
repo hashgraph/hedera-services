@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.stats.cycle;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import java.util.Arrays;
 
 /**
@@ -25,16 +25,16 @@ import java.util.Arrays;
 public class CycleTracker {
     private final CycleMetrics metrics;
     /** provides the current time in nanoseconds */
-    private final Time time;
+    private final TimeSource timeSource;
     /** duration of each interval, in nanoseconds */
     private final long[] duration;
 
     private long lastTime;
     private int intervalStarted;
 
-    public CycleTracker(final Time time, final CycleMetrics metrics) {
+    public CycleTracker(final TimeSource timeSource, final CycleMetrics metrics) {
         this.metrics = metrics;
-        this.time = time;
+        this.timeSource = timeSource;
         this.duration = new long[metrics.getNumIntervals()];
         this.lastTime = now();
     }
@@ -89,6 +89,6 @@ public class CycleTracker {
      * @return current time in ns
      */
     private long now() {
-        return time.nanoTime();
+        return timeSource.nanoTime();
     }
 }

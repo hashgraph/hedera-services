@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetric
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -64,7 +65,7 @@ public class SnapshotService implements Startable {
     private final ScheduledExecutorService executor;
     private final Queue<Consumer<? super SnapshotEvent>> subscribers = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean running = new AtomicBoolean();
-    private final Time time;
+    private final TimeSource timeSource;
     private final long delayNanos;
 
     /**
@@ -88,7 +89,7 @@ public class SnapshotService implements Startable {
      */
     public SnapshotService(
             final DefaultMetrics globalMetrics, final ScheduledExecutorService executor, final Duration interval) {
-        this(globalMetrics, executor, interval, Time.getCurrent());
+        this(globalMetrics, executor, interval, Time.system());
     }
 
     // This method is just for testing and will be removed from the public API at some point.
@@ -96,7 +97,7 @@ public class SnapshotService implements Startable {
             final DefaultMetrics globalMetrics,
             final ScheduledExecutorService executor,
             final Duration interval,
-            final Time time) {
+            final TimeSource timeSource) {
         this.globalMetrics = Objects.requireNonNull(globalMetrics, "globalMetrics must not be null");
         if (!globalMetrics.isGlobalMetrics()) {
             throw new IllegalArgumentException("Trying to create SnapshotService with non-global Metrics");
@@ -104,7 +105,7 @@ public class SnapshotService implements Startable {
         this.executor = Objects.requireNonNull(executor, "executor must not be null");
         this.delayNanos =
                 Objects.requireNonNull(interval, "interval must not be null").toNanos();
-        this.time = Objects.requireNonNull(time, "time must not be null");
+        this.timeSource = Objects.requireNonNull(timeSource, "time must not be null");
 
         logger.debug("SnapshotService initialized");
     }
@@ -198,7 +199,7 @@ public class SnapshotService implements Startable {
             return;
         }
         logger.trace("Running mainLoop");
-        final long start = time.nanoTime();
+        final long start = timeSource.nanoTime();
 
         final Map<String, Snapshot> globalSnapshots = globalMetrics.getAll().stream()
                 .map(DefaultMetric.class::cast)
@@ -223,7 +224,7 @@ public class SnapshotService implements Startable {
             subscribers.forEach(subscriber -> subscriber.accept(platformEvent));
         }
 
-        final long delta = time.nanoTime() - start;
+        final long delta = timeSource.nanoTime() - start;
         logger.trace("Running mainLoop took {} ns", delta);
 
         // schedule next execution

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
@@ -25,6 +24,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -41,17 +41,19 @@ public class LatestEventTipsetTracker {
     /**
      * Constructor.
      *
-     * @param time        provides wall clock time
+     * @param instantSource        provides wall clock time
      * @param addressBook the current address book
      * @param selfId      the ID of this node
      */
     public LatestEventTipsetTracker(
-            @NonNull final Time time, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId) {
 
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
         Objects.requireNonNull(addressBook);
 
-        this.tipsetTracker = new TipsetTracker(time, addressBook);
+        this.tipsetTracker = new TipsetTracker(instantSource, addressBook);
         this.selfId = Objects.requireNonNull(selfId);
     }
 

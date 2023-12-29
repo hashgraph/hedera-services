@@ -49,6 +49,7 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
@@ -63,37 +64,39 @@ public class TestIntake implements LoadableFromSignedState {
     private int numEventsAdded = 0;
 
     /**
-     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     * See {@link #TestIntake(AddressBook, InstantSource, ConsensusConfig)}
      */
     public TestIntake(@NonNull final AddressBook ab) {
-        this(ab, Time.getCurrent());
+        this(ab, InstantSource.system());
     }
 
     /**
-     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     * See {@link #TestIntake(AddressBook, InstantSource, ConsensusConfig)}
      */
-    public TestIntake(@NonNull final AddressBook ab, @NonNull final Time time) {
-        this(ab, time, new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
+    public TestIntake(@NonNull final AddressBook ab, @NonNull final InstantSource instantSource) {
+        this(ab, instantSource, new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
     }
 
     /**
-     * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
+     * See {@link #TestIntake(AddressBook, InstantSource, ConsensusConfig)}
      */
     public TestIntake(@NonNull final AddressBook ab, @NonNull final ConsensusConfig consensusConfig) {
-        this(ab, Time.getCurrent(), consensusConfig);
+        this(ab, InstantSource.system(), consensusConfig);
     }
 
     /**
      * @param ab the address book used by this intake
-     * @param time the time used by this intake
+     * @param instantSource the time used by this intake
      * @param consensusConfig the consensus config used by this intake
      */
     public TestIntake(
-            @NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
-        output = new ConsensusOutput(time);
+            @NonNull final AddressBook ab,
+            @NonNull final InstantSource instantSource,
+            @NonNull final ConsensusConfig consensusConfig) {
+        output = new ConsensusOutput(instantSource);
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
-        shadowGraph =
-                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
+        shadowGraph = new ShadowGraph(
+                InstantSource.system(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
         linker = new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
@@ -108,7 +111,7 @@ public class TestIntake implements LoadableFromSignedState {
         intake = new EventIntake(
                 platformContext,
                 getStaticThreadManager(),
-                Time.getCurrent(),
+                Time.system(),
                 new NodeId(0L), // only used for logging
                 linker,
                 this::getConsensus,

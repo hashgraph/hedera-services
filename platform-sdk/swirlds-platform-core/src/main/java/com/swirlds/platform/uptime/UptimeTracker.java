@@ -20,7 +20,6 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import static com.swirlds.platform.system.UptimeData.NO_ROUND;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
@@ -35,6 +34,7 @@ import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusActio
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class UptimeTracker {
 
     private final NodeId selfId;
-    private final Time time;
+    private final InstantSource instantSource;
     private final AddressBook addressBook;
 
     private final UptimeMetrics uptimeMetrics;
@@ -70,17 +70,17 @@ public class UptimeTracker {
      * @param addressBook           the address book
      * @param statusActionSubmitter enables submitting platform status actions
      * @param selfId                the ID of this node
-     * @param time                  a source of time
+     * @param instantSource                  a source of time
      */
     public UptimeTracker(
             @NonNull PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final NodeId selfId,
-            @NonNull final Time time) {
+            @NonNull final InstantSource instantSource) {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.degradationThreshold = platformContext
@@ -106,7 +106,7 @@ public class UptimeTracker {
             return;
         }
 
-        final Instant start = time.now();
+        final Instant start = instantSource.instant();
 
         addAndRemoveNodes(uptimeData, addressBook);
         final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
@@ -115,7 +115,7 @@ public class UptimeTracker {
         updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
         reportUptime(uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
 
-        final Instant end = time.now();
+        final Instant end = instantSource.instant();
         final Duration elapsed = Duration.between(start, end);
         uptimeMetrics
                 .getUptimeComputationTimeMetric()
@@ -161,7 +161,7 @@ public class UptimeTracker {
             return true;
         }
 
-        final Instant now = time.now();
+        final Instant now = instantSource.instant();
         final Duration durationSinceLastEvent = Duration.between(eventTime, now);
         return CompareTo.isGreaterThan(durationSinceLastEvent, degradationThreshold);
     }
@@ -197,7 +197,7 @@ public class UptimeTracker {
                 lastSelfEventTime.set(lastSelfEventConsensusTimestamp);
 
                 // the action receives the wall clock time, NOT the consensus timestamp
-                statusActionSubmitter.submitStatusAction(new SelfEventReachedConsensusAction(time.now()));
+                statusActionSubmitter.submitStatusAction(new SelfEventReachedConsensusAction(instantSource.instant()));
             }
         }
     }

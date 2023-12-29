@@ -86,7 +86,7 @@ class SyncEventCreationManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         final SyncEventCreationManager manager =
-                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
+                new SyncEventCreationManager(platformContext, Time.system(), creator, rule, eventConsumer);
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
 
@@ -144,7 +144,7 @@ class SyncEventCreationManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         final SyncEventCreationManager manager =
-                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
+                new SyncEventCreationManager(platformContext, Time.system(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -243,7 +243,7 @@ class SyncEventCreationManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         final SyncEventCreationManager manager =
-                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
+                new SyncEventCreationManager(platformContext, Time.system(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -321,7 +321,7 @@ class SyncEventCreationManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         final SyncEventCreationManager manager =
-                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
+                new SyncEventCreationManager(platformContext, Time.system(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -405,7 +405,7 @@ class SyncEventCreationManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         final SyncEventCreationManager manager =
-                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
+                new SyncEventCreationManager(platformContext, Time.system(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());

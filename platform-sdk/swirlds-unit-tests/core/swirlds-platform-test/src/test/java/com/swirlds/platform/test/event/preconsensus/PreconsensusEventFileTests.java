@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
@@ -46,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -305,7 +305,7 @@ class PreconsensusEventFileTests {
                 .getOrCreateConfig();
 
         final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+                configuration, new NoOpMetrics(), getStaticThreadManager(), InstantSource.system(), new NodeId(0));
 
         Files.createDirectories(streamDirectory);
         Files.createDirectories(recycleDirectory);

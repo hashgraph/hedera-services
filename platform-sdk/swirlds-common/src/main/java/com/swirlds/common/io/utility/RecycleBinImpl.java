@@ -22,7 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.metrics.IntegerGauge;
@@ -42,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -55,7 +55,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
 
     private static final Logger logger = LogManager.getLogger(RecycleBinImpl.class);
 
-    private final Time time;
+    private final InstantSource instantSource;
     private final Path recycleBinPath;
     private final Duration maximumFileAge;
 
@@ -79,7 +79,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
      * @param configuration the configuration object
      * @param metrics       manages the creation of metrics
      * @param threadManager manages the creation of threads
-     * @param time          provides wall clock time
+     * @param instantSource          provides wall clock time
      * @param selfId        the ID of this node
      * @throws IOException if the recycle bin directory could not be created
      */
@@ -87,13 +87,13 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final NodeId selfId)
             throws IOException {
 
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(threadManager);
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
 
         final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
@@ -172,7 +172,7 @@ public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
      * Deletes all recycle bin files/directories that are older than the maximum file age.
      */
     private void cleanup() {
-        final Instant now = time.now();
+        final Instant now = instantSource.instant();
 
         final AtomicInteger deletedCount = new AtomicInteger();
 

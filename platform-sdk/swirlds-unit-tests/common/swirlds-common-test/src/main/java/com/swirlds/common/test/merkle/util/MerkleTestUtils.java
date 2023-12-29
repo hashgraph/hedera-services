@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -44,6 +43,7 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1001,7 +1001,7 @@ public final class MerkleTestUtils {
                         },
                         reconnectConfig);
                 teacher = new TeachingSynchronizer(
-                        Time.getCurrent(),
+                        InstantSource.system(),
                         getStaticThreadManager(),
                         streams.getTeacherInput(),
                         streams.getTeacherOutput(),

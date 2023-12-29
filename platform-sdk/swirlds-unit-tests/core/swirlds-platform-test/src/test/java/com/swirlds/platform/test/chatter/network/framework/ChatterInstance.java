@@ -27,6 +27,7 @@ import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.test.simulated.GossipMessage;
 import com.swirlds.platform.test.simulated.GossipMessageHandler;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +51,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
     /** This node's id */
     private final NodeId selfId;
     /** The time instances used by the simulation */
-    private final Time time;
+    private final InstantSource instantSource;
     /** This node's chatter core instance */
     private final ChatterCore<T> core;
     /** Creator of self events */
@@ -73,7 +74,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
             final SimulatedEventCreator<T> newEventCreator,
             final SimulatedEventPipeline<T> eventPipeline) {
         this.selfId = selfId;
-        this.time = time;
+        this.instantSource = time;
         this.newEventCreator = newEventCreator;
         this.eventPipeline = eventPipeline;
 
@@ -183,7 +184,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
             if (msg instanceof final SimulatedChatterEvent event) {
                 // Create a copy so that each node sets its own time received
                 final SimulatedChatterEvent eventCopy = event.copy();
-                eventCopy.setTimeReceived(time.now());
+                eventCopy.setTimeReceived(instantSource.instant());
                 core.getPeerInstance(fromPeer).inputHandler().handleMessage(eventCopy);
             } else {
                 core.getPeerInstance(fromPeer).inputHandler().handleMessage(msg);

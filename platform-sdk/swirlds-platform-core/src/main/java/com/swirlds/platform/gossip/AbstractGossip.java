@@ -21,7 +21,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -70,6 +69,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -117,7 +117,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
-     * @param time                          the time object used to get the current time
+     * @param instantSource                          the time object used to get the current time
      * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -133,7 +133,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -151,7 +151,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.selfId = Objects.requireNonNull(selfId);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
@@ -175,7 +175,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 connectionManagers::newConnection,
                 shouldDoVersionCheck(),
                 appVersion,
-                time);
+                instantSource);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
@@ -202,7 +202,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        reconnectThrottle = new ReconnectThrottle(reconnectConfig, time);
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig, instantSource);
 
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
@@ -215,7 +215,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
                 latestCompleteState::getRound,
-                new ReconnectLearnerThrottle(time, selfId, reconnectConfig),
+                new ReconnectLearnerThrottle(instantSource, selfId, reconnectConfig),
                 loadReconnectState,
                 new ReconnectLearnerFactory(
                         platformContext,

@@ -73,8 +73,7 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager =
-                new EventCreationManager(platformContext, Time.getCurrent(), creator, rule);
+        final EventCreationManager manager = new EventCreationManager(platformContext, Time.system(), creator, rule);
         assertEquals(0, eventWasCreatedCount.get());
 
         final GossipEvent e0 = manager.maybeCreateEvent();
@@ -125,8 +124,7 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager =
-                new EventCreationManager(platformContext, Time.getCurrent(), creator, rule);
+        final EventCreationManager manager = new EventCreationManager(platformContext, Time.system(), creator, rule);
 
         assertEquals(0, eventWasCreatedCount.get());
 
@@ -207,8 +205,7 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager =
-                new EventCreationManager(platformContext, Time.getCurrent(), creator, rule);
+        final EventCreationManager manager = new EventCreationManager(platformContext, Time.system(), creator, rule);
 
         assertEquals(0, eventWasCreatedCount.get());
 

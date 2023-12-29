@@ -21,7 +21,6 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
@@ -36,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -69,7 +69,7 @@ public final class PreconsensusEventReplayWorkflow {
     public static void replayPreconsensusEvents(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final InterruptableConsumer<GossipEvent> intakeHandler,
@@ -82,7 +82,7 @@ public final class PreconsensusEventReplayWorkflow {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
         Objects.requireNonNull(preconsensusEventFileManager);
         Objects.requireNonNull(preconsensusEventWriter);
         Objects.requireNonNull(intakeHandler);
@@ -97,7 +97,7 @@ public final class PreconsensusEventReplayWorkflow {
                 initialMinimumGenerationNonAncient);
 
         try {
-            final Instant start = time.now();
+            final Instant start = instantSource.instant();
             final Instant firstStateTimestamp;
             final long firstStateRound;
             try (final ReservedSignedState startState = latestImmutableState.get()) {
@@ -125,7 +125,7 @@ public final class PreconsensusEventReplayWorkflow {
             waitForReplayToComplete(
                     intakeQueue, consensusRoundHandler, stateHashSignQueue, useLegacyIntake, flushIntakePipeline);
 
-            final Instant finish = time.now();
+            final Instant finish = instantSource.instant();
             final Duration elapsed = Duration.between(start, finish);
 
             logReplayInfo(

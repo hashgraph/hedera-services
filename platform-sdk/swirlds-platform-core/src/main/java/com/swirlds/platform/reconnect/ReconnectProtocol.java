@@ -19,7 +19,6 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -37,6 +36,7 @@ import com.swirlds.platform.system.status.PlatformStatusGetter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -74,7 +74,7 @@ public class ReconnectProtocol implements Protocol {
     /** A rate limited logger for when rejecting teacher role due to not having a status of ACTIVE */
     private final RateLimitedLogger notActiveLogger;
 
-    private final Time time;
+    private final InstantSource instantSource;
 
     /**
      * @param threadManager           responsible for creating and managing threads
@@ -87,7 +87,7 @@ public class ReconnectProtocol implements Protocol {
      * @param fallenBehindManager     maintains this node's behind status
      * @param platformStatusGetter    provides the platform status
      * @param configuration           platform configuration
-     * @param time                    the time object to use
+     * @param instantSource                    the time object to use
      */
     public ReconnectProtocol(
             @NonNull final ThreadManager threadManager,
@@ -101,7 +101,7 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final PlatformStatusGetter platformStatusGetter,
             @NonNull final Configuration configuration,
-            @NonNull final Time time) {
+            @NonNull final InstantSource instantSource) {
 
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
@@ -116,16 +116,16 @@ public class ReconnectProtocol implements Protocol {
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
 
         final Duration minimumTimeBetweenReconnects =
                 configuration.getConfigData(ReconnectConfig.class).minimumTimeBetweenReconnects();
 
-        stateNullLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
-        stateIncompleteLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
-        fallenBehindLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
-        notActiveLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
-        this.time = Objects.requireNonNull(time);
+        stateNullLogger = new RateLimitedLogger(logger, instantSource, minimumTimeBetweenReconnects);
+        stateIncompleteLogger = new RateLimitedLogger(logger, instantSource, minimumTimeBetweenReconnects);
+        fallenBehindLogger = new RateLimitedLogger(logger, instantSource, minimumTimeBetweenReconnects);
+        notActiveLogger = new RateLimitedLogger(logger, instantSource, minimumTimeBetweenReconnects);
+        this.instantSource = Objects.requireNonNull(instantSource);
     }
 
     /** {@inheritDoc} */
@@ -282,7 +282,7 @@ public class ReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try (final ReservedSignedState state = teacherState) {
             new ReconnectTeacher(
-                            time,
+                            instantSource,
                             threadManager,
                             connection,
                             reconnectSocketTimeout,

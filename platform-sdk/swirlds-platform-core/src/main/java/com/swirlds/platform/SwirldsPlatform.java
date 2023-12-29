@@ -193,6 +193,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -386,7 +387,7 @@ public class SwirldsPlatform implements Platform {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
-        final Time time = Time.getCurrent();
+        final Time time = Time.system();
 
         final DispatchBuilder dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
@@ -516,7 +517,7 @@ public class SwirldsPlatform implements Platform {
 
         consensusHashManager = components.add(new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 currentAddressBook,
                 epochHash,
@@ -538,7 +539,7 @@ public class SwirldsPlatform implements Platform {
         signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 new SignedStateMetrics(platformContext.getMetrics()),
-                Time.getCurrent(),
+                Time.system(),
                 actualMainClassName,
                 selfId,
                 swirldName);
@@ -546,7 +547,7 @@ public class SwirldsPlatform implements Platform {
         transactionPool = new TransactionPool(platformContext);
 
         // FUTURE WORK: at some point this should be part of the unified platform wiring
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
+        final WiringModel model = WiringModel.create(platformContext, Time.system());
         components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
@@ -1189,7 +1190,7 @@ public class SwirldsPlatform implements Platform {
                                     signedState.getState().getPlatformState().getAddressBook(),
                                     appVersion,
                                     CryptoStatic::verifySignature,
-                                    Time.getCurrent()));
+                                    InstantSource.system()));
                 } else {
                     platformWiring
                             .getAddressBookUpdateInput()
@@ -1285,7 +1286,7 @@ public class SwirldsPlatform implements Platform {
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(final long startingRound) {
         try {
             return new PreconsensusEventFileManager(
-                    platformContext, Time.getCurrent(), recycleBin, selfId, startingRound);
+                    platformContext, InstantSource.system(), recycleBin, selfId, startingRound);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1383,7 +1384,7 @@ public class SwirldsPlatform implements Platform {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,
-                    Time.getCurrent(),
+                    InstantSource.system(),
                     preconsensusEventFileManager,
                     preconsensusEventWriter,
                     intakeHandler,
@@ -1398,7 +1399,7 @@ public class SwirldsPlatform implements Platform {
         consensusHashManager.signalEndOfPreconsensusReplay();
 
         platformStatusManager.submitStatusAction(
-                new DoneReplayingEventsAction(Time.getCurrent().now()));
+                new DoneReplayingEventsAction(InstantSource.system().instant()));
     }
 
     /**

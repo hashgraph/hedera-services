@@ -19,7 +19,7 @@ package com.swirlds.platform.components;
 import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.platform.NodeId;
@@ -78,7 +78,7 @@ public class EventIntake {
     private final Consumer<EventImpl> prehandleEvent;
 
     private final EventIntakeMetrics metrics;
-    private final Time time;
+    private final TimeSource timeSource;
 
     /**
      * Measures the time spent in each phase of event intake
@@ -95,7 +95,7 @@ public class EventIntake {
      *
      * @param platformContext          the platform context
      * @param threadManager            creates new threading resources
-     * @param time                     provides the wall clock time
+     * @param timeSource                     provides the wall clock time
      * @param selfId                   the ID of this node
      * @param eventLinker              links events together, holding orphaned events until their parents are found (if
      *                                 operating with the orphan buffer enabled)
@@ -112,7 +112,7 @@ public class EventIntake {
     public EventIntake(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
+            @NonNull final TimeSource timeSource,
             @NonNull final NodeId selfId,
             @NonNull final EventLinker eventLinker,
             @NonNull final Supplier<Consensus> consensusSupplier,
@@ -124,7 +124,7 @@ public class EventIntake {
             @NonNull final Consumer<EventImpl> prehandleEvent,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        this.time = Objects.requireNonNull(time);
+        this.timeSource = Objects.requireNonNull(timeSource);
         this.selfId = Objects.requireNonNull(selfId);
         this.eventLinker = Objects.requireNonNull(eventLinker);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
@@ -260,9 +260,9 @@ public class EventIntake {
             // We need to wait for prehandles to finish before proceeding.
             // It is critically important that prehandle is always called prior to handleConsensusRound().
 
-            final long start = time.nanoTime();
+            final long start = timeSource.nanoTime();
             consensusRound.forEach(e -> ((EventImpl) e).getBaseEvent().awaitPrehandleCompletion());
-            final long end = time.nanoTime();
+            final long end = timeSource.nanoTime();
             metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 
             eventLinker.updateGenerations(consensusRound.getGenerations());

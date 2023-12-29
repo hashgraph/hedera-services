@@ -38,6 +38,6 @@ public final class TestWiringModelBuilder {
     public static WiringModel create() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        return WiringModel.create(platformContext, Time.getCurrent());
+        return WiringModel.create(platformContext, Time.system());
     }
 }

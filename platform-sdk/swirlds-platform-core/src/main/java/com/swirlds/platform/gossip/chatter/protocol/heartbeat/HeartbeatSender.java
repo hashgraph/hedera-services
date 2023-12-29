@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.chatter.protocol.heartbeat;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
@@ -37,7 +37,7 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
     private final NodeId peerId;
     private final BiConsumer<NodeId, Long> pingConsumer;
     private final Duration heartbeatInterval;
-    private final Time time;
+    private final TimeSource timeSource;
     private final AtomicReference<HeartbeatSent> outbound = new AtomicReference<>();
     private final AtomicLong lastHeartbeatNanos = new AtomicLong();
     private final AtomicBoolean firstResponseReceived = new AtomicBoolean();
@@ -50,7 +50,7 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
      * 		nanoseconds it took for the peer to respond
      * @param heartbeatInterval
      * 		the interval at which to send heartbeats
-     * @param time
+     * @param timeSource
      * 		provides a point in time in nanoseconds, should only be used to measure relative time (from one point to
      * 		another), not absolute time (wall clock time)
      */
@@ -58,17 +58,17 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
             @NonNull final NodeId peerId,
             @NonNull final BiConsumer<NodeId, Long> pingConsumer,
             @NonNull final Duration heartbeatInterval,
-            @NonNull final Time time) {
+            @NonNull final TimeSource timeSource) {
         this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
         this.pingConsumer = Objects.requireNonNull(pingConsumer, "pingConsumer must not be null");
         this.heartbeatInterval = Objects.requireNonNull(heartbeatInterval, "heartbeatInterval must not be null");
-        this.time = Objects.requireNonNull(time, "time must not be null");
+        this.timeSource = Objects.requireNonNull(timeSource, "time must not be null");
         clear();
     }
 
     @Override
     public SelfSerializable getMessage() {
-        final long now = time.nanoTime();
+        final long now = timeSource.nanoTime();
         final HeartbeatSent lastHeartBeatSent = outbound.get();
         if (!lastHeartBeatSent.responded()) {
             // we are still waiting for a response
@@ -100,7 +100,7 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
             return;
         }
         // they are responding to our ping, so we capture the time difference
-        final long roundTripNanos = time.nanoTime() - lastSent.time();
+        final long roundTripNanos = timeSource.nanoTime() - lastSent.time();
         lastHeartbeatNanos.set(roundTripNanos);
         firstResponseReceived.set(true);
         pingConsumer.accept(peerId, roundTripNanos);
@@ -110,7 +110,7 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
 
     @Override
     public void clear() {
-        outbound.set(new HeartbeatSent(0, time.nanoTime(), true));
+        outbound.set(new HeartbeatSent(0, timeSource.nanoTime(), true));
         firstResponseReceived.set(false);
         lastHeartbeatNanos.set(0);
     }
@@ -135,7 +135,7 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
             return 0;
         } else {
             // we are still waiting for a response
-            return time.nanoTime() - lastHeartBeatSent.time();
+            return timeSource.nanoTime() - lastHeartBeatSent.time();
         }
     }
 }

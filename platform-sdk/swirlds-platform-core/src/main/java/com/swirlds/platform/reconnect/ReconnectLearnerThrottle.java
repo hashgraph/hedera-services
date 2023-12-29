@@ -19,7 +19,6 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
@@ -32,6 +31,7 @@ import com.swirlds.platform.system.SystemExitUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +46,7 @@ public class ReconnectLearnerThrottle {
     private final NodeId selfId;
     private final ReconnectConfig config;
 
-    private final Time time;
+    private final InstantSource instantSource;
     private final Instant startupTime;
 
     /**
@@ -57,18 +57,20 @@ public class ReconnectLearnerThrottle {
     /**
      * Constructor.
      *
-     * @param time   provides wall clock time
+     * @param instantSource   provides wall clock time
      * @param selfId the id of this node
      * @param config the reconnect configuration
      */
     public ReconnectLearnerThrottle(
-            @NonNull final Time time, @NonNull final NodeId selfId, @NonNull final ReconnectConfig config) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final NodeId selfId,
+            @NonNull final ReconnectConfig config) {
 
         this.selfId = Objects.requireNonNull(selfId);
         this.config = Objects.requireNonNull(config);
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.failedReconnectsInARow = 0;
-        startupTime = time.now();
+        startupTime = instantSource.instant();
     }
 
     /**
@@ -78,7 +80,7 @@ public class ReconnectLearnerThrottle {
      */
     @NonNull
     private Duration getTimeSinceStartup() {
-        return Duration.between(startupTime, time.now());
+        return Duration.between(startupTime, instantSource.instant());
     }
 
     /**

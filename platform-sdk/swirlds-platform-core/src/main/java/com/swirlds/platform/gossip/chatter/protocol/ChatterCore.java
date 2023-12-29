@@ -157,7 +157,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                                 processingTimeSendReceive::getPeerProcessingTime,
                                 config.otherEventDelay())::getOtherEventDelay,
                         state,
-                        time::now));
+                        time::instant));
         final PriorityOutputAggregator outputAggregator = new PriorityOutputAggregator(
                 List.of(
                         // heartbeat is first so that responses are not delayed
@@ -228,7 +228,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
     }
 
     private void recordProcessingTime(final E event) {
-        selfProcessingTime.set(Duration.between(event.getTimeReceived(), time.now()));
+        selfProcessingTime.set(Duration.between(event.getTimeReceived(), time.instant()));
     }
 
     /**

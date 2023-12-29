@@ -87,7 +87,7 @@ public class HeartbeatProtocol implements Protocol {
      */
     @Override
     public boolean shouldInitiate() {
-        final Duration elapsed = Duration.between(lastHeartbeatTime, time.now());
+        final Duration elapsed = Duration.between(lastHeartbeatTime, time.instant());
 
         return isGreaterThanOrEqualTo(elapsed, heartbeatPeriod);
     }
@@ -166,7 +166,7 @@ public class HeartbeatProtocol implements Protocol {
 
         // record the time prior to executing the protocol, so that heartbeatPeriod represents a true period, as
         // opposed to a sleep time
-        lastHeartbeatTime = time.now();
+        lastHeartbeatTime = time.instant();
 
         final long startTime = initiateHeartbeat(connection);
         final long endTime = acknowledgeHeartbeat(connection);

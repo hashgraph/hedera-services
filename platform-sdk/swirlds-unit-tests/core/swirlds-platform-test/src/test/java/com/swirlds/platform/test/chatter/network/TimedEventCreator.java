@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.test.chatter.network;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedEventCreator;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 /**
@@ -33,7 +33,7 @@ public class TimedEventCreator<T extends SimulatedChatterEvent> implements Simul
 
     private static final Duration DEFAULT_CREATION_INTERVAL = Duration.ofMillis(500);
     /** The instance of time used by the simulation */
-    private final Time time;
+    private final InstantSource instantSource;
     /** The amount of time to wait before creating the next event */
     private Duration createEvery;
     /** A supplier of a new event */
@@ -41,15 +41,16 @@ public class TimedEventCreator<T extends SimulatedChatterEvent> implements Simul
     /** The time at which the next event should be created */
     private Instant nextEventCreation;
 
-    public TimedEventCreator(final Time time, final Supplier<T> newEventSupplier) {
-        this(time, newEventSupplier, DEFAULT_CREATION_INTERVAL);
+    public TimedEventCreator(final InstantSource instantSource, final Supplier<T> newEventSupplier) {
+        this(instantSource, newEventSupplier, DEFAULT_CREATION_INTERVAL);
     }
 
-    public TimedEventCreator(final Time time, final Supplier<T> newEventSupplier, final Duration createEvery) {
-        this.time = time;
+    public TimedEventCreator(
+            final InstantSource instantSource, final Supplier<T> newEventSupplier, final Duration createEvery) {
+        this.instantSource = instantSource;
         this.createEvery = createEvery;
         this.newEventSupplier = newEventSupplier;
-        nextEventCreation = time.now();
+        nextEventCreation = instantSource.instant();
     }
 
     /**
@@ -65,12 +66,12 @@ public class TimedEventCreator<T extends SimulatedChatterEvent> implements Simul
      */
     @Override
     public T maybeCreateEvent() {
-        if (createEvery.isZero() || time.now().isBefore(nextEventCreation)) {
+        if (createEvery.isZero() || instantSource.instant().isBefore(nextEventCreation)) {
             return null;
         }
         nextEventCreation = nextEventCreation.plus(createEvery);
         final T newEvent = newEventSupplier.get();
-        newEvent.setTimeReceived(time.now());
+        newEvent.setTimeReceived(instantSource.instant());
         return newEvent;
     }
 }

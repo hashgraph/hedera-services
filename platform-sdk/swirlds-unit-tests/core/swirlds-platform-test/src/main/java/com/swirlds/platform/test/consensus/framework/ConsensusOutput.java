@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -24,6 +23,7 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.observers.StaleEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -34,17 +34,17 @@ import java.util.List;
  * results.
  */
 public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserver, StaleEventObserver, Clearable {
-    private final Time time;
+    private final InstantSource instantSource;
     private final LinkedList<ConsensusRound> consensusRounds;
     private final LinkedList<EventImpl> addedEvents;
     private final LinkedList<EventImpl> staleEvents;
 
     /**
      * Creates a new instance.
-     * @param time the time to use for marking events
+     * @param instantSource the time to use for marking events
      */
-    public ConsensusOutput(@NonNull final Time time) {
-        this.time = time;
+    public ConsensusOutput(@NonNull final InstantSource instantSource) {
+        this.instantSource = instantSource;
         addedEvents = new LinkedList<>();
         consensusRounds = new LinkedList<>();
         staleEvents = new LinkedList<>();
@@ -59,7 +59,7 @@ public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserv
     public void consensusRound(@NonNull final ConsensusRound consensusRound) {
         for (final EventImpl event : consensusRound.getConsensusEvents()) {
             // this a workaround until Consensus starts using a clock that is provided
-            event.setReachedConsTimestamp(time.now());
+            event.setReachedConsTimestamp(instantSource.instant());
         }
         consensusRounds.add(consensusRound);
     }

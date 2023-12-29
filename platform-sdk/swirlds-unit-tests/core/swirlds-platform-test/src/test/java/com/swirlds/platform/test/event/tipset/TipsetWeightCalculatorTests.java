@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -45,6 +44,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -93,10 +93,10 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
+        final TipsetTracker builder = new TipsetTracker(InstantSource.system(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, selfId, builder, childlessEventTracker);
+                platformContext, InstantSource.system(), addressBook, selfId, builder, childlessEventTracker);
 
         List<EventDescriptor> previousParents = List.of();
         TipsetAdvancementWeight runningAdvancementScore = ZERO_ADVANCEMENT_WEIGHT;
@@ -224,10 +224,10 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook);
+        final TipsetTracker tracker = new TipsetTracker(InstantSource.system(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, nodeA, tracker, childlessEventTracker);
+                platformContext, InstantSource.system(), addressBook, nodeA, tracker, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -438,10 +438,10 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
+        final TipsetTracker builder = new TipsetTracker(InstantSource.system(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
+                platformContext, InstantSource.system(), addressBook, nodeA, builder, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -510,10 +510,10 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
+        final TipsetTracker builder = new TipsetTracker(InstantSource.system(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
+                platformContext, InstantSource.system(), addressBook, nodeA, builder, childlessEventTracker);
 
         // Create generation 1 events.
         final EventDescriptor eventA1 = newEventDescriptor(randomHash(random), nodeA, 1);

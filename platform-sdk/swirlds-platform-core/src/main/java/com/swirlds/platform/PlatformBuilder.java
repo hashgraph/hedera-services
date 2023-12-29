@@ -28,7 +28,6 @@ import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialStat
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.StateConfig;
@@ -57,6 +56,7 @@ import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -209,7 +209,7 @@ public final class PlatformBuilder {
         platformContext.getCryptography().digestSync(configAddressBook);
 
         final RecycleBinImpl recycleBin = rethrowIO(() -> new RecycleBinImpl(
-                configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), selfId));
+                configuration, platformContext.getMetrics(), getStaticThreadManager(), InstantSource.system(), selfId));
 
         // We can't send a "real" dispatch, since the dispatcher will not have been started by the
         // time this class is used.

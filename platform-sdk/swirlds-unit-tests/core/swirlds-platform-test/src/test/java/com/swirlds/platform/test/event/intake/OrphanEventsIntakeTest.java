@@ -105,7 +105,7 @@ class OrphanEventsIntakeTest {
             intake = new EventIntake(
                     platformContext,
                     getStaticThreadManager(),
-                    Time.getCurrent(),
+                    Time.system(),
                     new NodeId(0L),
                     orphanBuffer,
                     () -> consensus,

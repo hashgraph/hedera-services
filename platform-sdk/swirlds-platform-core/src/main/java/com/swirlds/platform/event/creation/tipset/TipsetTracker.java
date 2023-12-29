@@ -19,7 +19,6 @@ package com.swirlds.platform.event.creation.tipset;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.Tipset.merge;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
@@ -29,6 +28,7 @@ import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -65,10 +65,10 @@ public class TipsetTracker {
     /**
      * Create a new tipset tracker.
      *
-     * @param time        provides wall clock time
+     * @param instantSource        provides wall clock time
      * @param addressBook the current address book
      */
-    public TipsetTracker(@NonNull final Time time, @NonNull final AddressBook addressBook) {
+    public TipsetTracker(@NonNull final InstantSource instantSource, @NonNull final AddressBook addressBook) {
 
         this.addressBook = Objects.requireNonNull(addressBook);
 
@@ -76,7 +76,7 @@ public class TipsetTracker {
 
         tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
 
-        ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        ancientEventLogger = new RateLimitedLogger(logger, instantSource, Duration.ofMinutes(1));
     }
 
     /**

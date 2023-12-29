@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.chatter.protocol.processing;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
@@ -30,7 +30,7 @@ import java.util.function.LongSupplier;
 public class ProcessingTimeSendReceive implements MessageProvider, MessageHandler<ProcessingTimeMessage> {
     private static final long NO_PROCESSING_TIME = Long.MIN_VALUE;
     private final Duration processingTimeInterval;
-    private final Time time;
+    private final TimeSource timeSource;
     private final LongSupplier selfProcessingNanos;
 
     private long lastSentTime;
@@ -40,22 +40,24 @@ public class ProcessingTimeSendReceive implements MessageProvider, MessageHandle
      * Creates a new instance.
      *
      * @param processingTimeInterval the interval at which to send processing time messages
-     * @param time                   provides a point in time in nanoseconds, should only be used to measure relative
+     * @param timeSource                   provides a point in time in nanoseconds, should only be used to measure relative
      *                               time (from one point to another), not absolute time (wall clock time)
      * @param selfProcessingNanos    provides the current value of this node's event processing time in nanoseconds.
      */
     public ProcessingTimeSendReceive(
-            final Time time, final Duration processingTimeInterval, final LongSupplier selfProcessingNanos) {
-        this.time = time;
+            final TimeSource timeSource,
+            final Duration processingTimeInterval,
+            final LongSupplier selfProcessingNanos) {
+        this.timeSource = timeSource;
         this.processingTimeInterval = processingTimeInterval;
         this.selfProcessingNanos = selfProcessingNanos;
-        this.lastSentTime = time.nanoTime();
+        this.lastSentTime = timeSource.nanoTime();
         this.peerProcessingTime = new AtomicLong(NO_PROCESSING_TIME);
     }
 
     @Override
     public void clear() {
-        lastSentTime = time.nanoTime();
+        lastSentTime = timeSource.nanoTime();
         peerProcessingTime.set(NO_PROCESSING_TIME);
     }
 
@@ -66,7 +68,7 @@ public class ProcessingTimeSendReceive implements MessageProvider, MessageHandle
 
     @Override
     public SelfSerializable getMessage() {
-        final long now = time.nanoTime();
+        final long now = timeSource.nanoTime();
         if (isTimeToSendMessage(now)) {
             lastSentTime = now;
             return new ProcessingTimeMessage(selfProcessingNanos.getAsLong());

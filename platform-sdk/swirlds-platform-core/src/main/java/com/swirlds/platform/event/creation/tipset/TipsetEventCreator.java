@@ -23,7 +23,6 @@ import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDe
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
@@ -44,6 +43,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +60,7 @@ public class TipsetEventCreator implements EventCreator {
     private static final Logger logger = LogManager.getLogger(TipsetEventCreator.class);
 
     private final Cryptography cryptography;
-    private final Time time;
+    private final InstantSource instantSource;
     private final Random random;
     private final Signer signer;
     private final NodeId selfId;
@@ -109,7 +109,7 @@ public class TipsetEventCreator implements EventCreator {
      * Create a new tipset event creator.
      *
      * @param platformContext     the platform context
-     * @param time                provides wall clock time
+     * @param instantSource                provides wall clock time
      * @param random              a source of randomness, does not need to be cryptographically secure
      * @param signer              used for signing things with this node's private key
      * @param addressBook         the current address book
@@ -119,7 +119,7 @@ public class TipsetEventCreator implements EventCreator {
      */
     public TipsetEventCreator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final Random random,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
@@ -127,7 +127,7 @@ public class TipsetEventCreator implements EventCreator {
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier) {
 
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.random = Objects.requireNonNull(random);
         this.signer = Objects.requireNonNull(signer);
         this.selfId = Objects.requireNonNull(selfId);
@@ -141,14 +141,14 @@ public class TipsetEventCreator implements EventCreator {
         cryptography = platformContext.getCryptography();
         antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
-        tipsetTracker = new TipsetTracker(time, addressBook);
+        tipsetTracker = new TipsetTracker(instantSource, addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
-                platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+                platformContext, instantSource, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
         networkSize = addressBook.getSize();
 
-        zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
-        noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        zeroAdvancementWeightLogger = new RateLimitedLogger(logger, instantSource, Duration.ofMinutes(1));
+        noParentFoundLogger = new RateLimitedLogger(logger, instantSource, Duration.ofMinutes(1));
     }
 
     /**
@@ -407,7 +407,7 @@ public class TipsetEventCreator implements EventCreator {
     private GossipEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
         final NodeId otherParentId = getCreator(otherParent);
 
-        final Instant now = time.now();
+        final Instant now = instantSource.instant();
         final Instant timeCreated;
         if (lastSelfEvent == null) {
             timeCreated = now;

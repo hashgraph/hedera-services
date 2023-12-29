@@ -19,7 +19,6 @@ package com.swirlds.platform.event.linking;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.LongAccumulator;
@@ -37,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -107,18 +107,18 @@ public class InOrderLinker {
      * Constructor
      *
      * @param platformContext    the platform context
-     * @param time               a source of time
+     * @param instantSource               a source of time
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public InOrderLinker(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.missingParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.generationMismatchLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.timeCreatedMismatchLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+        this.missingParentLogger = new RateLimitedLogger(logger, instantSource, MINIMUM_LOG_PERIOD);
+        this.generationMismatchLogger = new RateLimitedLogger(logger, instantSource, MINIMUM_LOG_PERIOD);
+        this.timeCreatedMismatchLogger = new RateLimitedLogger(logger, instantSource, MINIMUM_LOG_PERIOD);
 
         this.missingParentAccumulator = platformContext
                 .getMetrics()

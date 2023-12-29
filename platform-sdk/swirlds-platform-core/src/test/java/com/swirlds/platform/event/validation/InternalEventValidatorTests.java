@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.GossipEvent;
@@ -37,6 +36,7 @@ import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.InstantSource;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,10 +68,10 @@ class InternalEventValidatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final Time time = new FakeTime();
+        final InstantSource instantSource = new FakeTime();
 
-        multinodeValidator = new InternalEventValidator(platformContext, time, false, intakeEventCounter);
-        singleNodeValidator = new InternalEventValidator(platformContext, time, true, intakeEventCounter);
+        multinodeValidator = new InternalEventValidator(platformContext, instantSource, false, intakeEventCounter);
+        singleNodeValidator = new InternalEventValidator(platformContext, instantSource, true, intakeEventCounter);
     }
 
     private static GossipEvent generateEvent(

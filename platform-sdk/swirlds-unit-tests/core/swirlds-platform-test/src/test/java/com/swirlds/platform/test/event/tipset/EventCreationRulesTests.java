@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
@@ -43,6 +42,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -191,7 +191,7 @@ class EventCreationRulesTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final Time time = new FakeTime();
+        final InstantSource instantSource = new FakeTime();
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
         final EventCreator baseEventCreator = mock(EventCreator.class);
@@ -200,7 +200,7 @@ class EventCreationRulesTests {
             return mock(GossipEvent.class);
         });
 
-        final EventCreationRule rule = new MaximumRateRule(platformContext, time);
+        final EventCreationRule rule = new MaximumRateRule(platformContext, instantSource);
 
         // Ask for a bunch of events to be created without advancing the time.
         for (int i = 0; i < 100; i++) {

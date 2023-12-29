@@ -16,13 +16,13 @@
 
 package com.swirlds.common.utility.throttle;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Objects;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
@@ -41,23 +41,26 @@ public class RateLimitedLogger {
      * Create a new {@link RateLimitedLogger} that will log at most {@code maxFrequency} times per second.
      *
      * @param logger       the logger to wrap
-     * @param time         provides wall clock time
+     * @param instantSource         provides wall clock time
      * @param maxFrequency the maximum frequency at which to log
      */
-    public RateLimitedLogger(@NonNull final Logger logger, @NonNull final Time time, final double maxFrequency) {
-        this(logger, new RateLimiter(time, maxFrequency));
+    public RateLimitedLogger(
+            @NonNull final Logger logger, @NonNull final InstantSource instantSource, final double maxFrequency) {
+        this(logger, new RateLimiter(instantSource, maxFrequency));
     }
 
     /**
      * Create a new {@link RateLimitedLogger} that will log at most once per {@code minimumPeriod}.
      *
      * @param logger        the logger to wrap
-     * @param time          provides wall clock time
+     * @param instantSource          provides wall clock time
      * @param minimumPeriod the minimum amount of time that must pass between log messages
      */
     public RateLimitedLogger(
-            @NonNull final Logger logger, @NonNull final Time time, @NonNull final Duration minimumPeriod) {
-        this(logger, new RateLimiter(time, minimumPeriod));
+            @NonNull final Logger logger,
+            @NonNull final InstantSource instantSource,
+            @NonNull final Duration minimumPeriod) {
+        this(logger, new RateLimiter(instantSource, minimumPeriod));
     }
 
     /**

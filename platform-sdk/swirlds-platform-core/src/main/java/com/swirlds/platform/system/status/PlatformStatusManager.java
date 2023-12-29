@@ -18,7 +18,6 @@ package com.swirlds.platform.system.status;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -27,6 +26,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.system.status.actions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -39,7 +39,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
     /**
      * A source of time
      */
-    private final Time time;
+    private final InstantSource instantSource;
 
     /**
      * The queue to handle incoming {@link PlatformStatusAction}s
@@ -55,23 +55,23 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
      * Constructor
      *
      * @param platformContext      the platform context
-     * @param time                 a source of time
+     * @param instantSource                 a source of time
      * @param threadManager        the thread manager
      * @param statusChangeConsumer consumes any status changes
      */
     public PlatformStatusManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final ThreadManager threadManager,
             @NonNull final Consumer<PlatformStatus> statusChangeConsumer) {
 
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         Objects.requireNonNull(threadManager);
         Objects.requireNonNull(statusChangeConsumer);
 
         final PlatformStatusConfig config =
                 platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class);
-        this.stateMachine = new PlatformStatusStateMachine(time, config, statusChangeConsumer);
+        this.stateMachine = new PlatformStatusStateMachine(instantSource, config, statusChangeConsumer);
 
         this.queue = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
                 .setComponent("platform")
@@ -137,6 +137,6 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
      * isn't handling other actions, and after a batch of actions has been handled.
      */
     private void triggerTimeElapsed() {
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
+        stateMachine.processStatusAction(new TimeElapsedAction(instantSource.instant()));
     }
 }

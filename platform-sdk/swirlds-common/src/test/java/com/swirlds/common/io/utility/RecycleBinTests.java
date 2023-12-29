@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.RecycleBinConfig_;
@@ -38,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -93,7 +93,7 @@ class RecycleBinTests {
     @DisplayName("Recycle File Test")
     void recycleFileTest() throws IOException {
         final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+                configuration, new NoOpMetrics(), getStaticThreadManager(), InstantSource.system(), new NodeId(0));
 
         final Path path1 = testDirectory.resolve("file1.txt");
         writeFile(path1, "file1");
@@ -128,7 +128,7 @@ class RecycleBinTests {
     @DisplayName("Recycle Directory Test")
     void recycleDirectoryTest() throws IOException {
         final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+                configuration, new NoOpMetrics(), getStaticThreadManager(), InstantSource.system(), new NodeId(0));
 
         final Path directory = testDirectory.resolve("foo/bar/baz");
         Files.createDirectories(directory);
@@ -173,7 +173,7 @@ class RecycleBinTests {
     @DisplayName("Recycle Non-Existent File Test")
     void recycleNonExistentFileTest() throws IOException {
         final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+                configuration, new NoOpMetrics(), getStaticThreadManager(), InstantSource.system(), new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
         recycleBin.recycle(path);
@@ -187,7 +187,7 @@ class RecycleBinTests {
     @DisplayName("Recycle Duplicate File Test")
     void recycleDuplicateFileTest() throws IOException {
         final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+                configuration, new NoOpMetrics(), getStaticThreadManager(), InstantSource.system(), new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
         final Path recycledPath =

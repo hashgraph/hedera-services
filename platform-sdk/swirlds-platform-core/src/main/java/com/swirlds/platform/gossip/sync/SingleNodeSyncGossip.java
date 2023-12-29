@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -41,6 +40,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -63,7 +63,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
-     * @param time                          the time object used to get the current time
+     * @param instantSource                          the time object used to get the current time
      * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -80,7 +80,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     public SingleNodeSyncGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -97,7 +97,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
-                time,
+                instantSource,
                 keysAndCerts,
                 addressBook,
                 selfId,

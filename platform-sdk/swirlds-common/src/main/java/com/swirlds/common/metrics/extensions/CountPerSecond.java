@@ -43,12 +43,12 @@ public class CountPerSecond {
     private final IntegerPairAccumulator<Double> accumulator;
 
     /**
-     * The default constructor, uses the {@link Time#getCurrent()}
+     * The default constructor, uses the {@link Time#system()}
      *
      * @param config the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
-        this(metrics, config, new IntegerEpochTime(Time.getCurrent()));
+        this(metrics, config, new IntegerEpochTime(Time.system()));
     }
 
     /**

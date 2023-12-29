@@ -18,12 +18,12 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.utility.StackTrace;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
@@ -107,19 +107,20 @@ public class SignedStateHistory {
     }
 
     private final Queue<SignedStateActionReport> actions = new ConcurrentLinkedQueue<>();
-    private final Time time;
+    private final InstantSource instantSource;
     private final long round;
     private final boolean stackTracesEnabled;
 
     /**
      * Create a new object to track the history of a signed state.
      *
-     * @param time               used to access wall clock time
+     * @param instantSource               used to access wall clock time
      * @param round              the round number of the signed state
      * @param stackTracesEnabled whether stack traces should be recorded
      */
-    public SignedStateHistory(@NonNull final Time time, final long round, final boolean stackTracesEnabled) {
-        this.time = time;
+    public SignedStateHistory(
+            @NonNull final InstantSource instantSource, final long round, final boolean stackTracesEnabled) {
+        this.instantSource = instantSource;
         this.round = round;
         this.stackTracesEnabled = stackTracesEnabled;
     }
@@ -142,7 +143,7 @@ public class SignedStateHistory {
                 reason,
                 uniqueId,
                 stackTracesEnabled ? StackTrace.getStackTrace() : null,
-                time.now(),
+                instantSource.instant(),
                 reservations));
     }
 

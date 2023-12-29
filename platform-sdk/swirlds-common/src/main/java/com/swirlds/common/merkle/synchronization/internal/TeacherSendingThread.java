@@ -23,7 +23,6 @@ import static com.swirlds.common.merkle.synchronization.internal.LessonType.NODE
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
@@ -33,6 +32,7 @@ import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -69,7 +69,7 @@ public class TeacherSendingThread<T> {
     /**
      * Create new thread that will send data lessons and queries for a subtree.
      *
-     * @param time                  the wall clock time
+     * @param instantSource                  the wall clock time
      * @param reconnectConfig       the configuration for reconnect
      * @param workGroup             the work group managing the reconnect
      * @param in                    the input stream
@@ -80,7 +80,7 @@ public class TeacherSendingThread<T> {
      * @param senderIsFinished      set to true when this thread has finished
      */
     public TeacherSendingThread(
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
             final AsyncInputStream<QueryResponse> in,
@@ -97,7 +97,7 @@ public class TeacherSendingThread<T> {
 
         final int maxRate = reconnectConfig.teacherMaxNodesPerSecond();
         if (maxRate > 0) {
-            rateLimiter = new RateLimiter(time, maxRate);
+            rateLimiter = new RateLimiter(instantSource, maxRate);
             sleepNanos = (int) reconnectConfig.teacherRateLimiterSleep().toNanos();
         } else {
             rateLimiter = null;

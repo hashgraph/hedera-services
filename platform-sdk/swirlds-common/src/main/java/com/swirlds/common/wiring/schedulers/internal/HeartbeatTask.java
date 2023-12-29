@@ -16,13 +16,13 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.TimerTask;
 
@@ -31,22 +31,22 @@ import java.util.TimerTask;
  */
 class HeartbeatTask extends TimerTask {
 
-    private final Time time;
+    private final InstantSource instantSource;
     private final Duration period;
     private final StandardOutputWire<Instant> outputWire;
 
     /**
      * Constructor.
      *
-     * @param time   provides wall clock time
+     * @param instantSource   provides wall clock time
      * @param period the period of the heartbeat
      */
     public HeartbeatTask(
             @NonNull final StandardWiringModel model,
             @NonNull final String name,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final Duration period) {
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
         this.period = Objects.requireNonNull(period);
         Objects.requireNonNull(name);
 
@@ -78,6 +78,6 @@ class HeartbeatTask extends TimerTask {
      */
     @Override
     public void run() {
-        outputWire.forward(time.now());
+        outputWire.forward(instantSource.instant());
     }
 }

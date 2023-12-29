@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.state;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -35,6 +34,7 @@ import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -99,7 +99,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         // Various metrics about signed states
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
-        this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
+        this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, InstantSource.system());
         this.stateFileManager = Objects.requireNonNull(stateFileManager);
         this.stateSigner = Objects.requireNonNull(stateSigner);
 

@@ -18,7 +18,6 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -32,6 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -55,14 +55,14 @@ public class SignatureValidator implements GossipEventValidator {
      * @param currentAddressBook     the current address book
      * @param currentSoftwareVersion the current software version
      * @param signatureVerifier      the signature verifier
-     * @param time                   the time
+     * @param instantSource                   the time
      */
     public SignatureValidator(
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final Time time) {
+            @NonNull final InstantSource instantSource) {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
         if (previousAddressBook != null) {
@@ -73,7 +73,7 @@ public class SignatureValidator implements GossipEventValidator {
         for (final Address address : Objects.requireNonNull(currentAddressBook)) {
             currentKeyMap.put(address.getNodeId(), address.getSigPublicKey());
         }
-        this.versionRateLimitedLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        this.versionRateLimitedLogger = new RateLimitedLogger(logger, instantSource, Duration.ofMinutes(1));
     }
 
     /**

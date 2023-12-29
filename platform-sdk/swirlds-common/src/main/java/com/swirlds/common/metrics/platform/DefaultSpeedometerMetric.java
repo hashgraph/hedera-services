@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
@@ -31,16 +32,16 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     private final StatsSpeedometer speedometer;
 
     public DefaultSpeedometerMetric(final SpeedometerMetric.Config config) {
-        this(config, Time.getCurrent());
+        this(config, Time.system());
     }
 
     /**
      * This constructor should only be used for testing.
      */
     @SuppressWarnings("removal")
-    public DefaultSpeedometerMetric(final SpeedometerMetric.Config config, final Time time) {
+    public DefaultSpeedometerMetric(final SpeedometerMetric.Config config, final TimeSource timeSource) {
         super(config, config.getHalfLife());
-        this.speedometer = new StatsSpeedometer(halfLife, time);
+        this.speedometer = new StatsSpeedometer(halfLife, timeSource);
     }
 
     /**

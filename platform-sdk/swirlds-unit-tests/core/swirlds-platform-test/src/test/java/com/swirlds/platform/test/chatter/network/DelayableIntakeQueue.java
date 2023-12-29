@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.chatter.network;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
@@ -25,6 +24,7 @@ import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
@@ -39,19 +39,20 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
     private static final Duration DEFAULT_DELAY = Duration.ZERO;
     private final NodeId nodeId;
     /** The instance of time used by the simulation */
-    private final Time time;
+    private final InstantSource instantSource;
     /** The amount of time each event must wait in the queue */
     private Duration intakeQueueDelay;
     /** The queue of intake tasks */
     private final Queue<IntakeQueueTask<T>> intakeQueue = new ArrayDeque<>();
 
-    public DelayableIntakeQueue(final NodeId nodeId, final Time time) {
-        this(nodeId, time, DEFAULT_DELAY);
+    public DelayableIntakeQueue(final NodeId nodeId, final InstantSource instantSource) {
+        this(nodeId, instantSource, DEFAULT_DELAY);
     }
 
-    public DelayableIntakeQueue(final NodeId nodeId, final Time time, final Duration intakeQueueDelay) {
+    public DelayableIntakeQueue(
+            final NodeId nodeId, final InstantSource instantSource, final Duration intakeQueueDelay) {
         this.nodeId = nodeId;
-        this.time = time;
+        this.instantSource = instantSource;
         this.intakeQueueDelay = intakeQueueDelay;
     }
 
@@ -74,8 +75,8 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
      */
     @Override
     public void addEvent(final T event) {
-        final Instant taskProcessTime = time.now().plusMillis(intakeQueueDelay.toMillis());
-        intakeQueue.add(new IntakeQueueTask<>(event, time.now(), taskProcessTime));
+        final Instant taskProcessTime = instantSource.instant().plusMillis(intakeQueueDelay.toMillis());
+        intakeQueue.add(new IntakeQueueTask<>(event, instantSource.instant(), taskProcessTime));
     }
 
     /**
@@ -87,7 +88,7 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
     public void maybeHandleEvents(final ChatterCore<T> core) {
         for (final Iterator<IntakeQueueTask<T>> iterator = intakeQueue.iterator(); iterator.hasNext(); ) {
             final IntakeQueueTask<T> task = iterator.next();
-            if (!time.now().isBefore(task.eventProcessTime())) {
+            if (!instantSource.instant().isBefore(task.eventProcessTime())) {
                 iterator.remove();
                 next.addEvent(task.event());
             } else {

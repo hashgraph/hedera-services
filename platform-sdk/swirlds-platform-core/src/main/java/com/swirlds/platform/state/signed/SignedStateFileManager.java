@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.UNKNOWN;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -73,7 +73,7 @@ public class SignedStateFileManager {
     /**
      * Provides system time
      */
-    private final Time time;
+    private final TimeSource timeSource;
     /** Used to determine the path of a signed state */
     private final SignedStateFilePath signedStateFilePath;
 
@@ -82,7 +82,7 @@ public class SignedStateFileManager {
      *
      * @param context       the platform context
      * @param metrics       metrics provider
-     * @param time          provides time
+     * @param instantSource          provides time
      * @param mainClassName the main class name of this node
      * @param selfId        the ID of this node
      * @param swirldName    the name of the swirld
@@ -90,13 +90,13 @@ public class SignedStateFileManager {
     public SignedStateFileManager(
             @NonNull final PlatformContext context,
             @NonNull final SignedStateMetrics metrics,
-            @NonNull final Time time,
+            @NonNull final TimeSource timeSource,
             @NonNull final String mainClassName,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName) {
 
         this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
-        this.time = Objects.requireNonNull(time);
+        this.timeSource = Objects.requireNonNull(timeSource);
         this.selfId = Objects.requireNonNull(selfId);
         this.mainClassName = Objects.requireNonNull(mainClassName);
         this.swirldName = Objects.requireNonNull(swirldName);
@@ -116,7 +116,7 @@ public class SignedStateFileManager {
      * @return the result of the state saving operation, or null if the state was not saved
      */
     public @Nullable StateSavingResult saveStateTask(@NonNull final ReservedSignedState reservedSignedState) {
-        final long start = time.nanoTime();
+        final long start = timeSource.nanoTime();
         final StateSavingResult stateSavingResult;
 
         // the state is reserved before it is handed to this method, and it is released when we are done
@@ -141,8 +141,8 @@ public class SignedStateFileManager {
             stateSavingResult = new StateSavingResult(
                     signedState.getRound(), signedState.isFreezeState(), signedState.getConsensusTimestamp(), minGen);
         }
-        metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-        metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+        metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(timeSource.nanoTime() - start));
+        metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(timeSource.nanoTime() - start));
 
         return stateSavingResult;
     }

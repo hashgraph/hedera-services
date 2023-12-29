@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.statistics;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import com.swirlds.logging.legacy.LogMarker;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +35,7 @@ public class StatsRunningAverage implements StatsBuffered {
 
     private static final Logger logger = LogManager.getLogger(StatsRunningAverage.class);
 
-    private final Time time;
+    private final TimeSource timeSource;
 
     /**
      * the estimated running average
@@ -103,7 +104,7 @@ public class StatsRunningAverage implements StatsBuffered {
      */
     @SuppressWarnings("removal")
     public StatsRunningAverage(final double halfLife) {
-        this(halfLife, Time.getCurrent());
+        this(halfLife, Time.system());
     }
 
     /**
@@ -112,13 +113,13 @@ public class StatsRunningAverage implements StatsBuffered {
      *
      * @param halfLife
      * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param time
+     * @param timeSource
      * 		the {@code Clock} implementation, typically a mock when testing
      * @deprecated this constructor should only be used internally and will become non-public at some point
      */
     @Deprecated(forRemoval = true)
-    public StatsRunningAverage(final double halfLife, final Time time) {
-        this.time = time;
+    public StatsRunningAverage(final double halfLife, final TimeSource timeSource) {
+        this.timeSource = timeSource;
         reset(halfLife);
     }
 
@@ -137,8 +138,8 @@ public class StatsRunningAverage implements StatsBuffered {
         final StatSettings settings = StatSettingsFactory.get();
 
         firstRecord = true;
-        values = new StatsSpeedometer(halfLife, false, time);
-        times = new StatsSpeedometer(halfLife, false, time);
+        values = new StatsSpeedometer(halfLife, false, timeSource);
+        times = new StatsSpeedometer(halfLife, false, timeSource);
         allHistory = new StatsBuffer(settings.getBufferSize(), 0, settings.getSkipSeconds());
         recentHistory = new StatsBuffer(settings.getBufferSize(), settings.getRecentSeconds(), 0);
     }

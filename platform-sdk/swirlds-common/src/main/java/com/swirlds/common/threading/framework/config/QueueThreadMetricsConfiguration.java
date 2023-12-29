@@ -30,7 +30,7 @@ public class QueueThreadMetricsConfiguration {
     /** The category to use for metrics */
     private String category = Metrics.INTERNAL_CATEGORY;
     /** The time object to use for metrics */
-    private Time time = Time.getCurrent();
+    private Time time = Time.system();
     /** If enabled, the max size metric will be applied to the queue. */
     private boolean maxSizeMetricEnabled;
     /** If enabled, the min size metric will be applied to the queue.*/

@@ -19,7 +19,6 @@ package com.swirlds.platform.event.validation;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
@@ -34,6 +33,7 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.InstantSource;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -48,8 +48,8 @@ class SignatureValidatorTest {
         final AddressBook reduced = full.remove(removedNodeId);
         final SignatureVerifier signatureVerifier = (data, signature, publicKey) -> true;
         final SoftwareVersion currentSoftwareVersion = new BasicSoftwareVersion(1);
-        final SignatureValidator validator =
-                new SignatureValidator(reduced, full, currentSoftwareVersion, signatureVerifier, Time.getCurrent());
+        final SignatureValidator validator = new SignatureValidator(
+                reduced, full, currentSoftwareVersion, signatureVerifier, InstantSource.system());
         for (final Address address : full) {
             assertTrue(
                     validator.isEventValid(createEvent(address.getNodeId(), currentSoftwareVersion)),

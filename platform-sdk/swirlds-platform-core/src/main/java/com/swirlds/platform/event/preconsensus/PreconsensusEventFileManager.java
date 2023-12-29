@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.compactPreconsensusEventFile;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -37,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
@@ -73,7 +73,7 @@ public class PreconsensusEventFileManager {
     /**
      * Provides the wall clock time.
      */
-    private final Time time;
+    private final InstantSource instantSource;
 
     private final PreconsensusEventMetrics metrics;
 
@@ -123,21 +123,21 @@ public class PreconsensusEventFileManager {
      * Instantiate an event file collection. Loads all event files in the specified directory.
      *
      * @param platformContext the platform context for this node
-     * @param time            provides wall clock time
+     * @param instantSource            provides wall clock time
      * @param recycleBin      can remove files in a way that allows them to be possibly recovered for debugging
      * @param selfId          the ID of this node
      * @param startingRound   the round number of the initial state of the system
      */
     public PreconsensusEventFileManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             final long startingRound)
             throws IOException {
 
         Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
         Objects.requireNonNull(selfId);
 
         if (startingRound < 0) {
@@ -147,7 +147,7 @@ public class PreconsensusEventFileManager {
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
-        this.time = time;
+        this.instantSource = instantSource;
         this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
         minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
         doInitialGenerationalCompaction = preconsensusEventStreamConfig.compactLastFileOnStartup();
@@ -326,7 +326,7 @@ public class PreconsensusEventFileManager {
                     .set(files.getFirst().getMinimumGeneration());
             metrics.getPreconsensusEventFileYoungestGeneration()
                     .set(files.getLast().getMaximumGeneration());
-            final Duration age = Duration.between(files.getFirst().getTimestamp(), time.now());
+            final Duration age = Duration.between(files.getFirst().getTimestamp(), instantSource.instant());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         } else {
             metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
@@ -602,7 +602,7 @@ public class PreconsensusEventFileManager {
         }
 
         final PreconsensusEventFile descriptor = PreconsensusEventFile.of(
-                time.now(),
+                instantSource.instant(),
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
                 maximumGenerationForFile,
@@ -673,7 +673,7 @@ public class PreconsensusEventFileManager {
      *                          is guaranteed not to delete any files that may contain events with a higher generation.
      */
     public void pruneOldFiles(final long minimumGeneration) throws IOException {
-        final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
+        final Instant minimumTimestamp = instantSource.instant().minus(minimumRetentionPeriod);
 
         while (files.size() > 0
                 && files.getFirst().getMaximumGeneration() < minimumGeneration
@@ -687,7 +687,7 @@ public class PreconsensusEventFileManager {
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
                     .set(files.getFirst().getMinimumGeneration());
-            final Duration age = Duration.between(files.getFirst().getTimestamp(), time.now());
+            final Duration age = Duration.between(files.getFirst().getTimestamp(), instantSource.instant());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }
         updateFileSizeMetrics();

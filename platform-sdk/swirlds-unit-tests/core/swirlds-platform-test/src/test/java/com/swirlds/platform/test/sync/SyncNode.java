@@ -43,6 +43,7 @@ import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -115,8 +116,8 @@ public class SyncNode {
         discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
-        shadowGraph =
-                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
+        shadowGraph = new ShadowGraph(
+                InstantSource.system(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         consensus = mock(Consensus.class);
         this.executor = executor;
     }
@@ -241,7 +242,7 @@ public class SyncNode {
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowGraphSynchronizer(
                 platformContext,
-                Time.getCurrent(),
+                Time.system(),
                 shadowGraph,
                 null,
                 numNodes,

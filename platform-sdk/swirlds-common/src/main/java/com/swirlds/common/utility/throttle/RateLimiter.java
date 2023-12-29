@@ -19,9 +19,9 @@ package com.swirlds.common.utility.throttle;
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
-import com.swirlds.base.time.Time;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 
 /**
  * <p>
@@ -54,27 +54,27 @@ public class RateLimiter {
     /**
      * Provides a view of the current time.
      */
-    private final Time time;
+    private final InstantSource instantSource;
 
     /**
      * Create a new rate limiter.
      *
-     * @param time          provides the current time
+     * @param instantSource          provides the current time
      * @param minimumPeriod the minimum time that must pass between operations
      */
-    public RateLimiter(final Time time, final Duration minimumPeriod) {
-        this.time = time;
+    public RateLimiter(final InstantSource instantSource, final Duration minimumPeriod) {
+        this.instantSource = instantSource;
         this.minimumPeriod = minimumPeriod;
     }
 
     /**
      * Create a new rate limiter.
      *
-     * @param time         provides the current time
+     * @param instantSource         provides the current time
      * @param maxFrequency the maximum frequency of the operation, in hz
      */
-    public RateLimiter(final Time time, final double maxFrequency) {
-        this(time, Duration.ofNanos((long) (1.0 / maxFrequency * SECONDS_TO_NANOSECONDS)));
+    public RateLimiter(final InstantSource instantSource, final double maxFrequency) {
+        this(instantSource, Duration.ofNanos((long) (1.0 / maxFrequency * SECONDS_TO_NANOSECONDS)));
     }
 
     /**
@@ -86,7 +86,7 @@ public class RateLimiter {
      * @return true if the operation can be triggered without violating rate limits, otherwise false
      */
     public boolean requestAndTrigger() {
-        final Instant now = time.now();
+        final Instant now = instantSource.instant();
         final Duration elapsed = Duration.between(lastOperation, now);
         if (isGreaterThanOrEqualTo(elapsed, minimumPeriod)) {
             lastOperation = now;
@@ -105,7 +105,7 @@ public class RateLimiter {
      * @return true if it is currently legal to trigger the rate limited action
      */
     public boolean request() {
-        final Instant now = time.now();
+        final Instant now = instantSource.instant();
         final Duration elapsed = Duration.between(lastOperation, now);
         if (isGreaterThanOrEqualTo(elapsed, minimumPeriod)) {
             deniedRequests = 0;
@@ -123,7 +123,7 @@ public class RateLimiter {
      */
     public void trigger() {
         deniedRequests = 0;
-        lastOperation = time.now();
+        lastOperation = instantSource.instant();
     }
 
     /**

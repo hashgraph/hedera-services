@@ -68,7 +68,7 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
         when(registry.register(any(), any(), any())).thenReturn(true);
 
         final ChatterCore<ChatterEvent> core = new ChatterCore<>(
-                Time.getCurrent(),
+                Time.system(),
                 ChatterEvent.class,
                 e -> {},
                 chatterConfig,

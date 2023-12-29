@@ -18,13 +18,13 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
@@ -65,14 +65,14 @@ public class ReconnectThrottle {
      */
     private Supplier<Instant> currentTime;
 
-    public ReconnectThrottle(@NonNull final ReconnectConfig config, @NonNull final Time time) {
+    public ReconnectThrottle(@NonNull final ReconnectConfig config, @NonNull final InstantSource instantSource) {
         this.config = Objects.requireNonNull(config, "config must not be null");
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
         lastReconnectTime = new HashMap<>();
         reconnectingNode = null;
         currentTime = Instant::now;
-        alreadyHelpingLogger = new RateLimitedLogger(logger, time, config.minimumTimeBetweenReconnects());
-        throttledLogger = new RateLimitedLogger(logger, time, config.minimumTimeBetweenReconnects());
+        alreadyHelpingLogger = new RateLimitedLogger(logger, instantSource, config.minimumTimeBetweenReconnects());
+        throttledLogger = new RateLimitedLogger(logger, instantSource, config.minimumTimeBetweenReconnects());
     }
 
     /**

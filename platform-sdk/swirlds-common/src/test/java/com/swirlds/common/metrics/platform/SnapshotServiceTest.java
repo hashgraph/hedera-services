@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -198,8 +198,8 @@ class SnapshotServiceTest {
     void testRegularLoopBehavior(@Mock final ScheduledExecutorService executorService) {
         // given
         final Duration loopDelay = metricsConfig.getMetricsSnapshotDuration();
-        final Time time = new FakeTime(Duration.ofMillis(100));
-        final SnapshotService service = new SnapshotService(globalMetrics, executorService, loopDelay, time);
+        final TimeSource instantSource = new FakeTime(Duration.ofMillis(100));
+        final SnapshotService service = new SnapshotService(globalMetrics, executorService, loopDelay, instantSource);
 
         // when
         service.start();
@@ -228,8 +228,8 @@ class SnapshotServiceTest {
     void testLongLoopBehavior(@Mock final ScheduledExecutorService executorService) {
         // given
         final Duration loopDelay = metricsConfig.getMetricsSnapshotDuration();
-        final Time time = new FakeTime(Duration.ofSeconds(10 * metricsConfig.csvWriteFrequency()));
-        final SnapshotService service = new SnapshotService(globalMetrics, executorService, loopDelay, time);
+        final TimeSource timeSource = new FakeTime(Duration.ofSeconds(10 * metricsConfig.csvWriteFrequency()));
+        final SnapshotService service = new SnapshotService(globalMetrics, executorService, loopDelay, timeSource);
 
         final ArgumentCaptor<Runnable> mainLoop = ArgumentCaptor.forClass(Runnable.class);
         final ArgumentCaptor<Long> delay = ArgumentCaptor.forClass(Long.class);

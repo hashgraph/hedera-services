@@ -20,7 +20,6 @@ import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -29,6 +28,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
@@ -109,7 +109,7 @@ public class TipsetWeightCalculator {
      * Create a new tipset weight calculator.
      *
      * @param platformContext       the platform context
-     * @param time                  provides wall clock time
+     * @param instantSource                  provides wall clock time
      * @param addressBook           the current address book
      * @param selfId                the ID of the node tracked by this object
      * @param tipsetTracker         builds tipsets for individual events
@@ -117,7 +117,7 @@ public class TipsetWeightCalculator {
      */
     public TipsetWeightCalculator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final TipsetTracker tipsetTracker,
@@ -140,8 +140,8 @@ public class TipsetWeightCalculator {
         latestSelfEventTipset = snapshot;
         snapshotHistory.add(snapshot);
 
-        ancientParentLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
-        allParentsAreAncientLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        ancientParentLogger = new RateLimitedLogger(logger, instantSource, Duration.ofMinutes(1));
+        allParentsAreAncientLogger = new RateLimitedLogger(logger, instantSource, Duration.ofMinutes(1));
     }
 
     /**

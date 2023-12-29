@@ -50,7 +50,7 @@ class SignedStateReserverTest {
                 "create",
                 false);
 
-        final WiringModel model = WiringModel.create(new NoOpMetrics(), Time.getCurrent());
+        final WiringModel model = WiringModel.create(new NoOpMetrics(), Time.system());
         final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
                 .withType(TaskSchedulerType.DIRECT)
                 .build()

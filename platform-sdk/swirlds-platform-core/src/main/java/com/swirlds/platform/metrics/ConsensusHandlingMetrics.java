@@ -19,7 +19,6 @@ package com.swirlds.platform.metrics;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -30,6 +29,7 @@ import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
@@ -58,19 +58,19 @@ public class ConsensusHandlingMetrics {
             .withUnit("milliseconds");
     private final LongGauge consensusTimeDeviation;
 
-    private final Time time;
+    private final InstantSource instantSource;
 
     /**
      * Constructor of {@code ConsensusHandlingMetrics}
      *
      * @param metrics
      * 		a reference to the metrics-system
-     * @param time provides wall clock time
+     * @param instantSource provides wall clock time
      * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
-    public ConsensusHandlingMetrics(final Metrics metrics, final Time time) {
+    public ConsensusHandlingMetrics(final Metrics metrics, final InstantSource instantSource) {
         Objects.requireNonNull(metrics, "metrics must not be null");
-        this.time = time;
+        this.instantSource = instantSource;
 
         consensusCycleTiming = new CycleTimingStat(
                 metrics,
@@ -154,6 +154,7 @@ public class ConsensusHandlingMetrics {
      */
     public void recordConsensusTime(final Instant consensusTime) {
         this.consensusTime.set(consensusTime.toEpochMilli());
-        consensusTimeDeviation.set(consensusTime.toEpochMilli() - time.now().toEpochMilli());
+        consensusTimeDeviation.set(
+                consensusTime.toEpochMilli() - instantSource.instant().toEpochMilli());
     }
 }

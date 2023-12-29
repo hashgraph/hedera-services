@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.TransactionConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -49,6 +48,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -119,7 +119,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+                platformContext, InstantSource.system(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -175,7 +175,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+                platformContext, InstantSource.system(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -231,7 +231,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+                platformContext, InstantSource.system(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -304,7 +304,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+                platformContext, InstantSource.system(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -324,7 +324,7 @@ class SyncPreconsensusEventWriterTests {
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
         final PreconsensusEventFileManager fileManager2 = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+                platformContext, InstantSource.system(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         for (final Iterator<PreconsensusEventFile> it = fileManager2.getFileIterator(0); it.hasNext(); ) {
             final PreconsensusEventFile file = it.next();
@@ -350,7 +350,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+                platformContext, InstantSource.system(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -408,7 +408,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
-                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
+                platformContext, InstantSource.system(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);

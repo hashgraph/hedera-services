@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -60,7 +60,7 @@ public class LinkedEventIntake {
     private final LatestEventTipsetTracker latestEventTipsetTracker;
 
     private final EventIntakeMetrics metrics;
-    private final Time time;
+    private final TimeSource timeSource;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -78,7 +78,7 @@ public class LinkedEventIntake {
      * Constructor
      *
      * @param platformContext          the platform context
-     * @param time                     provides the wall clock time
+     * @param timeSource                     provides the wall clock time
      * @param consensusSupplier        provides the current consensus instance
      * @param dispatcher               invokes event related callbacks
      * @param shadowGraph              tracks events in the hashgraph
@@ -88,14 +88,14 @@ public class LinkedEventIntake {
      */
     public LinkedEventIntake(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
+            @NonNull final TimeSource timeSource,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final ShadowGraph shadowGraph,
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        this.time = Objects.requireNonNull(time);
+        this.timeSource = Objects.requireNonNull(timeSource);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
@@ -206,9 +206,9 @@ public class LinkedEventIntake {
         // We need to wait for prehandles to finish before proceeding.
         // It is critically important that prehandle is always called prior to handleConsensusRound().
 
-        final long start = time.nanoTime();
+        final long start = timeSource.nanoTime();
         consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
-        final long end = time.nanoTime();
+        final long end = timeSource.nanoTime();
         metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 
         dispatcher.consensusRound(consensusRound);

@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.sync.protocol;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -35,6 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Objects;
 
 /**
@@ -87,7 +87,7 @@ public class SyncProtocol implements Protocol {
     /**
      * A source of time
      */
-    private final Time time;
+    private final InstantSource instantSource;
 
     private final PlatformContext platformContext;
 
@@ -102,7 +102,7 @@ public class SyncProtocol implements Protocol {
      * @param peerAgnosticSyncChecks peer agnostic checks to determine whether this node should sync
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
-     * @param time                   a source of time
+     * @param instantSource                   a source of time
      */
     public SyncProtocol(
             @NonNull final PlatformContext platformContext,
@@ -113,7 +113,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Time time) {
+            @NonNull final InstantSource instantSource) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = Objects.requireNonNull(peerId);
@@ -123,14 +123,14 @@ public class SyncProtocol implements Protocol {
         this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        this.time = Objects.requireNonNull(time);
+        this.instantSource = Objects.requireNonNull(instantSource);
     }
 
     /**
      * @return true if the cooldown period after a sync has elapsed, else false
      */
     private boolean syncCooldownComplete() {
-        final Duration elapsed = Duration.between(lastSyncTime, time.now());
+        final Duration elapsed = Duration.between(lastSyncTime, instantSource.instant());
 
         return isGreaterThanOrEqualTo(elapsed, sleepAfterSync);
     }
@@ -230,7 +230,7 @@ public class SyncProtocol implements Protocol {
         } finally {
             returnPermit();
 
-            lastSyncTime = time.now();
+            lastSyncTime = instantSource.instant();
         }
     }
 }

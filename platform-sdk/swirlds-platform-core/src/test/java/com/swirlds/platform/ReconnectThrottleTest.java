@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.platform.NodeId;
@@ -29,6 +28,7 @@ import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Instant;
+import java.time.InstantSource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -52,7 +52,7 @@ class ReconnectThrottleTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Simultaneous Reconnect Test")
     void simultaneousReconnectTest() {
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("10m"), Time.getCurrent());
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("10m"), InstantSource.system());
 
         assertTrue(reconnectThrottle.initiateReconnect(new NodeId(0)), "reconnect should be allowed");
         assertFalse(reconnectThrottle.initiateReconnect(new NodeId(1)), "reconnect should be blocked");
@@ -66,7 +66,7 @@ class ReconnectThrottleTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Simultaneous Reconnect Test")
     void repeatedReconnectTest() {
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("1s"), Time.getCurrent());
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("1s"), InstantSource.system());
         reconnectThrottle.setCurrentTime(() -> Instant.ofEpochMilli(0));
 
         assertTrue(reconnectThrottle.initiateReconnect(new NodeId(0)), "reconnect should be allowed");
@@ -95,7 +95,7 @@ class ReconnectThrottleTest {
     @DisplayName("Many Node Test")
     void manyNodeTest() {
 
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("1s"), Time.getCurrent());
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("1s"), InstantSource.system());
         int time = 0;
         final int now = time;
         reconnectThrottle.setCurrentTime(() -> Instant.ofEpochMilli(now));

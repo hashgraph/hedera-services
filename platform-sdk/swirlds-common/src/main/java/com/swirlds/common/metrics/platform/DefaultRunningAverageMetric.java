@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
@@ -32,16 +33,16 @@ public class DefaultRunningAverageMetric extends AbstractDistributionMetric impl
     private final StatsRunningAverage runningAverage;
 
     public DefaultRunningAverageMetric(final RunningAverageMetric.Config config) {
-        this(config, Time.getCurrent());
+        this(config, Time.system());
     }
 
     /**
      * This constructor should only be used for testing.
      */
     @SuppressWarnings("removal")
-    public DefaultRunningAverageMetric(final RunningAverageMetric.Config config, final Time time) {
+    public DefaultRunningAverageMetric(final RunningAverageMetric.Config config, final TimeSource timeSource) {
         super(config, config.getHalfLife());
-        this.runningAverage = new StatsRunningAverage(halfLife, time);
+        this.runningAverage = new StatsRunningAverage(halfLife, timeSource);
     }
 
     /**

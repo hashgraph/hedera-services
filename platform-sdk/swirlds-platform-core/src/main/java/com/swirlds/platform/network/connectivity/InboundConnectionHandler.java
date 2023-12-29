@@ -19,7 +19,6 @@ package com.swirlds.platform.network.connectivity;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -40,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,7 +70,7 @@ public class InboundConnectionHandler {
             @NonNull final InterruptableConsumer<Connection> newConnectionConsumer,
             final boolean doVersionCheck,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Time time) {
+            @NonNull final InstantSource instantSource) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.selfId = Objects.requireNonNull(selfId);
@@ -78,8 +78,8 @@ public class InboundConnectionHandler {
         this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-        Objects.requireNonNull(time);
-        this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        Objects.requireNonNull(instantSource);
+        this.socketExceptionLogger = new RateLimitedLogger(logger, instantSource, Duration.ofMinutes(1));
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
     }
 

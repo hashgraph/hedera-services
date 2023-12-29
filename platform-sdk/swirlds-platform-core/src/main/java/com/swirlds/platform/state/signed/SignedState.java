@@ -25,7 +25,6 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -46,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -191,7 +191,7 @@ public class SignedState implements SignedStateInfo {
         this.state = state;
 
         if (stateConfig.stateHistoryEnabled()) {
-            history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
+            history = new SignedStateHistory(InstantSource.system(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
         } else {
             history = null;

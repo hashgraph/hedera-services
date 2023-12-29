@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
@@ -30,6 +29,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,18 +117,18 @@ public class ShadowGraph implements Clearable {
     /**
      * Constructor.
      *
-     * @param time              provides wall clock time
+     * @param instantSource              provides wall clock time
      * @param syncMetrics       metrics for sync gossip
      * @param addressBook       the address book
      * @param selfId            the id of this node
      */
     public ShadowGraph(
-            @NonNull final Time time,
+            @NonNull final InstantSource instantSource,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId) {
 
-        Objects.requireNonNull(time);
+        Objects.requireNonNull(instantSource);
 
         this.syncMetrics = syncMetrics;
         this.numberOfNodes = addressBook.getSize();

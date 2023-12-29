@@ -33,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -50,6 +49,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -83,7 +83,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
@@ -197,7 +197,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
@@ -354,7 +354,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
@@ -436,7 +436,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
@@ -501,7 +501,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
@@ -606,7 +606,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
@@ -684,7 +684,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
@@ -756,7 +756,7 @@ class ConsensusHashManagerTests {
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
                 platformContext,
-                Time.getCurrent(),
+                InstantSource.system(),
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,

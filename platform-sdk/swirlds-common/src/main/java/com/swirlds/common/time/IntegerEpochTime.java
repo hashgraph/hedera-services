@@ -17,6 +17,7 @@
 package com.swirlds.common.time;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.base.units.UnitConstants;
 
 /**
@@ -24,27 +25,27 @@ import com.swirlds.base.units.UnitConstants;
  * Useful when storing the epoch in an int.
  */
 public class IntegerEpochTime {
-    private final Time time;
+    private final TimeSource timeSource;
 
     /**
-     * @param time the clock to use for the epoch
+     * @param timeSource the clock to use for the epoch
      */
-    public IntegerEpochTime(final Time time) {
-        this.time = time;
+    public IntegerEpochTime(final TimeSource timeSource) {
+        this.timeSource = timeSource;
     }
 
     /**
      * @return the lower 31 bits of the current millisecond epoch according to the clock stored in this instance
      */
     public int getMilliTime() {
-        return (int) (time.currentTimeMillis() % Integer.MAX_VALUE);
+        return (int) (timeSource.currentTimeMillis() % Integer.MAX_VALUE);
     }
 
     /**
      * @return the lower 31 bits of the current microsecond epoch according to the clock stored in this instance
      */
     public int getMicroTime() {
-        return (int) ((time.nanoTime() / UnitConstants.MICROSECONDS_TO_NANOSECONDS) % Integer.MAX_VALUE);
+        return (int) ((timeSource.nanoTime() / UnitConstants.MICROSECONDS_TO_NANOSECONDS) % Integer.MAX_VALUE);
     }
 
     /**

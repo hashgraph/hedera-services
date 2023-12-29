@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.chatter.protocol.heartbeat;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
@@ -33,7 +33,7 @@ public class HeartbeatSendReceive implements MessageProvider, MessageHandler<Hea
     private final HeartbeatSender sender;
 
     /**
-     * @param time
+     * @param timeSource
      * 		provides a point in time in nanoseconds, should only be used to measure relative time (from one point to
      * 		another), not absolute time (wall clock time)
      * @param peerId
@@ -45,13 +45,13 @@ public class HeartbeatSendReceive implements MessageProvider, MessageHandler<Hea
      * 		the interval at which to send heartbeats
      */
     public HeartbeatSendReceive(
-            @NonNull final Time time,
+            @NonNull final TimeSource timeSource,
             @NonNull final NodeId peerId,
             @NonNull final BiConsumer<NodeId, Long> pingConsumer,
             @NonNull final Duration heartbeatInterval) {
         this.responder = new HeartbeatResponder();
         // Checks for NonNull are performed by the HeartbeatSender constructor.
-        this.sender = new HeartbeatSender(peerId, pingConsumer, heartbeatInterval, time);
+        this.sender = new HeartbeatSender(peerId, pingConsumer, heartbeatInterval, timeSource);
     }
 
     @Override

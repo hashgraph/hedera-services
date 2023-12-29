@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -47,6 +46,7 @@ import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -113,7 +113,7 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
-     * @param time                         provides the current wall clock time
+     * @param instantSource                         provides the current wall clock time
      * @param dispatchBuilder              responsible for building dispatchers
      * @param addressBook                  the address book for the network
      * @param currentEpochHash             the current epoch hash
@@ -125,7 +125,7 @@ public class ConsensusHashManager {
      */
     public ConsensusHashManager(
             @NonNull final PlatformContext platformContext,
-            final Time time,
+            final InstantSource instantSource,
             final DispatchBuilder dispatchBuilder,
             final AddressBook addressBook,
             final Hash currentEpochHash,
@@ -140,9 +140,9 @@ public class ConsensusHashManager {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         final Duration timeBetweenIssLogs = Duration.ofSeconds(stateConfig.secondsBetweenIssLogs());
-        lackingSignaturesRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
-        selfIssRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
-        catastrophicIssRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
+        lackingSignaturesRateLimiter = new RateLimiter(instantSource, timeBetweenIssLogs);
+        selfIssRateLimiter = new RateLimiter(instantSource, timeBetweenIssLogs);
+        catastrophicIssRateLimiter = new RateLimiter(instantSource, timeBetweenIssLogs);
 
         this.selfIssDispatcher = dispatchBuilder.getDispatcher(
                 ConsensusHashManager.class, SelfIssTrigger.class, "self ISS detected")::dispatch;

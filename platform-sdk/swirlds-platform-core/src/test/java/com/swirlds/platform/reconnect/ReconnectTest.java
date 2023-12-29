@@ -22,7 +22,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -49,6 +48,7 @@ import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -176,7 +176,7 @@ final class ReconnectTest {
         final NodeId otherId = new NodeId(3);
         final long lastRoundReceived = 100;
         return new ReconnectTeacher(
-                Time.getCurrent(),
+                InstantSource.system(),
                 getStaticThreadManager(),
                 connection,
                 RECONNECT_SOCKET_TIMEOUT,

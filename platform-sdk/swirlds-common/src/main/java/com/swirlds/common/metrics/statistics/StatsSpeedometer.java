@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.statistics;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeSource;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import java.util.Objects;
 
@@ -34,7 +35,7 @@ public class StatsSpeedometer implements StatsBuffered {
 
     private static final double LN_2 = Math.log(2);
 
-    private final Time time;
+    private final TimeSource timeSource;
 
     /**
      * find average since this time
@@ -107,7 +108,7 @@ public class StatsSpeedometer implements StatsBuffered {
      */
     @SuppressWarnings("removal")
     public StatsSpeedometer(final double halfLife, final boolean saveHistory) {
-        this(halfLife, saveHistory, Time.getCurrent());
+        this(halfLife, saveHistory, Time.system());
     }
 
     /**
@@ -116,13 +117,13 @@ public class StatsSpeedometer implements StatsBuffered {
      *
      * @param halfLife
      * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param time
+     * @param timeSource
      * 		the {@code Clock} implementation, typically a mock when testing
      * @deprecated this constructor should only be used internally and will become non-public at some point
      */
     @Deprecated(forRemoval = true)
-    public StatsSpeedometer(final double halfLife, final Time time) {
-        this(halfLife, true, time);
+    public StatsSpeedometer(final double halfLife, final TimeSource timeSource) {
+        this(halfLife, true, timeSource);
     }
 
     /**
@@ -131,15 +132,15 @@ public class StatsSpeedometer implements StatsBuffered {
      *
      * @param halfLife
      * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param time
+     * @param timeSource
      * 		the {@code Clock} implementation, typically a mock when testing
      * @throws NullPointerException in case {@code time} parameter is {@code null}
      * @deprecated this constructor should only be used internally and will become non-public at some point
      */
     @Deprecated(forRemoval = true)
-    public StatsSpeedometer(final double halfLife, final boolean saveHistory, final Time time) {
-        this.time = Objects.requireNonNull(time, "time must not be null");
-        final long now = time.nanoTime();
+    public StatsSpeedometer(final double halfLife, final boolean saveHistory, final TimeSource timeSource) {
+        this.timeSource = Objects.requireNonNull(timeSource, "time must not be null");
+        final long now = timeSource.nanoTime();
         this.startTime = now;
         this.lastTime = now;
         reset(halfLife, saveHistory);
@@ -174,12 +175,12 @@ public class StatsSpeedometer implements StatsBuffered {
         final StatSettings settings = StatSettingsFactory.get();
 
         this.halfLife = Math.max(0.01, halfLife); // clip to 0.01 to avoid division by zero problems
-        startTime = time.nanoTime(); // find average since this time
+        startTime = timeSource.nanoTime(); // find average since this time
         lastTime = startTime; // the last time update() was called
         cyclesPerSecond = 0; // estimated average calls to cycle() per second
         if (saveHistory) {
-            allHistory = new StatsBuffer(settings.getBufferSize(), 0, settings.getSkipSeconds(), time);
-            recentHistory = new StatsBuffer(settings.getBufferSize(), settings.getRecentSeconds(), 0, time);
+            allHistory = new StatsBuffer(settings.getBufferSize(), 0, settings.getSkipSeconds(), timeSource);
+            recentHistory = new StatsBuffer(settings.getBufferSize(), settings.getRecentSeconds(), 0, timeSource);
         } else {
             allHistory = null;
             recentHistory = null;
@@ -235,7 +236,7 @@ public class StatsSpeedometer implements StatsBuffered {
      * @return estimated number of calls to cycle() per second
      */
     private synchronized double update(final double numCycles, final boolean recordData) {
-        final long currentTime = time.nanoTime();
+        final long currentTime = timeSource.nanoTime();
         final double t1 = (lastTime - startTime) / 1.0e9; // seconds: start to last update
         final double t2 = (currentTime - startTime) / 1.0e9; // seconds: start to now
         final double dt = (currentTime - lastTime) / 1.0e9; // seconds: last update to now

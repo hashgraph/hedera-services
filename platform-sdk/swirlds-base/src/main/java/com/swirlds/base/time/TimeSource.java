@@ -16,16 +16,20 @@
 
 package com.swirlds.base.time;
 
-import com.swirlds.base.time.internal.OSTime;
-import java.time.InstantSource;
+public interface TimeSource {
+    /**
+     * A method that returns the time in nanoseconds. May not start at the epoch.
+     * Equivalent to {@link System#nanoTime()}.
+     *
+     * @return the current relative time in nanoseconds
+     */
+    long nanoTime();
 
-/**
- * An API for getting the time. All platform code should utilize this API instead of the raw standard
- * java time APIs. This makes it much easier to simulate time in test environments.
- */
-public interface Time extends TimeSource, InstantSource {
-
-    static Time system() {
-        return OSTime.getInstance();
-    }
+    /**
+     * A method that returns the current time in milliseconds since the epoch. Equivalent to
+     * {@link System#currentTimeMillis()}.
+     *
+     * @return the current time since the epoch in milliseconds
+     */
+    long currentTimeMillis();
 }
