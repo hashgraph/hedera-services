@@ -273,9 +273,24 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       snyk-token: ${{ secrets.SNYK_TOKEN }}
 
-  artifact-determinism:
-    name: Artifact Determinism
+  gradle-determinism:
+    name: Gradle Determinism
     uses: ./.github/workflows/zxc-verify-gradle-build-determinism.yaml
+    needs:
+      - dependency-check
+      - spotless
+    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    with:
+      ref: ${{ github.event.inputs.ref || '' }}
+      java-distribution: temurin
+      java-version: 21.0.1
+    secrets:
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+
+  docker-determinism:
+    name: Docker Determinism
+    uses: ./.github/workflows/zxc-verify-docker-build-determinism.yaml
     needs:
       - dependency-check
       - spotless

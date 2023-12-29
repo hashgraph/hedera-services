@@ -182,10 +182,10 @@ public class ContractUpdateHandler implements TransactionHandler {
                         context.configuration()
                                 .getConfigData(StakingConfig.class)
                                 .isEnabled(),
-                        contract.declineReward(),
-                        contract.stakedId().kind().name(),
-                        contract.stakedAccountId(),
-                        contract.stakedNodeId(),
+                        op.hasDeclineReward(),
+                        op.stakedId().kind().name(),
+                        op.stakedAccountId(),
+                        op.stakedNodeId(),
                         accountStore,
                         context.networkInfo());
     }
