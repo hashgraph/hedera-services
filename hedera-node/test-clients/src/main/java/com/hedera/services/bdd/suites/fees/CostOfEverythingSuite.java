@@ -101,10 +101,7 @@ public class CostOfEverythingSuite extends HapiSuite {
 
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
         return customHapiSpec("CanonicalScheduleOps")
-                .withProperties(Map.of(
-                        "nodes", "35.231.208.148",
-                        "default.payer.pemKeyLoc", "previewtestnet-account2.pem",
-                        "default.payer.pemKeyPassphrase", "<secret>"))
+                .withProperties()
                 .given(
                         cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
@@ -124,7 +121,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                                 .alsoSigningWith(RECEIVER),
                         scheduleCreate(
                                         "tbd",
-                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 10L))
                                                 .memo("")
                                                 .fee(ONE_HBAR)
                                                 .blankMemo()

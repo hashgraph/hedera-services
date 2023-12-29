@@ -195,6 +195,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 .status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
+    @HapiTest
     public HapiSpec canScheduleChunkedMessages() {
         String ofGeneralInterest = "Scotch";
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
