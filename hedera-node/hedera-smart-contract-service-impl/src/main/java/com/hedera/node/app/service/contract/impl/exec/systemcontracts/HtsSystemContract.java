@@ -47,12 +47,12 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
 public class HtsSystemContract extends AbstractFullContract implements HederaSystemContract {
-
     private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
-    private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
-    private static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
+
+    public static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
     public static final String HTS_EVM_ADDRESS = "0x167";
-    private static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+    public static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+
     private final HtsCallFactory callFactory;
 
     @Inject
@@ -78,11 +78,10 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 // without setting a halt reason to simulate mono-service for differential testing
                 return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
-        } catch (final RuntimeException e) {
+        } catch (final Exception e) {
             log.debug("Failed to create HTS call from input {}", input, e);
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
-
         return resultOfExecuting(attempt, call, input, frame);
     }
 

@@ -77,7 +77,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -188,13 +187,6 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         runHtsCallAndExpectOnSuccess(false, sender, input, outputAssertions, context);
     }
 
-    protected void runDelegatedHtsCallAndExpectOnSuccess(
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
-            @NonNull final org.apache.tuweni.bytes.Bytes input,
-            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
-        runHtsCallAndExpectOnSuccess(true, sender, input, outputAssertions, null);
-    }
-
     private void runHtsCallAndExpectOnSuccess(
             final boolean requiresDelegatePermission,
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
@@ -250,19 +242,6 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                     actualReason,
                     "'" + Optional.ofNullable(context).orElse("An unspecified operation")
                             + "' should have reverted with " + status + " but instead reverted with " + actualReason);
-        }));
-    }
-
-    private void runHtsCallAndExpectRevert(
-            final boolean requiresDelegatePermission,
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
-            @NonNull final org.apache.tuweni.bytes.Bytes input,
-            @NonNull final ResponseCodeEnum status) {
-        runHtsCallAndExpect(requiresDelegatePermission, sender, input, resultOnlyAssertion(result -> {
-            assertEquals(MessageFrame.State.REVERT, result.getState());
-            final var impliedReason =
-                    org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
-            assertEquals(impliedReason, result.getOutput());
         }));
     }
 

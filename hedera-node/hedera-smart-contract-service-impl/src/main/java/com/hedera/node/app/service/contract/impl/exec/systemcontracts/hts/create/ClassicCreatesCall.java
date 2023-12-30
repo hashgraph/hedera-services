@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
@@ -40,7 +41,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
@@ -56,6 +56,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -102,18 +103,9 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             operations().collectFee(spenderId, nonGasCost);
         }
 
-        final var token = ((TokenCreateTransactionBody) syntheticCreate.data().value());
-        if (token.symbol().isEmpty()) {
-            return externalizeUnsuccessfulResult(MISSING_TOKEN_SYMBOL, gasCalculator.viewGasRequirement());
-        }
-
-        final var treasuryAccount =
-                nativeOperations().getAccount(token.treasuryOrThrow().accountNumOrThrow());
-        if (treasuryAccount == null) {
-            return externalizeUnsuccessfulResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
-        }
-        if (token.autoRenewAccount() == null) {
-            return externalizeUnsuccessfulResult(INVALID_EXPIRATION_TIME, gasCalculator.viewGasRequirement());
+        final var validity = validityOfSynthOp();
+        if (validity != OK) {
+            return externalizeUnsuccessfulResult(validity, gasCalculator.viewGasRequirement());
         }
 
         // Choose a dispatch verification strategy based on whether the legacy activation address is active
@@ -122,44 +114,60 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 .dispatch(syntheticCreate, dispatchVerificationStrategy, spenderId, ContractCallRecordBuilder.class);
         recordBuilder.status(standardized(recordBuilder.status()));
 
-        final var customFees =
-                ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
-        final var tokenType =
-                ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder, FIXED_GAS_COST), status, false);
         } else {
-            final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
-
-            if (isFungible && customFees.isEmpty()) {
-                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
-                        .getOutputs()
-                        .encodeElements(
-                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                headlongAddressOf(recordBuilder.tokenID()));
-            } else if (isFungible && !customFees.isEmpty()) {
-                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
-                        .getOutputs()
-                        .encodeElements(
-                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                headlongAddressOf(recordBuilder.tokenID()));
-            } else if (customFees.isEmpty()) {
-                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
-                        .getOutputs()
-                        .encodeElements(
-                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                headlongAddressOf(recordBuilder.tokenID()));
+            final var op = syntheticCreate.tokenCreationOrThrow();
+            final var customFees = op.customFeesOrElse(Collections.emptyList());
+            if (op.tokenType() == TokenType.FUNGIBLE_COMMON) {
+                if (customFees.isEmpty()) {
+                    encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                            .getOutputs()
+                            .encodeElements(
+                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                    headlongAddressOf(recordBuilder.tokenID()));
+                } else {
+                    encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
+                            .getOutputs()
+                            .encodeElements(
+                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                    headlongAddressOf(recordBuilder.tokenID()));
+                }
             } else {
-                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
-                        .getOutputs()
-                        .encodeElements(
-                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                headlongAddressOf(recordBuilder.tokenID()));
+                if (customFees.isEmpty()) {
+                    encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                            .getOutputs()
+                            .encodeElements(
+                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                    headlongAddressOf(recordBuilder.tokenID()));
+                } else {
+                    encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                            .getOutputs()
+                            .encodeElements(
+                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                    headlongAddressOf(recordBuilder.tokenID()));
+                }
             }
             return gasOnly(successResult(encodedOutput, FIXED_GAS_COST, recordBuilder), status, false);
         }
+    }
+
+    private ResponseCodeEnum validityOfSynthOp() {
+        final var op = syntheticCreate.tokenCreationOrThrow();
+        if (op.symbol().isEmpty()) {
+            return MISSING_TOKEN_SYMBOL;
+        }
+        final var treasuryAccount =
+                nativeOperations().getAccount(op.treasuryOrThrow().accountNumOrThrow());
+        if (treasuryAccount == null) {
+            return INVALID_ACCOUNT_ID;
+        }
+        if (op.autoRenewAccount() == null) {
+            return INVALID_EXPIRATION_TIME;
+        }
+        return OK;
     }
 
     private VerificationStrategy verificationStrategyFor(@NonNull final MessageFrame frame) {

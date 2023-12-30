@@ -73,7 +73,7 @@ public class CreateDecoder {
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
         final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValue();
         final var decimals = ((BigInteger) call.get(DECIMALS)).intValue();
-        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapper(
+        final var tokenCreateWrapper = getTokenCreateWrapper(
                 hederaToken, true, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
