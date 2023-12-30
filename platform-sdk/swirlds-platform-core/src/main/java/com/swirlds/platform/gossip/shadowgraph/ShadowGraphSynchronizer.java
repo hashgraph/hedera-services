@@ -135,6 +135,12 @@ public class ShadowGraphSynchronizer {
     private final boolean filterLikelyDuplicates;
 
     /**
+     * if true, then look up generations again after the first phase of the sync is completed and send the latest events
+     * to the peer. If false, only consider events we know about at the beginning of the sync protocol.
+     */
+    private final boolean sendLatestGenerations;
+
+    /**
      * For events that are neither self events nor ancestors of self events, we must have had this event for at least
      * this amount of time before it is eligible to be sent. Ignored if {@link #filterLikelyDuplicates} is false.
      */
@@ -178,6 +184,8 @@ public class ShadowGraphSynchronizer {
         if (filterLikelyDuplicates) {
             Objects.requireNonNull(latestEventTipsetTracker);
         }
+
+        this.sendLatestGenerations = syncConfig.sendLatestGenerations();
     }
 
     /**
@@ -312,9 +320,26 @@ public class ShadowGraphSynchronizer {
             final List<ShadowEvent> knownTips = getMyTipsTheyKnow(connection, myTips, theirBooleans);
             eventsTheyHave.addAll(knownTips);
 
-            // create a send list based on the known set
-            sendList = createSendList(
-                    connection.getSelfId(), eventsTheyHave, myGenerations, theirTipsAndGenerations.getGenerations());
+            // TODO consider sending tips a second time
+
+            if (sendLatestGenerations) {
+                // Create a send list based on the known set. Get the latest generations since
+                // there may be a lot of events we've learned about in the time it has taken for the previous round
+                // trip communication.
+                try (final GenerationReservation updatedReservation = shadowGraph.reserve()) {
+                    sendList = createSendList(
+                            connection.getSelfId(),
+                            eventsTheyHave,
+                            getGenerations(updatedReservation.getGeneration()),
+                            theirTipsAndGenerations.getGenerations());
+                }
+            } else {
+                sendList = createSendList(
+                        connection.getSelfId(),
+                        eventsTheyHave,
+                        myGenerations,
+                        theirTipsAndGenerations.getGenerations());
+            }
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -419,6 +444,9 @@ public class ShadowGraphSynchronizer {
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
             final long startFilterTime = time.nanoTime();
+
+            // TODO is it possible to guarantee that we use the tipset of the last event in the send set?
+
             sendList = filterLikelyDuplicates(
                     selfId,
                     nonAncestorFilterThreshold,

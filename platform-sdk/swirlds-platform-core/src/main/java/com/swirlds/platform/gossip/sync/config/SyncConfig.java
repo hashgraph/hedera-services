@@ -35,6 +35,9 @@ import java.time.Duration;
  *                                        event intake thread.
  * @param filterLikelyDuplicates          if true then do not send events that are likely to be duplicates when they are
  *                                        received by the peer
+ * @param sendLatestGenerations           if true, then look up generations again after the first phase of the sync is
+ *                                        completed and send the latest events to the peer. If false, only consider
+ *                                        events we know about at the beginning of the sync protocol.
  * @param nonAncestorFilterThreshold      ignored if {@link #filterLikelyDuplicates} is false. For each event that is
  *                                        not a self event and is not an ancestor of a self event, we must know about
  *                                        the event for at least this amount of time before the event is eligible to be
@@ -53,6 +56,7 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
         @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
+        @ConfigProperty(defaultValue = "true") boolean sendLatestGenerations,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
         @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {}
