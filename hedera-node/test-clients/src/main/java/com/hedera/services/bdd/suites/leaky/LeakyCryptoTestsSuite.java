@@ -152,6 +152,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -311,7 +312,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
     }
 
-    // Cannot be enabled as HapiTest because long term schedule transactions is not implemented in mod service
+    @BddMethodIsNotATest
     final HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
                 .given(
@@ -439,7 +440,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .then();
     }
 
-    // Cannot be enabled as HapiTest because tokens.maxPerAccount is not being used in mod service
+    @BddMethodIsNotATest
     final HapiSpec maxAutoAssociationSpec() {
         final int MONOGAMOUS_NETWORK = 1;
         final int maxAutoAssociations = 100;
@@ -463,7 +464,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
 
-    // Cannot be enabled as HapiTest because expiration is not implemented in mod service
+    @BddMethodIsNotATest
     public HapiSpec canDissociateFromMultipleExpiredTokens() {
         final var civilian = "civilian";
         final long initialSupply = 100L;
@@ -1001,6 +1002,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                        // ALLOW_SKIPPED_ENTITY_IDS),
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",

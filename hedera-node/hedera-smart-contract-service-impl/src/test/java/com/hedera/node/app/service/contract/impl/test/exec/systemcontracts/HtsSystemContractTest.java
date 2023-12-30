@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.is
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -120,18 +119,6 @@ class HtsSystemContractTest {
         final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
         assertSamePrecompileResult(expected, result);
-    }
-
-    @Test
-    void callWithNonGasCostNotImplemented() {
-        commonMocks();
-
-        givenValidCallAttempt();
-        final var pricedResult =
-                new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L, SUCCESS, true);
-        given(call.execute(frame)).willReturn(pricedResult);
-
-        assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
     }
 
     private void givenValidCallAttempt() {

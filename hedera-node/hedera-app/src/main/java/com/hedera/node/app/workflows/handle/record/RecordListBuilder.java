@@ -376,9 +376,11 @@ public final class RecordListBuilder {
                 childRecordBuilders.set(i, null);
                 followingChildRemoved = true;
             } else {
-                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE) {
                     child.nullOutSideEffectFields();
-                    child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    if (SUCCESSES.contains(child.status())) {
+                        child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    }
                 }
 
                 if (into != i) {

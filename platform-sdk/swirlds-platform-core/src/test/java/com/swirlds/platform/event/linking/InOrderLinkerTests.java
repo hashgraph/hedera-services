@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -162,7 +164,9 @@ class InOrderLinkerTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
-        inOrderLinker.setMinimumGenerationNonAncient(1);
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 1));
 
         final Hash child2Hash = randomHash(random);
         final long child2Generation = 2;
@@ -182,7 +186,9 @@ class InOrderLinkerTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
-        inOrderLinker.setMinimumGenerationNonAncient(2);
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 2));
 
         final Hash child3Hash = randomHash(random);
         final long child3Generation = 3;
@@ -196,7 +202,9 @@ class InOrderLinkerTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
-        inOrderLinker.setMinimumGenerationNonAncient(4);
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 4));
 
         final Hash child4Hash = randomHash(random);
         final long child4Generation = 4;
@@ -253,7 +261,9 @@ class InOrderLinkerTests {
     @Test
     @DisplayName("Ancient events should immediately exit the intake pipeline")
     void ancientEvent() {
-        inOrderLinker.setMinimumGenerationNonAncient(3);
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 3));
 
         final GossipEvent child1 = generateMockEvent(
                 randomHash(random),

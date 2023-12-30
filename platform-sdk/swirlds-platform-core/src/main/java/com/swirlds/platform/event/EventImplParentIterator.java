@@ -41,8 +41,7 @@ public class EventImplParentIterator implements Iterator<EventImpl> {
     public EventImplParentIterator(@NonNull final EventImpl event) {
         this.event = Objects.requireNonNull(event);
         returnSelfParent = event.getSelfParent() != null;
-        eventCount = (returnSelfParent ? 1 : 0)
-                + event.getOtherParents().size();
+        eventCount = (returnSelfParent ? 1 : 0) + event.getOtherParents().size();
     }
 
     /**
