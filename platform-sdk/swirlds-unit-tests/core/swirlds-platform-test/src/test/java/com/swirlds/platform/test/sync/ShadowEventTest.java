@@ -24,8 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.internal.EventImpl;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +47,7 @@ class ShadowEventTest {
         final ShadowEvent ssc = new ShadowEvent(esc);
         final ShadowEvent soc = new ShadowEvent(eoc);
 
-        final ShadowEvent s = new ShadowEvent(e, ssp, sop);
+        final ShadowEvent s = new ShadowEvent(e, ssp, List.of(sop));
         String str;
 
         str = s.toString();
@@ -55,7 +56,7 @@ class ShadowEventTest {
         assertTrue(str.contains("op"), "a shadow event string should annotate its other-parent");
 
         final EventImpl esc2 = EventFactory.makeEventWithRandomHash();
-        final ShadowEvent ssc2 = new ShadowEvent(esc2, s, sop);
+        final ShadowEvent ssc2 = new ShadowEvent(esc2, s, List.of(sop));
     }
 
     @Test
@@ -93,7 +94,7 @@ class ShadowEventTest {
         final ShadowEvent ssc = new ShadowEvent(esc);
         final ShadowEvent soc = new ShadowEvent(eoc);
 
-        final ShadowEvent s = new ShadowEvent(e, ssp, sop);
+        final ShadowEvent s = new ShadowEvent(e, ssp, List.of(sop));
 
         assertTrue(identicalHashes(s.getSelfParent().getEvent(), ssp.getEvent()), "expected SP");
         assertTrue(identicalHashes(s.getOtherParent().getEvent(), sop.getEvent()), "expected OP");
@@ -111,7 +112,7 @@ class ShadowEventTest {
         final ShadowEvent ssp = new ShadowEvent(esp);
         final ShadowEvent sop = new ShadowEvent(eop);
 
-        final ShadowEvent s = new ShadowEvent(e, ssp, sop);
+        final ShadowEvent s = new ShadowEvent(e, ssp, List.of(sop));
 
         assertNotNull(s.getSelfParent(), "SP should not be null before disconnect");
 
@@ -136,7 +137,7 @@ class ShadowEventTest {
         final ShadowEvent sop = new ShadowEvent(eop);
 
         // The shadow event, linked
-        final ShadowEvent s = new ShadowEvent(e, ssp, sop);
+        final ShadowEvent s = new ShadowEvent(e, ssp, List.of(sop));
 
         // The hash of an event Shadow is the hash of the event
         assertEquals(e.getBaseHash(), s.getEventBaseHash(), "false");
@@ -154,7 +155,7 @@ class ShadowEventTest {
         final ShadowEvent sop = new ShadowEvent(eop);
 
         // The shadow event, linked
-        final ShadowEvent s = new ShadowEvent(e, ssp, sop);
+        final ShadowEvent s = new ShadowEvent(e, ssp, List.of(sop));
 
         testLinkedConstruction(s, ssp, sop);
     }

@@ -25,7 +25,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.PlatformEvent;
@@ -299,8 +299,7 @@ public class ShadowGraph implements Clearable {
             todoStack.push(sp);
         }
 
-        ShadowEvent op = event.getOtherParent();
-        if (op != null) {
+        for (final ShadowEvent op : event.getOtherParents()) {
             todoStack.push(op);
         }
 
@@ -325,8 +324,8 @@ public class ShadowGraph implements Clearable {
                 if (xsp != null) {
                     todoStack.push(xsp);
                 }
-                ShadowEvent xop = x.getOtherParent();
-                if (xop != null) {
+
+                for (final ShadowEvent xop : x.getOtherParents()) {
                     todoStack.push(xop);
                 }
             }
@@ -624,9 +623,13 @@ public class ShadowGraph implements Clearable {
      */
     private ShadowEvent insert(final EventImpl e) {
         final ShadowEvent sp = shadow(e.getSelfParent());
-        final ShadowEvent op = shadow(e.getOtherParent());
 
-        ShadowEvent se = new ShadowEvent(e, sp, op);
+        final List<ShadowEvent> otherParents = new ArrayList<>();
+        for (final EventImpl op : e.getOtherParents()) {
+            final ShadowEvent opShadow = shadow(op);
+            otherParents.add(opShadow);
+        }
+        final ShadowEvent se = new ShadowEvent(e, sp, otherParents);
 
         hashToShadowEvent.put(se.getEventBaseHash(), se);
 
@@ -703,27 +706,6 @@ public class ShadowGraph implements Clearable {
         // An expired event will not be referenced in the graph.
         if (expired(e)) {
             return InsertableStatus.EXPIRED_EVENT;
-        }
-
-        final boolean hasOP = e.getOtherParent() != null;
-        final boolean hasSP = e.getSelfParent() != null;
-
-        // If e has an unexpired parent that is not already referenced by the shadow graph, then we log an error. This
-        // is only a sanity check, so there is no need to prevent insertion
-        if (hasOP) {
-            final boolean knownOP = shadow(e.getOtherParent()) != null;
-            final boolean expiredOP = expired(e.getOtherParent());
-            if (!knownOP && !expiredOP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
-            }
-        }
-
-        if (hasSP) {
-            final boolean knownSP = shadow(e.getSelfParent()) != null;
-            final boolean expiredSP = expired(e.getSelfParent());
-            if (!knownSP && !expiredSP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
-            }
         }
 
         // If both parents are null, then insertion is allowed. This will create

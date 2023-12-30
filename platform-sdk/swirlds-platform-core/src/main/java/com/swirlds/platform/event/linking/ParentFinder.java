@@ -17,8 +17,8 @@
 package com.swirlds.platform.event.linking;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.function.Function;
 
 /**
@@ -40,19 +40,23 @@ public class ParentFinder {
      */
     private static boolean requiredParent(
             final GossipEvent event, final boolean selfParent, final long minGenerationNonAncient) {
-        final long parentGeneration = selfParent
-                ? event.getHashedData().getSelfParentGen()
-                : event.getHashedData().getOtherParentGen();
+        throw new UnsupportedOperationException("This code pathway is no longer supported. "
+                + "New intake pipeline is expected to take over this functionality.");
+        //        final long parentGeneration = selfParent
+        //                ? event.getHashedData().getSelfParentGen()
+        //                : event.getHashedData().getOtherParentGen();
         // if an event does not have a parent, its generation will be EventConstants.GENERATION_UNDEFINED,
         // which is always smaller than minGenerationNonAncient
-        return parentGeneration >= minGenerationNonAncient;
+        //        return parentGeneration >= minGenerationNonAncient;
     }
 
     private EventImpl getParent(final GossipEvent event, final boolean selfParent) {
-        final Hash parentHash = selfParent
-                ? event.getHashedData().getSelfParentHash()
-                : event.getHashedData().getOtherParentHash();
-        return eventByHash.apply(parentHash);
+        throw new UnsupportedOperationException("This code pathway is no longer supported. "
+                + "New intake pipeline is expected to take over this functionality.");
+        //        final Hash parentHash = selfParent
+        //                ? event.getHashedData().getSelfParentHash()
+        //                : event.getHashedData().getOtherParentHash();
+        //        return eventByHash.apply(parentHash);
     }
 
     /**

@@ -30,13 +30,12 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * Manages the creation of events. Wraps a {@link SyncEventCreationManager} and provides an asynchronous
- * interface.
+ * Manages the creation of events. Wraps a {@link SyncEventCreationManager} and provides an asynchronous interface.
  */
 public class AsyncEventCreationManager implements Lifecycle {
 

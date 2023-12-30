@@ -145,29 +145,32 @@ public class HashgraphPicture extends JPanel {
 
     private void drawLinksToParents(final Graphics g, final PlatformEvent event) {
         g.setColor(HashgraphGuiUtils.eventColor(event, options));
-        final PlatformEvent e1 = event.getSelfParent();
-        PlatformEvent e2 = event.getOtherParent();
+
+        final PlatformEvent selfParent = event.getSelfParent();
         final AddressBook addressBook = hashgraphSource.getAddressBook();
-        if (e2 != null
-                && (!addressBook.contains(e2.getCreatorId())
-                        || addressBook.getIndexOfNodeId(e2.getCreatorId()) >= addressBook.getSize())) {
-            // if the creator of the other parent has been removed,
-            // treat it as if there is no other parent
-            e2 = null;
-        }
-        if (e1 != null && e1.getGeneration() >= pictureMetadata.getMinGen()) {
-            g.drawLine(
-                    pictureMetadata.xpos(e2, event),
-                    pictureMetadata.ypos(event),
-                    pictureMetadata.xpos(e2, event),
-                    pictureMetadata.ypos(e1));
-        }
-        if (e2 != null && e2.getGeneration() >= pictureMetadata.getMinGen()) {
-            g.drawLine(
-                    pictureMetadata.xpos(e2, event),
-                    pictureMetadata.ypos(event),
-                    pictureMetadata.xpos(event, e2),
-                    pictureMetadata.ypos(e2));
+
+        for (PlatformEvent otherParent : event.getOtherParents()) {
+            if (otherParent != null
+                    && (!addressBook.contains(otherParent.getCreatorId())
+                            || addressBook.getIndexOfNodeId(otherParent.getCreatorId()) >= addressBook.getSize())) {
+                // if the creator of the other parent has been removed,
+                // treat it as if there is no other parent
+                otherParent = null;
+            }
+            if (selfParent != null && selfParent.getGeneration() >= pictureMetadata.getMinGen()) {
+                g.drawLine(
+                        pictureMetadata.xpos(otherParent, event),
+                        pictureMetadata.ypos(event),
+                        pictureMetadata.xpos(otherParent, event),
+                        pictureMetadata.ypos(selfParent));
+            }
+            if (otherParent != null && otherParent.getGeneration() >= pictureMetadata.getMinGen()) {
+                g.drawLine(
+                        pictureMetadata.xpos(otherParent, event),
+                        pictureMetadata.ypos(event),
+                        pictureMetadata.xpos(event, otherParent),
+                        pictureMetadata.ypos(otherParent));
+            }
         }
     }
 
@@ -176,15 +179,20 @@ public class HashgraphPicture extends JPanel {
         final FontMetrics fm = g.getFontMetrics();
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
-        final PlatformEvent e2 = event.getOtherParent() != null
-                        && hashgraphSource
-                                .getAddressBook()
-                                .contains(event.getOtherParent().getCreatorId())
-                ? event.getOtherParent()
-                : null;
+
+        final PlatformEvent otherParent;
+        if (event.getOtherParents().isEmpty()
+                || !hashgraphSource
+                        .getAddressBook()
+                        .contains(event.getOtherParents().get(0).getCreatorId())) {
+            otherParent = null;
+        } else {
+            otherParent = event.getOtherParents().get(0);
+        }
+
         final Color color = HashgraphGuiUtils.eventColor(event, options);
         g.setColor(color);
-        g.fillOval(pictureMetadata.xpos(e2, event) - d / 2, pictureMetadata.ypos(event) - d / 2, d, d);
+        g.fillOval(pictureMetadata.xpos(otherParent, event) - d / 2, pictureMetadata.ypos(event) - d / 2, d, d);
         g.setFont(g.getFont().deriveFont(Font.BOLD));
 
         String s = "";
@@ -210,7 +218,7 @@ public class HashgraphPicture extends JPanel {
         }
         if (!s.isEmpty()) {
             final Rectangle2D rect = fm.getStringBounds(s, g);
-            final int x = (int) (pictureMetadata.xpos(e2, event) - rect.getWidth() / 2. - fa / 4.);
+            final int x = (int) (pictureMetadata.xpos(otherParent, event) - rect.getWidth() / 2. - fa / 4.);
             final int y = (int) (pictureMetadata.ypos(event) + rect.getHeight() / 2. - fd / 2);
             g.setColor(HashgraphGuiConstants.LABEL_OUTLINE);
             g.drawString(s, x - 1, y - 1);

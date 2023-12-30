@@ -28,6 +28,8 @@ import java.time.Duration;
  *                                       for the entire network is equal to this value times the number of nodes. A
  *                                       value of 0 means that there is no limit to the number of events that can be
  *                                       created (as long as those events are legal to create).
+ * @param maxOtherParentCount            the maximum number of other parents that an event can have, or 0 if there is no
+ *                                       limit.
  * @param creationAttemptRate            the rate (in hz) at which a node will attempt to create new events. If this
  *                                       value is higher than the max creation rate, it will still be constrained by the
  *                                       max creation rate. This being said, it is recommended to attempt event creation
@@ -51,6 +53,7 @@ import java.time.Duration;
 @ConfigData("event.creation")
 public record EventCreationConfig(
         @ConfigProperty(defaultValue = "20") double maxCreationRate,
+        @ConfigProperty(defaultValue = "8") int maxOtherParentCount,
         @ConfigProperty(defaultValue = "100") double creationAttemptRate,
         @ConfigProperty(defaultValue = "10") double antiSelfishnessFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,

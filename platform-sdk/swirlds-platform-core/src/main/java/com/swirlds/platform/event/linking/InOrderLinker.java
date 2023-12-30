@@ -28,9 +28,9 @@ import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.wiring.ClearTrigger;
@@ -38,7 +38,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -228,12 +230,23 @@ public class InOrderLinker {
         }
 
         final BaseEventHashedData hashedData = event.getHashedData();
+
         final EventImpl selfParent =
                 getParentToLink(event, hashedData.getSelfParentHash(), hashedData.getSelfParentGen());
-        final EventImpl otherParent =
-                getParentToLink(event, hashedData.getOtherParentHash(), hashedData.getOtherParentGen());
 
-        final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
+        // TODO unit test linking of multiple other parents
+
+        final List<EventImpl> otherParents = new ArrayList<>();
+        for (final EventDescriptor otherParentDescriptor : event.getHashedData().getOtherParents()) {
+            final EventImpl otherParent =
+                    getParentToLink(event, otherParentDescriptor.getHash(), otherParentDescriptor.getGeneration());
+
+            if (otherParent != null) {
+                otherParents.add(otherParent);
+            }
+        }
+
+        final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParents);
 
         final EventDescriptor eventDescriptor = event.getDescriptor();
         parentDescriptorMap.put(eventDescriptor, linkedEvent);

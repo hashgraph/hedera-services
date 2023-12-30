@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,22 +70,11 @@ public final class StaticValidators {
         return event -> {
             final BaseEventHashedData hashedData = event.getHashedData();
             final Hash spHash = hashedData.getSelfParentHash();
-            final Hash opHash = hashedData.getOtherParentHash();
             final boolean hasSpHash = spHash != null;
-            final boolean hasOpHash = opHash != null;
             final boolean hasSpGen = hashedData.getSelfParentGen() >= GraphGenerations.FIRST_GENERATION;
-            final boolean hasOpGen = hashedData.getOtherParentGen() >= GraphGenerations.FIRST_GENERATION;
 
             if (hasSpGen != hasSpHash) {
                 logger.error(EXCEPTION.getMarker(), "invalid self-parent: {} ", event::toString);
-                return false;
-            }
-            if (hasOpGen != hasOpHash) {
-                logger.error(EXCEPTION.getMarker(), "invalid other-parent: {} ", event::toString);
-                return false;
-            }
-            if (networkSize > 1 && hasOpHash && hasSpHash && spHash.equals(opHash)) {
-                logger.error(EXCEPTION.getMarker(), "both parents have the same hash: {} ", event::toString);
                 return false;
             }
             return true;

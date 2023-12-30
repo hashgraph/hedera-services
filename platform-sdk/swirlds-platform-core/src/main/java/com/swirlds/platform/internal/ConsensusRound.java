@@ -20,6 +20,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;

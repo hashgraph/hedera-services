@@ -19,8 +19,8 @@ package com.swirlds.platform.test.sync;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -28,6 +28,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * A simple, deterministic factory for Event instances
@@ -45,7 +46,7 @@ public class EventFactory {
     public static ShadowEvent makeShadow(final ShadowEvent selfParent, final ShadowEvent otherParent) {
         final EventImpl e = makeEvent(
                 selfParent == null ? null : selfParent.getEvent(), otherParent == null ? null : otherParent.getEvent());
-        return new ShadowEvent(e, selfParent, otherParent);
+        return new ShadowEvent(e, selfParent, List.of(otherParent));
     }
 
     public static EventImpl makeEventWithRandomHash() {
@@ -73,7 +74,7 @@ public class EventFactory {
         final BaseEventUnhashedData unhashedEventData =
                 new BaseEventUnhashedData(otherId, HashGenerator.random().getValue());
 
-        final EventImpl e = new EventImpl(hashedEventData, unhashedEventData, selfParent, otherParent);
+        final EventImpl e = new EventImpl(hashedEventData, unhashedEventData, selfParent, List.of(otherParent));
         e.getBaseEventHashedData().setHash(HashGenerator.random());
 
         assertNotNull(e.getBaseHash(), "null base hash");

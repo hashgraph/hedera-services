@@ -83,6 +83,7 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.EventCounter;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.AsyncEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -128,7 +129,6 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.intake.EventIntakePhase;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -774,8 +774,8 @@ public class SwirldsPlatform implements Platform {
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
         } else {
-            final InternalEventValidator internalEventValidator = new InternalEventValidator(
-                    platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
+            final InternalEventValidator internalEventValidator =
+                    new InternalEventValidator(platformContext, time, intakeEventCounter);
             final EventDeduplicator eventDeduplicator =
                     new EventDeduplicator(platformContext, intakeEventCounter, eventIntakeMetrics);
             final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(

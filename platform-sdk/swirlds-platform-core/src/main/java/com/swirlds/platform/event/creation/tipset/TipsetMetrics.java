@@ -45,6 +45,11 @@ public class TipsetMetrics {
                     + "Selfishness is defined as refusing to use another node's events as other parents.");
     private final RunningAverageMetric selfishnessMetric;
 
+    private static final RunningAverageMetric.Config AVERAGE_OTHER_PARENT_COUNT_CONFIG =
+            new RunningAverageMetric.Config("platform", "averageOtherParentCount")
+                    .withDescription("The average number of other parents for events created by this node.");
+    private final RunningAverageMetric averageOtherParentCountMetric;
+
     private final Map<NodeId, SpeedometerMetric> tipsetParentMetrics = new HashMap<>();
     private final Map<NodeId, SpeedometerMetric> pityParentMetrics = new HashMap<>();
 
@@ -58,6 +63,7 @@ public class TipsetMetrics {
         final Metrics metrics = platformContext.getMetrics();
         tipsetAdvancementMetric = metrics.getOrCreate(TIPSET_ADVANCEMENT_CONFIG);
         selfishnessMetric = metrics.getOrCreate(SELFISHNESS_CONFIG);
+        averageOtherParentCountMetric = metrics.getOrCreate(AVERAGE_OTHER_PARENT_COUNT_CONFIG);
 
         for (final Address address : addressBook) {
             final NodeId nodeId = address.getNodeId();
@@ -77,6 +83,16 @@ public class TipsetMetrics {
             final SpeedometerMetric pityParentMetric = metrics.getOrCreate(pityParentConfig);
             pityParentMetrics.put(nodeId, pityParentMetric);
         }
+    }
+
+    /**
+     * Get the metric used to track the average number of other parents for events created by this node.
+     *
+     * @return the average other parent count metric
+     */
+    @NonNull
+    public RunningAverageMetric getAverageOtherParentCountMetric() {
+        return averageOtherParentCountMetric;
     }
 
     /**

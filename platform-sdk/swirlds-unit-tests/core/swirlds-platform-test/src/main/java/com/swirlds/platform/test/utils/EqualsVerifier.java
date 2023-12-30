@@ -19,8 +19,8 @@ package com.swirlds.platform.test.utils;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -43,7 +43,7 @@ public final class EqualsVerifier {
 
     private static EventImpl randomEventImpl(
             final RandomGenerator r, final EventImpl selfParent, final EventImpl otherParent) {
-        return new EventImpl(randomGossipEvent(r), randomConsensusData(r), selfParent, otherParent);
+        return new EventImpl(randomGossipEvent(r), randomConsensusData(r), selfParent, List.of(otherParent));
     }
 
     public static EventImpl randomEventImpl(final RandomGenerator r) {

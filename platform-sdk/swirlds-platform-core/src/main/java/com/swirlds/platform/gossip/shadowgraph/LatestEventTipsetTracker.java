@@ -19,9 +19,9 @@ package com.swirlds.platform.gossip.shadowgraph;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -119,9 +119,8 @@ public class LatestEventTipsetTracker {
         if (event.getSelfParent() != null) {
             parentDescriptors.add(event.getSelfParent().getBaseEvent().getDescriptor());
         }
-        if (event.getOtherParent() != null) {
-            parentDescriptors.add(event.getOtherParent().getBaseEvent().getDescriptor());
-        }
+        parentDescriptors.addAll(event.getBaseEvent().getHashedData().getOtherParents());
+
         final Tipset tipset = tipsetTracker.addEvent(event.getBaseEvent().getDescriptor(), parentDescriptors);
         if (event.getCreatorId().equals(selfId)) {
             latestSelfEventTipset = tipset;

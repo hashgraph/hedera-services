@@ -20,7 +20,7 @@ import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMEST
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.CryptoConstants;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collection;

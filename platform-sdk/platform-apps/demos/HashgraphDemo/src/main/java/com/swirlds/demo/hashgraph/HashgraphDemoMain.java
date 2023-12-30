@@ -32,6 +32,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.gui.model.GuiModel;
@@ -287,26 +288,25 @@ public class HashgraphDemoMain implements SwirldMain {
             r = Math.min(width / n / 4, dy / gens / 2);
             final int d = (int) (2 * r);
 
-            // for each event, draw 2 downward lines to its parents
+            // for each event, draw downward lines to its parents
             for (final PlatformEvent event : events) {
                 g.setColor(eventColor(event));
-                final PlatformEvent e1 = event.getSelfParent();
-                final PlatformEvent e2 = event.getOtherParent();
-                if (e1 != null && e1.getGeneration() >= minGen) {
-                    g.drawLine(xpos(event), ypos(event), xpos(event), ypos(e1));
-                }
-                if (e2 != null && e2.getGeneration() >= minGen) {
-                    g.drawLine(xpos(event), ypos(event), xpos(e2), ypos(e2));
+
+                final EventImpl eventImpl = (EventImpl) event;
+                try {
+                    for (final EventImpl parent : eventImpl) {
+                        if (parent.getGeneration() >= minGen) {
+                            g.drawLine(xpos(event), ypos(event), xpos(parent), ypos(parent));
+                        }
+                    }
+                } catch (final IndexOutOfBoundsException ignored) {
+                    // This is not thread safe, if event creation rate is very high then the event
+                    // may be un-linked as we are drawing it. Ignore this event.
                 }
             }
 
             // for each event, draw its circle
             for (final PlatformEvent event : events) {
-                final PlatformEvent e1 = event.getSelfParent();
-                final PlatformEvent e2 = event.getOtherParent();
-                if (e1 == null || e2 == null) {
-                    continue; // discarded events have no parents, so skip them
-                }
                 final Color color = eventColor(event);
                 g.setColor(color);
                 g.fillOval(xpos(event) - d / 2, ypos(event) - d / 2, d, d);

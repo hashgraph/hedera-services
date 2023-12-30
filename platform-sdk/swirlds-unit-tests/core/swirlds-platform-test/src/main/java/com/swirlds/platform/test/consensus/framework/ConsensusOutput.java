@@ -18,8 +18,8 @@ package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.observers.StaleEventObserver;

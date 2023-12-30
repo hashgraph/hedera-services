@@ -34,12 +34,12 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
@@ -108,7 +108,15 @@ class ShadowGraphTest {
             IndexedEvent event = emitter.emitEvent();
 
             Hash hash = event.getBaseHash();
-            ancestorsMap.put(hash, ancestorsOf(event.getSelfParentHash(), event.getOtherParentHash()));
+            ancestorsMap.put(
+                    hash,
+                    ancestorsOf(
+                            event.getSelfParentHash(),
+                            event.getBaseEvent()
+                                    .getHashedData()
+                                    .getOtherParents()
+                                    .get(0)
+                                    .getHash()));
             assertDoesNotThrow(() -> shadowGraph.addEvent(event), "Unable to insert event into shadow graph.");
             assertTrue(
                     shadowGraph.isHashInGraph(hash),
@@ -536,17 +544,6 @@ class ShadowGraphTest {
                         ShadowGraphInsertionException.class,
                         () -> shadowGraph.addEvent(shadow.getEvent()),
                         "Expired events should not be added."));
-    }
-
-    @Test
-    void testAddEventWithUnknownOtherParent() {
-        initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
-
-        IndexedEvent newEvent = emitter.emitEvent();
-        newEvent.setOtherParent(emitter.emitEvent());
-
-        assertDoesNotThrow(
-                () -> shadowGraph.addEvent(newEvent), "Events with an unknown other parent should be added.");
     }
 
     @Test

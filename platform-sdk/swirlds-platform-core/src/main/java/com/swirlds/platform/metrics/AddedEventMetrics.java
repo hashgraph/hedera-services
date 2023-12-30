@@ -31,7 +31,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -122,16 +122,13 @@ public class AddedEventMetrics implements EventAddedObserver {
     /**
      * The constructor of {@code AddedEventMetrics}
      *
-     * @param selfId
-     * 		the {@link NodeId} of this node
-     * @param metrics
-     * 		a reference to the metrics-system
+     * @param selfId  the {@link NodeId} of this node
+     * @param metrics a reference to the metrics-system
      * @throws NullPointerException if any of the following parameters are {@code null}.
-     *     <ul>
-     *       <li>{@code selfId}</li>
-     *       <li>{@code metrics}</li>
-     *     </ul>
-     *
+     *                              <ul>
+     *                                <li>{@code selfId}</li>
+     *                                <li>{@code metrics}</li>
+     *                              </ul>
      */
     public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
@@ -165,9 +162,11 @@ public class AddedEventMetrics implements EventAddedObserver {
     public void eventAdded(final EventImpl event) {
         if (event.isCreatedBy(selfId)) {
             eventsCreatedPerSecond.cycle();
-            if (event.getBaseEventHashedData().hasOtherParent()) {
-                averageOtherParentAgeDiff.update(event.getGeneration() - event.getOtherParentGen());
-            }
+
+            // TODO update this metric for multiple other parents
+            //            if (event.getBaseEventHashedData().hasOtherParent()) {
+            //                averageOtherParentAgeDiff.update(event.getGeneration() - event.getOtherParentGen());
+            //            }
         } else {
             avgCreatedReceivedTime.update(
                     event.getTimeCreated().until(event.getBaseEvent().getTimeReceived(), ChronoUnit.NANOS)
