@@ -86,6 +86,10 @@ public class ShadowGraphSynchronizer {
      */
     private final LatestEventTipsetTracker latestEventTipsetTracker;
     /**
+     * Tracks the latest events sent to each peer. Null if feature is not enabled.
+     */
+    private final LatestTransmittedEventTracker latestTransmittedEventTracker;
+    /**
      * Number of member nodes in the network for this sync
      */
     private final int numberOfNodes;
@@ -159,6 +163,7 @@ public class ShadowGraphSynchronizer {
             @NonNull final Time time,
             @NonNull final ShadowGraph shadowGraph,
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
+            @Nullable final LatestTransmittedEventTracker latestTransmittedEventTracker,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
@@ -192,6 +197,7 @@ public class ShadowGraphSynchronizer {
         if (filterLikelyDuplicates) {
             Objects.requireNonNull(latestEventTipsetTracker);
         }
+        this.latestTransmittedEventTracker = latestTransmittedEventTracker;
 
         sendLatestGenerations = syncConfig.sendLatestGenerations();
         resendTips = syncConfig.resendTips();
@@ -324,7 +330,6 @@ public class ShadowGraphSynchronizer {
             if (resendTips) {
                 myUpdatedTips =
                         getTips().stream().map(ShadowEvent::getEventBaseHash).collect(Collectors.toList());
-                ;
             } else {
                 myUpdatedTips = null;
             }
@@ -339,6 +344,14 @@ public class ShadowGraphSynchronizer {
             final List<ShadowEvent> knownTips =
                     getMyTipsTheyKnow(connection, myTips, theirBooleansAndUpdatedTips.theirBooleans());
             eventsTheyHave.addAll(knownTips);
+
+            if (latestTransmittedEventTracker != null) {
+                // Add the tips we sent in the previous sync. Helps avoid duplicate events if they haven't put those
+                // events into their shadow graph yet.
+                final List<Hash> previouslySentTips = latestTransmittedEventTracker.getLatestTransmittedEvents(
+                        connection.getOtherId(), connection.getConnectionId());
+                eventsTheyHave.addAll(shadowGraph.shadows(previouslySentTips));
+            }
 
             if (resendTips) {
                 // Add the latest tips they sent us to the known set
@@ -363,6 +376,11 @@ public class ShadowGraphSynchronizer {
                         myGenerations,
                         theirTipsAndGenerations.getGenerations());
             }
+        }
+
+        if (latestTransmittedEventTracker != null) {
+            latestTransmittedEventTracker.setLatestTransmittedEvents(
+                    connection.getOtherId(), connection.getConnectionId(), sendList);
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);

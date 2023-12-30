@@ -129,6 +129,11 @@ public class LocalConnection implements Connection {
     }
 
     @Override
+    public long getConnectionId() {
+        return 0;
+    }
+
+    @Override
     public String getDescription() {
         return generateDescription();
     }

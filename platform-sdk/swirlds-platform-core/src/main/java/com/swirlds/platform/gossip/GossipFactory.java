@@ -33,6 +33,7 @@ import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
+import com.swirlds.platform.gossip.shadowgraph.LatestTransmittedEventTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
@@ -78,6 +79,7 @@ public final class GossipFactory {
      * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param latestEventTipsetTracker      tracks the tipset of the latest self event
+     * @param latestTransmittedEventTracker tracks the latest events that have been sent to each peer
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
@@ -106,6 +108,7 @@ public final class GossipFactory {
             @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
+            @Nullable final LatestTransmittedEventTracker latestTransmittedEventTracker,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
@@ -205,6 +208,7 @@ public final class GossipFactory {
                         epochHash,
                         shadowGraph,
                         latestEventTipsetTracker,
+                        latestTransmittedEventTracker,
                         emergencyRecoveryManager,
                         consensusRef,
                         intakeQueue,

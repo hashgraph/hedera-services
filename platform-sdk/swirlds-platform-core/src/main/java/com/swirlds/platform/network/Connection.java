@@ -108,9 +108,7 @@ public interface Connection {
      *
      * @return a unique identifier for this connection
      */
-    default long connectionIdentifier() {
-        return 0L; // TODO
-    }
+    long getConnectionId();
 
     /**
      * @return a string description of this connection
