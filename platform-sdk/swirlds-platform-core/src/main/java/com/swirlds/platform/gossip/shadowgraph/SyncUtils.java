@@ -204,9 +204,8 @@ public final class SyncUtils {
      * @param numberOfNodes the number of nodes in the network
      * @return a {@link Callable} that reads the booleans and tips
      */
-    public static Callable<TheirBooleansAndUpdatedTips> readMyTipsTheyHaveAndUpdatedTips(final Connection connection,
-            final int numberOfTips, final boolean resendTips,
-            final int numberOfNodes) {
+    public static Callable<TheirBooleansAndUpdatedTips> readMyTipsTheyHaveAndUpdatedTips(
+            final Connection connection, final int numberOfTips, final boolean resendTips, final int numberOfNodes) {
         return () -> {
             final List<Boolean> booleans = connection.getDis().readBooleanList(numberOfTips);
             if (booleans == null) {
@@ -350,9 +349,9 @@ public final class SyncUtils {
                             // we are done reading event, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
                         }
-                        // while we are waiting for the peer to tell us they are done, they might send
-                        // COMM_SYNC_ONGOING
-                        // if they are still busy reading events
+                            // while we are waiting for the peer to tell us they are done, they might send
+                            // COMM_SYNC_ONGOING
+                            // if they are still busy reading events
                         case ByteConstants.COMM_SYNC_ONGOING -> {
                             // peer is still reading events, waiting for them to finish
                             logger.debug(

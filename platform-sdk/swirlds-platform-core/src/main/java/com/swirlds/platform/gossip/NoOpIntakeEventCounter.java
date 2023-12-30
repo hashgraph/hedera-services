@@ -28,7 +28,7 @@ public class NoOpIntakeEventCounter implements IntakeEventCounter {
      * {@inheritDoc}
      */
     @Override
-    public boolean hasUnprocessedEvents(@NonNull NodeId peer) {
+    public boolean hasTooManyUnprocessedEvents(@NonNull NodeId peer) {
         return false;
     }
 

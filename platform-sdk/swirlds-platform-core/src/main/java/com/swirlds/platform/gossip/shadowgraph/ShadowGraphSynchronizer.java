@@ -322,7 +322,9 @@ public class ShadowGraphSynchronizer {
 
             final List<Hash> myUpdatedTips;
             if (resendTips) {
-                myUpdatedTips = getTips().stream().map(ShadowEvent::getEventBaseHash).collect(Collectors.toList());;
+                myUpdatedTips =
+                        getTips().stream().map(ShadowEvent::getEventBaseHash).collect(Collectors.toList());
+                ;
             } else {
                 myUpdatedTips = null;
             }
@@ -334,7 +336,8 @@ public class ShadowGraphSynchronizer {
             timing.setTimePoint(3);
 
             // Add each tip they know to the known set
-            final List<ShadowEvent> knownTips = getMyTipsTheyKnow(connection, myTips, theirBooleansAndUpdatedTips.theirBooleans());
+            final List<ShadowEvent> knownTips =
+                    getMyTipsTheyKnow(connection, myTips, theirBooleansAndUpdatedTips.theirBooleans());
             eventsTheyHave.addAll(knownTips);
 
             if (resendTips) {
