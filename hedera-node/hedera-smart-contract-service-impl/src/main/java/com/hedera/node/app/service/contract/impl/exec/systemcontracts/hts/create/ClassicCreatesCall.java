@@ -19,8 +19,11 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.creat
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
@@ -29,6 +32,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
@@ -55,6 +59,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import org.hyperledger.besu.datatypes.Address;
@@ -67,7 +72,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
      */
     private static final long FIXED_GAS_COST = 100_000L;
 
-    @NonNull
+    @Nullable
     final TransactionBody syntheticCreate;
 
     private final VerificationStrategy verificationStrategy;
@@ -77,23 +82,35 @@ public class ClassicCreatesCall extends AbstractHtsCall {
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
-            @NonNull final TransactionBody syntheticCreate,
+            @Nullable final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(systemContractGasCalculator, enhancement, false);
-        this.syntheticCreate = requireNonNull(syntheticCreate);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
-        final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreate, spenderId);
-        // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
-        this.nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
+        this.syntheticCreate = syntheticCreate;
+        if (syntheticCreate != null) {
+            final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreate, spenderId);
+            // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
+            this.nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
+        } else {
+            this.nonGasCost = 0L;
+        }
     }
 
     private record LegacyActivation(long contractNum, Bytes pbjAddress, Address besuAddress) {}
 
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
+        if (syntheticCreate == null) {
+            return gasOnly(
+                    haltResult(
+                            ERROR_DECODING_PRECOMPILE_INPUT,
+                            contractsConfigOf(frame).precompileHtsDefaultGasCost()),
+                    INVALID_TRANSACTION_BODY,
+                    false);
+        }
         if (frame.getValue().lessThan(Wei.of(nonGasCost))) {
             return completionWith(
                     FIXED_GAS_COST,
