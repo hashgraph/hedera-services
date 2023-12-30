@@ -295,13 +295,19 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccount(@NonNull final Address alias) {
-        evmFrameState.finalizeHollowAccount(alias);
-        // add child record on merge
+    public void finalizeHollowAccount(@NonNull final Address address, @NonNull final Address parent) {
+        // (FUTURE) Since for mono-service parity we externalize a ContractCreate populated with the
+        // contract-specific Hedera properties of the parent, we should either (1) actually set those
+        // properties on the finalized hollow account with those properties; or (2) stop adding them
+        // to the externalized creation record
+        evmFrameState.finalizeHollowAccount(address);
+        // Reset pending creation to null, as a CREATE2 operation "collided" with an existing
+        // hollow account instead of creating a truly new contract
         pendingCreation = null;
-        var contractId = getHederaContractId(alias);
-        var evmAddress = aliasFrom(alias);
-        enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);
+        enhancement
+                .operations()
+                .externalizeHollowAccountMerge(
+                        getHederaContractId(address), getHederaContractId(parent), aliasFrom(address));
     }
 
     @Override

@@ -26,6 +26,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
@@ -42,7 +44,9 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -70,18 +74,22 @@ public class EthereumTransactionHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var body = context.body().ethereumTransactionOrThrow();
-        final var fileStore = context.createStore(ReadableFileStore.class);
-        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
-        final var hydratedTx = callDataHydration.tryToHydrate(body, fileStore, hederaConfig.firstUserEntity());
-
-        validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
-
-        final var ethTxData = hydratedTx.ethTxData();
-        validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
-
         // Ignore the return value; we just want to cache the signature for use in handle()
-        ethereumSignatures.computeIfAbsent(ethTxData);
+        computeEthTxSigsFor(
+                context.body().ethereumTransactionOrThrow(),
+                context.createStore(ReadableFileStore.class),
+                context.configuration());
+    }
+
+    public @Nullable EthTxSigs maybeEthTxSigsFor(
+            @NonNull final EthereumTransactionBody op,
+            @NonNull final ReadableFileStore fileStore,
+            @NonNull final Configuration config) {
+        try {
+            return computeEthTxSigsFor(op, fileStore, config);
+        } catch (PreCheckException ignore) {
+            return null;
+        }
     }
 
     @Override
@@ -119,5 +127,18 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> new EthereumTransactionResourceUsage(new SmartContractFeeBuilder())
                         .usageGiven(fromPbj(body), sigValueObj, null));
+    }
+
+    private EthTxSigs computeEthTxSigsFor(
+            @NonNull final EthereumTransactionBody op,
+            @NonNull final ReadableFileStore fileStore,
+            @NonNull final Configuration config)
+            throws PreCheckException {
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        final var hydratedTx = callDataHydration.tryToHydrate(op, fileStore, hederaConfig.firstUserEntity());
+        validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
+        final var ethTxData = hydratedTx.ethTxData();
+        validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
+        return ethereumSignatures.computeIfAbsent(ethTxData);
     }
 }

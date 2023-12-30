@@ -135,6 +135,6 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
         childFrame.notifyCompletion();
         verify(frame).pushStackItem(Words.fromAddress(EIP_1014_ADDRESS));
-        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS);
+        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS, RECIEVER_ADDRESS);
     }
 }

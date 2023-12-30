@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import javax.inject.Inject;
 
@@ -156,7 +157,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                 attempt.addressIdConverter());
     }
 
-    private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+    private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
         final var inputBytes = attempt.inputBytes();
         final var senderId = attempt.senderId();
         final var nativeOperations = attempt.nativeOperations();
