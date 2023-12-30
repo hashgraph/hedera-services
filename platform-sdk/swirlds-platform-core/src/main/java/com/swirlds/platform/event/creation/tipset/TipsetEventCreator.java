@@ -18,13 +18,10 @@ package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
-import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
-import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -44,9 +41,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,10 +70,18 @@ public class TipsetEventCreator implements EventCreator {
     private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
+     * The maximum number of other parents that an event is permitted to have.
+     */
+    private final int maximumOtherParentCount;
+
+    /**
      * The address book for the current network.
      */
     private final AddressBook addressBook;
 
+    /**
+     * The size of the current network.
+     */
     private final int networkSize;
 
     /**
@@ -83,6 +91,9 @@ public class TipsetEventCreator implements EventCreator {
      */
     private final double antiSelfishnessFactor;
 
+    /**
+     * Metrics for the tipset algorithm.
+     */
     private final TipsetMetrics tipsetMetrics;
 
     /**
@@ -147,6 +158,7 @@ public class TipsetEventCreator implements EventCreator {
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        maximumOtherParentCount = eventCreationConfig.maxOtherParentCount();
     }
 
     /**
@@ -213,17 +225,48 @@ public class TipsetEventCreator implements EventCreator {
             return createEventForSizeOneNetwork();
         }
 
-        final long selfishness = tipsetWeightCalculator.getMaxSelfishnessScore();
-        tipsetMetrics.getSelfishnessMetric().update(selfishness);
+        //        final long selfishness = tipsetWeightCalculator.getMaxSelfishnessScore();
+        //        tipsetMetrics.getSelfishnessMetric().update(selfishness);
+        //
+        //        // Never bother with anti-selfishness techniques if we have a selfishness score of 1.
+        //        // We are pretty much guaranteed to be selfish to ~1/3 of other nodes by a score of 1.
+        //        final double beNiceChance = (selfishness - 1) / antiSelfishnessFactor;
+        //
+        //        if (beNiceChance > 0 && random.nextDouble() < beNiceChance && false /* todo */) {
+        //            return createEventToReduceSelfishness();
+        //        } else {
+        //            return createEventByOptimizingAdvancementWeight();
+        //        }
 
-        // Never bother with anti-selfishness techniques if we have a selfishness score of 1.
-        // We are pretty much guaranteed to be selfish to ~1/3 of other nodes by a score of 1.
-        final double beNiceChance = (selfishness - 1) / antiSelfishnessFactor;
+        final List<EventDescriptor> otherParents = chooseOtherParents();
 
-        if (beNiceChance > 0 && random.nextDouble() < beNiceChance && false /* todo */) {
-            return createEventToReduceSelfishness();
+        if (otherParents.isEmpty()) {
+            // If there are no available other parents, it is only legal to create a new event if we are
+            // creating a genesis event. In order to create a genesis event, we must have never created
+            // an event before and the current non-ancient event window must have never been advanced.
+            if (nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW || lastSelfEvent != null) {
+                // event creation isn't legal
+                return null;
+            }
+
+            // we are creating a genesis event with no parents
+            return buildAndProcessEvent(List.of(), List.of());
+        }
+
+        final List<EventDescriptor> allParents = new ArrayList<>(otherParents.size() + 1);
+        if (lastSelfEvent != null) {
+            allParents.add(lastSelfEvent);
+        }
+        allParents.addAll(otherParents);
+
+        // TODO we can avoid this recomputation
+        final TipsetAdvancementWeight advancementWeight =
+                tipsetWeightCalculator.getTheoreticalAdvancementWeight(allParents);
+
+        if (advancementWeight.isNonZero()) {
+            return buildAndProcessEvent(allParents, otherParents);
         } else {
-            return createEventByOptimizingAdvancementWeight();
+            return null;
         }
     }
 
@@ -238,101 +281,92 @@ public class TipsetEventCreator implements EventCreator {
         // reach consensus if the self parent is also the other parent.
         // Unexpected, but harmless. So just use the same event
         // as both parents until that issue is resolved.
-        return buildAndProcessEvent(List.of(lastSelfEvent));
+        return buildAndProcessEvent(List.of(lastSelfEvent), List.of(lastSelfEvent));
     }
 
     /**
-     * Create an event using the other parent with the best tipset advancement weight.
+     * Choose the other parents for the next event.
      *
-     * @return the new event, or null if it is not legal to create a new event
+     * @return the other parents
+     */
+    @NonNull
+    private List<EventDescriptor> chooseOtherParents() {
+        // TODO make the base class return a set!
+        final Set<EventDescriptor> possibleOtherParents =
+                new HashSet<>(childlessOtherEventTracker.getChildlessEvents());
+
+        if (maximumOtherParentCount <= 0 || possibleOtherParents.size() < maximumOtherParentCount) {
+            // If there are fewer than the maximum number of other parents, we can use all of them.
+            return new ArrayList<>(possibleOtherParents);
+        }
+
+        final List<EventDescriptor> chosenParents = new ArrayList<>();
+
+        // Possibly choose a pity parent to reduce selfishness.
+        final EventDescriptor pityParent = chooseParentToReduceSelfishness(possibleOtherParents);
+        if (pityParent != null) {
+            chosenParents.add(pityParent);
+            possibleOtherParents.remove(pityParent);
+        }
+
+        // Choose events that best improve the tipset advancement score.
+        while (chosenParents.size() < maximumOtherParentCount) {
+            final EventDescriptor bestParent =
+                    chooseParentWithBestAdvancementScore(chosenParents, possibleOtherParents);
+            if (bestParent == null) {
+                break;
+            }
+            chosenParents.add(bestParent);
+            possibleOtherParents.remove(bestParent);
+        }
+
+        // If there is remaining capacity, fill it with whatever is available. These will be events that
+        // do not improve the tipset advancement score. But in general, it's helpful to include as many
+        // parents as possible.
+        final int remainingCapacity = maximumOtherParentCount - chosenParents.size();
+        if (remainingCapacity > 0) {
+            final List<EventDescriptor> remainingChoices = new ArrayList<>(possibleOtherParents);
+            Collections.shuffle(remainingChoices, random);
+            for (int i = 0; i < remainingCapacity; i++) {
+                chosenParents.add(remainingChoices.get(i));
+            }
+        }
+
+        // TODO sort this so that we always return parents in the same order!
+        return new ArrayList<>(chosenParents);
+    }
+
+    /**
+     * If we are selfishly ignoring a node, once in a while we should create an event that reduces our selfishness. This
+     * will prevent low weight nodes from being ignored by the network.
+     *
+     * @param possibleOtherParents the possible other parents
+     * @return a pity parent to include as an other parent, or null if no pity parent should be included
      */
     @Nullable
-    private GossipEvent createEventByOptimizingAdvancementWeight() {
-        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
-        //        Collections.shuffle(possibleOtherParents, random);
-        //
-        //        EventDescriptor bestOtherParent = null;
-        //        TipsetAdvancementWeight bestAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
-        //        for (final EventDescriptor otherParent : possibleOtherParents) {
-        //
-        //            final List<EventDescriptor> parents = new ArrayList<>(2);
-        //            parents.add(otherParent);
-        //            if (lastSelfEvent != null) {
-        //                parents.add(lastSelfEvent);
-        //            }
-        //
-        //            final TipsetAdvancementWeight advancementWeight =
-        //                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(parents);
-        //            if (advancementWeight.isGreaterThan(bestAdvancementWeight)) {
-        //                bestOtherParent = otherParent;
-        //                bestAdvancementWeight = advancementWeight;
-        //            }
-        //        }
-        //
-        //        if (bestOtherParent == null) {
-        //            // If there are no available other parents, it is only legal to create a new event if we are
-        //            // creating a genesis event. In order to create a genesis event, we must have never created
-        //            // an event before and the current minimum generation non ancient must have never been advanced.
-        //            if (minimumGenerationNonAncient > GENERATION_UNDEFINED + 1 || lastSelfEvent != null) {
-        //                // event creation isn't legal
-        //                return null;
-        //            }
-        //
-        //            // we are creating a genesis event, so we can use a null other parent
-        //            return buildAndProcessEvent(List.of());
-        //        }
-        //
-        //        tipsetMetrics.getTipsetParentMetric(bestOtherParent.getCreator()).cycle();
-        //        return buildAndProcessEvent(List.of(bestOtherParent)); // TODO!!!
+    private EventDescriptor chooseParentToReduceSelfishness(@NonNull final Set<EventDescriptor> possibleOtherParents) {
 
-        // TODO: this is a hack. We just take all legal parents as long as we get a positive tipset advancement score.
+        final long selfishness = tipsetWeightCalculator.getMaxSelfishnessScore();
+        tipsetMetrics.getSelfishnessMetric().update(selfishness);
 
-        if (possibleOtherParents.isEmpty()) {
-            // If there are no available other parents, it is only legal to create a new event if we are
-            // creating a genesis event. In order to create a genesis event, we must have never created
-            // an event before and the current non-ancient event window must have never been advanced.
-            if (nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW || lastSelfEvent != null) {
-                // event creation isn't legal
-                return null;
-            }
+        // Never bother with anti-selfishness techniques if we have a selfishness score of 1.
+        // We are pretty much guaranteed to be selfish to ~1/3 of other nodes by a score of 1.
+        final double beNiceChance = (selfishness - 1) / antiSelfishnessFactor;
 
-            // we are creating a genesis event, so we can use a null other parent
-            return buildAndProcessEvent(List.of());
-        }
-
-        final List<EventDescriptor> parents = new ArrayList<>();
-        if (lastSelfEvent != null) {
-            parents.add(lastSelfEvent);
-        }
-        parents.addAll(possibleOtherParents);
-
-        final TipsetAdvancementWeight advancementWeight =
-                tipsetWeightCalculator.getTheoreticalAdvancementWeight(parents);
-
-        if (advancementWeight.isNonZero()) {
-            return buildAndProcessEvent(possibleOtherParents);
-        } else {
+        if (beNiceChance <= 0 || random.nextDouble() >= beNiceChance) {
+            // Now is not the time to be nice.
             return null;
         }
-    }
-
-    /**
-     * Create an event that reduces the selfishness score.
-     *
-     * @return the new event, or null if it is not legal to create a new event
-     */
-    @Nullable
-    private GossipEvent createEventToReduceSelfishness() {
-        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
-        final List<EventDescriptor> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
 
         // Choose a random ignored node, weighted by how much it is currently being ignored.
 
         // First, figure out who is an ignored node and sum up all selfishness scores.
         int selfishnessSum = 0;
         final List<Integer> selfishnessScores = new ArrayList<>(possibleOtherParents.size());
+        final List<EventDescriptor> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
         for (final EventDescriptor possibleIgnoredNode : possibleOtherParents) {
-            final int selfishness = tipsetWeightCalculator.getSelfishnessScoreForNode(possibleIgnoredNode.getCreator());
+            final int selfishnessForNode =
+                    tipsetWeightCalculator.getSelfishnessScoreForNode(possibleIgnoredNode.getCreator());
 
             final List<EventDescriptor> theoreticalParents = new ArrayList<>(2);
             theoreticalParents.add(possibleIgnoredNode);
@@ -344,10 +378,10 @@ public class TipsetEventCreator implements EventCreator {
             final TipsetAdvancementWeight advancementWeight =
                     tipsetWeightCalculator.getTheoreticalAdvancementWeight(theoreticalParents);
 
-            if (selfishness > 1) {
+            if (selfishnessForNode > 1) {
                 if (advancementWeight.isNonZero()) {
                     ignoredNodes.add(possibleIgnoredNode);
-                    selfishnessScores.add(selfishness);
+                    selfishnessScores.add(selfishnessForNode);
                     selfishnessSum += selfishness;
                 } else {
                     // Note: if selfishness score is greater than 1, it is mathematically not possible
@@ -381,7 +415,8 @@ public class TipsetEventCreator implements EventCreator {
             if (choice < runningSum) {
                 final EventDescriptor ignoredNode = ignoredNodes.get(i);
                 tipsetMetrics.getPityParentMetric(ignoredNode.getCreator()).cycle();
-                return buildAndProcessEvent(List.of(ignoredNode)); // TODO!!!
+
+                return ignoredNode;
             }
         }
 
@@ -390,24 +425,68 @@ public class TipsetEventCreator implements EventCreator {
     }
 
     /**
+     * Choose an event that should be used as an other parent. The event with the best advancement score is chosen. If
+     * there are multiple events with the same advancement score, the first one is chosen. If there are no events with a
+     * positive advancement score, null is returned.
+     *
+     * @param chosenParents        the current other parents that have been chosen
+     * @param possibleOtherParents the possible other parents
+     * @return the chosen other parent, or null if no other parent should be chosen
+     */
+    @Nullable
+    private EventDescriptor chooseParentWithBestAdvancementScore(
+            @NonNull final List<EventDescriptor> chosenParents,
+            @NonNull final Set<EventDescriptor> possibleOtherParents) {
+        EventDescriptor bestOtherParent = null;
+
+        // TODO can we avoid recomputing this?
+
+        final List<EventDescriptor> parents = new ArrayList<>(chosenParents.size() + 2);
+        if (lastSelfEvent != null) {
+            parents.add(lastSelfEvent);
+        }
+        parents.addAll(chosenParents);
+
+        TipsetAdvancementWeight bestAdvancementWeight = tipsetWeightCalculator.getTheoreticalAdvancementWeight(parents);
+
+        // Possible parents will swapped into the end of this list as we iterate.
+        parents.add(null);
+        final int newParentIndex = parents.size() - 1;
+
+        for (final EventDescriptor possibleParent : possibleOtherParents) {
+            parents.set(newParentIndex, possibleParent);
+
+            // TODO there may be a way to do this more cheaply.
+            final TipsetAdvancementWeight advancementWeight =
+                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(parents);
+
+            // TODO find a way to break ties randomly... don't reward based on position in iteration order
+            if (advancementWeight.isGreaterThan(bestAdvancementWeight)) {
+                bestOtherParent = possibleParent;
+                bestAdvancementWeight = advancementWeight;
+            }
+        }
+
+        return bestOtherParent;
+    }
+
+    /**
      * Given an other parent, build the next self event and process it.
      *
-     * @param otherParents the other parents
+     * @param allParents   all parents (including the self parent)
+     * @param otherParents the other parents (excluding the self parent)
      * @return the new event
      */
     @NonNull
-    private GossipEvent buildAndProcessEvent(@NonNull final List<EventDescriptor> otherParents) {
-        final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
-        if (lastSelfEvent != null) {
-            parentDescriptors.add(lastSelfEvent);
-        }
-        parentDescriptors.addAll(otherParents);
+    private GossipEvent buildAndProcessEvent(
+            @NonNull final List<EventDescriptor> allParents, @NonNull final List<EventDescriptor> otherParents) {
+
         tipsetMetrics.getAverageOtherParentCountMetric().update(otherParents.size());
 
         final GossipEvent event = assembleEventObject(otherParents);
 
         final EventDescriptor descriptor = event.getDescriptor();
-        tipsetTracker.addEvent(descriptor, parentDescriptors);
+        tipsetTracker.addEvent(descriptor, allParents);
         final TipsetAdvancementWeight advancementWeight =
                 tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         final double weightRatio = advancementWeight.advancementWeight()
@@ -459,41 +538,6 @@ public class TipsetEventCreator implements EventCreator {
         cryptography.digestSync(event);
         event.buildDescriptor();
         return event;
-    }
-
-    /**
-     * Get the generation of a descriptor, handle null appropriately.
-     */
-    private static long getGeneration(@Nullable final EventDescriptor descriptor) {
-        if (descriptor == null) {
-            return GENERATION_UNDEFINED;
-        } else {
-            return descriptor.getGeneration();
-        }
-    }
-
-    /**
-     * Get the hash of a descriptor, handle null appropriately.
-     */
-    @Nullable
-    private static Hash getHash(@Nullable final EventDescriptor descriptor) {
-        if (descriptor == null) {
-            return null;
-        } else {
-            return descriptor.getHash();
-        }
-    }
-
-    /**
-     * Get the creator of a descriptor, handle null appropriately.
-     */
-    @Nullable
-    private static NodeId getCreator(@Nullable final EventDescriptor descriptor) {
-        if (descriptor == null) {
-            return CREATOR_ID_UNDEFINED;
-        } else {
-            return descriptor.getCreator();
-        }
     }
 
     @NonNull
