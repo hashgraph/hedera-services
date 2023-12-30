@@ -207,7 +207,7 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow) {
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
         tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
         childlessOtherEventTracker.pruneOldEvents(nonAncientEventWindow);
@@ -224,19 +224,6 @@ public class TipsetEventCreator implements EventCreator {
             // We can always create a new event, no need to run the tipset algorithm.
             return createEventForSizeOneNetwork();
         }
-
-        //        final long selfishness = tipsetWeightCalculator.getMaxSelfishnessScore();
-        //        tipsetMetrics.getSelfishnessMetric().update(selfishness);
-        //
-        //        // Never bother with anti-selfishness techniques if we have a selfishness score of 1.
-        //        // We are pretty much guaranteed to be selfish to ~1/3 of other nodes by a score of 1.
-        //        final double beNiceChance = (selfishness - 1) / antiSelfishnessFactor;
-        //
-        //        if (beNiceChance > 0 && random.nextDouble() < beNiceChance && false /* todo */) {
-        //            return createEventToReduceSelfishness();
-        //        } else {
-        //            return createEventByOptimizingAdvancementWeight();
-        //        }
 
         final List<EventDescriptor> otherParents = chooseOtherParents();
 
