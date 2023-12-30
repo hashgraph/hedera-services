@@ -293,10 +293,15 @@ public class HashgraphDemoMain implements SwirldMain {
                 g.setColor(eventColor(event));
 
                 final EventImpl eventImpl = (EventImpl) event;
-                for (final EventImpl parent : eventImpl) {
-                    if (parent.getGeneration() >= minGen) {
-                        g.drawLine(xpos(event), ypos(event), xpos(parent), ypos(parent));
+                try {
+                    for (final EventImpl parent : eventImpl) {
+                        if (parent.getGeneration() >= minGen) {
+                            g.drawLine(xpos(event), ypos(event), xpos(parent), ypos(parent));
+                        }
                     }
+                } catch (final IndexOutOfBoundsException ignored) {
+                    // This is not thread safe, if event creation rate is very high then the event
+                    // may be un-linked as we are drawing it. Ignore this event.
                 }
             }
 
