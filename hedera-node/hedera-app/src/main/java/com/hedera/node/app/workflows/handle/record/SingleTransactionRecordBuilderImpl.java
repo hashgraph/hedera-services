@@ -805,6 +805,8 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl contractID(@Nullable final ContractID contractID) {
+        // Ensure we don't externalize as an account creation too
+        transactionReceiptBuilder.accountID((AccountID) null);
         transactionReceiptBuilder.contractID(contractID);
         return this;
     }

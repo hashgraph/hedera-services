@@ -137,8 +137,10 @@ public class ConversionUtils {
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
         requireNonNull(accountID);
         final var integralAddress = accountID.hasAccountNum()
-                ? asEvmAddress(accountID.accountNum())
-                : accountID.alias().toByteArray();
+                ? asEvmAddress(accountID.accountNumOrThrow())
+                : accountID
+                        .aliasOrElse(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY)
+                        .toByteArray();
         return asHeadlongAddress(integralAddress);
     }
 

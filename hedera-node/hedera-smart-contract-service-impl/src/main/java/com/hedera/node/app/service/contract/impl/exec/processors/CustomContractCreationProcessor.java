@@ -106,4 +106,11 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     private boolean alreadyCreated(final MutableAccount account) {
         return account.getNonce() > 0 || account.getCode().size() > 0;
     }
+
+    @Override
+    protected void revert(final MessageFrame frame) {
+        super.revert(frame);
+        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
+        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
+    }
 }
