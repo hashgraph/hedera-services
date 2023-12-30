@@ -162,18 +162,29 @@ public final class SyncUtils {
         };
     }
 
+    // TODO rename these functions
+
     /**
      * Tell the sync peer which of their tips I have. The complementary function to
-     * {@link #readMyTipsTheyHave(Connection, int)}.
+     * {@link #readMyTipsTheyHaveAndUpdatedTips(Connection, int, boolean, int)}.
      *
      * @param connection     the connection to write to
      * @param theirTipsIHave for each tip they sent me, write true if I have it, false otherwise. Order corresponds to
      *                       the order in which they sent me their tips.
-     * @return a {@link Callable} that writes the booleans
+     * @param tipsToResend   if not null then resend these tips
+     * @return a {@link Callable} that writes the booleans and tips
      */
-    public static Callable<Void> writeTheirTipsIHave(final Connection connection, final List<Boolean> theirTipsIHave) {
+    public static Callable<Void> writeTheirTipsIHaveAndResendTips(
+            @NonNull final Connection connection,
+            @NonNull final List<Boolean> theirTipsIHave,
+            @Nullable List<Hash> tipsToResend) {
         return () -> {
             connection.getDos().writeBooleanList(theirTipsIHave);
+
+            if (tipsToResend != null) {
+                connection.getDos().writeTipHashes(tipsToResend);
+            }
+
             connection.getDos().flush();
             logger.info(
                     SYNC_INFO.getMarker(),
@@ -186,24 +197,30 @@ public final class SyncUtils {
 
     /**
      * Read from the peer which of my tips they have. The complementary function to
-     * {@link #writeTheirTipsIHave(Connection, List)}.
+     * {@link #writeTheirTipsIHaveAndResendTips(Connection, List, List)}.
      *
-     * @param connection   the connection to read from
-     * @param numberOfTips the number of tips I sent them
-     * @return a {@link Callable} that reads the booleans
+     * @param connection    the connection to read from
+     * @param numberOfTips  the number of tips I sent them
+     * @param numberOfNodes the number of nodes in the network
+     * @return a {@link Callable} that reads the booleans and tips
      */
-    public static Callable<List<Boolean>> readMyTipsTheyHave(final Connection connection, final int numberOfTips) {
+    public static Callable<TheirBooleansAndUpdatedTips> readMyTipsTheyHaveAndUpdatedTips(final Connection connection,
+            final int numberOfTips, final boolean resendTips,
+            final int numberOfNodes) {
         return () -> {
             final List<Boolean> booleans = connection.getDis().readBooleanList(numberOfTips);
             if (booleans == null) {
                 throw new SyncException(connection, "peer sent null booleans");
             }
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} received booleans: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortBooleans(booleans));
-            return booleans;
+
+            final List<Hash> newTipHashes;
+            if (resendTips) {
+                newTipHashes = connection.getDis().readTipHashes(numberOfNodes);
+            } else {
+                newTipHashes = null;
+            }
+
+            return new TheirBooleansAndUpdatedTips(booleans, newTipHashes);
         };
     }
 
@@ -333,9 +350,9 @@ public final class SyncUtils {
                             // we are done reading event, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
                         }
-                            // while we are waiting for the peer to tell us they are done, they might send
-                            // COMM_SYNC_ONGOING
-                            // if they are still busy reading events
+                        // while we are waiting for the peer to tell us they are done, they might send
+                        // COMM_SYNC_ONGOING
+                        // if they are still busy reading events
                         case ByteConstants.COMM_SYNC_ONGOING -> {
                             // peer is still reading events, waiting for them to finish
                             logger.debug(

@@ -20,6 +20,8 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;
 
+// TODO test with new settings disabled
+
 /**
  * Configuration of the sync gossip algorithm
  *
@@ -35,9 +37,13 @@ import java.time.Duration;
  *                                        event intake thread.
  * @param filterLikelyDuplicates          if true then do not send events that are likely to be duplicates when they are
  *                                        received by the peer
- * @param sendLatestGenerations           if true, then look up generations again after the first phase of the sync is
- *                                        completed and send the latest events to the peer. If false, only consider
- *                                        events we know about at the beginning of the sync protocol.
+ * @param sendLatestGenerations           if true, then look up generations again at the end of the sync and send the
+ *                                        latest events to the peer. If false, only consider events we know about at the
+ *                                        beginning of the sync protocol.
+ * @param resendTips                      if true then resend during the second phase of the sync. In situations with
+ *                                        high latency, each peer will have learned about new events in the time it
+ *                                        takes for the first phase to complete, and it's a lot easier to resend tips
+ *                                        than it is to send a bunch of duplicate events.
  * @param nonAncestorFilterThreshold      ignored if {@link #filterLikelyDuplicates} is false. For each event that is
  *                                        not a self event and is not an ancestor of a self event, we must know about
  *                                        the event for at least this amount of time before the event is eligible to be
@@ -57,6 +63,8 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
         @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
         @ConfigProperty(defaultValue = "true") boolean sendLatestGenerations,
+        @ConfigProperty(defaultValue = "true") boolean resendTips,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
-        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {}
+        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {
+}
