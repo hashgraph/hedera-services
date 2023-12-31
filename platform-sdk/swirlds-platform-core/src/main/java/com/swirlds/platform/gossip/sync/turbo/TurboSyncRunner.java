@@ -426,10 +426,11 @@ public class TurboSyncRunner {
         final Set<ShadowEvent> eventsTheyHave = new HashSet<>();
 
         // Add the most recent tips they have sent us.
-        // Note: we intentionally take the tips from phase B, not phase C.
-        // The original sync algorithm used tips from phase C. But since we
-        // have more recent information from phase B, there is no harm in using it.
-        eventsTheyHave.addAll(shadowgraph.shadows(dataReceivedB.theirTips()));
+        // Note: we intentionally take the tips from phase B and phase C.
+        // The original sync algorithm used just tips from phase C. But since we
+        // have more recent information from phase B we'd might as well use it.
+        eventsTheyHave.addAll(shadowgraph.shadowsIfPresent(dataReceivedB.theirTips()));
+        eventsTheyHave.addAll(shadowgraph.shadowsIfPresent(dataReceivedC.theirTips()));
 
         // Now, use the booleans they sent us in phase B to determine which of our tips they have.
         // The booleans in phase B will correspond to the tips we sent in phase C.
