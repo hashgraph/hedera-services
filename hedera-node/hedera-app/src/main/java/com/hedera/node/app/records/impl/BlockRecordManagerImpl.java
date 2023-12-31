@@ -295,6 +295,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
     }
 
+    @Override
+    public @NonNull Timestamp currentBlockTimestamp() {
+        return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -86,6 +86,7 @@ public class TxnReceiptRegression extends HapiSuite {
                 .then(getReceipt("success").forgetOp().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
+    @HapiTest
     final HapiSpec receiptUnavailableAfterCacheTtl() {
         return defaultHapiSpec("ReceiptUnavailableAfterCacheTtl")
                 .given()
