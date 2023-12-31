@@ -551,7 +551,7 @@ public final class SyncUtils {
     /**
      * @param sendList The list of events to sort.
      */
-    static void sort(final List<EventImpl> sendList) {
+    public static void sort(final List<EventImpl> sendList) {
         sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
     }
 
@@ -564,7 +564,7 @@ public final class SyncUtils {
      * false if we don't
      */
     @NonNull
-    static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
+    public static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
         final List<Boolean> myBooleans = new ArrayList<>(theirTipShadows.size());
         for (final ShadowEvent s : theirTipShadows) {
             myBooleans.add(s != null); // is this event is known to me
@@ -583,7 +583,7 @@ public final class SyncUtils {
      * @return a list of tips that they have
      */
     @NonNull
-    static List<ShadowEvent> getMyTipsTheyKnow(
+    public static List<ShadowEvent> getMyTipsTheyKnow(
             @NonNull final Connection connection,
             @NonNull final List<ShadowEvent> myTips,
             @NonNull final List<Boolean> myTipsTheyHave)

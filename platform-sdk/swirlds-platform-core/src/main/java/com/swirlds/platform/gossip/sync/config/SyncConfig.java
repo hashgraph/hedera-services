@@ -61,6 +61,8 @@ import java.time.Duration;
  *                                         during a sync
  * @param maxSyncTime                      the maximum amount of time to spend syncing with a peer, syncs that take
  *                                         longer than this will be aborted
+ * @param turbo                            if true then use the turbo sync protocol, if false then use the traditional
+ *                                         sequential sync protocol
  */
 @ConfigData("sync")
 public record SyncConfig(
@@ -77,4 +79,5 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "true") boolean resendTips,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
-        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {}
+        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime,
+        @ConfigProperty(defaultValue = "true") boolean turbo) {}
