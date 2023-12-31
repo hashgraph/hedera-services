@@ -58,6 +58,8 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
@@ -88,6 +90,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -134,6 +137,7 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
+    private final ScheduleExpirationHook scheduleExpirationHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
     private final ChildRecordFinalizer childRecordFinalizer;
@@ -164,7 +168,8 @@ public class HandleWorkflow {
             @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
+            @NonNull final ScheduleExpirationHook scheduleExpirationHook) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -187,6 +192,7 @@ public class HandleWorkflow {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.networkUtilizationManager =
                 requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
+        this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
     }
 
     /**
@@ -269,7 +275,7 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
         // Setup record builder list
-        blockRecordManager.startUserTransaction(consensusNow, state);
+        final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
         final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
@@ -295,6 +301,16 @@ public class HandleWorkflow {
         // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
         // the user transaction
         blockRecordManager.advanceConsensusClock(consensusNow, state);
+        // Look for any expired schedules and delete them when new block is created
+        if (switchedBlocks) {
+            final var firstSecondToExpire =
+                    blockRecordManager.firstConsTimeOfLastBlock().getEpochSecond();
+            final var lastSecondToExpire = consensusNow.getEpochSecond();
+            final var scheduleStore =
+                    new WritableStoreFactory(stack, ScheduleService.NAME).getStore(WritableScheduleStore.class);
+            // purge all expired schedules between the first consensus time of last block and the current consensus time
+            scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
+        }
 
         TransactionBody txBody;
         AccountID payer = null;

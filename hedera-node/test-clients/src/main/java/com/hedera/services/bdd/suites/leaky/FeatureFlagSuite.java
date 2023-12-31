@@ -35,6 +35,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.enableAllFeatureFlagsAndDisableContractThrottles;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -97,7 +99,9 @@ public class FeatureFlagSuite extends HapiSuite {
         return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
                 .given()
                 .when()
-                .then(enableAllFeatureFlagsAndDisableContractThrottles());
+                .then(
+                        ifNotHapiTest(enableAllFeatureFlagsAndDisableContractThrottles()),
+                        ifHapiTest(enableAllFeatureFlagsAndDisableContractThrottles("scheduling.longTermEnabled")));
     }
 
     private HapiSpecOperation confirmAutoCreationNotSupported() {
