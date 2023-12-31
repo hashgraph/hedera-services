@@ -39,9 +39,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -607,5 +609,32 @@ public final class SyncUtils {
         }
 
         return knownTips;
+    }
+
+    /**
+     * Given a list of events we are transmitting, find the hashes of the tips of these events. A tip in this context is
+     * defined as an event with no self child.
+     *
+     * @param events the events we are transmitting
+     * @return the hashes of the tips of these events
+     */
+    public static List<Hash> findTipHashesOfEventList(@NonNull final List<EventImpl> events) {
+        final Set<Hash> eventHashes = new HashSet<>();
+        for (final EventImpl event : events) {
+            eventHashes.add(event.getBaseHash());
+        }
+
+        // A tip is an event with no self child. Check the self parent of each event, and remove that parent
+        // from the set if it exists.
+
+        for (final EventImpl event : events) {
+            final EventImpl selfParent = event.getSelfParent();
+            if (selfParent == null) {
+                continue;
+            }
+            eventHashes.remove(selfParent.getBaseHash());
+        }
+
+        return new ArrayList<>(eventHashes);
     }
 }

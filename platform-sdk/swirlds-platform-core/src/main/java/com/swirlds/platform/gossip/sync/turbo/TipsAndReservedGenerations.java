@@ -23,20 +23,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * Records information about data sent during a turbo sync iteration.
+ * Records information tips and generations sent to the peer. Also carries a reservation for the generations sent.
  *
  * @param reservedGenerations the generations reserved for this iteration
  * @param generationsSent     the generations sent during this iteration
  * @param tipsSent            the tips sent during this iteration. In iteration N+1, the peer will send back a boolean
  *                            value for each tip indicating whether it has the tip or not.
- * @param tipsOfSendList      when we eventually decide which events to send to the peer, these are the tips of that
- *                            list. In iteration N+1, we can assume that the peer has all of these events.
  */
-public record TurboSyncDataSent(
+public record TipsAndReservedGenerations(
         @NonNull GenerationReservation reservedGenerations,
         @NonNull Generations generationsSent,
-        @NonNull List<Hash> tipsSent,
-        @NonNull List<Hash> tipsOfSendList) {
+        @NonNull List<Hash> tipsSent) {
 
     /**
      * Release resources held by this object.

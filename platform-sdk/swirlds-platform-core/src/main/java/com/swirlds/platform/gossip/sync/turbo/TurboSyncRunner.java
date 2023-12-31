@@ -235,10 +235,16 @@ public class TurboSyncRunner {
         // Sanity check
         dataOutputStream.writeLong(cycleNumber);
 
-        sendEvents();
+        final List<Hash> tipsOfSendList = sendEvents();
         sendBooleans();
-        sendTipsAndGenerations();
+        final TipsAndReservedGenerations tipsAndReservedGenerations = sendTipsAndGenerations();
         dataOutputStream.flush();
+
+        dataSentA = new TurboSyncDataSent(
+                tipsAndReservedGenerations.reservedGenerations(),
+                tipsAndReservedGenerations.generationsSent(),
+                tipsAndReservedGenerations.tipsSent(),
+                tipsOfSendList);
     }
 
     /**
@@ -263,19 +269,21 @@ public class TurboSyncRunner {
     /**
      * Look at the shadowgraph and compute the tips and generations we need to send to the peer.
      */
-    private void sendTipsAndGenerations() throws IOException {
+    @NonNull
+    private TipsAndReservedGenerations sendTipsAndGenerations() throws IOException {
         final GenerationReservation generationReservation = shadowgraph.reserve();
         final Generations generations = getGenerations(generationReservation.getGeneration());
         final List<Hash> myTips = shadowgraph.getTips().stream()
                 .map(e -> e.getEvent().getBaseHash())
                 .toList();
 
-        dataSentA = new TurboSyncDataSent(generationReservation, generations, myTips);
         dataOutputStream.writeGenerations(generations);
 
         // TODO: important optimization: don't resend the same tips over and over again
 
         dataOutputStream.writeTipHashes(myTips);
+
+        return new TipsAndReservedGenerations(generationReservation, generations, myTips);
     }
 
     /**
@@ -337,12 +345,16 @@ public class TurboSyncRunner {
 
     /**
      * Send events needed by the peer.
+     *
+     * @return a list of the tip hashes for the events that were sent, used to prevent the sending of the same event
+     * multiple times to the same peer
      */
-    private void sendEvents() throws IOException, SyncException {
+    @NonNull
+    private List<Hash> sendEvents() throws IOException, SyncException {
         if (dataSentC == null) {
             // We haven't yet sent the booleans to the peer.
             // This happens right at the beginning of the protocol.
-            return;
+            return List.of();
         }
 
         final List<EventImpl> eventsToSend = getEventsToSend();
@@ -351,6 +363,8 @@ public class TurboSyncRunner {
         for (final EventImpl event : eventsToSend) {
             dataOutputStream.writeEventData(event);
         }
+
+        return SyncUtils.findTipHashesOfEventList(eventsToSend);
     }
 
     /**
@@ -445,6 +459,9 @@ public class TurboSyncRunner {
         // The booleans in phase B will correspond to the tips we sent in phase C.
         eventsTheyHave.addAll(getMyTipsTheyKnow(
                 connection, shadowgraph.shadows(dataSentC.tipsSent()), dataReceivedB.theirBooleans()));
+
+        // Add the tips of the events we sent in the previous sync.
+        eventsTheyHave.addAll(shadowgraph.shadows(dataSentB.tipsOfSendList()));
 
         return eventsTheyHave;
     }
