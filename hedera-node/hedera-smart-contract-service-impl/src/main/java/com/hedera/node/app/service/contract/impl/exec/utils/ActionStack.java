@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,6 +97,16 @@ public class ActionStack {
         this.invalidActions = invalidActions;
         this.allActions = allActions;
         this.actionsStack = actionsStack;
+    }
+
+    /**
+     * Returns a view of this stack appropriate for externalizing in a
+     * {@link com.hedera.hapi.streams.SidecarType#CONTRACT_ACTION} sidecar.
+     *
+     * @return a view of this stack ready to be put in a sidecar
+     */
+    public @NonNull ContractActions asContractActions() {
+        return new ContractActions(actionsStack.stream().map(ActionWrapper::get).toList());
     }
 
     /**

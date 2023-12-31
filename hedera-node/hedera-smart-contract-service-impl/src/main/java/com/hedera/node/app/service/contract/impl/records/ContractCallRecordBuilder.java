@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Exposes the record customizations needed for a HAPI contract call transaction.
  */
-public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
+public interface ContractCallRecordBuilder extends ContractOperationRecordBuilder {
 
     /**
      * Tracks the final status of a top-level contract call.

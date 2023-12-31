@@ -23,7 +23,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public interface EthereumTransactionRecordBuilder extends GasFeeRecordBuilder {
+public interface EthereumTransactionRecordBuilder extends ContractOperationRecordBuilder {
     /**
      * Tracks the final status of a HAPI Ethereum transaction.
      *

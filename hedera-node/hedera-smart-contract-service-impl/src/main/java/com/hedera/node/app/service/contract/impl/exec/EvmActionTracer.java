@@ -24,6 +24,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -99,6 +100,11 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         if (hasActionSidecarsEnabled(frame)) {
             actionStack.finalizeLastStackActionAsPrecompile(frame, type, stackValidationChoice(frame));
         }
+    }
+
+    @Override
+    public @NonNull ContractActions contractActions() {
+        return actionStack.asContractActions();
     }
 
     /**

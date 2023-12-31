@@ -91,8 +91,8 @@ class ContextQueryProcessorTest {
                         HEVM_CREATION, proxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
         final var protoResult = SUCCESS_RESULT.asQueryResult();
-        final var expectedResult =
-                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
+        final var expectedResult = new CallOutcome(
+                protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice(), null, null);
         assertEquals(expectedResult, subject.call());
     }
 }

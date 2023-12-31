@@ -42,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
@@ -51,7 +52,6 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import dagger.Binds;
 import dagger.Module;
@@ -144,7 +144,7 @@ public interface TransactionModule {
                 hederaEvmBlocks,
                 tinybarValues,
                 systemContractGasCalculator,
-                context.recordBuilder(DeleteCapableTransactionRecordBuilder.class));
+                context.recordBuilder(ContractOperationRecordBuilder.class));
     }
 
     @Provides

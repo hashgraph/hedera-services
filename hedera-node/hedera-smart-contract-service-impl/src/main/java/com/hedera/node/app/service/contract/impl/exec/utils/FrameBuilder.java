@@ -124,7 +124,7 @@ public class FrameBuilder {
             contextEntries.put(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
         }
         if (context.isDeleteCapable()) {
-            contextEntries.put(SELF_DESTRUCT_BENEFICIARIES, context.deleteCapableTransactionRecordBuilder());
+            contextEntries.put(SELF_DESTRUCT_BENEFICIARIES, context.recordBuilder());
         }
         return contextEntries;
     }

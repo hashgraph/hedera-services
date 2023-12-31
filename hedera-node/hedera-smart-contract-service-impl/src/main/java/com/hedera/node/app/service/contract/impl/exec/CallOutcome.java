@@ -22,6 +22,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.streams.ContractActions;
+import com.hedera.hapi.streams.ContractStateChanges;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -31,12 +33,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param result the result of the call
  * @param status the resolved status of the call
  * @param tinybarGasPrice the tinybar-denominated gas price used for the call
+ * @param actions any contract actions that should be externalized in a sidecar
+ * @param stateChanges any contract state changes that should be externalized in a sidecar
  */
 public record CallOutcome(
         @NonNull ContractFunctionResult result,
         @NonNull ResponseCodeEnum status,
         @Nullable ContractID recipientId,
-        long tinybarGasPrice) {
+        long tinybarGasPrice,
+        @Nullable ContractActions actions,
+        @Nullable ContractStateChanges stateChanges) {
 
     public CallOutcome {
         requireNonNull(result);

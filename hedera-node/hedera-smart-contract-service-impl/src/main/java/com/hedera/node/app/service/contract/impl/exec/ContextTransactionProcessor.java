@@ -107,7 +107,9 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
                     result.finalStatus(),
                     result.recipientId(),
-                    result.gasPrice());
+                    result.gasPrice(),
+                    null,
+                    null);
         } catch (AbortException e) {
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
@@ -116,7 +118,9 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
                     result.finalStatus(),
                     result.recipientId(),
-                    result.gasPrice());
+                    result.gasPrice(),
+                    null,
+                    null);
         }
     }
 

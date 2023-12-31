@@ -194,8 +194,8 @@ class ContractCallLocalHandlerTest {
                 .willReturn(component);
         given(component.contextQueryProcessor()).willReturn(processor);
         final var expectedResult = SUCCESS_RESULT.asQueryResult();
-        final var expectedOutcome =
-                new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus(), null, SUCCESS_RESULT.gasPrice());
+        final var expectedOutcome = new CallOutcome(
+                expectedResult, SUCCESS_RESULT.finalStatus(), null, SUCCESS_RESULT.gasPrice(), null, null);
         given(processor.call()).willReturn(expectedOutcome);
 
         // given(processor.call()).willReturn(responseHeader);

@@ -156,12 +156,17 @@ class EthereumTransactionHandlerTest {
                 .willReturn(recordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
-                expectedResult, SUCCESS_RESULT.finalStatus(), CALLED_CONTRACT_ID, SUCCESS_RESULT.gasPrice());
+                expectedResult,
+                SUCCESS_RESULT.finalStatus(),
+                CALLED_CONTRACT_ID,
+                SUCCESS_RESULT.gasPrice(),
+                null,
+                null);
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCallResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.withTinybarGasFee(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
+        given(recordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
@@ -175,14 +180,14 @@ class EthereumTransactionHandlerTest {
                 .willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
-        final var expectedOutcome =
-                new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus(), null, SUCCESS_RESULT.gasPrice());
+        final var expectedOutcome = new CallOutcome(
+                expectedResult, SUCCESS_RESULT.finalStatus(), null, SUCCESS_RESULT.gasPrice(), null, null);
 
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITHOUT_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.withTinybarGasFee(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
+        given(recordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }

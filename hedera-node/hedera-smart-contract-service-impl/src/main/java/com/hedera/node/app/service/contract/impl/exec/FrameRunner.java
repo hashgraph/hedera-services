@@ -103,9 +103,9 @@ public class FrameRunner {
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
         if (frame.getState() == COMPLETED_SUCCESS) {
             return successFrom(
-                    gasUsed, senderId, recipientMetadata.hederaId(), asEvmContractId(recipientAddress), frame);
+                    gasUsed, senderId, recipientMetadata.hederaId(), asEvmContractId(recipientAddress), frame, tracer);
         } else {
-            return failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId());
+            return failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId(), tracer);
         }
     }
 

@@ -56,7 +56,7 @@ public class ContractCallHandler implements TransactionHandler {
         context.recordBuilder(ContractCallRecordBuilder.class)
                 .contractCallResult(outcome.result())
                 .contractID(outcome.recipientId())
-                .withTinybarGasFee(outcome.tinybarGasCost());
+                .withCommonFieldsSetFrom(outcome);
         throwIfUnsuccessful(outcome.status());
     }
 
