@@ -47,6 +47,9 @@ import java.time.Duration;
  * @param creationQueueBufferSize        the size of the buffer for the event creator
  * @param creationQueueWaitForWorkPeriod the amount of time the event creator spends waiting for work in its intake
  *                                       queue
+ * @param globalProbation                the minimum probationary period for all nodes. Probation is defined as the
+ *                                       amount of time that an event is known about prior to it being an eligible
+ *                                       parent.
  */
 @ConfigData("event.creation")
 public record EventCreationConfig(
@@ -57,4 +60,6 @@ public record EventCreationConfig(
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
         @ConfigProperty(defaultValue = "1024") int creationQueueSize,
         @ConfigProperty(defaultValue = "1024") int creationQueueBufferSize,
-        @ConfigProperty(defaultValue = "1 ms") @NonNull Duration creationQueueWaitForWorkPeriod) {}
+        @ConfigProperty(defaultValue = "1 ms") @NonNull Duration creationQueueWaitForWorkPeriod,
+        @ConfigProperty(defaultValue = "100ms") @NonNull Duration globalProbation) {
+}
