@@ -189,9 +189,8 @@ public abstract class TestBase {
         suite.skipClientTearDown();
         // Don't log unnecessary detail
         suite.setOnlyLogHeader();
-        HapiSpec.setTargetNetworkType(CI_DOCKER_NETWORK);
         return suite.getSpecsInSuiteWithOverrides().stream()
-                .map(spec -> spec.setSuitePrefix(suite.name() + suffix));
+                .map(spec -> spec.setSuitePrefix(suite.name() + suffix).setTargetNetworkType(CI_DOCKER_NETWORK));
     }
 
     /**
@@ -213,8 +212,8 @@ public abstract class TestBase {
     protected final DynamicContainer extractSpecsFromSuite(
             final Supplier<HapiSuite> suiteSupplier, final String filter) {
         final var suite = suiteSupplier.get();
-        HapiSpec.setTargetNetworkType(CI_DOCKER_NETWORK);
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
+                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName(), () -> {
                     s.run();
                     assertEquals(
@@ -235,8 +234,8 @@ public abstract class TestBase {
 
     protected final DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
-        HapiSpec.setTargetNetworkType(CI_DOCKER_NETWORK);
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
+                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
                     s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
                     s.run();

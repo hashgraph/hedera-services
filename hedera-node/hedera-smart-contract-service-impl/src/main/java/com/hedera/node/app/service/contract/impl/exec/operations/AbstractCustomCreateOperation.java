@@ -98,7 +98,7 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
      * @param frame the frame running the successful operation
      * @param createdAddress the address of the newly created contract
      */
-    protected abstract void onSuccess(@NonNull MessageFrame frame, @NonNull MessageFrame childFrame, @NonNull Address createdAddress);
+    protected abstract void onSuccess(@NonNull MessageFrame frame, @NonNull Address createdAddress);
 
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
@@ -183,7 +183,7 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             final var creation = childFrame.getContractAddress();
             frame.pushStackItem(Words.fromAddress(creation));
-            onSuccess(frame, childFrame, creation);
+            onSuccess(frame, creation);
         } else {
             frame.setReturnData(childFrame.getOutputData());
             frame.pushStackItem(UInt256.ZERO);

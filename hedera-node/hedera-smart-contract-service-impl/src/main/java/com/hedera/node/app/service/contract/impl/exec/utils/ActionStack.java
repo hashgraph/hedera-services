@@ -178,7 +178,6 @@ public class ActionStack {
             case CODE_SUCCESS, COMPLETED_SUCCESS -> {
                 final var builder = action.copyBuilder();
                 builder.gasUsed(action.gas() - frame.getRemainingGas());
-                setRecipient(builder, frame);
                 if (action.callType() == CREATE) {
                     builder.output(Bytes.EMPTY);
                 } else {
@@ -197,8 +196,8 @@ public class ActionStack {
                         .ifPresentOrElse(
                                 reason -> builder.revertReason(tuweniToPbjBytes(reason)),
                                 () -> builder.revertReason(Bytes.EMPTY));
-                if (frame.getType() != CONTRACT_CREATION) {
-                    setRecipient(builder, frame);
+                if (frame.getType() == CONTRACT_CREATION) {
+                    builder.recipientContract((ContractID) null);
                 }
                 yield builder.build();
             }
@@ -215,25 +214,12 @@ public class ActionStack {
                 } else {
                     builder.error(Bytes.EMPTY);
                 }
-                if (frame.getType() != CONTRACT_CREATION) {
-                    setRecipient(builder, frame);
+                if (frame.getType() == CONTRACT_CREATION) {
+                    builder.recipientContract((ContractID) null);
                 }
                 yield builder.build();
             }
         };
-    }
-
-    private void setRecipient(ContractAction.Builder builder, MessageFrame frame) {
-        // If this call "targets" a missing address, we can't decide yet whether to use a contract id or an
-        // account id for the recipient; only later when we know whether the call attempted a lazy creation
-        // can we decide to either leave this address (on failure) or replace it with the created account id
-        if (targetsMissingAddress(frame)) {
-            builder.targetedAddress(tuweniToPbjBytes(frame.getContractAddress()));
-        } else if (CodeV0.EMPTY_CODE.equals(frame.getCode())) {
-            builder.recipientAccount(accountIdWith(hederaIdNumOfContractIn(frame)));
-        } else {
-            builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
-        }
     }
 
     /**
@@ -278,7 +264,16 @@ public class ActionStack {
                 .input(tuweniToPbjBytes(frame.getInputData()))
                 .value(frame.getValue().toLong())
                 .callDepth(frame.getDepth());
-        //set recipient on final form
+        // If this call "targets" a missing address, we can't decide yet whether to use a contract id or an
+        // account id for the recipient; only later when we know whether the call attempted a lazy creation
+        // can we decide to either leave this address (on failure) or replace it with the created account id
+        if (targetsMissingAddress(frame)) {
+            builder.targetedAddress(tuweniToPbjBytes(frame.getContractAddress()));
+        } else if (CodeV0.EMPTY_CODE.equals(frame.getCode())) {
+            builder.recipientAccount(accountIdWith(hederaIdNumOfContractIn(frame)));
+        } else {
+            builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
+        }
         final var wrappedAction = new ActionWrapper(builder.build());
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
@@ -370,9 +365,5 @@ public class ActionStack {
     private static <E, I> String get(
             @NonNull final E subject, final Function<E, I> getter, final Function<I, String> processor) {
         return processor.compose(getter).apply(subject);
-    }
-
-    public List<ActionWrapper> allActions() {
-        return allActions;
     }
 }

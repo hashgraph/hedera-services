@@ -33,13 +33,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.streams.ContractBytecode;
-import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -300,13 +295,19 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccount(@NonNull final Address alias, @Nullable ContractBytecode bytecode) {
-        evmFrameState.finalizeHollowAccount(alias);
-        // add child record on merge
+    public void finalizeHollowAccount(@NonNull final Address address, @NonNull final Address parent) {
+        // (FUTURE) Since for mono-service parity we externalize a ContractCreate populated with the
+        // contract-specific Hedera properties of the parent, we should either (1) actually set those
+        // properties on the finalized hollow account with those properties; or (2) stop adding them
+        // to the externalized creation record
+        evmFrameState.finalizeHollowAccount(address);
+        // Reset pending creation to null, as a CREATE2 operation "collided" with an existing
+        // hollow account instead of creating a truly new contract
         pendingCreation = null;
-        var contractId = getHederaContractId(alias);
-        var evmAddress = aliasFrom(alias);
-        enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress, bytecode);
+        enhancement
+                .operations()
+                .externalizeHollowAccountMerge(
+                        getHederaContractId(address), getHederaContractId(parent), aliasFrom(address));
     }
 
     @Override
@@ -318,9 +319,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTrackingDeletion(
-            @NonNull final Address deleted, @NonNull final Address beneficiary) {
-        return evmFrameState.tryTrackingDeletion(deleted, beneficiary);
+    public Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull final Address deleted, @NonNull final Address beneficiary, @NonNull final MessageFrame frame) {
+        return evmFrameState.tryTrackingSelfDestructBeneficiary(deleted, beneficiary, frame);
     }
 
     /**
@@ -514,25 +515,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             @Nullable final Address origin,
             @Nullable final ContractCreateTransactionBody body,
             @Nullable final Address alias) {
-        var number = enhancement.operations().peekNextEntityNumber();
-        if(alias != null && isHollowAccount(alias)) {
-            var aliasBytes = ConversionUtils.aliasFrom(alias);
-            number = enhancement.nativeOperations().resolveAlias(aliasBytes);
-        }
-
+        final var number = enhancement.operations().peekNextEntityNumber();
         pendingCreation = new PendingCreation(
                 alias == null ? asLongZeroAddress(number) : alias,
                 number,
                 origin != null ? evmFrameState.getIdNumber(origin) : MISSING_ENTITY_NUMBER,
                 body);
-    }
-
-    public void addActionAndStateChangesSidecars(ActionSidecarContentTracer tracer, ContractStateChanges stateChanges) {
-        enhancement.operations().addActionAndStateChangesSidecars(tracer, stateChanges);
-    }
-
-    public void addBytecodeSidecar(MessageFrame frame, ContractID recipientId,
-                                   MutableAccount recipientAccount) {
-        enhancement.operations().addBytecodeSidecar(frame, recipientId, recipientAccount);
     }
 }

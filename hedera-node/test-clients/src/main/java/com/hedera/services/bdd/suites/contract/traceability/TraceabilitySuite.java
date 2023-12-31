@@ -43,7 +43,12 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -115,7 +120,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -128,18 +132,13 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag(SMART_CONTRACT)
 public class TraceabilitySuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
-    private static final String RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.path.hapiTests";
 
     private static SidecarWatcher sidecarWatcher;
     private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
@@ -225,11 +224,11 @@ public class TraceabilitySuite extends HapiSuite {
                     .when()
                     .then(assertionsHold((spec, opLog) -> fail("Watch service couldn't be" + " initialized.")));
         }
+
         return defaultHapiSpec("initialize").given().when().then();
     }
 
     @HapiTest
-    @Order(1)
     final HapiSpec traceabilityE2EScenario1() {
         return defaultHapiSpec("traceabilityE2EScenario1")
                 .given(
@@ -600,7 +599,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(2)
     final HapiSpec traceabilityE2EScenario2() {
         return defaultHapiSpec("traceabilityE2EScenario2")
                 .given(
@@ -1005,7 +1003,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(3)
     final HapiSpec traceabilityE2EScenario3() {
         return defaultHapiSpec("traceabilityE2EScenario3")
                 .given(
@@ -1414,7 +1411,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(4)
     final HapiSpec traceabilityE2EScenario4() {
         return defaultHapiSpec("traceabilityE2EScenario4")
                 .given(
@@ -1706,7 +1702,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(5)
     final HapiSpec traceabilityE2EScenario5() {
         return defaultHapiSpec("traceabilityE2EScenario5")
                 .given(
@@ -2012,7 +2007,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(6)
     final HapiSpec traceabilityE2EScenario6() {
         return defaultHapiSpec("traceabilityE2EScenario6")
                 .given(
@@ -2348,7 +2342,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(7)
     final HapiSpec traceabilityE2EScenario7() {
         return defaultHapiSpec("traceabilityE2EScenario7")
                 .given(
@@ -2739,7 +2732,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(8)
     final HapiSpec traceabilityE2EScenario8() {
         return defaultHapiSpec("traceabilityE2EScenario8")
                 .given(
@@ -3091,7 +3083,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(9)
     final HapiSpec traceabilityE2EScenario9() {
         return defaultHapiSpec("traceabilityE2EScenario9")
                 .given(
@@ -3398,7 +3389,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(10)
     final HapiSpec traceabilityE2EScenario10() {
         return defaultHapiSpec("traceabilityE2EScenario10")
                 .given(
@@ -3741,7 +3731,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(11)
     final HapiSpec traceabilityE2EScenario11() {
         return defaultHapiSpec("traceabilityE2EScenario11")
                 .given(
@@ -4019,7 +4008,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(12)
     final HapiSpec traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
@@ -4051,14 +4039,10 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecode(TRACEABILITY_TXN, contract));
     }
 
-    @HapiTest
-    @Order(13)
     HapiSpec traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return propertyPreservingHapiSpec("traceabilityE2EScenario13")
-                .preserving(CHAIN_ID_PROPERTY)
+        return defaultHapiSpec("traceabilityE2EScenario13")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -4077,7 +4061,7 @@ public class TraceabilitySuite extends HapiSuite {
                         .via(FIRST_CREATE_TXN))
                 .then(
                         withOpContext((spec, opLog) -> {
-                            final HapiGetTxnRecord txnRecord = getTxnRecord(FIRST_CREATE_TXN).logged();
+                            final HapiGetTxnRecord txnRecord = getTxnRecord(FIRST_CREATE_TXN);
                             allRunFor(
                                     spec,
                                     txnRecord,
@@ -4097,13 +4081,9 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecodeWithMinimalFieldsSidecarFor(FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT));
     }
 
-    @HapiTest
-    @Order(14)
     final HapiSpec traceabilityE2EScenario14() {
-        return propertyPreservingHapiSpec("traceabilityE2EScenario14")
-                .preserving(CHAIN_ID_PROPERTY)
+        return defaultHapiSpec("traceabilityE2EScenario14")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -4143,8 +4123,6 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
-    @Order(15)
     HapiSpec traceabilityE2EScenario15() {
         final String GET_BYTECODE = "getBytecode";
         final String DEPLOY = "deploy";
@@ -4283,8 +4261,6 @@ public class TraceabilitySuite extends HapiSuite {
                 .then();
     }
 
-
-    @Order(16)
     HapiSpec traceabilityE2EScenario16() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final String PRECOMPILE_CALLER = "PrecompileCaller";
@@ -4394,7 +4370,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(17)
     final HapiSpec traceabilityE2EScenario17() {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
@@ -4453,7 +4428,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(18)
     final HapiSpec traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
@@ -4477,16 +4451,12 @@ public class TraceabilitySuite extends HapiSuite {
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(4)));
     }
 
-    @HapiTest
-    @Order(19)
     HapiSpec traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
-        return propertyPreservingHapiSpec("traceabilityE2EScenario19")
-                .preserving(CHAIN_ID_PROPERTY)
+        return defaultHapiSpec("traceabilityE2EScenario19")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -4523,8 +4493,6 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-
-    @Order(20)
     final HapiSpec traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20")
                 .given(uploadInitCode(REVERTING_CONTRACT))
@@ -4550,7 +4518,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(21)
     final HapiSpec traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
@@ -4625,7 +4592,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(22)
     final HapiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
@@ -4660,7 +4626,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(23)
     final HapiSpec vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
@@ -4692,7 +4657,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(24)
     final HapiSpec actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
         final var badApproval = "BadApproval";
@@ -4871,7 +4835,6 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-    @Order(25)
     final HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
@@ -4962,9 +4925,6 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-
-    @HapiTest
-    @Order(26)
     @SuppressWarnings("java:S5960")
     final HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
@@ -4986,7 +4946,7 @@ public class TraceabilitySuite extends HapiSuite {
                 .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
                 .given(
                         overriding(LAZY_CREATE_PROPERTY, "true"),
-                        overriding(SIDECARS_PROP, "SIDECAR_TYPE_UNKNOWN"),
+                        overriding(SIDECARS_PROP, ""),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(create2Factory),
@@ -5132,8 +5092,6 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    @HapiTest
-    @Order(27)
     final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
@@ -5313,24 +5271,19 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     private static void initialize() throws Exception {
-        final var recordStreamFolderPath = getRecordStreamFolderPath();
-        final var absolutePath =
-                recordStreamFolderPath.toAbsolutePath().toString();
-        log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
-                .formatted(HapiSpec.isRunningInCi() ? "CI" : "not CI", recordStreamFolderPath, absolutePath));
+        final var recordStreamFolderPath = HapiSpec.isRunningInCi()
+                ? HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
+                : HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY);
 
-        sidecarWatcher = new SidecarWatcher(recordStreamFolderPath);
+        {
+            final var absolutePath =
+                    Paths.get(recordStreamFolderPath).toAbsolutePath().toString();
+            log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
+                    .formatted(HapiSpec.isRunningInCi() ? "CI" : "not CI", recordStreamFolderPath, absolutePath));
+        }
+
+        sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamFolderPath));
         sidecarWatcher.watch();
-    }
-
-    private static Path getRecordStreamFolderPath() {
-        return switch (HapiSpec.targetNetworkType()) {
-            case HAPI_TEST_NETWORK -> Paths.get(
-                    HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY));
-            case CI_DOCKER_NETWORK -> Paths.get(HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY));
-            case STANDALONE_MONO_NETWORK -> Paths.get(
-                    HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY));
-        };
     }
 
     private ByteString encodeFunctionCall(final String contractName, final String functionName, final Object... args) {

@@ -192,7 +192,7 @@ public class HapiSpec implements Runnable {
     private final List<String> propertiesToPreserve;
     // Make the STANDALONE_MONO_NETWORK the default target type since we have much fewer touch-points
     // needed to re-target specs against a @HapiTest or CI Docker network than vice-versa
-    private static TargetNetworkType targetNetworkType = TargetNetworkType.STANDALONE_MONO_NETWORK;
+    TargetNetworkType targetNetworkType = TargetNetworkType.STANDALONE_MONO_NETWORK;
     List<Payment> costs = new ArrayList<>();
     List<Payment> costSnapshot = emptyList();
     String name;
@@ -261,22 +261,13 @@ public class HapiSpec implements Runnable {
         ledgerOpCountCallbacks.forEach(c -> c.accept(newNumLedgerOps));
     }
 
-    public static TargetNetworkType targetNetworkType() {
+    public TargetNetworkType targetNetworkType() {
         return targetNetworkType;
     }
 
-    public static void setTargetNetworkType(TargetNetworkType aTargetNetworkType) {
-        switch (aTargetNetworkType) {
-            case CI_DOCKER_NETWORK:
-                targetNetworkType = TargetNetworkType.CI_DOCKER_NETWORK;
-                break;
-            case STANDALONE_MONO_NETWORK:
-                targetNetworkType = TargetNetworkType.STANDALONE_MONO_NETWORK;
-                break;
-            case HAPI_TEST_NETWORK:
-                targetNetworkType = TargetNetworkType.HAPI_TEST_NETWORK;
-                break;
-        }
+    public HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
+        this.targetNetworkType = targetNetworkType;
+        return this;
     }
 
     public synchronized void saveSingleAccountBalances(SingleAccountBalances sab) {

@@ -26,7 +26,14 @@ import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.N
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
@@ -871,13 +878,5 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     private boolean dispatchNeedsHapiPayerChecks(@NonNull final TransactionCategory category) {
         return category == SCHEDULED;
-    }
-
-    public void registerCreationChildRecordBuilder(Long contractNum) {
-        recordListBuilder.registerCreationChildRecordBuilder(contractNum);
-    }
-
-    public SingleTransactionRecordBuilderImpl getCreationChildRecordBuilder(Long contractNum) {
-        return recordListBuilder.getCreationChildRecordBuilder(contractNum);
     }
 }

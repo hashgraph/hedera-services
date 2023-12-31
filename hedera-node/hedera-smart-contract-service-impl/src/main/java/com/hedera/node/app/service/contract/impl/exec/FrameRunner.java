@@ -39,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -102,17 +101,12 @@ public class FrameRunner {
 
         // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
-        var updater = ((ProxyWorldUpdater)frame.getWorldUpdater());
-
-        HederaEvmTransactionResult result;
         if (frame.getState() == COMPLETED_SUCCESS) {
-            result = successFrom(
+            return successFrom(
                     gasUsed, senderId, recipientMetadata.hederaId(), asEvmContractId(recipientAddress), frame);
         } else {
-            result = failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId());
+            return failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId());
         }
-        updater.addActionAndStateChangesSidecars(tracer, result.stateChanges());
-        return result;
     }
 
     private record RecipientMetadata(boolean isPendingCreation, @NonNull ContractID hederaId) {

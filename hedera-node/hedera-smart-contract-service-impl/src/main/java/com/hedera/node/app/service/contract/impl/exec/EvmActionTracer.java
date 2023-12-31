@@ -126,8 +126,4 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         requireNonNull(frame);
         return hasActionValidationEnabled(frame) ? ActionStack.Validation.ON : ActionStack.Validation.OFF;
     }
-
-    public ActionStack actionStack() {
-        return this.actionStack;
-    }
 }

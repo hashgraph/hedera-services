@@ -18,16 +18,12 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.streams.ContractActions;
-import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-
-import java.util.AbstractMap;
 import java.util.List;
 
 /**
@@ -62,6 +58,13 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
     ContractCallRecordBuilder contractID(@Nullable ContractID contractId);
 
     /**
+     * Returns the token id created.
+     *
+     * @return the token id created
+     */
+    TokenID tokenID();
+
+    /**
      * Tracks the result of a top-level contract call.
      *
      * @param result the {@link ContractFunctionResult} of the contract call
@@ -92,14 +95,6 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
      * @return new total supply of a token
      */
     long getNewTotalSupply();
-
-    @NonNull
-    ContractCallRecordBuilder contractActions(
-            @NonNull final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions);
-
-    @NonNull
-    ContractCallRecordBuilder addContractStateChanges(
-            @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration);
 
     @NonNull
     ContractCallRecordBuilder entropyBytes(@NonNull final Bytes prngBytes);

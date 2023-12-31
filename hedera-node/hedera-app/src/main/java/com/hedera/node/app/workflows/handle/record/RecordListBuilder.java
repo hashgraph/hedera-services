@@ -36,7 +36,9 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -86,7 +88,6 @@ public final class RecordListBuilder {
      */
     private List<SingleTransactionRecordBuilderImpl> childRecordBuilders;
 
-    private Map<Long, Integer> creationChildRecorBuildersRegistry = new HashMap();
     /**
      * Whether a following REMOVABLE child was removed. We need this to know whether to adjust consensus times
      * to eliminate gaps in following consensus times for mono-service fidelity.
@@ -375,9 +376,11 @@ public final class RecordListBuilder {
                 childRecordBuilders.set(i, null);
                 followingChildRemoved = true;
             } else {
-                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE) {
                     child.nullOutSideEffectFields();
-                    child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    if (SUCCESSES.contains(child.status())) {
+                        child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    }
                 }
 
                 if (into != i) {
@@ -493,13 +496,4 @@ public final class RecordListBuilder {
      */
     public record Result(
             @NonNull SingleTransactionRecord userTransactionRecord, @NonNull List<SingleTransactionRecord> records) {}
-
-    public void registerCreationChildRecordBuilder(Long contractNum) {
-        creationChildRecorBuildersRegistry.put(contractNum, childRecordBuilders.size() - 1);
-    }
-
-    public SingleTransactionRecordBuilderImpl getCreationChildRecordBuilder(Long contractNum) {
-        var index = creationChildRecorBuildersRegistry.get(contractNum);
-        return (index != null && index<creationChildRecorBuildersRegistry.size()) ? childRecordBuilders.get(index) : null;
-    }
 }

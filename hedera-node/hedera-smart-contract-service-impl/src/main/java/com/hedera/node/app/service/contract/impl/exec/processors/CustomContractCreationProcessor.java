@@ -18,13 +18,10 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -110,32 +107,10 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         return account.getNonce() > 0 || account.getCode().size() > 0;
     }
 
-    public void codeSuccess(MessageFrame frame, final OperationTracer operationTracer){
-        super.codeSuccess(frame, operationTracer);
-        //add bytecode sidecars
-        final var updater = (ProxyWorldUpdater)frame.getWorldUpdater();
-        if (!updater.isHollowAccount(frame.getRecipientAddress())) {
-            final var recipientAddress = frame.getRecipientAddress();
-            final var recipientId = isLongZero(recipientAddress)
-                    ? asNumberedContractId(recipientAddress)
-                    : ((ProxyWorldUpdater) frame.getWorldUpdater()).getHederaContractId(recipientAddress);
-            updater.addBytecodeSidecar(frame, recipientId, updater.getAccount(recipientAddress));
-        }
-    }
-
+    @Override
     protected void revert(final MessageFrame frame) {
         super.revert(frame);
-        final var updater = (ProxyWorldUpdater)frame.getWorldUpdater();
-        if (!updater.isHollowAccount(frame.getRecipientAddress())) {
-        final var recipientAddress = frame.getRecipientAddress();
-        final var recipientId = isLongZero(recipientAddress)
-                ? asNumberedContractId(recipientAddress)
-                : ((ProxyWorldUpdater) frame.getWorldUpdater()).getHederaContractId(recipientAddress);
-        updater.addBytecodeSidecar(frame, recipientId, updater.getAccount(recipientAddress));
-        }
-    }
-    private void completedFailed(final MessageFrame frame) {
-        frame.getMessageFrameStack().removeFirst();
-        frame.notifyCompletion();
+        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
+        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

@@ -387,8 +387,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             // Second, call the method to get the HapiSpec
             testMethod.setAccessible(true);
             if (testMethod.getParameterCount() == 0) {
-                HapiSpec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
                 final var spec = (HapiSpec) testMethod.invoke(suite);
+                spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
                 if (parent.fuzzyMatch) {
                     spec.addOverrideProperties(Map.of("recordStream.autoSnapshotManagement", "true"));
                 }
