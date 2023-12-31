@@ -181,7 +181,12 @@ class EthereumTransactionHandlerTest {
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
-                expectedResult, SUCCESS_RESULT.finalStatus(), null, SUCCESS_RESULT.gasPrice(), null, null);
+                expectedResult,
+                SUCCESS_RESULT.finalStatus(),
+                CALLED_CONTRACT_ID,
+                SUCCESS_RESULT.gasPrice(),
+                null,
+                null);
 
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);

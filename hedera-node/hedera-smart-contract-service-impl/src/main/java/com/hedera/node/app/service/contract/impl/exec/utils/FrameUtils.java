@@ -40,7 +40,7 @@ public class FrameUtils {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
     public static final String TRACKER_CONTEXT_VARIABLE = "storageAccessTracker";
     public static final String TINYBAR_VALUES_CONTEXT_VARIABLE = "tinybarValues";
-    public static final String SELF_DESTRUCT_BENEFICIARIES = "selfDestructBeneficiaries";
+    public static final String HAPI_RECORD_BUILDER = "hapiRecordBuilder";
     public static final String PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE = "propagatedCallFailure";
     public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
 
@@ -124,7 +124,7 @@ public class FrameUtils {
      */
     public static @NonNull DeleteCapableTransactionRecordBuilder selfDestructBeneficiariesFor(
             @NonNull final MessageFrame frame) {
-        return requireNonNull(initialFrameOf(frame).getContextVariable(SELF_DESTRUCT_BENEFICIARIES));
+        return requireNonNull(initialFrameOf(frame).getContextVariable(HAPI_RECORD_BUILDER));
     }
 
     public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(

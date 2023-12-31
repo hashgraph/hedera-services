@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -43,6 +44,23 @@ public record CallOutcome(
         long tinybarGasPrice,
         @Nullable ContractActions actions,
         @Nullable ContractStateChanges stateChanges) {
+
+    public static CallOutcome fromResultsWithMaybeSidecars(
+            @NonNull ContractFunctionResult result, @NonNull HederaEvmTransactionResult hevmResult) {
+        return new CallOutcome(
+                result,
+                hevmResult.finalStatus(),
+                hevmResult.recipientId(),
+                hevmResult.gasPrice(),
+                hevmResult.actions(),
+                hevmResult.stateChanges());
+    }
+
+    public static CallOutcome fromResultsWithoutSidecars(
+            @NonNull ContractFunctionResult result, @NonNull HederaEvmTransactionResult hevmResult) {
+        return new CallOutcome(
+                result, hevmResult.finalStatus(), hevmResult.recipientId(), hevmResult.gasPrice(), null, null);
+    }
 
     public CallOutcome {
         requireNonNull(result);

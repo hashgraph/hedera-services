@@ -98,29 +98,18 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // Get the appropriate processor for the EVM version
         final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
 
-        // Process the transaction
+        // Process the transaction and return its outcome
         try {
             final var result = processor.processTransaction(
                     hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
-            // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
-            return new CallOutcome(
-                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
-                    result.finalStatus(),
-                    result.recipientId(),
-                    result.gasPrice(),
-                    null,
-                    null);
+            return CallOutcome.fromResultsWithMaybeSidecars(
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         } catch (AbortException e) {
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
             final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
-            return new CallOutcome(
-                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
-                    result.finalStatus(),
-                    result.recipientId(),
-                    result.gasPrice(),
-                    null,
-                    null);
+            return CallOutcome.fromResultsWithoutSidecars(
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         }
     }
 

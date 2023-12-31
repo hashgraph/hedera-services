@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -63,10 +65,12 @@ class EvmActionTracerTest {
     @Test
     void customInitIsNoopWithoutActionSidecars() {
         givenNoActionSidecars();
+        given(actionStack.asContractActions()).willReturn(ContractActions.DEFAULT);
 
         subject.traceOriginAction(frame);
 
         verifyNoInteractions(actionStack);
+        assertSame(ContractActions.DEFAULT, subject.contractActions());
     }
 
     @Test

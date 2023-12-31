@@ -19,8 +19,8 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SELF_DESTRUCT_BENEFICIARIES;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
@@ -124,7 +124,7 @@ public class FrameBuilder {
             contextEntries.put(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
         }
         if (context.isDeleteCapable()) {
-            contextEntries.put(SELF_DESTRUCT_BENEFICIARIES, context.recordBuilder());
+            contextEntries.put(HAPI_RECORD_BUILDER, context.recordBuilder());
         }
         return contextEntries;
     }
