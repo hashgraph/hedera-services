@@ -140,6 +140,8 @@ public class TurboSyncRunner {
 
     private boolean continueProtocol = true;
 
+    private long cycleNumber = 0;
+
     /**
      * Constructor.
      *
@@ -182,6 +184,7 @@ public class TurboSyncRunner {
         try {
             while (continueProtocol) {
                 runProtocolIteration();
+                cycleNumber++;
             }
         } finally {
             // TODO I don't think this is thread safe...
@@ -229,13 +232,12 @@ public class TurboSyncRunner {
      * Send all data we intend to send during this iteration of the protocol.
      */
     private void sendData() throws IOException, SyncException {
+        // Sanity check
+        dataOutputStream.writeLong(cycleNumber);
+
         sendEvents();
         sendBooleans();
         sendTipsAndGenerations();
-        // TODO write into dataSentA
-
-        // Send tips and generations (phase A of a sync)
-
         dataOutputStream.flush();
     }
 
@@ -243,6 +245,13 @@ public class TurboSyncRunner {
      * Receive all data we intend to receive during this iteration of the protocol.
      */
     private void receiveData() throws IOException, InterruptedException {
+
+        // TODO decide if this is worth keeping as a sanity check
+        final long cycleNumber = dataInputStream.readLong();
+        if (cycleNumber != this.cycleNumber) {
+            throw new IOException("Expected cycle " + this.cycleNumber + ", got " + cycleNumber);
+        }
+
         receiveEvents();
         final List<Boolean> theirBooleans = receiveBooleans();
         final TipsAndGenerations theirTipsAndGenerations = receiveTipsAndGenerations();
@@ -262,7 +271,6 @@ public class TurboSyncRunner {
                 .toList();
 
         dataSentA = new TurboSyncDataSent(generationReservation, generations, myTips);
-
         dataOutputStream.writeGenerations(generations);
 
         // TODO: important optimization: don't resend the same tips over and over again
@@ -338,8 +346,9 @@ public class TurboSyncRunner {
         }
 
         final List<EventImpl> eventsToSend = getEventsToSend();
+
         dataOutputStream.writeInt(eventsToSend.size());
-        for (final EventImpl event : getEventsToSend()) {
+        for (final EventImpl event : eventsToSend) {
             dataOutputStream.writeEventData(event);
         }
     }
