@@ -16,24 +16,19 @@
 
 package com.swirlds.platform.gossip.sync.turbo;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
- * Records information tips and generations sent to the peer. Also carries a reservation for the generations sent.
+ * Records generations sent to the peer, as well as a reservation for the generations sent.
  *
  * @param reservedGenerations the generations reserved for this iteration
  * @param generationsSent     the generations sent during this iteration
- * @param tipsSent            the tips sent during this iteration. In iteration N+1, the peer will send back a boolean
- *                            value for each tip indicating whether it has the tip or not.
  */
-public record TipsAndReservedGenerations(
+public record ReservedGenerations(
         @NonNull GenerationReservation reservedGenerations,
-        @NonNull Generations generationsSent,
-        @NonNull List<Hash> tipsSent) {
+        @NonNull Generations generationsSent) {
 
     /**
      * Release resources held by this object.

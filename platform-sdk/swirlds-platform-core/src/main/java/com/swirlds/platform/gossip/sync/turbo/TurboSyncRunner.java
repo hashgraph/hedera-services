@@ -60,7 +60,8 @@ import java.util.stream.Collectors;
  */
 public class TurboSyncRunner {
 
-    private static final Runnable NO_OP = () -> {};
+    private static final Runnable NO_OP = () -> {
+    };
 
     private final PlatformContext platformContext;
     private final NodeId selfId;
@@ -242,13 +243,15 @@ public class TurboSyncRunner {
 
         final List<Hash> tipsOfSendList = sendEvents();
         sendBooleans();
-        final TipsAndReservedGenerations tipsAndReservedGenerations = sendTipsAndGenerations();
+        final List<Hash> tipsSent = sendTips();
+        final ReservedGenerations reservedGenerations = sendGenerations();
+
         dataOutputStream.flush();
 
         dataSentA = new TurboSyncDataSent(
-                tipsAndReservedGenerations.reservedGenerations(),
-                tipsAndReservedGenerations.generationsSent(),
-                tipsAndReservedGenerations.tipsSent(),
+                reservedGenerations.reservedGenerations(),
+                reservedGenerations.generationsSent(),
+                tipsSent,
                 tipsOfSendList);
     }
 
@@ -265,40 +268,59 @@ public class TurboSyncRunner {
 
         receiveEvents();
         final List<Boolean> theirBooleans = receiveBooleans();
-        final TipsAndGenerations theirTipsAndGenerations = receiveTipsAndGenerations();
+        final List<Hash> theirTips = receiveTips();
+        final Generations theirGenerations = receiveGenerations();
 
-        dataReceivedA = new TurboSyncDataReceived(
-                theirTipsAndGenerations.generations(), theirTipsAndGenerations.tips(), theirBooleans);
+        dataReceivedA = new TurboSyncDataReceived(theirGenerations, theirTips, theirBooleans);
     }
 
     /**
-     * Look at the shadowgraph and compute the tips and generations we need to send to the peer.
+     * Compute our current tips and send them to the peer.
+     *
+     * @return the tips we sent
      */
     @NonNull
-    private TipsAndReservedGenerations sendTipsAndGenerations() throws IOException {
-        final GenerationReservation generationReservation = shadowgraph.reserve();
-        final Generations generations = getGenerations(generationReservation.getGeneration());
+    private List<Hash> sendTips() throws IOException {
         final List<Hash> myTips = shadowgraph.getTips().stream()
                 .map(e -> e.getEvent().getBaseHash())
                 .toList();
 
-        dataOutputStream.writeGenerations(generations);
-
-        // TODO: important optimization: don't resend the same tips over and over again
+        // TODO compression
 
         dataOutputStream.writeTipHashes(myTips);
 
-        return new TipsAndReservedGenerations(generationReservation, generations, myTips);
+
+        return myTips;
     }
 
     /**
-     * Receive tips and generations from the peer.
+     * Receive tips from the peer.
+     *
+     * @return the tips received
      */
     @NonNull
-    private TipsAndGenerations receiveTipsAndGenerations() throws IOException {
-        final Generations theirGenerations = dataInputStream.readGenerations();
-        final List<Hash> theirTips = dataInputStream.readTipHashes(1024); // TODO use number of nodes
-        return new TipsAndGenerations(theirGenerations, theirTips);
+    private List<Hash> receiveTips() throws IOException {
+        return dataInputStream.readTipHashes(1024); // TODO use number of nodes
+    }
+
+    /**
+     * Compute our current generations and send them to the peer.
+     */
+    @NonNull
+    private ReservedGenerations sendGenerations() throws IOException {
+        final GenerationReservation generationReservation = shadowgraph.reserve();
+        final Generations generations = getGenerations(generationReservation.getGeneration());
+        dataOutputStream.writeGenerations(generations);
+
+        return new ReservedGenerations(generationReservation, generations);
+    }
+
+    /**
+     * Receive generations from the peer.
+     */
+    @NonNull
+    private Generations receiveGenerations() throws IOException {
+        return dataInputStream.readGenerations();
     }
 
     /**
