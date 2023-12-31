@@ -53,12 +53,14 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
+import com.swirlds.platform.gossip.sync.protocol.TurboSyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
+import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
@@ -187,6 +189,8 @@ public class SyncGossip extends AbstractGossip {
 
         final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
         thingsToStart.add(shadowgraphExecutor);
+
+        // TODO don't instantiate if we don't need it
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 platformContext,
                 time,
@@ -247,6 +251,30 @@ public class SyncGossip extends AbstractGossip {
                 () -> !gossipHalted.get(), () -> intakeQueue.size() < eventConfig.eventIntakeQueueThrottleSize()));
 
         for (final NodeId otherId : topology.getNeighbors()) {
+
+            final Protocol syncProtocol;
+            if (syncConfig.turbo()) {
+                syncProtocol = new TurboSyncProtocol(
+                        platformContext,
+                        selfId,
+                        shadowgraphExecutor,
+                        shadowGraph,
+                        consensusRef::get,
+                        latestEventTipsetTracker,
+                        intakeQueue::put);
+            } else {
+                syncProtocol = new SyncProtocol(
+                        platformContext,
+                        otherId,
+                        syncShadowgraphSynchronizer,
+                        fallenBehindManager,
+                        syncPermitProvider,
+                        peerAgnosticSyncChecks,
+                        Duration.ZERO,
+                        syncMetrics,
+                        time);
+            }
+
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId)
@@ -293,16 +321,7 @@ public class SyncGossip extends AbstractGossip {
                                             platformStatusManager,
                                             platformContext.getConfiguration(),
                                             time),
-                                    new SyncProtocol(
-                                            platformContext,
-                                            otherId,
-                                            syncShadowgraphSynchronizer,
-                                            fallenBehindManager,
-                                            syncPermitProvider,
-                                            peerAgnosticSyncChecks,
-                                            Duration.ZERO,
-                                            syncMetrics,
-                                            time)))))
+                                    syncProtocol))))
                     .build());
         }
 

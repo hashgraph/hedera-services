@@ -39,9 +39,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -551,7 +553,7 @@ public final class SyncUtils {
     /**
      * @param sendList The list of events to sort.
      */
-    static void sort(final List<EventImpl> sendList) {
+    public static void sort(final List<EventImpl> sendList) {
         sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
     }
 
@@ -564,7 +566,7 @@ public final class SyncUtils {
      * false if we don't
      */
     @NonNull
-    static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
+    public static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
         final List<Boolean> myBooleans = new ArrayList<>(theirTipShadows.size());
         for (final ShadowEvent s : theirTipShadows) {
             myBooleans.add(s != null); // is this event is known to me
@@ -583,7 +585,7 @@ public final class SyncUtils {
      * @return a list of tips that they have
      */
     @NonNull
-    static List<ShadowEvent> getMyTipsTheyKnow(
+    public static List<ShadowEvent> getMyTipsTheyKnow(
             @NonNull final Connection connection,
             @NonNull final List<ShadowEvent> myTips,
             @NonNull final List<Boolean> myTipsTheyHave)
@@ -602,10 +604,42 @@ public final class SyncUtils {
         // process their booleans
         for (int i = 0; i < myTipsTheyHave.size(); i++) {
             if (Boolean.TRUE.equals(myTipsTheyHave.get(i))) {
-                knownTips.add(myTips.get(i));
+
+                final ShadowEvent shadowEvent = myTips.get(i);
+                if (shadowEvent != null) {
+                    // TODO: when I run turbo sync very fast, sometimes I am missing a shadow event
+                    knownTips.add(myTips.get(i));
+                }
             }
         }
 
         return knownTips;
+    }
+
+    /**
+     * Given a list of events we are transmitting, find the hashes of the tips of these events. A tip in this context is
+     * defined as an event with no self child.
+     *
+     * @param events the events we are transmitting
+     * @return the hashes of the tips of these events
+     */
+    public static List<Hash> findTipHashesOfEventList(@NonNull final List<EventImpl> events) {
+        final Set<Hash> eventHashes = new HashSet<>();
+        for (final EventImpl event : events) {
+            eventHashes.add(event.getBaseHash());
+        }
+
+        // A tip is an event with no self child. Check the self parent of each event, and remove that parent
+        // from the set if it exists.
+
+        for (final EventImpl event : events) {
+            final EventImpl selfParent = event.getSelfParent();
+            if (selfParent == null) {
+                continue;
+            }
+            eventHashes.remove(selfParent.getBaseHash());
+        }
+
+        return new ArrayList<>(eventHashes);
     }
 }
