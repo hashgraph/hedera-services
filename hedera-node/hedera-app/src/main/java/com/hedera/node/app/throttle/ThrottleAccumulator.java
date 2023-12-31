@@ -807,9 +807,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                     sb.append("  ")
                             .append(function)
                             .append(": ")
-                            .append(manager.currentUsage()) // use current usage instead of the package private
-                            // asReadableRequirements(), otherwise we need to make it public as
-                            // well
+                            .append(manager.asReadableRequirements())
                             .append("\n");
                 });
         log.info("{}", () -> sb.toString().trim());

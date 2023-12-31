@@ -113,9 +113,8 @@ public class RandomSignedStateGenerator {
             final DummySwirldState swirldState = new DummySwirldState(addressBookInstance);
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
-            final PlatformData platformData = new PlatformData();
-            platformData.setEpochHash(epoch);
-            platformState.setPlatformData(platformData);
+            platformState.setAddressBook(addressBookInstance);
+            platformState.setEpochHash(epoch);
             stateInstance.setPlatformState(platformState);
         } else {
             stateInstance = state;
@@ -163,23 +162,21 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = softwareVersion;
         }
 
-        stateInstance.getPlatformState().setAddressBook(addressBookInstance);
-        stateInstance
-                .getPlatformState()
-                .getPlatformData()
-                .setRound(roundInstance)
-                .setHashEventsCons(hashEventsConsInstance)
-                .setConsensusTimestamp(consensusTimestampInstance)
-                .setCreationSoftwareVersion(softwareVersionInstance)
-                .setRoundsNonAncient(roundsNonAncientInstance)
-                .setSnapshot(new ConsensusSnapshot(
-                        roundInstance,
-                        Stream.generate(() -> randomHash(random)).limit(10).toList(),
-                        IntStream.range(0, roundsNonAncientInstance)
-                                .mapToObj(i -> new MinGenInfo(roundInstance - i, 0L))
-                                .toList(),
-                        roundInstance,
-                        consensusTimestampInstance));
+        final PlatformState platformState = stateInstance.getPlatformState();
+
+        platformState.setRound(roundInstance);
+        platformState.setRunningEventHash(hashEventsConsInstance);
+        platformState.setConsensusTimestamp(consensusTimestampInstance);
+        platformState.setCreationSoftwareVersion(softwareVersionInstance);
+        platformState.setRoundsNonAncient(roundsNonAncientInstance);
+        platformState.setSnapshot(new ConsensusSnapshot(
+                roundInstance,
+                Stream.generate(() -> randomHash(random)).limit(10).toList(),
+                IntStream.range(0, roundsNonAncientInstance)
+                        .mapToObj(i -> new MinGenInfo(roundInstance - i, 0L))
+                        .toList(),
+                roundInstance,
+                consensusTimestampInstance));
 
         final SignedState signedState = new SignedState(
                 new TestConfigBuilder()

@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -303,7 +304,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         registerConstructables();
 
         final var platformContext = new DefaultPlatformContext(
-                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get());
+                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         ReservedSignedState rss;
         try {

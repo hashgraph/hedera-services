@@ -19,13 +19,17 @@ package com.swirlds.platform.components;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -55,8 +59,11 @@ public class LinkedEventIntake {
      */
     private final ShadowGraph shadowGraph;
 
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
+
     private final EventIntakeMetrics metrics;
     private final Time time;
+    private final Long roundsNonAncient;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -73,12 +80,14 @@ public class LinkedEventIntake {
     /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param time               provides the wall clock time
-     * @param consensusSupplier  provides the current consensus instance
-     * @param dispatcher         invokes event related callbacks
-     * @param shadowGraph        tracks events in the hashgraph
-     * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
+     * @param platformContext          the platform context
+     * @param time                     provides the wall clock time
+     * @param consensusSupplier        provides the current consensus instance
+     * @param dispatcher               invokes event related callbacks
+     * @param shadowGraph              tracks events in the hashgraph
+     * @param latestEventTipsetTracker tracks the tipset of the latest self event, null if feature is not enabled
+     * @param intakeEventCounter       tracks the number of events from each peer that are currently in the intake
+     *                                 pipeline
      */
     public LinkedEventIntake(
             @NonNull final PlatformContext platformContext,
@@ -86,6 +95,7 @@ public class LinkedEventIntake {
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final ShadowGraph shadowGraph,
+            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.time = Objects.requireNonNull(time);
@@ -93,9 +103,14 @@ public class LinkedEventIntake {
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+        this.latestEventTipsetTracker = latestEventTipsetTracker;
 
         this.paused = false;
         metrics = new EventIntakeMetrics(platformContext, () -> -1);
+        this.roundsNonAncient = (long) platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
     }
 
     /**
@@ -123,7 +138,8 @@ public class LinkedEventIntake {
 
             dispatcher.preConsensusEvent(event);
 
-            final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
+            final long minimumGenerationNonAncientBeforeAdding =
+                    consensusSupplier.get().getMinGenerationNonAncient();
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
@@ -134,10 +150,20 @@ public class LinkedEventIntake {
                 consensusRounds.forEach(this::handleConsensus);
             }
 
-            if (consensusSupplier.get().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+            final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
+
+            if (minimumGenerationNonAncient > minimumGenerationNonAncientBeforeAdding) {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
-                handleStale(minGenNonAncientBeforeAdding);
+                handleStale(minimumGenerationNonAncientBeforeAdding);
+                if (latestEventTipsetTracker != null) {
+                    // FUTURE WORK: When this class is refactored, it should not be constructing the
+                    // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
+                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                            consensusSupplier.get().getLastRoundDecided(),
+                            minimumGenerationNonAncient,
+                            roundsNonAncient));
+                }
             }
 
             return Objects.requireNonNullElseGet(consensusRounds, List::of);
