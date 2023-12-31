@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.gossip.sync.protocol;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
@@ -32,11 +33,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A variation of a sync protocol that continuously performs multiple concurrent syncs.
  */
 public class TurboSyncProtocol implements Protocol {
+
+    private static final Logger logger = LogManager.getLogger(TurboSyncProtocol.class);
 
     private final PlatformContext platformContext;
     private final NodeId selfId;
@@ -114,8 +119,10 @@ public class TurboSyncProtocol implements Protocol {
                             generationsSupplier,
                             gossipEventConsumer)
                     .run();
-        } catch (final ParallelExecutionException e) {
-            // TODO: handle this
+        } catch (final Exception e) {
+            // TODO: this is temporary
+            logger.error(EXCEPTION.getMarker(), "exception during sync", e);
+            throw new IOException(e);
         }
     }
 }

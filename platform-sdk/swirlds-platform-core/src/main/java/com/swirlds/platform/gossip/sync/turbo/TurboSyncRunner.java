@@ -77,6 +77,12 @@ public class TurboSyncRunner {
      */
     private final Duration nonAncestorFilterThreshold;
 
+    /**
+     * If true, then the hash of events is computed on the sync thread. If false, then the hash of events is computed
+     * elsewhere.
+     */
+    private final boolean hashOnSyncThread;
+
     /*
 
     3 phases:
@@ -166,6 +172,7 @@ public class TurboSyncRunner {
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
+        this.hashOnSyncThread = syncConfig.hashOnGossipThreads();
     }
 
     /**
@@ -350,6 +357,12 @@ public class TurboSyncRunner {
         final int eventCount = dataInputStream.readInt();
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = dataInputStream.readEventData();
+
+            if (hashOnSyncThread) {
+                platformContext.getCryptography().digestSync(event.getHashedData());
+                event.buildDescriptor();
+            }
+
             gossipEventConsumer.accept(event);
         }
     }
