@@ -27,8 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param generationsSent     the generations sent during this iteration
  */
 public record ReservedGenerations(
-        @NonNull GenerationReservation reservedGenerations,
-        @NonNull Generations generationsSent) {
+        @NonNull GenerationReservation reservedGenerations, @NonNull Generations generationsSent) {
 
     /**
      * Release resources held by this object.

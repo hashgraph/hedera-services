@@ -45,8 +45,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -60,8 +62,7 @@ import java.util.stream.Collectors;
  */
 public class TurboSyncRunner {
 
-    private static final Runnable NO_OP = () -> {
-    };
+    private static final Runnable NO_OP = () -> {};
 
     private final PlatformContext platformContext;
     private final NodeId selfId;
@@ -285,10 +286,30 @@ public class TurboSyncRunner {
                 .map(e -> e.getEvent().getBaseHash())
                 .toList();
 
-        // TODO compression
+        // If we sync more rapidly than we create events then we will end up sending the same tips over and over.
+        // The following serialization algorithm is designed to minimize the impact of this problem.
+        //
+        // 1) write the number of tips we are going to send
+        // 2) for each tip:
+        //    a) if the tip was not previously sent: write the integer -1 followed by the tip hash
+        //    b) if the tip was previously sent: write the integer index of the tip in the previous list of tips
 
-        dataOutputStream.writeTipHashes(myTips);
+        dataOutputStream.writeInt(myTips.size());
 
+        final List<Hash> previousTips = dataSentB == null ? List.of() : dataSentB.tipsSent();
+        final Map<Hash, Integer> previousTipPositions = new HashMap<>();
+        for (int i = 0; i < previousTips.size(); i++) {
+            previousTipPositions.put(previousTips.get(i), i);
+        }
+
+        for (final Hash tip : myTips) {
+            final int previousPosition = previousTipPositions.getOrDefault(tip, -1);
+            dataOutputStream.writeInt(previousPosition);
+
+            if (previousPosition == -1) {
+                dataOutputStream.writeSerializable(tip, false);
+            }
+        }
 
         return myTips;
     }
@@ -300,7 +321,25 @@ public class TurboSyncRunner {
      */
     @NonNull
     private List<Hash> receiveTips() throws IOException {
-        return dataInputStream.readTipHashes(1024); // TODO use number of nodes
+        final int tipCount = dataInputStream.readInt();
+
+        // TODO throw if tip count is too high
+
+        final List<Hash> previousTips = dataReceivedB == null ? List.of() : dataReceivedB.theirTips();
+
+        final List<Hash> tips = new ArrayList<>();
+        for (int i = 0; i < tipCount; i++) {
+            final int previousPosition = dataInputStream.readInt();
+
+            if (previousPosition == -1) {
+                final Hash tip = dataInputStream.readSerializable(false, Hash::new);
+                tips.add(tip);
+            } else {
+                tips.add(previousTips.get(previousPosition));
+            }
+        }
+
+        return tips;
     }
 
     /**
