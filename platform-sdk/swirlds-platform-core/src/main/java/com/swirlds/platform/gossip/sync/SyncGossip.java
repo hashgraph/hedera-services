@@ -261,7 +261,7 @@ public class SyncGossip extends AbstractGossip {
                         shadowGraph,
                         consensusRef::get,
                         latestEventTipsetTracker,
-                        intakeQueue::add);
+                        intakeQueue::put);
             } else {
                 syncProtocol = new SyncProtocol(
                         platformContext,

@@ -604,7 +604,12 @@ public final class SyncUtils {
         // process their booleans
         for (int i = 0; i < myTipsTheyHave.size(); i++) {
             if (Boolean.TRUE.equals(myTipsTheyHave.get(i))) {
-                knownTips.add(myTips.get(i));
+
+                final ShadowEvent shadowEvent = myTips.get(i);
+                if (shadowEvent != null) {
+                    // TODO: when I run turbo sync very fast, sometimes I am missing a shadow event
+                    knownTips.add(myTips.get(i));
+                }
             }
         }
 

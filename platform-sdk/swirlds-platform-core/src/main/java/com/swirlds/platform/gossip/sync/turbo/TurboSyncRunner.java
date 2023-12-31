@@ -466,7 +466,7 @@ public class TurboSyncRunner {
                 connection, shadowgraph.shadows(dataSentC.tipsSent()), dataReceivedB.theirBooleans()));
 
         // Add the tips of the events we sent in the previous sync.
-        eventsTheyHave.addAll(shadowgraph.shadows(dataSentB.tipsOfSendList()));
+        eventsTheyHave.addAll(shadowgraph.shadowsIfPresent(dataSentB.tipsOfSendList()));
 
         return eventsTheyHave;
     }
