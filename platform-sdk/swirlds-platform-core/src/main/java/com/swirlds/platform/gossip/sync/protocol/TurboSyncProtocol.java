@@ -24,6 +24,7 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.turbo.TurboSyncRunner;
 import com.swirlds.platform.network.Connection;
@@ -48,17 +49,19 @@ public class TurboSyncProtocol implements Protocol {
     private final ParallelExecutor executor;
     private final ShadowGraph shadowgraph;
     private final Supplier<GraphGenerations> generationsSupplier;
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
     private final InterruptableConsumer<GossipEvent> gossipEventConsumer;
 
     /**
      * Constructor.
      *
-     * @param platformContext     the platform context
-     * @param selfId              the id of this node
-     * @param executor            the executor to use for parallel read/write operations
-     * @param shadowgraph         the shadow graph to sync
-     * @param generationsSupplier a supplier for the current graph generations
-     * @param gossipEventConsumer a consumer for gossip events
+     * @param platformContext          the platform context
+     * @param selfId                   the id of this node
+     * @param executor                 the executor to use for parallel read/write operations
+     * @param shadowgraph              the shadow graph to sync
+     * @param generationsSupplier      a supplier for the current graph generation
+     * @param latestEventTipsetTracker the latest event tipset tracker
+     * @param gossipEventConsumer      a consumer for gossip events
      */
     public TurboSyncProtocol(
             @NonNull final PlatformContext platformContext,
@@ -66,12 +69,14 @@ public class TurboSyncProtocol implements Protocol {
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
+            @NonNull final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
         this.executor = Objects.requireNonNull(executor);
         this.shadowgraph = Objects.requireNonNull(shadowgraph);
         this.generationsSupplier = Objects.requireNonNull(generationsSupplier);
+        this.latestEventTipsetTracker = Objects.requireNonNull(latestEventTipsetTracker);
         this.gossipEventConsumer = Objects.requireNonNull(gossipEventConsumer);
     }
 
@@ -117,6 +122,7 @@ public class TurboSyncProtocol implements Protocol {
                             executor,
                             shadowgraph,
                             generationsSupplier,
+                            latestEventTipsetTracker,
                             gossipEventConsumer)
                     .run();
         } catch (final Exception e) {

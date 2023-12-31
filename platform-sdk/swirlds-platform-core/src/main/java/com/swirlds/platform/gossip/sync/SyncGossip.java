@@ -255,7 +255,13 @@ public class SyncGossip extends AbstractGossip {
             final Protocol syncProtocol;
             if (syncConfig.turbo()) {
                 syncProtocol = new TurboSyncProtocol(
-                        platformContext, selfId, shadowgraphExecutor, shadowGraph, consensusRef::get, intakeQueue::add);
+                        platformContext,
+                        selfId,
+                        shadowgraphExecutor,
+                        shadowGraph,
+                        consensusRef::get,
+                        latestEventTipsetTracker,
+                        intakeQueue::add);
             } else {
                 syncProtocol = new SyncProtocol(
                         platformContext,

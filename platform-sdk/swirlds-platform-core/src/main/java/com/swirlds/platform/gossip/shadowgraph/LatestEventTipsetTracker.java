@@ -89,8 +89,6 @@ public class LatestEventTipsetTracker {
     @Nullable
     public synchronized Tipset getTipsetOfLatestSelfEvent(@NonNull final List<EventImpl> events) {
 
-        // TODO is there a race condition here? Is it possible we won't have the latest self events tracked yet?
-
         // Iterate backwards over the list. The latest self event will be the first one found.
         for (int index = events.size() - 1; index >= 0; index--) {
             final EventImpl event = events.get(index);

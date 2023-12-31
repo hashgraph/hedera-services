@@ -31,6 +31,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
@@ -69,6 +70,7 @@ public class TurboSyncRunner {
     private final ParallelExecutor executor;
     private final ShadowGraph shadowgraph;
     private final Supplier<GraphGenerations> generationsSupplier;
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
     private final InterruptableConsumer<GossipEvent> gossipEventConsumer;
 
     /**
@@ -145,13 +147,14 @@ public class TurboSyncRunner {
     /**
      * Constructor.
      *
-     * @param platformContext     the platform context
-     * @param selfId              our ID
-     * @param connection          the connection to the peer we are syncing with
-     * @param executor            the executor to use for parallel read/write operations
-     * @param shadowgraph         the shadowgraph, contains events we know about
-     * @param generationsSupplier a supplier of the current graph generations
-     * @param gossipEventConsumer a consumer for gossip events
+     * @param platformContext          the platform context
+     * @param selfId                   our ID
+     * @param connection               the connection to the peer we are syncing with
+     * @param executor                 the executor to use for parallel read/write operations
+     * @param shadowgraph              the shadowgraph, contains events we know about
+     * @param generationsSupplier      a supplier of the current graph generations
+     * @param latestEventTipsetTracker a tracker of the latest event tipset
+     * @param gossipEventConsumer      a consumer for gossip events
      */
     public TurboSyncRunner(
             @NonNull final PlatformContext platformContext,
@@ -160,6 +163,7 @@ public class TurboSyncRunner {
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
+            @NonNull final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -170,6 +174,7 @@ public class TurboSyncRunner {
         this.executor = Objects.requireNonNull(executor);
         this.shadowgraph = Objects.requireNonNull(shadowgraph);
         this.generationsSupplier = Objects.requireNonNull(generationsSupplier);
+        this.latestEventTipsetTracker = Objects.requireNonNull(latestEventTipsetTracker);
         this.gossipEventConsumer = Objects.requireNonNull(gossipEventConsumer);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -432,7 +437,7 @@ public class TurboSyncRunner {
                 nonAncestorFilterThreshold,
                 platformContext.getTime().now(),
                 eventsTheyMayNeed,
-                null); // TODO tipset
+                latestEventTipsetTracker.getTipsetOfLatestSelfEvent(eventsTheyMayNeed));
 
         SyncUtils.sort(sendList);
 
