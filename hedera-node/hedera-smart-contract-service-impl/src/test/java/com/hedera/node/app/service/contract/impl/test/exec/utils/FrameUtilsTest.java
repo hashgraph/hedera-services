@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
@@ -251,7 +251,8 @@ class FrameUtilsTest {
         givenNonInitialFrame();
         given(frame.getMessageFrameStack()).willReturn(stack);
         final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
-        given(initialFrame.getContextVariable(HAPI_RECORD_BUILDER)).willReturn(beneficiaries);
+        given(initialFrame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE))
+                .willReturn(beneficiaries);
         assertSame(beneficiaries, selfDestructBeneficiariesFor(frame));
     }
 

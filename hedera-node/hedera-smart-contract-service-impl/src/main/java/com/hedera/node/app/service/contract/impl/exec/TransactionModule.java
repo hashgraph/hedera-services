@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -137,14 +138,16 @@ public interface TransactionModule {
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaOperations hederaOperations,
-            @NonNull final HederaEvmBlocks hederaEvmBlocks) {
+            @NonNull final HederaEvmBlocks hederaEvmBlocks,
+            @NonNull final PendingCreationBuilderReference pendingCreationBuilderReference) {
         return new HederaEvmContext(
                 hederaOperations.gasPriceInTinybars(),
                 false,
                 hederaEvmBlocks,
                 tinybarValues,
                 systemContractGasCalculator,
-                context.recordBuilder(ContractOperationRecordBuilder.class));
+                context.recordBuilder(ContractOperationRecordBuilder.class),
+                pendingCreationBuilderReference);
     }
 
     @Provides

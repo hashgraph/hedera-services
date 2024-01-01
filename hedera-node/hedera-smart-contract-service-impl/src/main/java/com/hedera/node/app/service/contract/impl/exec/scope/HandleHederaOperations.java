@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
@@ -38,7 +37,9 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -88,6 +89,7 @@ public class HandleHederaOperations implements HederaOperations {
     private final SystemContractGasCalculator gasCalculator;
     private final HandleContext context;
     private final HederaFunctionality functionality;
+    private final PendingCreationBuilderReference pendingCreationBuilderReference;
 
     @Inject
     public HandleHederaOperations(
@@ -97,7 +99,8 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaConfig hederaConfig,
-            @NonNull final HederaFunctionality functionality) {
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final PendingCreationBuilderReference pendingCreationBuilderReference) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
@@ -105,6 +108,7 @@ public class HandleHederaOperations implements HederaOperations {
         this.hederaConfig = requireNonNull(hederaConfig);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.functionality = requireNonNull(functionality);
+        this.pendingCreationBuilderReference = requireNonNull(pendingCreationBuilderReference);
     }
 
     /**
@@ -379,19 +383,25 @@ public class HandleHederaOperations implements HederaOperations {
         // Create should have conditional child record, but we only externalize this child if it's not already
         // externalized by the top-level HAPI transaction; and we "finish" the synthetic transaction by swapping
         // in the contract creation body for the dispatched crypto create body
+        final var isTopLevelCreation = bodyToExternalize == null;
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
                 ContractCreateRecordBuilder.class,
                 null,
                 context.payer(),
-                (bodyToExternalize == null)
+                isTopLevelCreation
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
                         : contractBodyCustomizerFor(number, bodyToExternalize));
-        // TODO - deal with MAX_ENTITIES_IN_PRICE_REGIME_CREATED
-        if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
-            throw new AssertionError("Not implemented");
+        if (recordBuilder.status() != SUCCESS) {
+            // The only plausible failure mode (MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) should
+            // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure
+            throw new IllegalStateException("Unexpected failure creating new contract - " + recordBuilder.status());
         }
-        // On success we add extra information on the created contract
+        // If this creation runs to a successful completion, its ContractBytecode sidecar
+        // goes in the top-level record or the just-created child record depending on whether
+        // we are doing this on behalf of a HAPI ContractCreate call
+        pendingCreationBuilderReference.set(
+                isTopLevelCreation ? context.recordBuilder(ContractOperationRecordBuilder.class) : recordBuilder);
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         recordBuilder
                 .contractID(contractId)

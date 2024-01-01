@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
@@ -46,8 +47,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -95,9 +96,6 @@ class HandleHederaOperationsTest {
     private ContractCreateRecordBuilder contractCreateRecordBuilder;
 
     @Mock
-    private ContractDeleteRecordBuilder contractDeleteRecordBuilder;
-
-    @Mock
     private TinybarValues tinybarValues;
 
     @Mock
@@ -108,6 +106,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private ReadableAccountStore readableAccountStore;
+
+    @Mock
+    private PendingCreationBuilderReference pendingCreationBuilderReference;
 
     private HandleHederaOperations subject;
 
@@ -120,7 +121,8 @@ class HandleHederaOperationsTest {
                 tinybarValues,
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
-                HederaFunctionality.CONTRACT_CALL);
+                HederaFunctionality.CONTRACT_CALL,
+                pendingCreationBuilderReference);
     }
 
     @Test
@@ -478,7 +480,8 @@ class HandleHederaOperationsTest {
                 tinybarValues,
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
-                HederaFunctionality.ETHEREUM_TRANSACTION);
+                ETHEREUM_TRANSACTION,
+                pendingCreationBuilderReference);
         final var someBody = ContractCreateTransactionBody.newBuilder()
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)

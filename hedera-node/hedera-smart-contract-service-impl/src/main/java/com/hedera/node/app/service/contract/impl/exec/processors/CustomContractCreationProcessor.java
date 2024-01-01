@@ -17,9 +17,13 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPendingCreationBuilder;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasBytecodeSidecarsEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
@@ -91,6 +95,20 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
                 contract.setNonce(INITIAL_CONTRACT_NONCE);
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }
+        }
+    }
+
+    @Override
+    public void codeSuccess(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
+        super.codeSuccess(requireNonNull(frame), requireNonNull(tracer));
+        if (hasBytecodeSidecarsEnabled(frame)) {
+            final var recipient = proxyUpdaterFor(frame).getHederaAccount(frame.getRecipientAddress());
+            final var contractBytecode = ContractBytecode.newBuilder()
+                    .contractId(requireNonNull(recipient).hederaContractId())
+                    .initcode(tuweniToPbjBytes(frame.getCode().getBytes()))
+                    .runtimeBytecode(tuweniToPbjBytes(recipient.getCode()))
+                    .build();
+            getAndClearPendingCreationBuilder(frame).addContractBytecode(contractBytecode, false);
         }
     }
 

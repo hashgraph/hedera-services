@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
@@ -296,7 +296,7 @@ class HandleHederaNativeOperationsTest {
         final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
         given(frame.getMessageFrameStack()).willReturn(stack);
         stack.push(frame);
-        given(frame.getContextVariable(HAPI_RECORD_BUILDER)).willReturn(beneficiaries);
+        given(frame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE)).willReturn(beneficiaries);
         subject.trackSelfDestructBeneficiary(1L, 2L, frame);
         verify(beneficiaries)
                 .addBeneficiaryForDeletedAccount(

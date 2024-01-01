@@ -16,19 +16,37 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
 public record HederaEvmContext(
         long gasPrice,
         boolean staticCall,
-        HederaEvmBlocks blocks,
-        TinybarValues tinybarValues,
-        SystemContractGasCalculator systemContractGasCalculator,
-        @Nullable ContractOperationRecordBuilder recordBuilder) {
+        @NonNull HederaEvmBlocks blocks,
+        @NonNull TinybarValues tinybarValues,
+        @NonNull SystemContractGasCalculator systemContractGasCalculator,
+        @Nullable ContractOperationRecordBuilder recordBuilder,
+        @Nullable PendingCreationBuilderReference pendingCreationRecordBuilderReference) {
+
+    public HederaEvmContext {
+        requireNonNull(blocks);
+        requireNonNull(tinybarValues);
+        requireNonNull(systemContractGasCalculator);
+        if (recordBuilder != null) {
+            requireNonNull(pendingCreationRecordBuilderReference);
+        }
+        if (pendingCreationRecordBuilderReference != null) {
+            requireNonNull(recordBuilder);
+        }
+    }
+
     public BlockValues blockValuesOf(final long gasLimit) {
         return blocks.blockValuesOf(gasLimit);
     }
@@ -37,7 +55,7 @@ public record HederaEvmContext(
         return staticCall || gasPrice == 0;
     }
 
-    public boolean isDeleteCapable() {
-        return recordBuilder != null;
+    public boolean isNonStatic() {
+        return recordBuilder != null && pendingCreationRecordBuilderReference != null;
     }
 }

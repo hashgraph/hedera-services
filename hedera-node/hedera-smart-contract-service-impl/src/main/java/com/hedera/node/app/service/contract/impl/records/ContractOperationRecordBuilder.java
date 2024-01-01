@@ -45,7 +45,7 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
      * @param outcome the EVM transaction outcome
      * @return this updated builder
      */
-    default ContractOperationRecordBuilder withCommonFieldsSetFrom(final CallOutcome outcome) {
+    default ContractOperationRecordBuilder withCommonFieldsSetFrom(@NonNull final CallOutcome outcome) {
         transactionFee(transactionFee() + outcome.tinybarGasCost());
         if (outcome.actions() != null) {
             addContractActions(outcome.actions(), false);

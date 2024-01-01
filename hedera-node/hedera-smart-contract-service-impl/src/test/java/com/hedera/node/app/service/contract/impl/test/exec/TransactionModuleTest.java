@@ -42,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
@@ -122,10 +123,13 @@ class TransactionModuleTest {
         final var blocks = mock(HederaEvmBlocks.class);
         given(hederaOperations.gasPriceInTinybars()).willReturn(123L);
         given(context.recordBuilder(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
-        final var result = provideHederaEvmContext(context, tinybarValues, gasCalculator, hederaOperations, blocks);
+        final var pendingCreationBuilder = new PendingCreationBuilderReference();
+        final var result = provideHederaEvmContext(
+                context, tinybarValues, gasCalculator, hederaOperations, blocks, pendingCreationBuilder);
         assertSame(blocks, result.blocks());
         assertSame(123L, result.gasPrice());
         assertSame(recordBuilder, result.recordBuilder());
+        assertSame(pendingCreationBuilder, result.pendingCreationRecordBuilderReference());
     }
 
     @Test

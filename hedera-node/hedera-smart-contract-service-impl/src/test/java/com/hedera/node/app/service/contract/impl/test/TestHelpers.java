@@ -76,6 +76,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -707,7 +708,14 @@ public class TestHelpers {
             @NonNull final HederaEvmBlocks blocks,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator, null);
+        return new HederaEvmContext(
+                NETWORK_GAS_PRICE,
+                false,
+                blocks,
+                tinybarValues,
+                systemContractGasCalculator,
+                null,
+                new PendingCreationBuilderReference());
     }
 
     public static HederaEvmContext wellKnownContextWith(
@@ -716,7 +724,13 @@ public class TestHelpers {
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
         return new HederaEvmContext(
-                NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues, systemContractGasCalculator, null);
+                NETWORK_GAS_PRICE,
+                staticCall,
+                blocks,
+                tinybarValues,
+                systemContractGasCalculator,
+                null,
+                new PendingCreationBuilderReference());
     }
 
     public static HederaEvmContext wellKnownContextWith(
@@ -725,7 +739,13 @@ public class TestHelpers {
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull ContractOperationRecordBuilder recordBuilder) {
         return new HederaEvmContext(
-                NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator, recordBuilder);
+                NETWORK_GAS_PRICE,
+                false,
+                blocks,
+                tinybarValues,
+                systemContractGasCalculator,
+                recordBuilder,
+                new PendingCreationBuilderReference());
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {

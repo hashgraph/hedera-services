@@ -113,13 +113,15 @@ public interface QueryModule {
             @NonNull final HederaEvmBlocks hederaEvmBlocks,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
-        // Use null for the DeleteCapableTransactionRecordBuilder, as selfdestruct is illegal in a static context
+        // Use null for the top-level record builder and reference to pending creation record builder,
+        // as neither is usable by any operation permitted in a static context
         return new HederaEvmContext(
                 hederaOperations.gasPriceInTinybars(),
                 true,
                 hederaEvmBlocks,
                 tinybarValues,
                 systemContractGasCalculator,
+                null,
                 null);
     }
 
