@@ -21,6 +21,7 @@ import static com.hedera.hapi.streams.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
@@ -109,11 +110,14 @@ public class FrameUtils {
      * Gets and clears any metadata for a pending creation in the context of the given frame.
      *
      * @param frame a frame in the transaction of interest
+     * @param contractID the contract id of the pending creation
+     * @return the metadata for the pending creation
      */
     public static @NonNull PendingCreationMetadata getAndClearPendingCreationMetadata(
-            @NonNull final MessageFrame frame) {
+            @NonNull final MessageFrame frame, @NonNull final ContractID contractID) {
         requireNonNull(frame);
-        return pendingCreationMetadataRef(frame).getAndClearOrThrow();
+        requireNonNull(contractID);
+        return pendingCreationMetadataRef(frame).getAndClearOrThrowFor(contractID);
     }
 
     public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {

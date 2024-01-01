@@ -409,8 +409,8 @@ public class HandleHederaOperations implements HederaOperations {
         final var pendingCreationMetadata = new PendingCreationMetadata(
                 isTopLevelCreation ? context.recordBuilder(ContractOperationRecordBuilder.class) : recordBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
-        pendingCreationMetadataRef.set(pendingCreationMetadata);
         final var contractId = ContractID.newBuilder().contractNum(number).build();
+        pendingCreationMetadataRef.set(contractId, pendingCreationMetadata);
         recordBuilder
                 .contractID(contractId)
                 .contractCreateResult(ContractFunctionResult.newBuilder()

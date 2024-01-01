@@ -18,11 +18,13 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.inject.Inject;
 
 /**
@@ -31,8 +33,7 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class PendingCreationMetadataRef {
-    @Nullable
-    private PendingCreationMetadata metadata = null;
+    private final Map<ContractID, PendingCreationMetadata> pendingMetadata = new LinkedHashMap<>();
 
     @Inject
     public PendingCreationMetadataRef() {
@@ -40,24 +41,26 @@ public class PendingCreationMetadataRef {
     }
 
     /**
-     * Sets the pending creation's metadata to the given value.
+     * Sets the given contract id's pending creation metadata to the given value.
      *
-     * @param metadata the record builder to set
+     * @param contractID the contract id to set pending creation metadata for
+     * @param metadata the metadata to set
      */
-    public void set(@NonNull final PendingCreationMetadata metadata) {
-        this.metadata = requireNonNull(metadata);
+    public void set(@NonNull final ContractID contractID, @NonNull final PendingCreationMetadata metadata) {
+        requireNonNull(metadata);
+        requireNonNull(contractID);
+        pendingMetadata.put(contractID, metadata);
     }
 
     /**
-     * Returns the current metadata and resets the reference reset to {@code null}.
+     * Returns and forgets the pending creation metadata for the given contract id.
      * Throws if no metadata has been set for the pending creation.
      *
+     * @param contractID the contract id to get metadata for
      * @return the metadata for the pending creation
      * @throws IllegalStateException if there is no pending creation
      */
-    public @NonNull PendingCreationMetadata getAndClearOrThrow() {
-        final var pendingMetadata = requireNonNull(metadata);
-        metadata = null;
-        return pendingMetadata;
+    public @NonNull PendingCreationMetadata getAndClearOrThrowFor(@NonNull final ContractID contractID) {
+        return requireNonNull(pendingMetadata.remove(contractID));
     }
 }

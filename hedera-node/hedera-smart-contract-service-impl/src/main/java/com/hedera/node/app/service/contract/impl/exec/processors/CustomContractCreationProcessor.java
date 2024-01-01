@@ -102,11 +102,13 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     @Override
     public void codeSuccess(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         super.codeSuccess(requireNonNull(frame), requireNonNull(tracer));
+        // TODO - check if a code rule failed before proceeding below
         if (hasBytecodeSidecarsEnabled(frame)) {
             final var recipient = proxyUpdaterFor(frame).getHederaAccount(frame.getRecipientAddress());
-            final var pendingCreationMetadata = getAndClearPendingCreationMetadata(frame);
+            final var recipientId = requireNonNull(recipient).hederaContractId();
+            final var pendingCreationMetadata = getAndClearPendingCreationMetadata(frame, recipientId);
             final var contractBytecode = ContractBytecode.newBuilder()
-                    .contractId(requireNonNull(recipient).hederaContractId())
+                    .contractId(recipientId)
                     .runtimeBytecode(tuweniToPbjBytes(recipient.getCode()));
             if (pendingCreationMetadata.externalizeInitcodeOnSuccess()) {
                 contractBytecode.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
