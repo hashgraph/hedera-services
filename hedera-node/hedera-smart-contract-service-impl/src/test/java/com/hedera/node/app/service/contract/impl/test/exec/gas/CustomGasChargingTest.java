@@ -40,7 +40,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
-import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -99,8 +98,8 @@ class CustomGasChargingTest {
 
     @Test
     void zeroPriceGasDoesNoChargingWorkButDoesReturnIntrinsicGas() {
-        final var context = new HederaEvmContext(
-                0L, false, blocks, tinybarValues, systemContractGasCalculator, null, new PendingCreationMetadataRef());
+        final var context =
+                new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator, null, null);
         givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());

@@ -34,7 +34,6 @@ import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadata;
@@ -190,19 +189,17 @@ public class HandleHederaOperations implements HederaOperations {
     public long lazyCreationCostInGas(@NonNull final Address recipient) {
         final var payerId = context.payer();
         // Calculate gas for a CryptoCreateTransactionBody with an alias address
-        final var createFee = gasCalculator.gasRequirement(
+        final var createFee = gasCalculator.topLevelGasRequirement(
                 TransactionBody.newBuilder()
                         .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
                         .build(),
-                DispatchType.CRYPTO_CREATE,
                 payerId);
 
         // Calculate gas for an update TransactionBody
-        final var updateFee = gasCalculator.gasRequirement(
+        final var updateFee = gasCalculator.topLevelGasRequirement(
                 TransactionBody.newBuilder()
                         .cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER)
                         .build(),
-                DispatchType.CRYPTO_UPDATE,
                 payerId);
 
         return createFee + updateFee;
@@ -213,8 +210,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        var multiplier = context.feeCalculator(SubType.DEFAULT).getCongestionMultiplier();
-        return tinybarValues.topLevelTinybarGasPrice() * multiplier;
+        return tinybarValues.topLevelTinybarGasPrice();
     }
 
     /**

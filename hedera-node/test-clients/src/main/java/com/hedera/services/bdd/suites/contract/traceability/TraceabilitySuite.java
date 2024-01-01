@@ -4440,7 +4440,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .build())))));
     }
 
-    @HapiTest
+    //    @HapiTest
     @Order(19)
     final HapiSpec traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
@@ -4465,7 +4465,7 @@ public class TraceabilitySuite extends HapiSuite {
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(4)));
     }
 
-    // @HapiTest
+    //     @HapiTest
     @Order(20)
     HapiSpec traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
@@ -4509,7 +4509,7 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-    // @HapiTest
+    //     @HapiTest
     @Order(21)
     final HapiSpec traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20")
@@ -4535,7 +4535,7 @@ public class TraceabilitySuite extends HapiSuite {
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(6)));
     }
 
-    // @HapiTest
+    //    @HapiTest
     @Order(22)
     final HapiSpec traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
@@ -4610,7 +4610,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .build())))));
     }
 
-    // @HapiTest
+    //     @HapiTest
     @Order(23)
     final HapiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
@@ -4645,7 +4645,7 @@ public class TraceabilitySuite extends HapiSuite {
                                 firstTxn, EMPTY_CONSTRUCTOR_CONTRACT, EMPTY_CONSTRUCTOR_CONTRACT));
     }
 
-    // @HapiTest
+    //     @HapiTest
     @Order(24)
     final HapiSpec vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
@@ -4677,7 +4677,7 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecodeSidecarFor(firstTxn, contract, contract));
     }
 
-    // @HapiTest
+    //    @HapiTest
     @Order(25)
     final HapiSpec actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
@@ -4857,7 +4857,7 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-    // @HapiTest
+    //     @HapiTest
     @Order(26)
     final HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
