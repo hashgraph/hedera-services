@@ -47,7 +47,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
-import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -108,7 +108,7 @@ class HandleHederaOperationsTest {
     private ReadableAccountStore readableAccountStore;
 
     @Mock
-    private PendingCreationBuilderReference pendingCreationBuilderReference;
+    private PendingCreationMetadataRef pendingCreationMetadataRef;
 
     private HandleHederaOperations subject;
 
@@ -122,7 +122,7 @@ class HandleHederaOperationsTest {
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
                 HederaFunctionality.CONTRACT_CALL,
-                pendingCreationBuilderReference);
+                pendingCreationMetadataRef);
     }
 
     @Test
@@ -481,7 +481,7 @@ class HandleHederaOperationsTest {
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
                 ETHEREUM_TRANSACTION,
-                pendingCreationBuilderReference);
+                pendingCreationMetadataRef);
         final var someBody = ContractCreateTransactionBody.newBuilder()
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)

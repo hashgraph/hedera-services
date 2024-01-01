@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
-import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,7 +33,7 @@ public record HederaEvmContext(
         @NonNull TinybarValues tinybarValues,
         @NonNull SystemContractGasCalculator systemContractGasCalculator,
         @Nullable ContractOperationRecordBuilder recordBuilder,
-        @Nullable PendingCreationBuilderReference pendingCreationRecordBuilderReference) {
+        @Nullable PendingCreationMetadataRef pendingCreationRecordBuilderReference) {
 
     public HederaEvmContext {
         requireNonNull(blocks);

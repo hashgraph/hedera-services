@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EVM_VERSIONS;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
@@ -102,6 +104,13 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         try {
             final var result = processor.processTransaction(
                     hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
+            // For mono-service fidelity, externalize an initcode-only sidecar when a top-level creation fails
+            if (!result.isSuccess() && hevmTransaction.needsInitcodeExternalizedOnFailure()) {
+                final var contractBytecode = ContractBytecode.newBuilder()
+                        .initcode(hevmTransaction.payload())
+                        .build();
+                requireNonNull(hederaEvmContext.recordBuilder()).addContractBytecode(contractBytecode, false);
+            }
             return CallOutcome.fromResultsWithMaybeSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         } catch (AbortException e) {

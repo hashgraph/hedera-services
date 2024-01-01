@@ -30,34 +30,34 @@ import javax.inject.Inject;
  * the bytecode sidecar in the next {@code codeSuccess()}  call of {@link CustomContractCreationProcessor}.
  */
 @TransactionScope
-public class PendingCreationBuilderReference {
+public class PendingCreationMetadataRef {
     @Nullable
-    private ContractOperationRecordBuilder recordBuilder = null;
+    private PendingCreationMetadata metadata = null;
 
     @Inject
-    public PendingCreationBuilderReference() {
+    public PendingCreationMetadataRef() {
         // Dagger2
     }
 
     /**
-     * Sets the pending creation's record builder to the given value.
+     * Sets the pending creation's metadata to the given value.
      *
-     * @param recordBuilder the record builder to set
+     * @param metadata the record builder to set
      */
-    public void set(@NonNull final ContractOperationRecordBuilder recordBuilder) {
-        this.recordBuilder = requireNonNull(recordBuilder);
+    public void set(@NonNull final PendingCreationMetadata metadata) {
+        this.metadata = requireNonNull(metadata);
     }
 
     /**
-     * Returns the current record builder and resets the reference reset to {@code null}.
-     * Throws if no record builder has been set for the pending creation.
+     * Returns the current metadata and resets the reference reset to {@code null}.
+     * Throws if no metadata has been set for the pending creation.
      *
-     * @return the record builder for the pending creation
+     * @return the metadata for the pending creation
      * @throws IllegalStateException if there is no pending creation
      */
-    public @NonNull ContractOperationRecordBuilder getAndClearOrThrow() {
-        final var pendingRecordBuilder = requireNonNull(recordBuilder);
-        recordBuilder = null;
-        return pendingRecordBuilder;
+    public @NonNull PendingCreationMetadata getAndClearOrThrow() {
+        final var pendingMetadata = requireNonNull(metadata);
+        metadata = null;
+        return pendingMetadata;
     }
 }

@@ -26,7 +26,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
@@ -107,14 +106,14 @@ public class FrameUtils {
     }
 
     /**
-     * Gets and clears any record builder for a pending creation in the context of the given frame.
+     * Gets and clears any metadata for a pending creation in the context of the given frame.
      *
      * @param frame a frame in the transaction of interest
      */
-    public static @NonNull ContractOperationRecordBuilder getAndClearPendingCreationBuilder(
+    public static @NonNull PendingCreationMetadata getAndClearPendingCreationMetadata(
             @NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        return pendingCreationBuilderReference(frame).getAndClearOrThrow();
+        return pendingCreationMetadataRef(frame).getAndClearOrThrow();
     }
 
     public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {
@@ -267,11 +266,11 @@ public class FrameUtils {
         return stack.isEmpty() ? frame : stack.getLast();
     }
 
-    private static PropagatedCallFailureReference propagatedCallFailureReference(@NonNull final MessageFrame frame) {
+    private static PropagatedCallFailureRef propagatedCallFailureReference(@NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE);
     }
 
-    private static PendingCreationBuilderReference pendingCreationBuilderReference(@NonNull final MessageFrame frame) {
+    private static PendingCreationMetadataRef pendingCreationMetadataRef(@NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(PENDING_CREATION_BUILDER_CONTEXT_VARIABLE);
     }
 }

@@ -37,7 +37,8 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
-import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadata;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -89,7 +90,7 @@ public class HandleHederaOperations implements HederaOperations {
     private final SystemContractGasCalculator gasCalculator;
     private final HandleContext context;
     private final HederaFunctionality functionality;
-    private final PendingCreationBuilderReference pendingCreationBuilderReference;
+    private final PendingCreationMetadataRef pendingCreationMetadataRef;
 
     @Inject
     public HandleHederaOperations(
@@ -100,7 +101,7 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaConfig hederaConfig,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final PendingCreationBuilderReference pendingCreationBuilderReference) {
+            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
@@ -108,7 +109,7 @@ public class HandleHederaOperations implements HederaOperations {
         this.hederaConfig = requireNonNull(hederaConfig);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.functionality = requireNonNull(functionality);
-        this.pendingCreationBuilderReference = requireNonNull(pendingCreationBuilderReference);
+        this.pendingCreationMetadataRef = requireNonNull(pendingCreationMetadataRef);
     }
 
     /**
@@ -284,7 +285,8 @@ public class HandleHederaOperations implements HederaOperations {
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
                 impliedContractCreation,
                 parent.autoRenewAccountId(),
-                evmAddress);
+                evmAddress,
+                ExternalizeInitcodeOnSuccess.YES);
     }
 
     /**
@@ -302,7 +304,8 @@ public class HandleHederaOperations implements HederaOperations {
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
                 functionality == HederaFunctionality.ETHEREUM_TRANSACTION ? body : null,
                 body.autoRenewAccountId(),
-                evmAddress);
+                evmAddress,
+                body.hasInitcode() ? ExternalizeInitcodeOnSuccess.NO : ExternalizeInitcodeOnSuccess.YES);
     }
 
     /**
@@ -374,12 +377,18 @@ public class HandleHederaOperations implements HederaOperations {
         return context.createRecordListCheckPoint();
     }
 
+    private enum ExternalizeInitcodeOnSuccess {
+        YES,
+        NO
+    }
+
     private void dispatchAndMarkCreation(
             final long number,
             @NonNull final CryptoCreateTransactionBody bodyToDispatch,
             @Nullable final ContractCreateTransactionBody bodyToExternalize,
             @Nullable final AccountID autoRenewAccountId,
-            @Nullable final Bytes evmAddress) {
+            @Nullable final Bytes evmAddress,
+            @NonNull final ExternalizeInitcodeOnSuccess externalizeInitcodeOnSuccess) {
         // Create should have conditional child record, but we only externalize this child if it's not already
         // externalized by the top-level HAPI transaction; and we "finish" the synthetic transaction by swapping
         // in the contract creation body for the dispatched crypto create body
@@ -399,9 +408,12 @@ public class HandleHederaOperations implements HederaOperations {
         }
         // If this creation runs to a successful completion, its ContractBytecode sidecar
         // goes in the top-level record or the just-created child record depending on whether
-        // we are doing this on behalf of a HAPI ContractCreate call
-        pendingCreationBuilderReference.set(
-                isTopLevelCreation ? context.recordBuilder(ContractOperationRecordBuilder.class) : recordBuilder);
+        // we are doing this on behalf of a HAPI ContractCreate call; we only include the
+        // initcode in the bytecode sidecar if it's not already externalized via a body
+        final var pendingCreationMetadata = new PendingCreationMetadata(
+                isTopLevelCreation ? context.recordBuilder(ContractOperationRecordBuilder.class) : recordBuilder,
+                externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
+        pendingCreationMetadataRef.set(pendingCreationMetadata);
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         recordBuilder
                 .contractID(contractId)

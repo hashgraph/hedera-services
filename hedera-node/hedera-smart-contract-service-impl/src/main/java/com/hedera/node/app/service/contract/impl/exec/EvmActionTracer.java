@@ -94,7 +94,7 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
      * {@inheritDoc}
      */
     @Override
-    public void tracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
+    public void tracePrecompileResult(@NonNull final MessageFrame frame, @NonNull final ContractActionType type) {
         requireNonNull(type);
         requireNonNull(frame);
         if (hasActionSidecarsEnabled(frame)) {

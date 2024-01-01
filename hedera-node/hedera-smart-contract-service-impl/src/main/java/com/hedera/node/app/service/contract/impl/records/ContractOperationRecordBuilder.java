@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.records;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -50,8 +52,8 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
         if (outcome.actions() != null) {
             addContractActions(outcome.actions(), false);
         }
-        if (outcome.stateChanges() != null) {
-            addContractStateChanges(outcome.stateChanges(), false);
+        if (outcome.hasStateChanges()) {
+            addContractStateChanges(requireNonNull(outcome.stateChanges()), false);
         }
         return this;
     }

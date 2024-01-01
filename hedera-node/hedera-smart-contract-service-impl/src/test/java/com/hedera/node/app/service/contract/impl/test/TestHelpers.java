@@ -76,7 +76,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
-import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationBuilderReference;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -715,7 +715,7 @@ public class TestHelpers {
                 tinybarValues,
                 systemContractGasCalculator,
                 null,
-                new PendingCreationBuilderReference());
+                new PendingCreationMetadataRef());
     }
 
     public static HederaEvmContext wellKnownContextWith(
@@ -730,7 +730,7 @@ public class TestHelpers {
                 tinybarValues,
                 systemContractGasCalculator,
                 null,
-                new PendingCreationBuilderReference());
+                new PendingCreationMetadataRef());
     }
 
     public static HederaEvmContext wellKnownContextWith(
@@ -745,7 +745,7 @@ public class TestHelpers {
                 tinybarValues,
                 systemContractGasCalculator,
                 recordBuilder,
-                new PendingCreationBuilderReference());
+                new PendingCreationMetadataRef());
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {

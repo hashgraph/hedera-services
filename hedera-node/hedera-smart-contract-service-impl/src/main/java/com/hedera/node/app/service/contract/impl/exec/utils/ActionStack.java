@@ -21,6 +21,7 @@ import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
 import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
+import static com.hedera.hapi.streams.codec.ContractActionProtoCodec.RECIPIENT_UNSET;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
@@ -208,10 +209,7 @@ public class ActionStack {
                         .ifPresentOrElse(
                                 reason -> builder.revertReason(tuweniToPbjBytes(reason)),
                                 () -> builder.revertReason(Bytes.EMPTY));
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
+                yield withUnsetRecipientIfNeeded(frame.getType(), builder);
             }
             case EXCEPTIONAL_HALT, COMPLETED_FAILED -> {
                 final var builder = action.copyBuilder();
@@ -226,10 +224,7 @@ public class ActionStack {
                 } else {
                     builder.error(Bytes.EMPTY);
                 }
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
+                yield withUnsetRecipientIfNeeded(frame.getType(), builder);
             }
         };
     }
@@ -342,6 +337,27 @@ public class ActionStack {
 
     private ContractID contractIdWith(final long num) {
         return ContractID.newBuilder().contractNum(num).build();
+    }
+
+    private ContractAction withUnsetRecipientIfNeeded(
+            @NonNull MessageFrame.Type type, @NonNull final ContractAction.Builder builder) {
+        final var action = builder.build();
+        return (type == CONTRACT_CREATION) ? withUnsetRecipient(action) : action;
+    }
+
+    // (FUTURE) Use builder for simplicity when PBJ lets us set the oneof recipient to UNSET
+    private ContractAction withUnsetRecipient(@NonNull final ContractAction action) {
+        return new ContractAction(
+                action.callType(),
+                action.caller(),
+                action.gas(),
+                action.input(),
+                RECIPIENT_UNSET,
+                action.value(),
+                action.gasUsed(),
+                action.resultData(),
+                action.callDepth(),
+                action.callOperationType());
     }
 
     private boolean targetsMissingAddress(@NonNull final MessageFrame frame) {
