@@ -30,8 +30,6 @@ import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -50,7 +48,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * dispatch method.
  */
 public class CustomContractCreationProcessor extends ContractCreationProcessor {
-    private static final Logger logger = LogManager.getLogger(CustomContractCreationProcessor.class);
 
     // By convention, the halt reason should be INSUFFICIENT_GAS when the contract already exists
     private static final Optional<ExceptionalHaltReason> COLLISION_HALT_REASON =
@@ -115,10 +112,6 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
                 contractBytecode.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
             }
             pendingCreationMetadata.recordBuilder().addContractBytecode(contractBytecode.build(), false);
-            logger.info(
-                    "Added bytecode sidecar to record builder {} for contract creation {}",
-                    System.identityHashCode(pendingCreationMetadata),
-                    frame.getContractAddress());
         }
     }
 

@@ -185,7 +185,6 @@ public class ActionStack {
     }
 
     private ContractAction finalFormOf(@NonNull final ContractAction action, @NonNull final MessageFrame frame) {
-        log.info("Finalizing action {}", action);
         return switch (frame.getState()) {
             case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED -> action;
             case CODE_SUCCESS, COMPLETED_SUCCESS -> {
@@ -282,7 +281,6 @@ public class ActionStack {
             builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
         }
         final var wrappedAction = new ActionWrapper(builder.build());
-        log.info("Pushing action {}", wrappedAction.get());
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
     }
@@ -345,7 +343,8 @@ public class ActionStack {
         return (type == CONTRACT_CREATION) ? withUnsetRecipient(action) : action;
     }
 
-    // (FUTURE) Use builder for simplicity when PBJ lets us set the oneof recipient to UNSET
+    // (FUTURE) Use builder for simplicity when PBJ lets us set the oneof recipient to UNSET;
+    // c.f., https://github.com/hashgraph/pbj/issues/160
     private ContractAction withUnsetRecipient(@NonNull final ContractAction action) {
         return new ContractAction(
                 action.callType(),

@@ -55,7 +55,7 @@ public record HederaEvmContext(
         return staticCall || gasPrice == 0;
     }
 
-    public boolean isNonStatic() {
+    public boolean isTransaction() {
         return recordBuilder != null && pendingCreationRecordBuilderReference != null;
     }
 }

@@ -110,7 +110,6 @@ public class SidecarWatcher {
     }
 
     private void onNewSidecarFile(final SidecarFile sidecarFile) {
-        sidecarFile.getSidecarRecordsList().forEach(sidecar -> log.info("Sidecar: {}", sidecar));
         for (final var actualSidecar : sidecarFile.getSidecarRecordsList()) {
             if (hasSeenFirstExpectedSidecar) {
                 assertIncomingSidecar(actualSidecar);
