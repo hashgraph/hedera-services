@@ -5229,7 +5229,8 @@ public class TraceabilitySuite extends HapiSuite {
             final var txnRecord = getTxnRecord(contractCreateTxn).andAllChildRecords();
             final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
             allRunFor(spec, txnRecord, contractBytecode);
-            final var consensusTimestamp = txnRecord.getChildRecord(0).getConsensusTimestamp();
+            final var consensusTimestamp =
+                    txnRecord.getFirstNonStakingChildRecord().getConsensusTimestamp();
             sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
