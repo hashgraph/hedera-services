@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ public class ActionStack {
      * @return a view of this stack ready to be put in a sidecar
      */
     public @NonNull ContractActions asContractActions() {
-        return new ContractActions(actionsStack.stream().map(ActionWrapper::get).toList());
+        return new ContractActions(allActions.stream().map(ActionWrapper::get).toList());
     }
 
     /**
@@ -184,6 +184,7 @@ public class ActionStack {
     }
 
     private ContractAction finalFormOf(@NonNull final ContractAction action, @NonNull final MessageFrame frame) {
+        log.info("Finalizing action {}", action);
         return switch (frame.getState()) {
             case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED -> action;
             case CODE_SUCCESS, COMPLETED_SUCCESS -> {
@@ -286,6 +287,7 @@ public class ActionStack {
             builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
         }
         final var wrappedAction = new ActionWrapper(builder.build());
+        log.info("Pushing action {}", wrappedAction.get());
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
     }
