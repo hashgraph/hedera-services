@@ -153,34 +153,48 @@ public class SidecarWatcher {
         if (actual.equals(expected)) {
             return true;
         } else {
-            // The actual sidecar may have an intrinsic gas cost that varies from the expected sidecar
-            // by a value of 12 * X, where X is the difference in the number of zero bytes in the
-            // transaction payload used between the actual and expected; we have to allow for this
-            // variation so that TraceabilitySuite specs that pass addresses in their call parameters
-            // can be run stably
+            // Depending on the addresses used in TraceabilitySuite, the hard-coded gas values may vary
+            // slightly from observed results. For example, the actual sidecar may have an intrinsic gas
+            // cost differing from that of the expected sidecar by a value of 12 * X, where X is the
+            // difference in the number of zero bytes in the transaction payload used between the actual
+            // and hard-coded transactions (because the payload includes addresses with different numbers
+            // of zeros in their hex encoding). So we allow for a variation of up to 32L gas between
+            // expected and actual.
             if (actual.hasActions() && expected.hasActions()) {
-                // Allow for up to 16 zero/non-zero byte flips, in either direction
-                for (int i = 0; i <= 32; i++) {
-                    if (i == 16) {
-                        continue;
-                    }
-                    final var variedActual = actual.toBuilder()
-                            .setActions(withIntrinsicGasDelta(actual.getActions(), (i - 16) * 12L))
-                            .build();
-                    if (variedActual.equals(expected)) {
-                        return true;
-                    }
+                final var variedActual = actual.toBuilder()
+                        .setActions(withZeroedGasValues(actual.getActions()))
+                        .build();
+                final var variedExpected = expected.toBuilder()
+                        .setActions(withZeroedGasValues(expected.getActions()))
+                        .build();
+                if (variedExpected.equals(variedActual)) {
+                    return maxGasDeltaBetween(actual.getActions(), expected.getActions()) <= 32L;
                 }
             }
             return false;
         }
     }
 
-    private ContractActions withIntrinsicGasDelta(@NonNull final ContractActions actions, final long delta) {
+    private long maxGasDeltaBetween(@NonNull final ContractActions a, @NonNull final ContractActions b) {
+        final var aActions = a.getContractActionsList();
+        final var bActions = b.getContractActionsList();
+        if (aActions.size() != bActions.size()) {
+            throw new IllegalArgumentException("Arguments should be equal up to gas usage");
+        }
+        var maxGasDelta = 0L;
+        for (int i = 0, n = aActions.size(); i < n; i++) {
+            final var aAction = aActions.get(i);
+            final var bAction = bActions.get(i);
+            maxGasDelta = Math.max(maxGasDelta, Math.abs(aAction.getGas() - bAction.getGas()));
+        }
+        return maxGasDelta;
+    }
+
+    private ContractActions withZeroedGasValues(@NonNull final ContractActions actions) {
         final var perturbedAction = ContractActions.newBuilder();
         actions.getContractActionsList()
                 .forEach(action -> perturbedAction.addContractActions(
-                        action.toBuilder().setGas(action.getGas() + delta).build()));
+                        action.toBuilder().setGas(0L).build()));
         return perturbedAction.build();
     }
 
