@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class RecordsSuite extends HapiSuite {
 
