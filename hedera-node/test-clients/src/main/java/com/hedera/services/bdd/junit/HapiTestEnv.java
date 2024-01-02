@@ -108,7 +108,13 @@ public class HapiTestEnv {
         started = true;
         for (final var node : nodes) {
             logger.info("Started node {}", node.getName());
-            node.start();
+            try{
+                node.start();
+            } catch (RuntimeException e) {
+                logger.error("Node {} failed to start within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                throw e;
+            }
+
         }
         for (final var node : nodes) {
             try{
