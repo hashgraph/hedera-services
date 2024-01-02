@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1513,9 +1513,13 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                             .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
                                             .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                                     .signedBy(DEFAULT_PAYER, PARTY)
-                                    .hasKnownStatus(ACCOUNT_DELETED);
+                                    .hasKnownStatus(SUCCESS);
 
-                            allRunFor(spec, op1);
+                            var op2 = getAliasedAccountInfo(counterAlias.get())
+                                    // TBD: balance should be 4 or 2 hbars
+                                    .has(accountWith().nonce(0).balance(2 * ONE_HBAR));
+
+                            allRunFor(spec, op1, op2);
                         }));
     }
 
