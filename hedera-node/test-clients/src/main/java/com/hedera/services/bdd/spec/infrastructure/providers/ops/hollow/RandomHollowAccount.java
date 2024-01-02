@@ -98,8 +98,10 @@ public class RandomHollowAccount implements OpProvider {
             allRunFor(spec, op, hapiGetTxnRecord);
 
             if (!hapiGetTxnRecord.getChildRecords().isEmpty()) {
-                final AccountID newAccountID =
-                        hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                final var newAccountID = hapiGetTxnRecord
+                        .getFirstNonStakingChildRecord()
+                        .getReceipt()
+                        .getAccountID();
                 spec.registry().saveAccountId(keyName + ACCOUNT_SUFFIX, newAccountID);
             }
         });

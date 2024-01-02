@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -272,9 +272,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public FunctionalityResourcePrices resourcePricesFor(
             @NonNull final HederaFunctionality functionality, @NonNull final SubType subType) {
-        // TODO - how do we get the active congestion multiplier?
         return new FunctionalityResourcePrices(
-                requireNonNull(feeManager.getFeeData(functionality, userTransactionConsensusTime, subType)), 1L);
+                requireNonNull(feeManager.getFeeData(functionality, userTransactionConsensusTime, subType)),
+                feeManager.congestionMultiplierFor(txBody, functionality, readableStoreFactory));
     }
 
     @NonNull
@@ -544,23 +544,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
             throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
         }
-        // This condition fails, because for lazy-account creation we charge fees, before dispatching the transaction,
-        // and the state will be modified.
 
-        //        if (stack.depth() > 1) {
-        //            throw new IllegalStateException(
-        //                    "Cannot dispatch a preceding transaction when a savepoint has been created");
-        //        }
-
-        // This condition fails, because for auto-account creation we charge fees, before dispatching the transaction,
-        // and the state will be modified.
-
-        //         if (current().isModified()) {
-        //                    throw new IllegalStateException("Cannot dispatch a preceding transaction when the state
-        // has been modified");
-        //         }
-
-        // run the transaction
         final var precedingRecordBuilder = recordBuilderFactory.get();
         dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
 
@@ -652,7 +636,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             return;
         }
 
-        final var childStack = new SavepointStackImpl(current());
         final HederaFunctionality function;
         try {
             function = functionOf(txBody);
@@ -665,26 +648,32 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         // Any keys verified for this dispatch (including the payer key if
         // required) should incorporate the provided callback
         final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
-        final Key syntheticPayerKey;
+        final DispatchValidationResult dispatchValidationResult;
         try {
-            syntheticPayerKey = validate(
+            // Note the first parameter sets up that if there is no callback, then the keys are
+            // not verified here at all, which is apparently required for many contract calls.
+            dispatchValidationResult = validate(
                     callback == null ? null : childVerifier,
+                    callback,
                     function,
                     txBody,
                     syntheticPayer,
                     networkInfo().selfNodeInfo().nodeId(),
-                    dispatchNeedsHapiPayerChecks(category));
+                    dispatchNeedsHapiPayerChecks(childCategory));
         } catch (final PreCheckException e) {
+            // This will happen when the payer for a triggered transaction cannot afford the service fee,
+            // part of normal operations
             childRecordBuilder.status(e.responseCode());
             return;
         }
 
+        final var childStack = new SavepointStackImpl(current());
         final var childContext = new HandleContextImpl(
                 txBody,
                 function,
                 0,
                 syntheticPayer,
-                syntheticPayerKey,
+                dispatchValidationResult == null ? null : dispatchValidationResult.key(),
                 networkInfo,
                 childCategory,
                 childRecordBuilder,
@@ -704,23 +693,35 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 solvencyPreCheck,
                 childRecordFinalizer);
 
+        if (dispatchValidationResult != null) {
+            childContext.feeAccumulator.chargeFees(
+                    syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
+        }
         try {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
-            final var finalizeContext = new ChildFinalizeContextImpl(
-                    new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
-                    childRecordBuilder);
-            childRecordFinalizer.finalizeChildRecord(finalizeContext);
-            childStack.commitFullStack();
         } catch (final HandleException e) {
+            if (e.shouldRollbackStack()) {
+                childStack.rollbackFullStack();
+                if (dispatchValidationResult != null) {
+                    childContext.feeAccumulator.chargeFees(
+                            syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
+                }
+            }
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(recordBuilder);
         }
+        final var finalizeContext = new ChildFinalizeContextImpl(
+                new ReadableStoreFactory(childStack),
+                new WritableStoreFactory(childStack, TokenService.NAME),
+                childRecordBuilder);
+        childRecordFinalizer.finalizeChildRecord(finalizeContext);
+        childStack.commitFullStack();
     }
 
-    private @Nullable Key validate(
+    private @Nullable DispatchValidationResult validate(
             @Nullable final KeyVerifier keyVerifier,
+            @Nullable final Predicate<Key> callback,
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody transactionBody,
             @NonNull final AccountID syntheticPayerId,
@@ -733,7 +734,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 readableStoreFactory(), transactionBody, syntheticPayerId, configuration(), dispatcher);
         dispatcher.dispatchPreHandle(preHandleContext);
 
-        Key syntheticPayerKey = null;
+        DispatchValidationResult dispatchValidationResult = null;
         if (enforceHapiPayerChecks) {
             // In the current system only the schedule service needs to specify its
             // child transaction id, and will never use a duplicate, so this check is
@@ -744,21 +745,22 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             }
 
             // Check the status and solvency of the payer
-            final var fee = dispatchComputeFees(body(), syntheticPayerId);
+            final var serviceFee = dispatchComputeFees(transactionBody, syntheticPayerId)
+                    .copyBuilder()
+                    .networkFee(0)
+                    .nodeFee(0)
+                    .build();
             final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId);
-            solvencyPreCheck.checkSolvency(body(), syntheticPayerId, functionality, payerAccount, fee, true);
-            // FUTURE - charge fees here?
+            solvencyPreCheck.checkSolvency(
+                    transactionBody, syntheticPayerId, function, payerAccount, serviceFee, false);
 
             // Note we do NOT want to enforce the "time box" on valid start for
             // transaction ids dispatched by the schedule service, since these ids derive from their
             // ScheduleCreate id, which could have happened long ago
-
-            syntheticPayerKey = payerAccount.keyOrThrow();
+            final var syntheticPayerKey = payerAccount.keyOrThrow();
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
-            final var payerKeyVerification = keyVerifier.verificationFor(syntheticPayerKey);
-            if (payerKeyVerification.failed()) {
-                throw new PreCheckException(INVALID_SIGNATURE);
-            }
+            validateKey(keyVerifier, callback, syntheticPayerKey);
+            dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, serviceFee);
         }
 
         // Given the current HTS system contract interface and ScheduleService
@@ -771,10 +773,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         // "verification assistant" callback
         if (keyVerifier != null) {
             for (final var key : preHandleContext.requiredNonPayerKeys()) {
-                final var verification = keyVerifier.verificationFor(key);
-                if (verification.failed()) {
-                    throw new PreCheckException(INVALID_SIGNATURE);
-                }
+                validateKey(keyVerifier, callback, key);
             }
             for (final var hollowAccount : preHandleContext.requiredHollowAccounts()) {
                 final var verification = keyVerifier.verificationFor(hollowAccount.alias());
@@ -783,7 +782,32 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 }
             }
         }
-        return syntheticPayerKey;
+        return dispatchValidationResult;
+    }
+
+    /**
+     * This method works around a corner case with the `KeyVerifier` design which prevents certain
+     * previously verified keys from succeeding.  To correct that, we give the callback predicate
+     * one final opportunity to accept each key if validation fails.
+     * @param keyVerifier theKeyVerifier to use for signature validation
+     * @param callback a Predicate possibly provided by the service to validate additional keys.
+     * @param keyToValidate The Key to be validated and determined to meet or not meet signature requirements.
+     * @throws PreCheckException if the Key does not meet signature requirements.
+     */
+    private static void validateKey(
+            final @NonNull KeyVerifier keyVerifier, final @Nullable Predicate<Key> callback, final Key keyToValidate)
+            throws PreCheckException {
+        // We must *attempt* payer verification (in case the same key is required for other aspects of the
+        // transaction); however, if the callback is set, then a failed verification can become
+        // success if the callback accepts the payer key.  This works around an issue in scheduled
+        // transactions where the payer for a child transaction is "deemed valid" even though that payer
+        // did not sign the current user transaction.
+        // @todo('9447') Remove this special case when fixing the "deemed valid" behavior.
+        final SignatureVerification verification = keyVerifier.verificationFor(keyToValidate);
+        final boolean callbackFailed = callback != null ? !callback.test(keyToValidate) : true;
+        if (verification.failed() && callbackFailed) {
+            throw new PreCheckException(INVALID_SIGNATURE);
+        }
     }
 
     private void assertPayerIsAuthorized(
@@ -800,7 +824,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // Check if the transaction is privileged and if the payer has the required privileges
-        final var privileges = authorizer.hasPrivilegedAuthorization(syntheticPayerId, functionality, transactionBody);
+        final var privileges = authorizer.hasPrivilegedAuthorization(syntheticPayerId, function, transactionBody);
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
             throw new PreCheckException(ResponseCodeEnum.AUTHORIZATION_FAILED);
         }
@@ -878,5 +902,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     private boolean dispatchNeedsHapiPayerChecks(@NonNull final TransactionCategory category) {
         return category == SCHEDULED;
+    }
+
+    private record DispatchValidationResult(@NonNull Key key, @NonNull Fees fees) {
+        public DispatchValidationResult {
+            requireNonNull(key);
+        }
     }
 }

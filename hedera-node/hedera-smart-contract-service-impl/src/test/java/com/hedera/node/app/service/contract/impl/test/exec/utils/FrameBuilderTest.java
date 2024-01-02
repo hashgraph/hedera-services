@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,20 @@ package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.tinybarValuesFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.apache.tuweni.bytes.Bytes;
@@ -69,8 +72,9 @@ class FrameBuilderTest {
     private final FrameBuilder subject = new FrameBuilder();
 
     @Test
-    void constructsExpectedFrameForCallToExtantContractIncludingAccessTrackerWithSidecarEnabled() {
+    void constructsExpectedFrameForCallToExtantContractIncludingOptionalContextVaraiables() {
         final var transaction = wellKnownHapiCall();
+        final var recordBuilder = mock(ContractOperationRecordBuilder.class);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
         given(account.getEvmCode()).willReturn(CONTRACT_CODE);
         given(worldUpdater.updater()).willReturn(stackedUpdater);
@@ -83,7 +87,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator, recordBuilder),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -110,6 +114,7 @@ class FrameBuilderTest {
         assertSame(CONTRACT_CODE, frame.getCode());
         assertNotNull(accessTrackerFor(frame));
         assertSame(tinybarValues, tinybarValuesFor(frame));
+        assertSame(recordBuilder, selfDestructBeneficiariesFor(frame));
     }
 
     @Test
