@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Determines the non-ancient lower bound (inclusive) on events and communicates the window of rounds between the
@@ -34,6 +35,12 @@ public class NonAncientEventWindow {
      */
     public static NonAncientEventWindow INITIAL_EVENT_WINDOW = new NonAncientEventWindow(
             ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION);
+
+    /**
+     * This static variable is temporary until we throw the switch permanently from minGenNonAncient to
+     * minRoundNonAncient
+     */
+    private static AtomicBoolean useBirthRoundForAncient = new AtomicBoolean(false);
 
     private final long latestConsensusRound;
     private final long minRoundNonAncient;
@@ -67,6 +74,23 @@ public class NonAncientEventWindow {
     }
 
     /**
+     * Use the event's birth round and minRoundNonAncient for determining ancient in {@link #isAncient(GossipEvent)}
+     * <p>
+     * This method must only be called at most once while constructing the platform.  If it is called after a call to
+     * any {@link #isAncient(GossipEvent)} method, the behavior of the system will be indeterminate.
+     */
+    public static void setUseBirthRoundForAncient() {
+        useBirthRoundForAncient.set(true);
+    }
+
+    /**
+     * @return true if {@link #setUseBirthRoundForAncient()} was called, false otherwise.
+     */
+    public static boolean useBirthRoundForAncient() {
+        return useBirthRoundForAncient.get();
+    }
+
+    /**
      * @return the pending round coming to consensus, i.e. 1  + the latestConsensusRound
      */
     public long pendingConsensusRound() {
@@ -77,8 +101,11 @@ public class NonAncientEventWindow {
      * @return the lower bound of the non-ancient event window
      */
     public long getLowerBound() {
-        // FUTURE WORK: return minRoundNonAncient once we switch from minGenNonAncient.
-        return minGenNonAncient;
+        if (useBirthRoundForAncient.get()) {
+            return minRoundNonAncient;
+        } else {
+            return minGenNonAncient;
+        }
     }
 
     /**
@@ -88,8 +115,7 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final GossipEvent event) {
-        // FUTURE WORK: use generation until we throw the switch to using round
-        return event.getGeneration() < minGenNonAncient;
+        return isAncient(event.getGeneration());
     }
 
     /**
@@ -99,8 +125,7 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final EventDescriptor event) {
-        // FUTURE WORK: use generation until we throw the switch to using round
-        return event.getGeneration() < minGenNonAncient;
+        return isAncient(event.getGeneration());
     }
 
     /**
@@ -110,8 +135,11 @@ public class NonAncientEventWindow {
      * @return true if the value is ancient, false otherwise.
      */
     public boolean isAncient(final long testValue) {
-        // FUTURE WORK: use generation until we throw the switch to using round
-        return testValue < minGenNonAncient;
+        if (useBirthRoundForAncient.get()) {
+            return testValue < minRoundNonAncient;
+        } else {
+            return testValue < minGenNonAncient;
+        }
     }
 
     /**

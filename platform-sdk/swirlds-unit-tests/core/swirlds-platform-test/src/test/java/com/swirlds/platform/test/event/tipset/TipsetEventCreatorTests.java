@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -899,8 +899,9 @@ class TipsetEventCreatorTests {
     }
 
     /**
-     * Checks that birth round on events is being set. FUTURE WORK: Update this test to use RosterDiff instead of
-     * NonAncientEventWindow
+     * Checks that birth round on events is being set if the setting for using birth round is set.
+     * <p>
+     * FUTURE WORK: Update this test to use RosterDiff instead of NonAncientEventWindow
      */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
@@ -921,6 +922,8 @@ class TipsetEventCreatorTests {
                 buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
+
+        NonAncientEventWindow.setUseBirthRoundForAncient();
 
         for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
             for (final Address address : addressBook) {
