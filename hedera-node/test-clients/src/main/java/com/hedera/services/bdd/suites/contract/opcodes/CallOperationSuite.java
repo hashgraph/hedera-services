@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -34,6 +35,8 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -69,7 +72,14 @@ public class CallOperationSuite extends HapiSuite {
         final var EXPECTED_BALANCE = 10;
 
         return defaultHapiSpec("VerifiesExistence")
-                .given(cryptoCreate(ACCOUNT).balance(0L), uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
+                        cryptoCreate(ACCOUNT).balance(0L),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, "call", asHeadlongAddress(INVALID_ADDRESS))
@@ -92,7 +102,10 @@ public class CallOperationSuite extends HapiSuite {
         final var contract = "CallingContract";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return defaultHapiSpec("CallingContract")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        snapshotMode(SnapshotMode.TAKE_FROM_MONO_STREAMS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
                 .when(
                         contractCall(contract, "setVar1", BigInteger.valueOf(35)),
                         contractCallLocal(contract, "getVar1").logged(),
