@@ -20,6 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Objects;
 
 /**
  * A clock that is accurate to the nanosecond, as compared to the standard Java "Instant" clock, which is only
@@ -31,12 +32,20 @@ public final class NanoClock extends Clock {
     private final long initialNanos;
     private final Instant initialInstant;
 
+    /**
+     * Creates a NanoClock for UTC time
+     */
     public NanoClock() {
         this(Clock.systemUTC());
     }
 
+    /**
+     * Creates a new NanoClock wrapping a {@code Clock} instance
+     * @param clock clock to use as source for a new NanoClock instance
+     * @throws NullPointerException if {@code clock} is {@code null}
+     */
     public NanoClock(@NonNull final Clock clock) {
-        this.clock = clock;
+        this.clock = Objects.requireNonNull(clock, "clock must not be null");
         this.initialInstant = clock.instant();
         this.initialNanos = getSystemNanos();
     }
@@ -62,11 +71,12 @@ public final class NanoClock extends Clock {
     /**
      * @param zone the time-zone to change to, not null
      * @return Returns a copy of this clock with a different time-zone.
+     * @throws NullPointerException if {@code zone} is {@code null}
      */
     @Override
     @NonNull
     public Clock withZone(@NonNull final ZoneId zone) {
-        return new NanoClock(this.clock.withZone(zone));
+        return new NanoClock(this.clock.withZone(Objects.requireNonNull(zone, "zone must not be null")));
     }
 
     private static long getSystemNanos() {
