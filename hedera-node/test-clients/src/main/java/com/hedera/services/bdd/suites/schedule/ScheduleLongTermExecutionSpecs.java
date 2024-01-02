@@ -47,9 +47,49 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
-import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.ORIG_FILE;
-import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.transferListCheck;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATE_TX;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.FAILED_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.FALSE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.LUCKY_RECEIVER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ORIG_FILE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYING_ACCOUNT;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYING_ACCOUNT_2;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYING_ACCOUNT_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULE_CREATE_FEE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_MAX_TXN_PER_SECOND;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER_1;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER_2;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER_3;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIGN_TX;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_UPDATE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SUCCESS_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.THREE_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TRANSACTION_NOT_SCHEDULED;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TRIGGERING_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WEIRDLY_POPULAR_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WEIRDLY_POPULAR_KEY_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_CONSENSUS_TIMESTAMP;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_RECORD_ACCOUNT_ID;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_SCHEDULE_ID;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_TRANSACTION_VALID_START;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_TRANSFER_LIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.transferListCheck;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_LONG_TERM_ENABLED;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.disableLongTermScheduledTransactions;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.enableLongTermScheduledTransactions;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.getPoeticUpgradeHash;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.setLongTermScheduledTransactionsToDefault;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -68,13 +108,9 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -83,50 +119,6 @@ import org.junit.jupiter.api.Assertions;
 public class ScheduleLongTermExecutionSpecs extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ScheduleLongTermExecutionSpecs.class);
-
-    private static final String SCHEDULING_LONG_TERM_ENABLED = "scheduling.longTermEnabled";
-    private static final String DEFAULT_LONG_TERM_ENABLED =
-            HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_LONG_TERM_ENABLED);
-
-    private static final String LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS = "ledger.schedule.txExpiryTimeSecs";
-    private static final String DEFAULT_TX_EXPIRY =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
-    private static final String PAYING_ACCOUNT = "payingAccount";
-    private static final String RECEIVER = "receiver";
-    private static final String SENDER = "sender";
-    public static final String SENDER_TXN = "senderTxn";
-    private static final String BASIC_XFER = "basicXfer";
-    private static final String CREATE_TX = "createTx";
-    private static final String SIGN_TX = "signTx";
-    private static final String SCHEDULED_TRANSACTION_BE_SUCCESSFUL = "Scheduled transaction be successful!";
-    private static final String TRIGGERING_TXN = "triggeringTxn";
-    private static final String PAYING_ACCOUNT_2 = "payingAccount2";
-    private static final String FALSE = "false";
-    private static final String VALID_SCHEDULE = "validSchedule";
-    private static final String SUCCESS_TXN = "successTxn";
-    private static final String PAYER_TXN = "payerTxn";
-    private static final String WRONG_RECORD_ACCOUNT_ID = "Wrong record account ID!";
-    private static final String TRANSACTION_NOT_SCHEDULED = "Transaction not scheduled!";
-    private static final String WRONG_SCHEDULE_ID = "Wrong schedule ID!";
-    private static final String SCHEDULING_MAX_TXN_PER_SECOND = "scheduling.maxTxnPerSecond";
-    private static final String WRONG_TRANSACTION_VALID_START = "Wrong transaction valid start!";
-    private static final String WRONG_CONSENSUS_TIMESTAMP = "Wrong consensus timestamp!";
-    private static final String WRONG_TRANSFER_LIST = "Wrong transfer list!";
-    private static final String SIMPLE_UPDATE = "SimpleUpdate";
-    private static final String SCHEDULING_WHITELIST = "scheduling.whitelist";
-    private static final String PAYING_ACCOUNT_TXN = "payingAccountTxn";
-    private static final String LUCKY_RECEIVER = "luckyReceiver";
-    private static final String SCHEDULE_CREATE_FEE = "scheduleCreateFee";
-    private static final String FAILED_XFER = "failedXfer";
-    private static final String WEIRDLY_POPULAR_KEY = "weirdlyPopularKey";
-    private static final String SENDER_1 = "sender1";
-    private static final String SENDER_2 = "sender2";
-    private static final String SENDER_3 = "sender3";
-    private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
-    private static final String THREE_SIG_XFER = "threeSigXfer";
-    private static final String SCHEDULED_TRANSACTION_SHOULD_NOT_BE_SUCCESSFUL =
-            "Scheduled transaction should not be successful!";
-    private static final String PAYER = "payer";
 
     public static void main(String... args) {
         new ScheduleLongTermExecutionSpecs().runSuiteSync();
@@ -205,7 +197,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
                             Instant triggerTime = Instant.ofEpochSecond(
                                     triggeringTx
@@ -312,7 +304,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
                             Instant triggerTime = Instant.ofEpochSecond(
                                     triggeringTx
@@ -418,7 +410,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
                             Instant triggerTime = Instant.ofEpochSecond(
                                     triggeringTx
@@ -498,7 +490,8 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX))
-                .when(scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).via(SIGN_TX))
+                .when(scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).via(
+                        SIGN_TX))
                 .then(
                         getScheduleInfo(BASIC_XFER)
                                 .hasScheduleId(BASIC_XFER)
@@ -520,7 +513,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
                             Instant triggerTime = Instant.ofEpochSecond(
                                     triggeringTx
@@ -593,7 +586,8 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         overriding(SCHEDULING_WHITELIST, "ContractCall"),
                         uploadInitCode(SIMPLE_UPDATE),
                         contractCreate(SIMPLE_UPDATE).gas(500_000L),
-                        cryptoCreate(PAYING_ACCOUNT).balance(1000000000000L).via(PAYING_ACCOUNT_TXN))
+                        cryptoCreate(PAYING_ACCOUNT).balance(1000000000000L).via(
+                                PAYING_ACCOUNT_TXN))
                 .when(scheduleCreate(
                                 BASIC_XFER,
                                 contractCall(SIMPLE_UPDATE, "set", 5, 42).gas(300000L))
@@ -627,7 +621,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
                             Assertions.assertTrue(triggeredTx
                                             .getResponseRecord()
@@ -643,10 +637,12 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                 .given(
                         overriding(SCHEDULING_WHITELIST, "ContractCreate"),
                         uploadInitCode(SIMPLE_UPDATE),
-                        cryptoCreate(PAYING_ACCOUNT).balance(1000000000000L).via(PAYING_ACCOUNT_TXN))
+                        cryptoCreate(PAYING_ACCOUNT).balance(1000000000000L).via(
+                                PAYING_ACCOUNT_TXN))
                 .when(scheduleCreate(
                                 BASIC_XFER,
-                                contractCreate(SIMPLE_UPDATE).gas(500_000L).adminKey(PAYING_ACCOUNT))
+                                contractCreate(SIMPLE_UPDATE).gas(500_000L).adminKey(
+                                        PAYING_ACCOUNT))
                         .waitForExpiry()
                         .withRelativeExpiry(PAYING_ACCOUNT_TXN, 8)
                         .designatingPayer(PAYING_ACCOUNT)
@@ -677,7 +673,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
 
                             Assertions.assertTrue(
                                     triggeredTx.getResponseRecord().getReceipt().hasContractID());
@@ -736,7 +732,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     INSUFFICIENT_PAYER_BALANCE,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_SHOULD_NOT_BE_SUCCESSFUL);
+                                    ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -808,7 +804,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     INSUFFICIENT_PAYER_BALANCE,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_SHOULD_NOT_BE_SUCCESSFUL);
+                                    ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -895,7 +891,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     INSUFFICIENT_PAYER_BALANCE,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_SHOULD_NOT_BE_SUCCESSFUL);
+                                    ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -912,7 +908,8 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         scheduleCreate(
                                         FAILED_XFER,
                                         cryptoTransfer(
-                                                tinyBarsFromToWithInvalidAmounts(SENDER, RECEIVER, transferAmount)))
+                                                tinyBarsFromToWithInvalidAmounts(
+                                                        SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
                                 .withRelativeExpiry(SENDER_TXN, 8)
                                 .designatingPayer(PAYING_ACCOUNT)
@@ -943,7 +940,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     INVALID_ACCOUNT_AMOUNTS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_SHOULD_NOT_BE_SUCCESSFUL);
+                                    ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -988,7 +985,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     INSUFFICIENT_ACCOUNT_BALANCE,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_SHOULD_NOT_BE_SUCCESSFUL);
+                                    ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -1035,7 +1032,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     ACCOUNT_DELETED,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_SHOULD_NOT_BE_SUCCESSFUL);
+                                    ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -1131,7 +1128,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -1211,7 +1208,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -1302,7 +1299,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                             Assertions.assertEquals(
                                     SUCCESS,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
                         }));
     }
 
@@ -1460,7 +1457,8 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                 .mapToObj(i -> new HapiSpecOperation[] {
                                     scheduleCreate(
                                                     "twoSigXfer" + i,
-                                                    cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                                    cryptoTransfer(tinyBarsFromTo(
+                                                            SENDER, RECEIVER, 1))
                                                             .fee(ONE_HBAR))
                                             .withEntityMemo(randomUppercase(100))
                                             .payingWith(SENDER)
@@ -1495,54 +1493,4 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
         return LOG;
     }
 
-    public static HapiSpec enableLongTermScheduledTransactions() {
-        return defaultHapiSpec("EnableLongTermScheduledTransactions")
-                .given()
-                .when()
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, "true")));
-    }
-
-    public static HapiSpec disableLongTermScheduledTransactions() {
-        return defaultHapiSpec("DisableLongTermScheduledTransactions")
-                .given()
-                .when()
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, FALSE)));
-    }
-
-    public static HapiSpec setLongTermScheduledTransactionsToDefault() {
-        return defaultHapiSpec("SetLongTermScheduledTransactionsToDefault")
-                .given()
-                .when()
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, DEFAULT_LONG_TERM_ENABLED)));
-    }
-
-    public static List<HapiSpec> withAndWithoutLongTermEnabled(Supplier<List<HapiSpec>> getSpecs) {
-        List<HapiSpec> list = new ArrayList<>();
-        list.add(disableLongTermScheduledTransactions());
-        list.addAll(getSpecs.get());
-        list.add(enableLongTermScheduledTransactions());
-        var withEnabled = getSpecs.get();
-        withEnabled.forEach(s -> s.appendToName("WithLongTermEnabled"));
-        list.addAll(withEnabled);
-        list.add(setLongTermScheduledTransactionsToDefault());
-        return list;
-    }
-
-    public static List<HapiSpec> withAndWithoutLongTermEnabled(Function<Boolean, List<HapiSpec>> getSpecs) {
-        List<HapiSpec> list = new ArrayList<>();
-        list.add(disableLongTermScheduledTransactions());
-        list.addAll(getSpecs.apply(false));
-        list.add(enableLongTermScheduledTransactions());
-        var withEnabled = getSpecs.apply(true);
-        withEnabled.forEach(s -> s.appendToName("WithLongTermEnabled"));
-        list.addAll(withEnabled);
-        list.add(setLongTermScheduledTransactionsToDefault());
-        return list;
-    }
 }
