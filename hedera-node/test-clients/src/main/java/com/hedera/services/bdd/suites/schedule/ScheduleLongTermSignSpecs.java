@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,13 +42,35 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.A_SENDER_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BEFORE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATE_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATION;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFERRED_CREATION;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFERRED_FALL;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFERRED_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.EXTRA_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.NEW_SENDER_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SHARED_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.THREE_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TOKEN_A;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.enableLongTermScheduledTransactions;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.setLongTermScheduledTransactionsToDefault;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -63,29 +85,6 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
 
     private static final String suiteWhitelist = "CryptoCreate,ConsensusSubmitMessage,CryptoTransfer";
 
-    public static final String SCHEDULING_WHITELIST = "scheduling.whitelist";
-    private static final String defaultWhitelist =
-            HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
-    private static final String NEW_SKEY = "newSKey";
-    private static final String SENDER = "sender";
-    private static final String RECEIVER = "receiver";
-    private static final String TOKEN_A = "tokenA";
-    private static final String SENDER_TXN = "senderTxn";
-    private static final String PAYER = "payer";
-    private static final String EXTRA_KEY = "extraKey";
-    private static final String BASIC_XFER = "basicXfer";
-    private static final String ADMIN = "admin";
-    private static final String CREATE_TXN = "createTxn";
-    private static final String THREE_SIG_XFER = "threeSigXfer";
-    private static final String TWO_SIG_XFER = "twoSigXfer";
-    private static final String SHARED_KEY = "sharedKey";
-    private static final String DEFERRED_CREATION = "deferredCreation";
-    private static final String CREATION = "creation";
-    private static final String A_SENDER_TXN = "aSenderTxn";
-    private static final String BEFORE = "before";
-    private static final String DEFERRED_XFER = "deferredXfer";
-    private static final String DEFERRED_FALL = "deferredFall";
-
     public static void main(String... args) {
         new ScheduleLongTermSignSpecs().runSuiteSync();
     }
@@ -93,7 +92,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                ScheduleLongTermExecutionSpecs.enableLongTermScheduledTransactions(),
+                enableLongTermScheduledTransactions(),
                 suiteSetup(),
                 triggersUponAdditionalNeededSig(),
                 sharedKeyWorksAsExpected(),
@@ -112,7 +111,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 reductionInSigningReqsAllowsTxnToGoThrough(),
                 reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry(),
                 suiteCleanup(),
-                ScheduleLongTermExecutionSpecs.setLongTermScheduledTransactionsToDefault());
+                setLongTermScheduledTransactionsToDefault());
     }
 
     final HapiSpec suiteCleanup() {
@@ -121,7 +120,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 .when()
                 .then(fileUpdate(APP_PROPERTIES)
                         .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(SCHEDULING_WHITELIST, defaultWhitelist)));
+                        .overridingProps(Map.of(SCHEDULING_WHITELIST, WHITELIST_DEFAULT)));
     }
 
     final HapiSpec suiteSetup() {
@@ -142,7 +141,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
         String receiver = "Y";
         String schedule = "Z";
         String senderKey = "sKey";
-        String newSenderKey = NEW_SKEY;
+        String newSenderKey = NEW_SENDER_KEY;
 
         return defaultHapiSpec("ChangeInNestedSigningReqsRespectedAtExpiry")
                 .given(
@@ -201,7 +200,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
         String receiver = "Y";
         String schedule = "Z";
         String senderKey = "sKey";
-        String newSenderKey = NEW_SKEY;
+        String newSenderKey = NEW_SENDER_KEY;
 
         return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughAtExpiry")
                 .given(
@@ -251,7 +250,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
         String receiver = "Y";
         String schedule = "Z";
         String senderKey = "sKey";
-        String newSenderKey = NEW_SKEY;
+        String newSenderKey = NEW_SENDER_KEY;
 
         return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry")
                 .given(

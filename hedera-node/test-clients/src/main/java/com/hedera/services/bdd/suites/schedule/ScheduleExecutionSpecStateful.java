@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,26 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.addAllToWhitelist;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.A_TOKEN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_MAX_TOKEN_TRANSFER_LEN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_MAX_TRANSFER_LEN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.FAILING_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYING_ACCOUNT;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER_A;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER_B;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER_C;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULE_PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SUPPLY_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TOKENS_NFTS_ARE_ENABLED;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TREASURY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.addAllToWhitelist;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -49,7 +67,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -68,30 +85,6 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     private static final int TMP_MAX_TRANSFER_LENGTH = 2;
     private static final int TMP_MAX_TOKEN_TRANSFER_LENGTH = 2;
-
-    private static final String defaultTxExpiry =
-            HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
-    private static final String LEDGER_TRANSFERS_MAX_LEN = "ledger.transfers.maxLen";
-    private static final String defaultMaxTransferLen =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_TRANSFERS_MAX_LEN);
-    private static final String LEDGER_TOKEN_TRANSFERS_MAX_LEN = "ledger.tokenTransfers.maxLen";
-    private static final String defaultMaxTokenTransferLen =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_TOKEN_TRANSFERS_MAX_LEN);
-    private static final String defaultWhitelist =
-            HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
-
-    private static final String A_TOKEN = "token";
-    private static final String VALID_SCHEDULE = "validSchedule";
-    private static final String SCHEDULE_PAYER = "schedulePayer";
-    private static final String TOKENS_NFTS_ARE_ENABLED = "tokens.nfts.areEnabled";
-    private static final String TREASURY = "treasury";
-    private static final String SUPPLY_KEY = "supplyKey";
-    private static final String SENDER = "sender";
-    private static final String RECEIVER_A = "receiverA";
-    private static final String RECEIVER_B = "receiverB";
-    private static final String RECEIVER_C = "receiverC";
-    private static final String PAYING_ACCOUNT = "payingAccount";
-    String failingTxn = "failingTxn";
 
     public static void main(String... args) {
         new ScheduleExecutionSpecStateful().runSuiteSync();
@@ -143,7 +136,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                                 .initialSupply(0),
                         scheduleCreate(VALID_SCHEDULE, mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("m1"))))
                                 .designatingPayer(SCHEDULE_PAYER)
-                                .via(failingTxn),
+                                .via(FAILING_TXN),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "false")))
@@ -151,7 +144,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        getTxnRecord(failingTxn)
+                        getTxnRecord(FAILING_TXN)
                                 .scheduled()
                                 .hasPriority(recordWith().status(NOT_SUPPORTED)),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0),
@@ -175,7 +168,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                                 .initialSupply(0),
                         scheduleCreate(VALID_SCHEDULE, burnToken(A_TOKEN, List.of(1L, 2L)))
                                 .designatingPayer(SCHEDULE_PAYER)
-                                .via(failingTxn),
+                                .via(FAILING_TXN),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "false")))
@@ -183,7 +176,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        getTxnRecord(failingTxn)
+                        getTxnRecord(FAILING_TXN)
                                 .scheduled()
                                 .hasPriority(recordWith().status(NOT_SUPPORTED)),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0),
@@ -223,7 +216,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         .via("signTx")
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(LEDGER_TRANSFERS_MAX_LEN, defaultMaxTransferLen),
+                        overriding(LEDGER_TRANSFERS_MAX_LEN, DEFAULT_MAX_TRANSFER_LEN),
                         getAccountBalance(SENDER).hasTinyBars(senderBalance),
                         getAccountBalance(RECEIVER_A).hasTinyBars(noBalance),
                         getAccountBalance(RECEIVER_B).hasTinyBars(noBalance),
@@ -270,7 +263,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         .alsoSigningWith(xTreasury, schedulePayer)
                         .designatingPayer(schedulePayer))
                 .then(
-                        overriding(LEDGER_TOKEN_TRANSFERS_MAX_LEN, defaultMaxTokenTransferLen),
+                        overriding(LEDGER_TOKEN_TRANSFERS_MAX_LEN, DEFAULT_MAX_TOKEN_TRANSFER_LEN),
                         getTxnRecord(failedTxn)
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)),
@@ -284,8 +277,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry),
-                        overriding("scheduling.whitelist", defaultWhitelist),
+                        overriding("ledger.schedule.txExpiryTimeSecs", DEFAULT_TX_EXPIRY),
+                        overriding("scheduling.whitelist", WHITELIST_DEFAULT),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
