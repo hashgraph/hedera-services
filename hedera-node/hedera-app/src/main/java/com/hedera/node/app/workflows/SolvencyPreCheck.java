@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +146,8 @@ public class SolvencyPreCheck {
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txBody.transactionFee();
         final ResponseCodeEnum insufficientFeeResponseCode;
-        if (ingestCheck) { // throw different exception for ingest
+        // Use this response code for either ingest or triggered schedule transaction
+        if (ingestCheck || fees.totalWithoutServiceFee() == 0L) {
             insufficientFeeResponseCode = INSUFFICIENT_PAYER_BALANCE;
         } else {
             insufficientFeeResponseCode = INSUFFICIENT_ACCOUNT_BALANCE;

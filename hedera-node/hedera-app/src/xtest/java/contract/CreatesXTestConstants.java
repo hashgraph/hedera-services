@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,7 @@ public class CreatesXTestConstants {
             BigInteger.valueOf(80), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
 
     static final Tuple TOKEN_INVALID_ADMIN_KEY = Tuple.of(
-            BigInteger.valueOf(1),
-            Tuple.of(false, INVALID_ACCOUNT_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
+            BigInteger.valueOf(1), Tuple.of(false, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
     static final Tuple TOKEN_INVALID_SUPPLY_KEY = Tuple.of(
             BigInteger.valueOf(16),
             Tuple.of(false, INVALID_ACCOUNT_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));

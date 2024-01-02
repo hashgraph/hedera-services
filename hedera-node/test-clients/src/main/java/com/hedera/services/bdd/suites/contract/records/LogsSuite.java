@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
@@ -71,11 +72,8 @@ public class LogsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec log0Works() {
-        return defaultHapiSpec("log0Works")
-                .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+        return defaultHapiSpec("log0Works", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
                         .via("log0")
                         .gas(GAS_TO_OFFER))
@@ -88,7 +86,7 @@ public class LogsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec log1Works() {
-        return defaultHapiSpec("log1Works")
+        return defaultHapiSpec("log1Works", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(CONTRACT),
@@ -108,11 +106,8 @@ public class LogsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec log2Works() {
-        return defaultHapiSpec("log2Works")
-                .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+        return defaultHapiSpec("log2Works", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
                         .gas(GAS_TO_OFFER)
                         .via("log2"))
@@ -130,11 +125,8 @@ public class LogsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec log3Works() {
-        return defaultHapiSpec("log3Works")
-                .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+        return defaultHapiSpec("log3Works", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
                         .gas(GAS_TO_OFFER)
                         .via("log3"))
@@ -153,11 +145,8 @@ public class LogsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec log4Works() {
-        return defaultHapiSpec("log4Works")
-                .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+        return defaultHapiSpec("log4Works", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(
                                 CONTRACT,
                                 "log4",

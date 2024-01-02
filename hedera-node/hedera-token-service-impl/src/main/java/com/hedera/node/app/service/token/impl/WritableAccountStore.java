@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,7 +205,10 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                     final var contractId = ContractID.newBuilder()
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
-                    updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
+                    // exclude nonce info if contract was destructed
+                    if (!newAccount.deleted()) {
+                        updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
+                    }
                     if (oldAccount == null) {
                         newContractIds.add(contractId);
                     }

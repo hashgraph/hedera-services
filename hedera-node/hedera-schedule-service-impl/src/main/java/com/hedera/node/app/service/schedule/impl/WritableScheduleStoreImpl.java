@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,5 +145,23 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
+    }
+    /** @inheritDoc */
+    @Override
+    public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
+        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
+            final var second = new ProtoLong(i);
+            final var scheduleList = schedulesByExpirationMutable.get(second);
+            if (scheduleList != null) {
+                for (final var schedule : scheduleList.schedules()) {
+                    schedulesByIdMutable.remove(schedule.scheduleIdOrThrow());
+
+                    final ProtoString hash = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
+                    schedulesByEqualityMutable.remove(hash);
+                    logger.info("Purging expired schedule {} from state.", schedule.scheduleIdOrThrow());
+                }
+                schedulesByExpirationMutable.remove(second);
+            }
+        }
     }
 }

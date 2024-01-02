@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,25 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         assertThat(actual.executed()).isTrue();
         assertThat(actual.resolutionTime()).isNotNull().isEqualTo(asTimestamp(testConsensusTime));
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(modifiedSignatories);
+    }
+
+    @Test
+    void purgesExpiredSchedules() {
+        final ScheduleID idToDelete = scheduleInState.scheduleId();
+        final Schedule actual = writableById.get(idToDelete);
+        final var expirationTime = actual.calculatedExpirationSecond();
+        assertThat(actual).isNotNull();
+        assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
+        writableSchedules.purgeExpiredSchedulesBetween(expirationTime - 1, expirationTime + 1);
+
+        final var purged = writableSchedules.get(idToDelete);
+        assertThat(purged).isNull();
+
+        final var byEquality = writableSchedules.getByEquality(actual);
+        assertThat(byEquality).isNull();
+
+        final var byExpiry = writableSchedules.getByExpirationSecond(expirationTime);
+        assertThat(byExpiry).isNull();
     }
 
     @NonNull

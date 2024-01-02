@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,28 @@
 package com.hedera.services.bdd.spec.utilops;
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public enum FeatureFlags {
     FEATURE_FLAGS;
 
-    public Map<String, String> allEnabled() {
-        return all(HapiSuite.TRUE_VALUE);
+    public Map<String, String> allEnabled(@NonNull final String... exceptFeatures) {
+        return all(HapiSuite.TRUE_VALUE, Arrays.asList(exceptFeatures));
     }
 
     public Map<String, String> allDisabled() {
-        return all(HapiSuite.FALSE_VALUE);
+        return all(HapiSuite.FALSE_VALUE, List.of());
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, String> all(final String choice) {
-        return Map.ofEntries(
-                Arrays.stream(NAMES).map(name -> Map.entry(name, choice)).toArray(Map.Entry[]::new));
+    private Map<String, String> all(final String choice, @NonNull final List<String> exceptFeatures) {
+        return Map.ofEntries(Arrays.stream(NAMES)
+                .filter(name -> !exceptFeatures.contains(name))
+                .map(name -> Map.entry(name, choice))
+                .toArray(Map.Entry[]::new));
     }
 
     private static final String[] NAMES = {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -58,6 +59,22 @@ public class ScheduleDeleteResourceUsage implements TxnResourceUsageEstimator {
             final long latestExpiry =
                     txn.getTransactionID().getTransactionValidStart().getSeconds()
                             + properties.scheduledTxExpiryTimeSecs();
+            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, latestExpiry);
+        }
+    }
+
+    public FeeData usageGiven(
+            final TransactionBody txn,
+            final SigValueObj svo,
+            final Schedule schedule,
+            final long scheduledTxExpiryTimeSecs) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+        if (schedule != null) {
+            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, schedule.calculatedExpirationSecond());
+        } else {
+            final long latestExpiry =
+                    txn.getTransactionID().getTransactionValidStart().getSeconds() + scheduledTxExpiryTimeSecs;
             return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, latestExpiry);
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,27 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
                             - txn.getTransactionID().getTransactionValidStart().getSeconds());
         } else {
             lifetimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
+        }
+
+        return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
+    }
+
+    public FeeData usageGiven(
+            final TransactionBody txn,
+            final SigValueObj svo,
+            final boolean longTermEnabled,
+            final long scheduledTxExpiryTimeSecs) {
+        final var op = txn.getScheduleCreate();
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+        final long lifetimeSecs;
+        if (op.hasExpirationTime() && longTermEnabled) {
+            lifetimeSecs = Math.max(
+                    0L,
+                    op.getExpirationTime().getSeconds()
+                            - txn.getTransactionID().getTransactionValidStart().getSeconds());
+        } else {
+            lifetimeSecs = scheduledTxExpiryTimeSecs;
         }
 
         return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);

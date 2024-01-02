@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
 import static contract.CreatesXTestConstants.TOKEN_SUPPLY_KEY;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
+import static contract.XTestConstants.COINBASE_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.ONE_HBAR;
@@ -661,13 +662,14 @@ public class CreatesERC721XTest extends AbstractContractXTest {
     @Override
     protected Map<AccountID, Account> initialAccounts() {
         final Map<AccountID, Account> accounts = new HashMap<>();
+        accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
         accounts.put(
                 SENDER_ID,
                 Account.newBuilder()
                         .accountId(SENDER_ID)
                         .alias(SENDER_ADDRESS)
                         .key(AN_ED25519_KEY)
-                        .tinybarBalance(100 * ONE_HBAR)
+                        .tinybarBalance(10_000 * ONE_HBAR)
                         .build());
         accounts.put(
                 OWNER_ID,

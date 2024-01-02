@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionWrapper;
@@ -131,6 +132,14 @@ class ActionStackTest {
     void loggingAnomaliesIsNoopWithEmptyStackAndNoInvalid() {
         subject.sanitizeFinalActionsAndLogAnomalies(parentFrame, log, Level.ERROR);
         verifyNoInteractions(log);
+    }
+
+    @Test
+    void getsActionsFromWrappers() {
+        allActions.add(new ActionWrapper(ContractAction.DEFAULT));
+        allActions.add(new ActionWrapper(ContractAction.DEFAULT));
+        final var actions = subject.asContractActions();
+        assertEquals(actions.contractActionsOrThrow(), List.of(ContractAction.DEFAULT, ContractAction.DEFAULT));
     }
 
     @Test

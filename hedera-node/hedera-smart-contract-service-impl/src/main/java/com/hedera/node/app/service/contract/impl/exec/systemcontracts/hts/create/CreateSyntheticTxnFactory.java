@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -72,6 +73,9 @@ public class CreateSyntheticTxnFactory {
             @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
         tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
+            if (key == Key.DEFAULT) {
+                throw new IllegalArgumentException();
+            }
             if (tokenKeyWrapper.isUsedForAdminKey()) {
                 txnBodyBuilder.adminKey(key);
             }

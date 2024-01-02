@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class ChildFeeContextImpl implements FeeContext {
             @NonNull final FeeManager feeManager,
             @NonNull final HandleContextImpl context,
             @NonNull final TransactionBody body,
-            AccountID payerId) {
+            @NonNull final AccountID payerId) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);

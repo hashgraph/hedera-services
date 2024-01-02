@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,6 +187,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
+    @HapiTest
     final HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
@@ -204,6 +205,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
      *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
+    @HapiTest
     @SuppressWarnings("java:S5960")
     final HapiSpec checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
@@ -229,6 +231,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     final HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))

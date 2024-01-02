@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -544,8 +544,9 @@ public class UtilVerbs {
         return overridingAllOf(defaultValues);
     }
 
-    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles() {
-        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled());
+    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles(
+            @NonNull final String... exceptFeatures) {
+        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled(exceptFeatures));
         allOverrides.putAll(Map.of(
                 "contracts.throttle.throttleByGas",
                 FALSE_VALUE,

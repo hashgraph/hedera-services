@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
@@ -1335,23 +1336,38 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         tinyBarsFromToWithAlias(PAYER, "alias1", ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(PAYER, "alias3", ONE_HUNDRED_HBARS))
-                                .via("multipleAutoAccountCreates"),
-                        getTxnRecord("multipleAutoAccountCreates")
-                                .hasNonStakingChildRecordCount(3)
-                                .logged(),
-                        getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)))
-                .then(
-                        cryptoTransfer(
-                                        tinyBarsFromToWithAlias(PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
-                                        tinyBarsFromToWithAlias(PAYER, "alias5", 100))
-                                .via("failedAutoCreate")
-                                .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
-                        getTxnRecord("failedAutoCreate")
-                                .hasNonStakingChildRecordCount(0)
-                                .logged(),
-                        getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
+                                .via("multipleAutoAccountCreates")
+                                // In CI this could fail due to an end-of-staking period record already
+                                // being added as a child to this transaction before its auto-creations
+                                .hasKnownStatusFrom(SUCCESS, MAX_CHILD_RECORDS_EXCEEDED))
+                .then(withOpContext((spec, opLog) -> {
+                    final var lookup = getTxnRecord("multipleAutoAccountCreates");
+                    allRunFor(spec, lookup);
+                    final var actualStatus =
+                            lookup.getResponseRecord().getReceipt().getStatus();
+                    // Continue with more assertions given the normal case the preceding transfer succeeded
+                    if (actualStatus == SUCCESS) {
+                        allRunFor(
+                                spec,
+                                getTxnRecord("multipleAutoAccountCreates")
+                                        .hasNonStakingChildRecordCount(3)
+                                        .logged(),
+                                getAccountInfo(PAYER)
+                                        .has(accountWith()
+                                                .balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)),
+                                cryptoTransfer(
+                                                tinyBarsFromToWithAlias(PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
+                                                tinyBarsFromToWithAlias(PAYER, "alias5", 100))
+                                        .via("failedAutoCreate")
+                                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
+                                getTxnRecord("failedAutoCreate")
+                                        .hasNonStakingChildRecordCount(0)
+                                        .logged(),
+                                getAccountInfo(PAYER)
+                                        .has(accountWith()
+                                                .balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
+                    }
+                }));
     }
 
     @HapiTest
@@ -1411,7 +1427,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
     }
 
-    private HapiSpec accountDeleteResetsTheAliasNonce() {
+    @HapiTest
+    final HapiSpec accountDeleteResetsTheAliasNonce() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();

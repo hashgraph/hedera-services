@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,12 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -55,7 +57,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -117,16 +118,18 @@ class TransactionModuleTest {
 
     @Test
     void providesExpectedEvmContext() {
-        final var recordBuilder = mock(DeleteCapableTransactionRecordBuilder.class);
+        final var recordBuilder = mock(ContractOperationRecordBuilder.class);
         final var gasCalculator = mock(SystemContractGasCalculator.class);
         final var blocks = mock(HederaEvmBlocks.class);
         given(hederaOperations.gasPriceInTinybars()).willReturn(123L);
-        given(context.recordBuilder(DeleteCapableTransactionRecordBuilder.class))
-                .willReturn(recordBuilder);
-        final var result = provideHederaEvmContext(context, tinybarValues, gasCalculator, hederaOperations, blocks);
+        given(context.recordBuilder(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
+        final var pendingCreationBuilder = new PendingCreationMetadataRef();
+        final var result = provideHederaEvmContext(
+                context, tinybarValues, gasCalculator, hederaOperations, blocks, pendingCreationBuilder);
         assertSame(blocks, result.blocks());
         assertSame(123L, result.gasPrice());
-        assertSame(recordBuilder, result.deleteCapableTransactionRecordBuilder());
+        assertSame(recordBuilder, result.recordBuilder());
+        assertSame(pendingCreationBuilder, result.pendingCreationRecordBuilderReference());
     }
 
     @Test

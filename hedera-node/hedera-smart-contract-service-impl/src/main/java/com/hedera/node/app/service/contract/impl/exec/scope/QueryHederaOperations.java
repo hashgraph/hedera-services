@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * TODO - a read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
+ * A read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
  */
 @QueryScope
 public class QueryHederaOperations implements HederaOperations {
@@ -268,7 +268,8 @@ public class QueryHederaOperations implements HederaOperations {
         return null;
     }
 
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+    public void externalizeHollowAccountMerge(
+            @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create accounts");
     }
 }

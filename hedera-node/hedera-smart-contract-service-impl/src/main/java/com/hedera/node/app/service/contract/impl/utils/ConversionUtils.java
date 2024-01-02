@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,8 +137,10 @@ public class ConversionUtils {
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
         requireNonNull(accountID);
         final var integralAddress = accountID.hasAccountNum()
-                ? asEvmAddress(accountID.accountNum())
-                : accountID.alias().toByteArray();
+                ? asEvmAddress(accountID.accountNumOrThrow())
+                : accountID
+                        .aliasOrElse(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY)
+                        .toByteArray();
         return asHeadlongAddress(integralAddress);
     }
 
@@ -275,9 +277,12 @@ public class ConversionUtils {
             final List<StorageChange> changes = new ArrayList<>();
             for (final var access : storageAccess.accesses()) {
                 changes.add(new StorageChange(
-                        tuweniToPbjBytes(access.key()),
-                        tuweniToPbjBytes(access.value()),
-                        access.isReadOnly() ? null : tuweniToPbjBytes(requireNonNull(access.writtenValue()))));
+                        tuweniToPbjBytes(access.key().trimLeadingZeros()),
+                        tuweniToPbjBytes(access.value().trimLeadingZeros()),
+                        access.isReadOnly()
+                                ? null
+                                : tuweniToPbjBytes(
+                                        requireNonNull(access.writtenValue()).trimLeadingZeros())));
             }
             allStateChanges.add(new ContractStateChange(
                     ContractID.newBuilder()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -55,6 +56,12 @@ public class ContractHandlerTestBase implements TransactionFactory {
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final ContractID targetContract =
             ContractID.newBuilder().contractNum(9_999L).build();
+
+    @Mock
+    private Bytes evmAddress;
+
+    protected final ContractID targetContractWithEvmAddress =
+            ContractID.newBuilder().evmAddress(evmAddress).build();
 
     @Mock
     protected MerkleAccount payerMerkleAccount;
