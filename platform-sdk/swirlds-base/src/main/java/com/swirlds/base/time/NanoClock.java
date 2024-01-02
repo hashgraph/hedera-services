@@ -16,6 +16,7 @@
 
 package com.swirlds.base.time;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -34,24 +35,37 @@ public final class NanoClock extends Clock {
         this(Clock.systemUTC());
     }
 
-    public NanoClock(final Clock clock) {
+    public NanoClock(@NonNull final Clock clock) {
         this.clock = clock;
         initialInstant = clock.instant();
         initialNanos = getSystemNanos();
     }
 
+    /**
+     * @return the time-zone being used to interpret instants, not null
+     */
     @Override
+    @NonNull
     public ZoneId getZone() {
         return clock.getZone();
     }
 
+    /**
+     * @return the current instant from this clock, not null
+     */
     @Override
+    @NonNull
     public Instant instant() {
         return initialInstant.plusNanos(getSystemNanos() - initialNanos);
     }
 
+    /**
+     * @param zone the time-zone to change to, not null
+     * @return Returns a copy of this clock with a different time-zone.
+     */
     @Override
-    public Clock withZone(final ZoneId zone) {
+    @NonNull
+    public Clock withZone(@NonNull final ZoneId zone) {
         return new NanoClock(clock.withZone(zone));
     }
 
