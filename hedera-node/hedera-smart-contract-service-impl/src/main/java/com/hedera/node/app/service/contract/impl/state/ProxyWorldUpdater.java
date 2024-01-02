@@ -169,13 +169,19 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public ContractID getHederaContractId(@NonNull final Address address) {
-        // As an important special case, return the pending creation's contract ID if its address matches
-        if (pendingCreation != null && pendingCreation.address().equals(requireNonNull(address))) {
-            return ContractID.newBuilder().contractNum(pendingCreation.number()).build();
-        }
-        final HederaEvmAccount account = (HederaEvmAccount) get(address);
+        requireNonNull(address);
+        final var account = (HederaEvmAccount) get(address);
+        // As an important special case, return the pending creation's contract ID if
+        // its address matches and there is no extant account; but still prioritize
+        // existing accounts of course
         if (account == null) {
-            throw new IllegalArgumentException("No contract pending or extant at " + address);
+            if (pendingCreation != null && pendingCreation.address().equals(address)) {
+                return ContractID.newBuilder()
+                        .contractNum(pendingCreation.number())
+                        .build();
+            } else {
+                throw new IllegalArgumentException("No contract pending or extant at " + address);
+            }
         }
         return account.hederaContractId();
     }

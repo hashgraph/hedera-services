@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -272,9 +272,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public FunctionalityResourcePrices resourcePricesFor(
             @NonNull final HederaFunctionality functionality, @NonNull final SubType subType) {
-        // TODO - how do we get the active congestion multiplier?
         return new FunctionalityResourcePrices(
-                requireNonNull(feeManager.getFeeData(functionality, userTransactionConsensusTime, subType)), 1L);
+                requireNonNull(feeManager.getFeeData(functionality, userTransactionConsensusTime, subType)),
+                feeManager.congestionMultiplierFor(txBody, functionality, readableStoreFactory));
     }
 
     @NonNull

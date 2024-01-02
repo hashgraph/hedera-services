@@ -351,7 +351,7 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var parent = requireNonNull(accountStore.getContractById(parentId));
-        context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
+        final var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
                 .contractID(contractId)
                 .status(SUCCESS)
                 .transaction(transactionWith(TransactionBody.newBuilder()
@@ -361,6 +361,8 @@ public class HandleHederaOperations implements HederaOperations {
                         .contractID(contractId)
                         .evmAddress(evmAddress)
                         .build());
+        final var pendingCreationMetadata = new PendingCreationMetadata(recordBuilder, true);
+        pendingCreationMetadataRef.set(contractId, pendingCreationMetadata);
     }
 
     @Override
