@@ -926,6 +926,7 @@ public class SwirldsPlatform implements Platform {
                                 .getConfiguration()
                                 .getConfigData(ConsensusConfig.class)
                                 .roundsNonAncient()));
+                platformWiring.updateMinimumGenerationNonAncient(initialState.getMinRoundGeneration());
             }
 
             // We don't want to invoke these callbacks until after we are starting up.
@@ -1188,6 +1189,7 @@ public class SwirldsPlatform implements Platform {
                                     .getConfiguration()
                                     .getConfigData(ConsensusConfig.class)
                                     .roundsNonAncient()));
+                    platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
                 }
             } finally {
                 intakeQueue.resume();
