@@ -204,6 +204,7 @@ public class ChatterGossip extends AbstractGossip {
                     time,
                     shadowGraph,
                     null,
+                    null,
                     addressBook.getSize(),
                     syncMetrics,
                     consensusRef::get,

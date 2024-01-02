@@ -29,6 +29,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +41,8 @@ public class SocketConnection implements Connection {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SocketConnection.class);
 
+    private static final AtomicLong nextConnectionId = new AtomicLong(0);
+
     private final NodeId selfId;
     private final NodeId otherId;
     private final SyncInputStream dis;
@@ -50,6 +53,7 @@ public class SocketConnection implements Connection {
     private final boolean outbound;
     private final String description;
     private final Configuration configuration;
+    private final long connectionId = nextConnectionId.getAndIncrement();
 
     /**
      * @param connectionTracker tracks open connections
@@ -205,6 +209,14 @@ public class SocketConnection implements Connection {
     @Override
     public boolean isOutbound() {
         return outbound;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getConnectionId() {
+        return connectionId; // TODO double check that this is recreated when a connection is broken
     }
 
     @Override

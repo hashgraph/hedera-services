@@ -87,6 +87,11 @@ public class ExpiringConnection implements Connection {
     }
 
     @Override
+    public long getConnectionId() {
+        return 0;
+    }
+
+    @Override
     public String getDescription() {
         return connection.getDescription();
     }

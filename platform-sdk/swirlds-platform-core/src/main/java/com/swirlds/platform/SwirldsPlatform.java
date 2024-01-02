@@ -122,6 +122,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
+import com.swirlds.platform.gossip.shadowgraph.LatestTransmittedEventTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -720,7 +721,8 @@ public class SwirldsPlatform implements Platform {
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+            intakeEventCounter =
+                    new DefaultIntakeEventCounter(currentAddressBook, syncConfig.maximumPermissibleEventsInIntake());
         } else {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
@@ -857,6 +859,13 @@ public class SwirldsPlatform implements Platform {
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
+        final LatestTransmittedEventTracker latestTransmittedEventTracker;
+        if (syncConfig.trackMostRecentlySentEvents()) {
+            latestTransmittedEventTracker = new LatestTransmittedEventTracker(currentAddressBook, selfId);
+        } else {
+            latestTransmittedEventTracker = null;
+        }
+
         gossip = GossipFactory.buildGossip(
                 platformContext,
                 threadManager,
@@ -869,6 +878,7 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 shadowGraph,
                 latestEventTipsetTracker,
+                latestTransmittedEventTracker,
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,

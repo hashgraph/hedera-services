@@ -77,6 +77,32 @@ public class LatestEventTipsetTracker {
         return latestSelfEventTipset;
     }
 
+    // TODO test and javadoc a bit better maybe
+
+    /**
+     * Get the tipset of the latest self event in a list of events. If there are no self events in this list, return the
+     * tipset of the latest self event. Event list is in topological order from left to right.
+     *
+     * @param events The list of events to search.
+     * @return The tipset of the latest self event in the list, or null if there are no known self events.
+     */
+    @Nullable
+    public synchronized Tipset getTipsetOfLatestSelfEvent(@NonNull final List<EventImpl> events) {
+
+        // TODO is there a race condition here? Is it possible we won't have the latest self events tracked yet?
+
+        // Iterate backwards over the list. The latest self event will be the first one found.
+        for (int index = events.size() - 1; index >= 0; index--) {
+            final EventImpl event = events.get(index);
+            if (event.getCreatorId().equals(selfId)) {
+                return tipsetTracker.getTipset(event.getBaseEvent().getDescriptor());
+            }
+        }
+
+        // THere wasn't a self event in the list. Return the latest self event tipset.
+        return latestSelfEventTipset;
+    }
+
     /**
      * The event to add. Used to update tipsets.
      *

@@ -117,10 +117,10 @@ public class ShadowGraph implements Clearable {
     /**
      * Constructor.
      *
-     * @param time              provides wall clock time
-     * @param syncMetrics       metrics for sync gossip
-     * @param addressBook       the address book
-     * @param selfId            the id of this node
+     * @param time        provides wall clock time
+     * @param syncMetrics metrics for sync gossip
+     * @param addressBook the address book
+     * @param selfId      the id of this node
      */
     public ShadowGraph(
             @NonNull final Time time,
@@ -495,6 +495,26 @@ public class ShadowGraph implements Clearable {
     }
 
     /**
+     * Get the shadow events that reference the hashgraph event instances with the given hashes. Ignore any hashes
+     * that we do not have a shadow for.
+     *
+     * @param hashes The event hashes to get shadow events for
+     * @return the shadow events that reference the events with the given hashes
+     */
+    @NonNull
+    public synchronized List<ShadowEvent> shadowsIfPresent(@NonNull final List<Hash> hashes) {
+        Objects.requireNonNull(hashes);
+        final List<ShadowEvent> shadows = new ArrayList<>(hashes.size());
+        for (final Hash hash : hashes) {
+            final ShadowEvent shadow = shadow(hash);
+            if (shadow != null) {
+                shadows.add(shadow);
+            }
+        }
+        return shadows;
+    }
+
+    /**
      * Get a hashgraph event from a hash
      *
      * @param h the hash
@@ -518,6 +538,7 @@ public class ShadowGraph implements Clearable {
     public synchronized List<ShadowEvent> getTips() {
         return new ArrayList<>(tips);
     }
+
     /**
      * If Event `e` is insertable, then insert it and update the tip set, else do nothing.
      *
