@@ -37,8 +37,8 @@ public final class NanoClock extends Clock {
 
     public NanoClock(@NonNull final Clock clock) {
         this.clock = clock;
-        initialInstant = clock.instant();
-        initialNanos = getSystemNanos();
+        this.initialInstant = clock.instant();
+        this.initialNanos = getSystemNanos();
     }
 
     /**
@@ -47,7 +47,7 @@ public final class NanoClock extends Clock {
     @Override
     @NonNull
     public ZoneId getZone() {
-        return clock.getZone();
+        return this.clock.getZone();
     }
 
     /**
@@ -56,7 +56,7 @@ public final class NanoClock extends Clock {
     @Override
     @NonNull
     public Instant instant() {
-        return initialInstant.plusNanos(getSystemNanos() - initialNanos);
+        return this.initialInstant.plusNanos(getSystemNanos() - this.initialNanos);
     }
 
     /**
@@ -66,7 +66,7 @@ public final class NanoClock extends Clock {
     @Override
     @NonNull
     public Clock withZone(@NonNull final ZoneId zone) {
-        return new NanoClock(clock.withZone(zone));
+        return new NanoClock(this.clock.withZone(zone));
     }
 
     private static long getSystemNanos() {
