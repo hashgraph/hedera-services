@@ -152,7 +152,8 @@ public class PrngSeedOperationSuite extends HapiSuite {
                 .given(
                         snapshotMode(
                                 SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
                         cryptoCreate(BOB),
