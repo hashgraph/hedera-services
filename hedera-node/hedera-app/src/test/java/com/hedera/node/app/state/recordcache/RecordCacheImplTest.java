@@ -18,6 +18,7 @@ package com.hedera.node.app.state.recordcache;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
@@ -56,6 +57,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -622,6 +624,38 @@ final class RecordCacheImplTest extends AppTestBase {
 
             // Then we can query for the receipt by transaction ID
             assertThat(getRecords(cache, txId)).containsExactly(record);
+        }
+
+        @Test
+        void unclassifiableStatusIsNotPriority() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var unclassifiableReceipt =
+                    TransactionReceipt.newBuilder().status(INVALID_NODE_ACCOUNT).build();
+            final var unclassifiableRecord = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(unclassifiableReceipt)
+                    .build();
+            final var classifiableReceipt =
+                    TransactionReceipt.newBuilder().status(SUCCESS).build();
+            final var classifiableRecord = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(classifiableReceipt)
+                    .build();
+
+            // When the unclassifiable record is added to the cache
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, unclassifiableRecord, List.of())));
+            // It does not prevent a "good" record from using this transaction id
+            assertThat(cache.hasDuplicate(txId, 0L)).isEqualTo(NO_DUPLICATE);
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, classifiableRecord, List.of())));
+
+            // And we get the success record from userTransactionRecord()
+            assertThat(cache.getHistory(txId)).isNotNull();
+            final var userRecord =
+                    Objects.requireNonNull(cache.getHistory(txId)).userTransactionRecord();
+            assertThat(userRecord).isEqualTo(classifiableRecord);
         }
 
         @ParameterizedTest

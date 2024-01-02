@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -39,8 +38,7 @@ class HederaWorldUpdaterTest {
     void delegatesGettingHederaAccount() {
         final var subject = mock(HederaWorldUpdater.class);
         doCallRealMethod().when(subject).getHederaAccount(EIP_1014_ADDRESS);
-        given(subject.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
-        given(subject.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
+        given(subject.get(EIP_1014_ADDRESS)).willReturn(account);
         assertSame(account, subject.getHederaAccount(EIP_1014_ADDRESS));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -42,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
@@ -132,16 +134,20 @@ public interface TransactionModule {
     @Provides
     @TransactionScope
     static HederaEvmContext provideHederaEvmContext(
+            @NonNull final HandleContext context,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaOperations hederaOperations,
-            @NonNull final HederaEvmBlocks hederaEvmBlocks) {
+            @NonNull final HederaEvmBlocks hederaEvmBlocks,
+            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef) {
         return new HederaEvmContext(
                 hederaOperations.gasPriceInTinybars(),
                 false,
                 hederaEvmBlocks,
                 tinybarValues,
-                systemContractGasCalculator);
+                systemContractGasCalculator,
+                context.recordBuilder(ContractOperationRecordBuilder.class),
+                pendingCreationMetadataRef);
     }
 
     @Provides

@@ -33,7 +33,6 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
@@ -72,7 +71,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param syncMetrics                   metrics for sync
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -89,7 +87,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
-            @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
@@ -105,7 +102,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 intakeQueue,
                 swirldStateManager,
                 latestCompleteState,
-                syncMetrics,
                 statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);

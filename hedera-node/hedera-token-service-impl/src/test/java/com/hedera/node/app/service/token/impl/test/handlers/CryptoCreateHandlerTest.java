@@ -291,7 +291,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
         assertEquals(0L, createdAccount.stakedToMe());
-        assertEquals(0L, createdAccount.stakePeriodStart());
+        assertEquals(-1L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
         assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
@@ -306,7 +306,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(createdAccount.smartContract());
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
-        assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(-1L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());
@@ -362,7 +362,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
         assertEquals(0L, createdAccount.stakedToMe());
-        assertEquals(0L, createdAccount.stakePeriodStart());
+        assertEquals(-1L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
         assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
@@ -377,7 +377,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(createdAccount.smartContract());
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
-        assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(-1L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());

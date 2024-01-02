@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Exposes the record customizations needed for a HAPI contract create transaction.
  */
-public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuilder, GasFeeRecordBuilder {
+public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuilder, ContractOperationRecordBuilder {
 
     /**
      * Tracks the final status of a top-level contract creation.

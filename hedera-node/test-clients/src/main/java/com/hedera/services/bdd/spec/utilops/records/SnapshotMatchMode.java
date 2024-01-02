@@ -70,5 +70,13 @@ public enum SnapshotMatchMode {
      * fuzzy-matching of records that have different ids. Also, when auto-creation fails the charged fee to payer is not re-claimed
      * in mono-service. So the  transaction fee differs a lot.
      */
-    ALLOW_SKIPPED_ENTITY_IDS
+    ALLOW_SKIPPED_ENTITY_IDS,
+    /**
+     * Skip checks on logs that contain EVM addresses.
+     */
+    NONDETERMINISTIC_LOG_DATA,
+    /**
+     * Allows for non-deterministic ethereum data.
+     */
+    NONDETERMINISTIC_ETHEREUM_DATA
 }
