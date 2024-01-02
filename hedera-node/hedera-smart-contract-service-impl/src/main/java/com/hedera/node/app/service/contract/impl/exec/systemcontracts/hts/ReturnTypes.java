@@ -59,6 +59,7 @@ public class ReturnTypes {
     public static final String BOOL = "(bool)";
     public static final String STRING = "(string)";
     public static final String ADDRESS = "(address)";
+
     public static final String RESPONSE_CODE_BOOL = "(int32,bool)";
     public static final String RESPONSE_CODE_INT32 = "(int32,int32)";
     public static final String RESPONSE_CODE_UINT256 = "(int64,uint256)";
@@ -173,6 +174,7 @@ public class ReturnTypes {
         + ")";
     // spotless:on
 
+    public static final TupleType RC_AND_ADDRESS_ENCODER = TupleType.parse("(int64,address)");
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
 
     public static Bytes tuweniEncodedRc(@NonNull final ResponseCodeEnum status) {
