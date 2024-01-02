@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,8 @@ class CustomGasChargingTest {
 
     @Test
     void zeroPriceGasDoesNoChargingWorkButDoesReturnIntrinsicGas() {
-        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator, null);
+        final var context =
+                new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator, null, null);
         givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());

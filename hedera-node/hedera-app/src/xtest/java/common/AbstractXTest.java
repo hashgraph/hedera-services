@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -402,7 +403,14 @@ public abstract class AbstractXTest {
         fakeHederaState.addService(
                 BlockRecordService.NAME,
                 Map.of(
-                        BlockRecordService.BLOCK_INFO_STATE_KEY, new AtomicReference<>(BlockInfo.DEFAULT),
+                        BlockRecordService.BLOCK_INFO_STATE_KEY,
+                                new AtomicReference<>(new BlockInfo(
+                                        -1L,
+                                        Timestamp.DEFAULT,
+                                        Bytes.EMPTY,
+                                        Timestamp.DEFAULT,
+                                        true,
+                                        Timestamp.DEFAULT)),
                         BlockRecordService.RUNNING_HASHES_STATE_KEY, new AtomicReference<>(initialRunningHashes())));
 
         fakeHederaState.addService(
