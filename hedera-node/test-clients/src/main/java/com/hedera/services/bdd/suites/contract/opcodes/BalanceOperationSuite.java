@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -41,6 +42,8 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -77,7 +80,13 @@ public class BalanceOperationSuite extends HapiSuite {
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
         return defaultHapiSpec("VerifiesExistenceOfAccountsAndContracts")
-                .given(cryptoCreate("test").balance(BALANCE), uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS),
+                        cryptoCreate("test").balance(BALANCE),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, BALANCE_OF, asHeadlongAddress(INVALID_ADDRESS))
