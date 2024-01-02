@@ -177,7 +177,7 @@ public class SkippingIteratorTest {
     @Test
     @DisplayName("SkippingIterator - null array")
     void testNullArray() {
-        assertThrows(IllegalArgumentException.class, () -> new SkippingIterator<>(null, Collections.emptySet()));
+        assertThrows(NullPointerException.class, () -> new SkippingIterator<>(null, Collections.emptySet()));
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)

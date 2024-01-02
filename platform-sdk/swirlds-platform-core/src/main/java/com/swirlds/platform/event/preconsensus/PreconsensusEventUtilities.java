@@ -35,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Utilities for preconsensus events.
+ * <p>
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public final class PreconsensusEventUtilities {
 

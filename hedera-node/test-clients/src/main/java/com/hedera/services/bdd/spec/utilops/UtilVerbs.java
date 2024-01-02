@@ -544,8 +544,9 @@ public class UtilVerbs {
         return overridingAllOf(defaultValues);
     }
 
-    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles() {
-        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled());
+    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles(
+            @NonNull final String... exceptFeatures) {
+        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled(exceptFeatures));
         allOverrides.putAll(Map.of(
                 "contracts.throttle.throttleByGas",
                 FALSE_VALUE,

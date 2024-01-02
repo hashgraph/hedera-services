@@ -74,6 +74,7 @@ import java.util.OptionalDouble;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -742,7 +743,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T scrambleTxnBody(Function<Transaction, Transaction> func) {
+    public T withTxnTransform(UnaryOperator<Transaction> func) {
         fiddler = Optional.of(func);
         return self();
     }

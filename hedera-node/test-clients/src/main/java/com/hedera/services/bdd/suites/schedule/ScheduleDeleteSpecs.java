@@ -126,6 +126,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         scheduleDelete("0.0.0").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
+    @HapiTest
     final HapiSpec deletingExecutedIsPointless() {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(

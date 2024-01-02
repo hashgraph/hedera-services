@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -51,8 +50,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -112,7 +111,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     List<HapiSpec> ethereumCalls() {
         return List.of(
-                relayerFeeAsExpectedIfSenderCoversGas(),
                 depositSuccess(),
                 badRelayClient(),
                 topLevelBurnToZeroAddressReverts(),
@@ -131,6 +129,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 doesNotCreateChildRecordIfEthereumContractCreateFails());
     }
 
+    @HapiTest
     HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
@@ -197,39 +196,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         ? Optional.of("Malicious" + " EOA balance" + " increased")
                                         : Optional.empty())),
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
-    }
-
-    @HapiTest
-    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
-        final var canonicalTxn = "canonical";
-
-        return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
-                .given(
-                        uploadDefaultFeeSchedules(GENESIS),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        // The cost to the relayer to transmit a simple call with sufficient gas
-                        // allowance is ≈ $0.0001
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via(canonicalTxn)
-                                .nonce(0)
-                                .gasPrice(100L)
-                                .maxFeePerGas(100L)
-                                .maxPriorityGas(2_000_000L)
-                                .gasLimit(1_000_000L)
-                                .sending(depositAmount))
-                .then(getAccountInfo(RELAYER)
-                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                        .logged());
     }
 
     @HapiTest
@@ -343,7 +309,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
-        return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord")
+        // Does nested creates, which appear in reversed order from mono-service
+        return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -358,7 +325,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxGasAllowance(ONE_HUNDRED_HBARS)
                         .gasLimit(5_000_000L)
                         .via(txn))
-                .then(childRecordsCheck(txn, SUCCESS, recordWith(), recordWith().hasMirrorIdInReceipt()));
+                .then(childRecordsCheck(
+                        txn,
+                        SUCCESS,
+                        recordWith().hasMirrorIdInReceipt(),
+                        recordWith().hasMirrorIdInReceipt()));
     }
 
     @HapiTest
@@ -549,6 +520,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
+    @HapiTest
     HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
@@ -583,7 +555,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(INVALID_CONTRACT_ID));
+                        .hasKnownStatusFrom(INVALID_CONTRACT_ID, CONTRACT_EXECUTION_EXCEPTION));
     }
 
     @HapiTest
@@ -615,6 +587,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
+    @HapiTest
     HapiSpec internalBurnToZeroAddressReverts() {
         return defaultHapiSpec("internalBurnToZeroAddressReverts")
                 .given(

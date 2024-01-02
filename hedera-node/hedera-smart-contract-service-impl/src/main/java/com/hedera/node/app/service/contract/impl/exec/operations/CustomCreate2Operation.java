@@ -69,7 +69,8 @@ public class CustomCreate2Operation extends AbstractCustomCreateOperation {
     protected void onSuccess(@NonNull final MessageFrame frame, @NonNull final Address creation) {
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
         if (updater.isHollowAccount(creation)) {
-            updater.finalizeHollowAccount(creation);
+            // Pass along the address of the "parent" finalizing the hollow account as well
+            updater.finalizeHollowAccount(creation, frame.getRecipientAddress());
         }
     }
 

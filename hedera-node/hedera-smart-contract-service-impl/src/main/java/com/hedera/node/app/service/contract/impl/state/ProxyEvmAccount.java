@@ -58,6 +58,11 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     }
 
     @Override
+    public com.hedera.hapi.node.state.token.Account toNativeAccount() {
+        return state.getNativeAccount(number);
+    }
+
+    @Override
     public long getNonce() {
         return state.getNonce(number);
     }
