@@ -34,6 +34,7 @@ import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -203,7 +204,11 @@ public final class PlatformBuilder {
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(selfId, getMetricsProvider(), configuration);
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration,
+                getMetricsProvider().createPlatformMetrics(selfId),
+                CryptographyHolder.get(),
+                Time.getCurrent());
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);

@@ -442,6 +442,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return response.getTransactionGetRecord().getChildTransactionRecords(i);
     }
 
+    public TransactionRecord getFirstNonStakingChildRecord() {
+        return getChildRecords().stream()
+                .filter(child -> !isEndOfStakingPeriodRecord(child))
+                .findFirst()
+                .orElseThrow();
+    }
+
     public List<TransactionRecord> getChildRecords() {
         return response.getTransactionGetRecord().getChildTransactionRecordsList();
     }

@@ -254,9 +254,10 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * exist in Besu because there contracts are just normal accounts with code; but in Hedera, there
      * are a few other properties that need to be set to "convert" an account into a contract.
      *
-     * @param alias the hollow account to be finalized as a contract
+     * @param address the hollow account to be finalized as a contract
+     * @param parent the address of the "parent" account finalizing the hollow account
      */
-    void finalizeHollowAccount(@NonNull Address alias);
+    void finalizeHollowAccount(@NonNull Address address, @NonNull Address parent);
 
     /**
      * Returns all storage updates that would be committed by this updater, necessary for constructing
