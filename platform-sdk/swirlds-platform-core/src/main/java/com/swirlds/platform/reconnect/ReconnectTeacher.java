@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,20 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.ReconnectFinishPayload;
 import com.swirlds.logging.legacy.payload.ReconnectStartPayload;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -220,7 +227,7 @@ public class ReconnectTeacher {
                 threadManager,
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),
-                signedState.getState(),
+                monkeyBusinessWithSignedState(signedState),
                 connection::disconnect,
                 reconnectConfig);
 
@@ -229,6 +236,51 @@ public class ReconnectTeacher {
 
         statistics.incrementSenderEndTimes();
         logger.info(RECONNECT.getMarker(), "Finished synchronization in the role of the sender.");
+    }
+
+    /**
+     * Test only code, do not merge!
+     * <p>
+     * Creates a new state that is identical except that it has different MinGenInfo.
+     *
+     * @return the new state
+     */
+    @NonNull
+    private State monkeyBusinessWithSignedState(@NonNull final SignedState signedState) {
+
+        final State originalState = signedState.getState();
+        final PlatformState originalPlatformState = originalState.getPlatformState();
+        final SwirldState originalAppState = originalState.getSwirldState();
+
+        final ConsensusSnapshot originalConsensusSnapshot = originalPlatformState.getSnapshot();
+        final List<MinGenInfo> originalMinGenInfo = originalConsensusSnapshot.minGens();
+
+        final List<MinGenInfo> funkyMinGenInfo = new ArrayList<>(originalMinGenInfo.size());
+        for (final MinGenInfo originalInfo : originalMinGenInfo) {
+            funkyMinGenInfo.add(new MinGenInfo(originalInfo.round(), originalInfo.minimumGeneration() + 666));
+        }
+
+        final ConsensusSnapshot funkyConsensusSnapshot = new ConsensusSnapshot(
+                originalConsensusSnapshot.round(),
+                originalConsensusSnapshot.judgeHashes(),
+                funkyMinGenInfo,
+                originalConsensusSnapshot.nextConsensusNumber(),
+                originalConsensusSnapshot.consensusTimestamp());
+
+        final PlatformState funkyPlatformState = originalPlatformState.copy();
+        funkyPlatformState.setSnapshot(funkyConsensusSnapshot);
+
+        final State funkyState = new State();
+        funkyState.setPlatformState(funkyPlatformState);
+        funkyState.setSwirldState(originalAppState);
+
+        // Copy forward the original hashes. These hashes are now incorrect.
+        funkyPlatformState.setHash(originalPlatformState.getHash());
+        funkyState.setHash(originalState.getHash());
+
+        originalState.release();
+
+        return funkyState;
     }
 
     /**

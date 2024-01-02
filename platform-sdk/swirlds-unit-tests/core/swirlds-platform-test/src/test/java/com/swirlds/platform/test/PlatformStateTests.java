@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,23 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -33,6 +40,10 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -95,5 +106,56 @@ class PlatformStateTests {
         MerkleCryptoFactory.getInstance().digestTreeSync(decodedState);
 
         assertEquals(state.getHash(), decodedState.getHash(), "expected deserialized object to be equal");
+    }
+
+    @Test
+    void platformStateHashTest() {
+        // Add a seed to make this test deterministic
+        final Random random = new Random();
+
+        // Generate some random data to put into a consensus snapshot. We can leave the other data in the platform
+        // state null. This would crash a real system, but hashing will still work with null values.
+
+        final long round = random.nextLong();
+        final long nextConsensusNumber = random.nextLong();
+
+        final List<Hash> judgeHashes = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            judgeHashes.add(randomHash(random));
+        }
+
+        final Instant consensusTimestamp = randomInstant(random);
+
+        final List<MinGenInfo> minGens = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            minGens.add(new MinGenInfo(random.nextLong(), random.nextLong()));
+        }
+
+        final ConsensusSnapshot consensusSnapshot =
+                new ConsensusSnapshot(round, judgeHashes, minGens, nextConsensusNumber, consensusTimestamp);
+
+        final PlatformState platformState = new PlatformState();
+        platformState.setSnapshot(consensusSnapshot);
+
+        // Compute the hash of the platform state.
+
+        CryptographyHolder.get().digestSync(platformState);
+        final Hash originalHash = platformState.getHash();
+
+        System.out.println("Original hash: " + originalHash + "(" + originalHash.toMnemonic() + ")");
+
+        // Now, let's tamper with one of the MinGenInfo objects.
+        // This will directly modify the platform state, since it has a reference to the minGens list.
+        minGens.set(0, new MinGenInfo(6666, 666));
+
+        // Recompute the hash.
+        platformState.invalidateHash();
+        CryptographyHolder.get().digestSync(platformState);
+
+        // This is expected to be different.
+        System.out.println("Tampered hash: " + platformState.getHash() + "("
+                + platformState.getHash().toMnemonic() + ")");
+
+        assertNotEquals(originalHash, platformState.getHash(), "expected tampered hash to be different");
     }
 }
