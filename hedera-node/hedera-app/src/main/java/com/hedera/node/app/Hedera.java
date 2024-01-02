@@ -311,7 +311,7 @@ public final class Hedera implements SwirldMain {
 
         ENTITY_SERVICE = new EntityIdService();
         CONSENSUS_SERVICE = new ConsensusServiceImpl();
-        FILE_SERVICE = new FileServiceImpl();
+        FILE_SERVICE = new FileServiceImpl(configProvider);
         SCHEDULE_SERVICE = new ScheduleServiceImpl();
         TOKEN_SERVICE = new TokenServiceImpl(
                 recordsGenerator::sysAcctRecords,
@@ -532,7 +532,7 @@ public final class Hedera implements SwirldMain {
 
             // Start the migration with a clean, writable KV store.  Using the in-memory store here.
 
-            final var contractSchema = new ContractSchema();
+            final var contractSchema = new ContractSchema(version.getServicesVersion());
             final var contractSchemas = contractSchema.statesToCreate();
             final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
                     .filter(sd -> sd.stateKey().equals(ContractSchema.STORAGE_KEY))
@@ -950,13 +950,13 @@ public final class Hedera implements SwirldMain {
 
                     System.out.println("DIFF-TEST: file round: " + nextRound.getRoundNum() + "; counter: "
                             + differentialEventTestCounter++);
-                    daggerApp.handleWorkflow().handleRound(state, dualState, round);
+                    daggerApp.handleWorkflow().handleRound(state, platformState, round);
                     System.out.println("DIFF-TEST: file round " + nextRound.getRoundNum() + " processed");
                 }
             } else if (normalHandleCounter < 100) {
                 // Handle some normal (empty) rounds after processing the events file. This gives a little time for the
                 // node to close record files, save state to disk, etc.
-                daggerApp.handleWorkflow().handleRound(state, dualState, round);
+                daggerApp.handleWorkflow().handleRound(state, platformState, round);
                 normalHandleCounter++;
             } else {
                 System.out.println("DIFF-TEST: finished events file (diff-test counter " + differentialEventTestCounter
