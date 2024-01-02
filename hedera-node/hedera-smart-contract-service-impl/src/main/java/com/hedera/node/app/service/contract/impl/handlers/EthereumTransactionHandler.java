@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,15 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 context.configuration());
     }
 
+    /**
+     * If the given transaction, when hydrated from the given file store with the given config, implies a valid
+     * {@link EthTxSigs}, returns it. Otherwise, returns null.
+     *
+     * @param op the transaction
+     * @param fileStore the file store
+     * @param config the configuration
+     * @return the implied Ethereum signature metadata
+     */
     public @Nullable EthTxSigs maybeEthTxSigsFor(
             @NonNull final EthereumTransactionBody op,
             @NonNull final ReadableFileStore fileStore,
@@ -113,7 +122,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
-        recordBuilder.withTinybarGasFee(outcome.tinybarGasCost());
+        recordBuilder.withCommonFieldsSetFrom(outcome);
 
         throwIfUnsuccessful(outcome.status());
     }

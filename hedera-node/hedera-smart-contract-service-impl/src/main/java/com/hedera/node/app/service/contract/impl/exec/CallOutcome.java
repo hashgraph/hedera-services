@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.streams.ContractActions;
+import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -31,12 +35,38 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param result the result of the call
  * @param status the resolved status of the call
  * @param tinybarGasPrice the tinybar-denominated gas price used for the call
+ * @param actions any contract actions that should be externalized in a sidecar
+ * @param stateChanges any contract state changes that should be externalized in a sidecar
  */
 public record CallOutcome(
         @NonNull ContractFunctionResult result,
         @NonNull ResponseCodeEnum status,
         @Nullable ContractID recipientId,
-        long tinybarGasPrice) {
+        long tinybarGasPrice,
+        @Nullable ContractActions actions,
+        @Nullable ContractStateChanges stateChanges) {
+
+    public boolean hasStateChanges() {
+        return stateChanges != null
+                && !stateChanges.contractStateChangesOrElse(emptyList()).isEmpty();
+    }
+
+    public static CallOutcome fromResultsWithMaybeSidecars(
+            @NonNull ContractFunctionResult result, @NonNull HederaEvmTransactionResult hevmResult) {
+        return new CallOutcome(
+                result,
+                hevmResult.finalStatus(),
+                hevmResult.recipientId(),
+                hevmResult.gasPrice(),
+                hevmResult.actions(),
+                hevmResult.stateChanges());
+    }
+
+    public static CallOutcome fromResultsWithoutSidecars(
+            @NonNull ContractFunctionResult result, @NonNull HederaEvmTransactionResult hevmResult) {
+        return new CallOutcome(
+                result, hevmResult.finalStatus(), hevmResult.recipientId(), hevmResult.gasPrice(), null, null);
+    }
 
     public CallOutcome {
         requireNonNull(result);

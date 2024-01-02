@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
         final var result = processor.processTransaction(
                 hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, context.configuration());
 
-        // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
-        return new CallOutcome(result.asQueryResult(), result.finalStatus(), result.recipientId(), result.gasPrice());
+        // Return the outcome (which cannot include sidecars to be externalized, since this is a query)
+        return CallOutcome.fromResultsWithoutSidecars(result.asQueryResult(), result);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,13 +169,19 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public ContractID getHederaContractId(@NonNull final Address address) {
-        // As an important special case, return the pending creation's contract ID if its address matches
-        if (pendingCreation != null && pendingCreation.address().equals(requireNonNull(address))) {
-            return ContractID.newBuilder().contractNum(pendingCreation.number()).build();
-        }
-        final HederaEvmAccount account = (HederaEvmAccount) get(address);
+        requireNonNull(address);
+        final var account = (HederaEvmAccount) get(address);
+        // As an important special case, return the pending creation's contract ID if
+        // its address matches and there is no extant account; but still prioritize
+        // existing accounts of course
         if (account == null) {
-            throw new IllegalArgumentException("No contract pending or extant at " + address);
+            if (pendingCreation != null && pendingCreation.address().equals(address)) {
+                return ContractID.newBuilder()
+                        .contractNum(pendingCreation.number())
+                        .build();
+            } else {
+                throw new IllegalArgumentException("No contract pending or extant at " + address);
+            }
         }
         return account.hederaContractId();
     }
@@ -348,6 +354,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (pendingCreation == null) {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }
+        // TODO - also enforce the account creation limit here, since contracts are accounts
         if (evmFrameState.numBytecodesInState() + 1 > enhancement.operations().contractCreationLimit()) {
             throw new ResourceExhaustedException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
@@ -41,13 +42,12 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -95,9 +95,6 @@ class HandleHederaOperationsTest {
     private ContractCreateRecordBuilder contractCreateRecordBuilder;
 
     @Mock
-    private ContractDeleteRecordBuilder contractDeleteRecordBuilder;
-
-    @Mock
     private TinybarValues tinybarValues;
 
     @Mock
@@ -108,6 +105,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private ReadableAccountStore readableAccountStore;
+
+    @Mock
+    private PendingCreationMetadataRef pendingCreationMetadataRef;
 
     private HandleHederaOperations subject;
 
@@ -120,7 +120,8 @@ class HandleHederaOperationsTest {
                 tinybarValues,
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
-                HederaFunctionality.CONTRACT_CALL);
+                HederaFunctionality.CONTRACT_CALL,
+                pendingCreationMetadataRef);
     }
 
     @Test
@@ -232,9 +233,8 @@ class HandleHederaOperationsTest {
     @Test
     void lazyCreationCostInGasTest() {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
-        given(gasCalculator.gasRequirement(any(), eq(DispatchType.CRYPTO_CREATE), eq(A_NEW_ACCOUNT_ID)))
-                .willReturn(6L);
-        given(gasCalculator.gasRequirement(any(), eq(DispatchType.CRYPTO_UPDATE), eq(A_NEW_ACCOUNT_ID)))
+        given(gasCalculator.topLevelGasRequirement(any(), eq(A_NEW_ACCOUNT_ID)))
+                .willReturn(6L)
                 .willReturn(5L);
         assertEquals(11L, subject.lazyCreationCostInGas(NON_SYSTEM_LONG_ZERO_ADDRESS));
     }
@@ -242,8 +242,6 @@ class HandleHederaOperationsTest {
     @Test
     void gasPriceInTinybarsDelegates() {
         given(tinybarValues.topLevelTinybarGasPrice()).willReturn(1234L);
-        given(context.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(feeCalculator.getCongestionMultiplier()).willReturn(1L);
         assertEquals(1234L, subject.gasPriceInTinybars());
     }
 
@@ -330,7 +328,7 @@ class HandleHederaOperationsTest {
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture()))
                 .willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.status()).willReturn(OK);
+        given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -378,7 +376,7 @@ class HandleHederaOperationsTest {
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture()))
                 .willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.status()).willReturn(OK);
+        given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -453,7 +451,7 @@ class HandleHederaOperationsTest {
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.status()).willReturn(OK);
+        given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
@@ -478,7 +476,8 @@ class HandleHederaOperationsTest {
                 tinybarValues,
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
-                HederaFunctionality.ETHEREUM_TRANSACTION);
+                ETHEREUM_TRANSACTION,
+                pendingCreationMetadataRef);
         final var someBody = ContractCreateTransactionBody.newBuilder()
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
@@ -500,7 +499,7 @@ class HandleHederaOperationsTest {
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.status()).willReturn(OK);
+        given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
@@ -539,7 +538,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
-        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, CANONICAL_ALIAS));
+        assertThrows(IllegalStateException.class, () -> subject.createContract(666L, someBody, CANONICAL_ALIAS));
     }
 
     @Test
