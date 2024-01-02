@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -38,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
@@ -96,6 +99,9 @@ public class PrngSeedOperationSuite extends HapiSuite {
         return propertyPreservingHapiSpec("MultipleCallsHaveIndependentResults")
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         uploadInitCode(prng),
                         contractCreate(prng),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
@@ -144,6 +150,9 @@ public class PrngSeedOperationSuite extends HapiSuite {
         return propertyPreservingHapiSpec("prngPrecompileHappyPathWorks")
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
                         cryptoCreate(BOB),
@@ -169,6 +178,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
         return propertyPreservingHapiSpec("prngPrecompileDisabledInV_0_30")
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
+                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
                         cryptoCreate(BOB),
