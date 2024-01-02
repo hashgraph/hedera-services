@@ -32,6 +32,7 @@ import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -168,19 +169,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Solder the minimum generation non-ancient output to all components that need it.
+     * Solder the NonAncientEventWindow output to all components that need it.
      */
-    private void solderMinimumGenerationNonAncient() {
-        final OutputWire<Long> minimumGenerationNonAncientOutput =
-                linkedEventIntakeWiring.minimumGenerationNonAncientOutput();
+    private void solderNonAncientEventWindow() {
+        final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
+                linkedEventIntakeWiring.nonAncientEventWindowOutput();
 
-        minimumGenerationNonAncientOutput.solderTo(eventDeduplicatorWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventDeduplicatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
     }
 
@@ -209,7 +208,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
             orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
-            solderMinimumGenerationNonAncient();
+            solderNonAncientEventWindow();
         } else {
             // TODO: wire events into the pces writer from the old pipeline
             // TODO: wire event output from the hasher to the old pipeline
@@ -460,19 +459,82 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Inject a new minimum generation non-ancient on all components that need it.
-     * <p>
-     * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient during
-     * startup. This method will be removed once the components are wired together.
+     * Get the input wire for passing a PCES iterator to the replayer.
      *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     * @return the input wire for passing a PCES iterator to the replayer
      */
-    public void updateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        eventDeduplicatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        eventSignatureValidatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        orphanBufferWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        inOrderLinkerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        eventCreationManagerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+    public InputWire<IOIterator<GossipEvent>> getPcesReplayerIteratorInput() {
+        return pcesReplayerWiring.pcesIteratorInputWire();
+    }
+
+    /**
+     * Get the output wire that the replayer uses to pass events from file into the intake pipeline.
+     *
+     * @return the output wire that the replayer uses to pass events from file into the intake pipeline
+     */
+    public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
+        return pcesReplayerWiring.eventOutput();
+    }
+
+    /**
+     * Get the input wire for the PCES writer minimum generation to store
+     *
+     * @return the input wire for the PCES writer minimum generation to store
+     */
+    public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
+        return pcesWriterWiring.minimumGenerationToStoreInputWire();
+    }
+
+    /**
+     * Get the input wire for the PCES writer to register a discontinuity
+     *
+     * @return the input wire for the PCES writer to register a discontinuity
+     */
+    public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
+        return pcesWriterWiring.discontinuityInputWire();
+    }
+
+    /**
+     * Get the input wire for the PCES writer to update the minimum generation non-ancient
+     *
+     * @return the input wire for the PCES writer to update the minimum generation non-ancient
+     */
+    public InputWire<Long> getPcesWriterMinimumGenerationNonAncientInput() {
+        return pcesWriterWiring.minimumGenerationNonAncientInput();
+    }
+
+    /**
+     * Get the input wire for passing events to the PCES writer.
+     *
+     * @return the input wire for passing events to the PCES writer
+     */
+    public InputWire<GossipEvent> getPcesWriterEventInput() {
+        return pcesWriterWiring.eventInputWire();
+    }
+
+    /**
+     * Get the runnable that will flush the PCES writer.
+     *
+     * @return the runnable that will flush the PCES writer
+     */
+    public Runnable getPcesWriterFlushRunnable() {
+        return pcesWriterWiring.flushRunnable();
+    }
+
+    /**
+     * Inject a new non-ancient event window into all components that need it.
+     * <p>
+     * Future work: this is a temporary hook to allow the components to get the non-ancient event window during startup.
+     * This method will be removed once the components are wired together.
+     *
+     * @param nonAncientEventWindow the new non-ancient event window
+     */
+    public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        eventDeduplicatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        eventSignatureValidatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         pcesWriterWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 

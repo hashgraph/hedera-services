@@ -154,7 +154,7 @@ public class FileCreateSuite extends HapiSuite {
                         .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
                         .waclShape(shape)
                         .sigControl(forKey("test", validSig))
-                        .scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)
+                        .withTxnTransform(FileCreateSuite::replaceTxnNodeAccount)
                         .hasPrecheckFrom(INVALID_NODE_ACCOUNT));
     }
 

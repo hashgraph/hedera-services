@@ -49,7 +49,6 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 
@@ -184,7 +183,6 @@ public class TestIntake implements LoadableFromSignedState {
     public void loadFromSignedState(@NonNull final SignedState signedState) {
         consensus.loadFromSignedState(signedState);
         shadowGraph.clear();
-        shadowGraph.initFromEvents(Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
     }
 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {

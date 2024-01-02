@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EVM_VERSIONS;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -97,26 +100,25 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // Get the appropriate processor for the EVM version
         final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
 
-        // Process the transaction
+        // Process the transaction and return its outcome
         try {
             final var result = processor.processTransaction(
                     hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
-            // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
-            return new CallOutcome(
-                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
-                    result.finalStatus(),
-                    result.recipientId(),
-                    result.gasPrice());
-        } catch (HandleException abort) {
-            // try to resolve the sender if it is an alias
-            var sender = feesOnlyUpdater.get().getHederaAccount(hevmTransaction.senderId());
-            var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
-            final var result = HederaEvmTransactionResult.fromAborted(senderId, hevmTransaction, abort.getStatus());
-            return new CallOutcome(
-                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
-                    result.finalStatus(),
-                    result.recipientId(),
-                    result.gasPrice());
+            // For mono-service fidelity, externalize an initcode-only sidecar when a top-level creation fails
+            if (!result.isSuccess() && hevmTransaction.needsInitcodeExternalizedOnFailure()) {
+                final var contractBytecode = ContractBytecode.newBuilder()
+                        .initcode(hevmTransaction.payload())
+                        .build();
+                requireNonNull(hederaEvmContext.recordBuilder()).addContractBytecode(contractBytecode, false);
+            }
+            return CallOutcome.fromResultsWithMaybeSidecars(
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
+        } catch (AbortException e) {
+            // Commit any HAPI fees that were charged before aborting
+            rootProxyWorldUpdater.commit();
+            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
+            return CallOutcome.fromResultsWithoutSidecars(
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         }
     }
 

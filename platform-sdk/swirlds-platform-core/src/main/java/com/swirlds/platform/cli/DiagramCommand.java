@@ -88,8 +88,8 @@ public final class DiagramCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
-        final PlatformContext platformContext =
-                new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, Time.getCurrent());
 

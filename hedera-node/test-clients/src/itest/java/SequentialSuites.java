@@ -17,6 +17,7 @@
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
+import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
@@ -47,6 +48,7 @@ public class SequentialSuites {
             LeakyCryptoTestsSuite::new,
             LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
+            StakingSuite::new
         };
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
@@ -34,6 +35,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYS
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PARANOID_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -43,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,6 +54,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -60,8 +64,14 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.function.Predicate;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +82,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleHederaNativeOperationsTest {
     @Mock
     private HandleContext context;
+
+    @Mock
+    private MessageFrame frame;
 
     @Mock
     private ReadableTokenStore tokenStore;
@@ -96,6 +109,8 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private ReadableNftStore nftStore;
+
+    private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
     private HandleHederaNativeOperations subject;
 
@@ -147,33 +162,64 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void createsHollowAccountByDispatching() {
-        final var synthTxn = TransactionBody.newBuilder()
+        final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+
         when(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .thenReturn(cryptoCreateRecordBuilder);
+
+        final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
+        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID)).willReturn(synthLazyCreateFees);
+
+        final var synthFinalizatonFees = new Fees(4L, 5L, 6L);
+        final var synthFinalizationTxn = TransactionBody.newBuilder()
+                .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                        .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY)))
+                .build();
+        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID))
+                .willReturn(synthFinalizatonFees);
+
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
         final var status = subject.createHollowAccount(CANONICAL_ALIAS);
-
         assertEquals(OK, status);
+
+        verify(cryptoCreateRecordBuilder).memo(LAZY_CREATION_MEMO);
+        verify(cryptoCreateRecordBuilder)
+                .transactionFee(synthLazyCreateFees.totalFee() + synthFinalizatonFees.totalFee());
     }
 
     @Test
     void createsHollowAccountByDispatchingDoesNotThrowErrors() {
-        final var synthTxn = TransactionBody.newBuilder()
+        final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
+
+        final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
+        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID)).willReturn(synthLazyCreateFees);
+
+        final var synthFinalizatonFees = new Fees(4L, 5L, 6L);
+        final var synthFinalizationTxn = TransactionBody.newBuilder()
+                .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                        .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY)))
+                .build();
+        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID))
+                .willReturn(synthFinalizatonFees);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         final var status = assertDoesNotThrow(() -> subject.createHollowAccount(CANONICAL_ALIAS));
         assertThat(status).isEqualTo(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        verify(cryptoCreateRecordBuilder).memo(LAZY_CREATION_MEMO);
+        verify(cryptoCreateRecordBuilder)
+                .transactionFee(synthLazyCreateFees.totalFee() + synthFinalizatonFees.totalFee());
     }
 
     @Test
@@ -246,8 +292,16 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void trackDeletionIsTodo() {
-        assertDoesNotThrow(() -> subject.trackDeletion(1L, 2L));
+    void trackDeletionUpdatesMap() {
+        final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        stack.push(frame);
+        given(frame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE)).willReturn(beneficiaries);
+        subject.trackSelfDestructBeneficiary(1L, 2L, frame);
+        verify(beneficiaries)
+                .addBeneficiaryForDeletedAccount(
+                        AccountID.newBuilder().accountNum(1L).build(),
+                        AccountID.newBuilder().accountNum(2L).build());
     }
 
     @Test

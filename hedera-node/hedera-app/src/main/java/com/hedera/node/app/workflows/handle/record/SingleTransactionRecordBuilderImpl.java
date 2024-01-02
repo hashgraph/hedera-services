@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,9 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
@@ -126,7 +126,7 @@ public class SingleTransactionRecordBuilderImpl
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder,
-                GasFeeRecordBuilder,
+                ContractOperationRecordBuilder,
                 TokenAccountWipeRecordBuilder,
                 CryptoUpdateRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
@@ -175,6 +175,8 @@ public class SingleTransactionRecordBuilderImpl
     // its record stream item is built; lets the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
     private final ExternalizedRecordCustomizer customizer;
+
+    private TokenID tokenID;
 
     /**
      * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
@@ -333,7 +335,7 @@ public class SingleTransactionRecordBuilderImpl
         transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);
         transactionReceiptBuilder.topicSequenceNumber(0L);
-        transactionRecordBuilder.contractCreateResult((ContractFunctionResult) null);
+        // Note that internal contract creations are removed instead of reversed
         transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionRecordBuilder.alias(Bytes.EMPTY);
         transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
@@ -803,6 +805,8 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl contractID(@Nullable final ContractID contractID) {
+        // Ensure we don't externalize as an account creation too
+        transactionReceiptBuilder.accountID((AccountID) null);
         transactionReceiptBuilder.contractID(contractID);
         return this;
     }
@@ -894,8 +898,13 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
+        this.tokenID = tokenID;
         transactionReceiptBuilder.tokenID(tokenID);
         return this;
+    }
+
+    public TokenID tokenID() {
+        return tokenID;
     }
 
     /**
@@ -1072,16 +1081,14 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @param deletedAccountID the deleted account ID
      * @param beneficiaryForDeletedAccount the beneficiary account ID
-     * @return the builder
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl addBeneficiaryForDeletedAccount(
+    public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
         requireNonNull(deletedAccountID, "deletedAccountID must not be null");
         requireNonNull(beneficiaryForDeletedAccount, "beneficiaryForDeletedAccount must not be null");
         deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
-        return this;
     }
 
     /**

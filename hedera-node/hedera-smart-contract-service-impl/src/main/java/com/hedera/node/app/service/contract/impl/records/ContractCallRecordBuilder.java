@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -28,7 +29,7 @@ import java.util.List;
 /**
  * Exposes the record customizations needed for a HAPI contract call transaction.
  */
-public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
+public interface ContractCallRecordBuilder extends ContractOperationRecordBuilder {
 
     /**
      * Tracks the final status of a top-level contract call.
@@ -55,6 +56,13 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder contractID(@Nullable ContractID contractId);
+
+    /**
+     * Returns the token id created.
+     *
+     * @return the token id created
+     */
+    TokenID tokenID();
 
     /**
      * Tracks the result of a top-level contract call.

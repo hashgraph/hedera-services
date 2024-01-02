@@ -25,6 +25,8 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
@@ -79,6 +81,7 @@ public class EventIntake {
 
     private final EventIntakeMetrics metrics;
     private final Time time;
+    private final Long roundsNonAncient;
 
     /**
      * Measures the time spent in each phase of event intake
@@ -137,6 +140,10 @@ public class EventIntake {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+        this.roundsNonAncient = (long) platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
 
         final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
         prehandlePool = new ThreadPoolExecutor(
@@ -214,7 +221,10 @@ public class EventIntake {
                 phaseTimer.activatePhase(EventIntakePhase.HANDLING_STALE_EVENTS);
                 handleStale(minGenNonAncientBeforeAdding);
                 if (latestEventTipsetTracker != null) {
-                    latestEventTipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+                    // FUTURE WORK: When this class is refactored, it should not be constructing the
+                    // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
+                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                            consensus().getLastRoundDecided(), minimumGenerationNonAncient, roundsNonAncient));
                 }
             }
         } finally {
