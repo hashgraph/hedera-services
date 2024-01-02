@@ -21,7 +21,6 @@ import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -126,7 +125,7 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
     private void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 reservedSignedState.get().getSwirldState(),
-                reservedSignedState.get().getState().getSwirldDualState(),
+                reservedSignedState.get().getState().getPlatformState(),
                 reservedSignedState.get().getRound(),
                 reservedSignedState.get().getConsensusTimestamp());
 

@@ -72,7 +72,7 @@ on:
         description: "Dependency Scope Check Enabled"
         type: boolean
         required: false
-        default: true
+        default: false
       enable-snyk-scan:
         description: "Snyk Scan Enabled"
         type: boolean
@@ -92,7 +92,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.3"
+        default: "21.0.1"
       node-version:
         description: "NodeJS Version:"
         type: string

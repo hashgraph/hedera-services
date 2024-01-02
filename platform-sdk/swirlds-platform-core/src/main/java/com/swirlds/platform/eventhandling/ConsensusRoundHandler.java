@@ -25,8 +25,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -44,10 +42,13 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -133,7 +134,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /**
      * A method that blocks until an event becomes durable.
      */
-    final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability;
+    final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability;
 
     /**
      * The number of non-ancient rounds.
@@ -171,7 +172,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
-            @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<Long> roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -362,11 +363,12 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         final CycleTimingStat consensusTimingStat = consensusHandlingMetrics.getConsCycleStat();
         consensusTimingStat.startCycle();
 
-        waitForEventDurability.accept(round.getKeystoneEvent());
+        waitForEventDurability.accept(round.getKeystoneEvent().getBaseEvent());
 
         consensusTimingStat.setTimePoint(1);
 
         propagateConsensusData(round);
+        updatePlatformState(round);
 
         if (round.getEventCount() > 0) {
             consensusHandlingMetrics.recordConsensusTime(round.getConsensusTimestamp());
@@ -399,8 +401,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         // . For an accurate stat on how much time it takes to create a signed state, refer to
         // newSignedStateCycleTiming in Statistics
         consensusTimingStat.setTimePoint(5);
-
-        updatePlatformState(round);
+        updateRunningEventHash();
 
         consensusTimingStat.setTimePoint(6);
 
@@ -439,21 +440,29 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     }
 
     /**
-     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all of its needed data.
+     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all of its needed data for this
+     * round, with the exception of the running event hash. Wait until transactions are handled before updating this.
+     * This makes it less likely that we will have to wait for the hash to be computed.
      */
-    private void updatePlatformState(final ConsensusRound round) throws InterruptedException {
-        final Hash runningHash = eventsConsRunningHash.getFutureHash().getAndRethrow();
+    private void updatePlatformState(final ConsensusRound round) {
+        final PlatformState platformState =
+                swirldStateManager.getConsensusState().getPlatformState();
 
-        swirldStateManager
-                .getConsensusState()
-                .getPlatformState()
-                .getPlatformData()
-                .setRound(round.getRoundNum())
-                .setHashEventsCons(runningHash)
-                .setConsensusTimestamp(round.getConsensusTimestamp())
-                .setCreationSoftwareVersion(softwareVersion)
-                .setRoundsNonAncient(roundsNonAncient)
-                .setSnapshot(round.getSnapshot());
+        platformState.setRound(round.getRoundNum());
+        platformState.setConsensusTimestamp(round.getConsensusTimestamp());
+        platformState.setCreationSoftwareVersion(softwareVersion);
+        platformState.setRoundsNonAncient(roundsNonAncient);
+        platformState.setSnapshot(round.getSnapshot());
+    }
+
+    /**
+     * Update the running event hash in the platform state.
+     */
+    private void updateRunningEventHash() throws InterruptedException {
+        final PlatformState platformState =
+                swirldStateManager.getConsensusState().getPlatformState();
+        final Hash runningHash = eventsConsRunningHash.getFutureHash().getAndRethrow();
+        platformState.setRunningEventHash(runningHash);
     }
 
     private void createSignedState() throws InterruptedException {

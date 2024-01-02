@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_ADDRESS_CALLER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
@@ -217,8 +218,11 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesHollowFinalization() {
         given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
+        given(evmFrameState.getAccount(PERMITTED_ADDRESS_CALLER)).willReturn(proxyEvmAccount);
+        given(proxyEvmAccount.hederaContractId())
+                .willReturn(ContractID.newBuilder().contractNum(999L).build());
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
-        subject.finalizeHollowAccount(EIP_1014_ADDRESS);
+        subject.finalizeHollowAccount(EIP_1014_ADDRESS, PERMITTED_ADDRESS_CALLER);
         verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
     }
 
@@ -489,9 +493,9 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesDeletionTrackingAttempt() {
         final var haltReason = Optional.<ExceptionalHaltReason>of(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
-        given(evmFrameState.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS))
+        given(evmFrameState.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame))
                 .willReturn(haltReason);
-        assertSame(haltReason, subject.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS));
+        assertSame(haltReason, subject.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame));
     }
 
     @Test
@@ -503,7 +507,11 @@ class ProxyWorldUpdaterTest {
     @Test
     void externalizeSystemContractResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         subject.externalizeSystemContractResults(contractFunctionResult, ResponseCodeEnum.SUCCESS);
         verify(systemContractOperations).externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);

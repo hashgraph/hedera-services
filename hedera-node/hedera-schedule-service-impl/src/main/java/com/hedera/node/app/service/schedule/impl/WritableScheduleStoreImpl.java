@@ -28,15 +28,20 @@ import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A writable store that wraps a writable key-value state and supports operations required to create or update
  * schedule objects as a result of ScheduleCreate, ScheduleSign, or ScheduleDelete transactions.
  */
 public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl implements WritableScheduleStore {
+
+    private static final Logger logger = LogManager.getLogger(WritableScheduleStoreImpl.class);
     private static final String SCHEDULE_NULL_FOR_DELETE_MESSAGE =
             "Request to delete null schedule ID cannot be fulfilled.";
     private static final String SCHEDULE_MISSING_FOR_DELETE_MESSAGE =
@@ -111,12 +116,14 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         // calculated expiration time is never null...
         final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
         final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
-        List<Schedule> byExpiration = inStateExpiration != null ? inStateExpiration.schedules() : null;
+        // we should not be modifying the schedules list directly. This could cause ISS
+        List<Schedule> byExpiration = inStateExpiration != null ? new ArrayList<>(inStateExpiration.schedules()) : null;
         if (byExpiration == null) {
             byExpiration = new LinkedList<>();
         }
         byExpiration.add(scheduleToAdd);
-        schedulesByExpirationMutable.put(expirationSecond, new ScheduleList(byExpiration));
+        final var newScheduleList = new ScheduleList(byExpiration);
+        schedulesByExpirationMutable.put(expirationSecond, newScheduleList);
     }
 
     @NonNull
@@ -138,5 +145,23 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.scheduledTransaction(),
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
+    }
+    /** @inheritDoc */
+    @Override
+    public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
+        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
+            final var second = new ProtoLong(i);
+            final var scheduleList = schedulesByExpirationMutable.get(second);
+            if (scheduleList != null) {
+                for (final var schedule : scheduleList.schedules()) {
+                    schedulesByIdMutable.remove(schedule.scheduleIdOrThrow());
+
+                    final ProtoString hash = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
+                    schedulesByEqualityMutable.remove(hash);
+                    logger.info("Purging expired schedule {} from state.", schedule.scheduleIdOrThrow());
+                }
+                schedulesByExpirationMutable.remove(second);
+            }
+        }
     }
 }

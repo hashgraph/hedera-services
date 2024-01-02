@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_MAX_REFUND_QUOTIENT;
@@ -46,7 +47,7 @@ import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.exec.utils.PropagatedCallFailureReference;
+import com.hedera.node.app.service.contract.impl.exec.utils.PropagatedCallFailureRef;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
@@ -93,7 +94,7 @@ class FrameRunnerTest {
     @Mock
     private CustomGasCalculator gasCalculator;
 
-    private final PropagatedCallFailureReference propagatedCallFailure = new PropagatedCallFailureReference();
+    private final PropagatedCallFailureRef propagatedCallFailure = new PropagatedCallFailureRef();
 
     private FrameRunner subject;
 
@@ -202,6 +203,28 @@ class FrameRunnerTest {
 
         assertFailureExpectationsWith(frame, result);
         assertEquals(FAILURE_DURING_LAZY_ACCOUNT_CREATION, result.haltReason());
+        assertNull(result.revertReason());
+    }
+
+    @Test
+    void failurePathWorksWithHaltReasonWhenExceedingChildRecords() {
+        final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
+        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
+        messageFrameStack.addFirst(frame);
+
+        givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INSUFFICIENT_CHILD_RECORDS));
+
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+
+        inOrder.verify(tracer).traceOriginAction(frame);
+        inOrder.verify(contractCreationProcessor).process(frame, tracer);
+        inOrder.verify(messageCallProcessor).process(childFrame, tracer);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
+
+        assertFailureExpectationsWith(frame, result);
+        assertEquals(INSUFFICIENT_CHILD_RECORDS, result.haltReason());
         assertNull(result.revertReason());
     }
 

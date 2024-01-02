@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -56,8 +57,8 @@ public final class BlockRecordService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(RELEASE_045_VERSION) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
             @Override

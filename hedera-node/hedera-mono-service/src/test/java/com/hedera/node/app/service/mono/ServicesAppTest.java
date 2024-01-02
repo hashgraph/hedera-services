@@ -41,7 +41,7 @@ import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.exports.ServicesSignedStateListener;
 import com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter;
@@ -157,7 +157,7 @@ class ServicesAppTest {
         assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
         assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
         assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
-        assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
+        assertThat(subject.platformStateAccessor(), instanceOf(PlatformStateAccessor.class));
         assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
         assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
         assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));

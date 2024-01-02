@@ -16,9 +16,8 @@
 
 package com.swirlds.demo.migration;
 
-import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -34,11 +33,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -225,34 +224,34 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState swirldDualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
 
         final MerkleMap<AccountID, MapValue> merkleMap = getMerkleMap();
         if (merkleMap != null) {
-            logger.info(MARKER, "MerkleMap initialized with {} values", merkleMap.size());
+            logger.info(STARTUP.getMarker(), "MerkleMap initialized with {} values", merkleMap.size());
         }
         final VirtualMap<?, ?> virtualMap = getVirtualMap();
         if (virtualMap != null) {
-            logger.info(MARKER, "VirtualMap initialized with {} values", virtualMap.size());
+            logger.info(STARTUP.getMarker(), "VirtualMap initialized with {} values", virtualMap.size());
         }
         selfId = platform.getSelfId();
 
         if (trigger == InitTrigger.GENESIS) {
-            logger.error(EXCEPTION.getMarker(), "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
+            logger.warn(STARTUP.getMarker(), "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
         }
 
         if (previousSoftwareVersion == null || previousSoftwareVersion.compareTo(PREVIOUS_SOFTWARE_VERSION) != 0) {
-            logger.error(
-                    EXCEPTION.getMarker(),
+            logger.warn(
+                    STARTUP.getMarker(),
                     "previousSoftwareVersion was {} when expecting it to be {}",
                     previousSoftwareVersion,
                     PREVIOUS_SOFTWARE_VERSION);
         }
 
         if (trigger == InitTrigger.GENESIS) {
-            logger.info(MARKER, "Doing genesis initialization");
+            logger.info(STARTUP.getMarker(), "Doing genesis initialization");
             genesisInit(platform);
         }
     }
@@ -275,7 +274,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(final Round round, final PlatformState platformState) {
         throwIfImmutable();
         for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
             final ConsensusEvent event = eventIt.next();

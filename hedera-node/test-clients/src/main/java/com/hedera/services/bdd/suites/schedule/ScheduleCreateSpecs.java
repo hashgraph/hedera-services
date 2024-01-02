@@ -493,7 +493,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
-    // Flaky test
+    @HapiTest
     public HapiSpec doesntTriggerUntilPayerSigns() {
         return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
                 .given(

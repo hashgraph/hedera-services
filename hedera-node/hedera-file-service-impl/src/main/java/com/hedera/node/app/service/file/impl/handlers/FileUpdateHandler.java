@@ -189,11 +189,12 @@ public class FileUpdateHandler implements TransactionHandler {
             fileStore.resetFileContents(fileId);
             fileStore.addUpgradeContent(fileId, fileUpdate.contents());
         }
+        // Note that upgrade file memos are generated programmatically
+        // as the SHA-384 hash of their contents
         final var file = new File.Builder()
                 .fileId(fileId)
                 .deleted(false)
                 .expirationSecond(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
-                .memo(fileUpdate.memo())
                 .build();
         fileStore.add(file);
     }

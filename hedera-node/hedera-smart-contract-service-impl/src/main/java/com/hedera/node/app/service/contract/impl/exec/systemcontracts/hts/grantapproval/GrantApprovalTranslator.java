@@ -30,7 +30,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -74,11 +73,8 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
         } else if (matchesClassicSelector(attempt.selector())) {
             return bodyForClassicCall(attempt);
         } else {
-            return new DispatchForResponseCodeHtsCall<>(
-                    attempt,
-                    bodyForClassic(attempt),
-                    SingleTransactionRecordBuilder.class,
-                    GrantApprovalTranslator::gasRequirement);
+            return new DispatchForResponseCodeHtsCall(
+                    attempt, bodyForClassic(attempt), GrantApprovalTranslator::gasRequirement);
         }
     }
 

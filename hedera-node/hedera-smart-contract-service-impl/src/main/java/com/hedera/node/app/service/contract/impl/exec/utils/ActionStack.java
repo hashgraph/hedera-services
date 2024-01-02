@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
 import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
+import static com.hedera.hapi.streams.codec.ContractActionProtoCodec.RECIPIENT_UNSET;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
@@ -39,6 +40,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,6 +98,16 @@ public class ActionStack {
         this.invalidActions = invalidActions;
         this.allActions = allActions;
         this.actionsStack = actionsStack;
+    }
+
+    /**
+     * Returns a view of this stack appropriate for externalizing in a
+     * {@link com.hedera.hapi.streams.SidecarType#CONTRACT_ACTION} sidecar.
+     *
+     * @return a view of this stack ready to be put in a sidecar
+     */
+    public @NonNull ContractActions asContractActions() {
+        return new ContractActions(allActions.stream().map(ActionWrapper::get).toList());
     }
 
     /**
@@ -196,10 +208,7 @@ public class ActionStack {
                         .ifPresentOrElse(
                                 reason -> builder.revertReason(tuweniToPbjBytes(reason)),
                                 () -> builder.revertReason(Bytes.EMPTY));
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
+                yield withUnsetRecipientIfNeeded(frame.getType(), builder);
             }
             case EXCEPTIONAL_HALT, COMPLETED_FAILED -> {
                 final var builder = action.copyBuilder();
@@ -214,10 +223,7 @@ public class ActionStack {
                 } else {
                     builder.error(Bytes.EMPTY);
                 }
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
+                yield withUnsetRecipientIfNeeded(frame.getType(), builder);
             }
         };
     }
@@ -329,6 +335,28 @@ public class ActionStack {
 
     private ContractID contractIdWith(final long num) {
         return ContractID.newBuilder().contractNum(num).build();
+    }
+
+    private ContractAction withUnsetRecipientIfNeeded(
+            @NonNull MessageFrame.Type type, @NonNull final ContractAction.Builder builder) {
+        final var action = builder.build();
+        return (type == CONTRACT_CREATION) ? withUnsetRecipient(action) : action;
+    }
+
+    // (FUTURE) Use builder for simplicity when PBJ lets us set the oneof recipient to UNSET;
+    // c.f., https://github.com/hashgraph/pbj/issues/160
+    private ContractAction withUnsetRecipient(@NonNull final ContractAction action) {
+        return new ContractAction(
+                action.callType(),
+                action.caller(),
+                action.gas(),
+                action.input(),
+                RECIPIENT_UNSET,
+                action.value(),
+                action.gasUsed(),
+                action.resultData(),
+                action.callDepth(),
+                action.callOperationType());
     }
 
     private boolean targetsMissingAddress(@NonNull final MessageFrame frame) {
