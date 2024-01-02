@@ -188,10 +188,11 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             Long.toString(nodeId))
                     .directory(workingDir.toFile())
                     .redirectOutput(stdout.toFile())
-                    .redirectError(stderr.toFile())
-                    .inheritIO();
-
+                    .redirectError(stderr.toFile());
+//                    .inheritIO();
+//            logger.info(e);
             handle = builder.start().toHandle();
+            logger.info("Started node {} with pid {}", nodeId, handle.pid());
         } catch (Exception e) {
             logger.error(e);
             throw new RuntimeException("node " + nodeId + ": Unable to start!", e);

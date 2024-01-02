@@ -20,6 +20,9 @@ import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PRO
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class HapiTestEnv {
+    private static final Logger logger = LogManager.getLogger(HapiTestEnv.class);
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
     private static final int FIRST_GOSSIP_PORT = 60000;
     private static final int FIRST_GOSSIP_TLS_PORT = 60001;
@@ -103,10 +107,17 @@ public class HapiTestEnv {
     public void start() throws TimeoutException {
         started = true;
         for (final var node : nodes) {
+            logger.info("Started node {}", node.getName());
             node.start();
         }
         for (final var node : nodes) {
-            node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            try{
+                logger.info("Wiatimng for node to become active{}", node.getName());
+                node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            } catch (TimeoutException e) {
+                logger.error("Node {} failed to become active within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                throw e;
+            }
         }
     }
 
