@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec chunkNumberIsValidated() {
+    final HapiSpec chunkNumberIsValidated() {
         return defaultHapiSpec("chunkNumberIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -78,7 +78,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec chunkTransactionIDIsValidated() {
+    final HapiSpec chunkTransactionIDIsValidated() {
         return defaultHapiSpec("chunkTransactionIDIsValidated")
                 .given(cryptoCreate("initialTransactionPayer"), createTopic("testTopic"))
                 .when()
@@ -119,7 +119,7 @@ public class ChunkingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec longMessageIsFragmentedIntoChunks() {
+    final HapiSpec longMessageIsFragmentedIntoChunks() {
         String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
         return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
                 .given(cryptoCreate("payer"), createTopic("testTopic"))

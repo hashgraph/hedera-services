@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,9 +121,18 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
                         contractCreate(PAYABLE_CONTRACT).adminKey(THRESHOLD),
 
                         /* get contract info on all contracts created */
-                        getContractInfo(LOOKUP_CONTRACT).hasExpectedInfo().logged(),
-                        getContractInfo(PAYABLE_CONTRACT).hasExpectedInfo().logged(),
-                        getContractInfo(UPDATABLE_CONTRACT).hasExpectedInfo().logged())
+                        getContractInfo(LOOKUP_CONTRACT)
+                                .payingWith(GENESIS)
+                                .hasExpectedInfo()
+                                .logged(),
+                        getContractInfo(PAYABLE_CONTRACT)
+                                .payingWith(GENESIS)
+                                .hasExpectedInfo()
+                                .logged(),
+                        getContractInfo(UPDATABLE_CONTRACT)
+                                .payingWith(GENESIS)
+                                .hasExpectedInfo()
+                                .logged())
                 .then(defaultLoadTest(mixedOpsBurst, settings));
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -76,32 +75,32 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
 
         if (!systemAccounts.isEmpty()) {
             createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO);
-            systemAccounts = Collections.emptySortedSet();
+            systemAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
         }
         log.info("Queued {} system account records with consTime {}", systemAccounts.size(), consensusTime);
 
         if (!stakingAccounts.isEmpty()) {
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - consensusTime.getEpochSecond();
             createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod);
-            stakingAccounts = Collections.emptySortedSet();
+            stakingAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
         }
         log.info("Queued {} staking account records with consTime {}", stakingAccounts.size(), consensusTime);
 
         if (!miscAccounts.isEmpty()) {
             createAccountRecordBuilders(miscAccounts, context, null);
-            miscAccounts = Collections.emptySortedSet();
+            miscAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
         }
         log.info("Queued {} misc account records with consTime {}", miscAccounts.size(), consensusTime);
 
         if (!treasuryClones.isEmpty()) {
             createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
-            treasuryClones = Collections.emptySortedSet();
+            treasuryClones = new TreeSet<>(ACCOUNT_COMPARATOR);
         }
         log.info("Queued {} treasury clone account records with consTime {}", treasuryClones.size(), consensusTime);
 
         if (!blocklistAccounts.isEmpty()) {
             createAccountRecordBuilders(blocklistAccounts, context, null);
-            blocklistAccounts = Collections.emptySortedSet();
+            blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
         }
         log.info("Queued {} blocklist account records with consTime {}", blocklistAccounts.size(), consensusTime);
     }

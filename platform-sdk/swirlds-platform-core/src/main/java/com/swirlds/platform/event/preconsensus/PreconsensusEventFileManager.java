@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.compactPreconsensusEventFile;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
 import com.swirlds.common.utility.ValueReference;
@@ -53,6 +53,8 @@ import org.apache.logging.log4j.Logger;
  * <p>
  * This object is not thread safe.
  * </p>
+ *
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public class PreconsensusEventFileManager {
 

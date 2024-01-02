@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A read-only {@link ContractStateStore}.
  */
 public class ReadableContractStateStore implements ContractStateStore {
+    private static final Logger logger = LogManager.getLogger(ReadableContractStateStore.class);
     private final ReadableKVState<SlotKey, SlotValue> storage;
     private final ReadableKVState<EntityNumber, Bytecode> bytecode;
 

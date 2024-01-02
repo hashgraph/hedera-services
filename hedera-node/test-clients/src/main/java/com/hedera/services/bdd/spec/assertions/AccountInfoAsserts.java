@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,14 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public static final String BAD_ALIAS = "Bad Alias!";
 
+    boolean hasTokenAssociationExpectations = false;
+
     public static AccountInfoAsserts accountWith() {
         return new AccountInfoAsserts();
     }
 
     public AccountInfoAsserts noChangesFromSnapshot(final String snapshot) {
+        hasTokenAssociationExpectations = true;
         registerProvider((spec, o) -> {
             final var expected = spec.registry().getAccountInfo(snapshot);
             final var actual = (AccountInfo) o;
@@ -55,6 +58,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public AccountInfoAsserts newAssociationsFromSnapshot(final String snapshot, final List<ExpectedTokenRel> newRels) {
+        hasTokenAssociationExpectations = true;
         for (final var newRel : newRels) {
             registerProvider((spec, o) -> {
                 final var baseline = spec.registry().getAccountInfo(snapshot);
@@ -382,5 +386,9 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     public AccountInfoAsserts ownedNfts(int num) {
         registerProvider((spec, o) -> assertEquals(num, ((AccountInfo) o).getOwnedNfts(), "Bad ownedNfts!"));
         return this;
+    }
+
+    public boolean hasTokenAssociationExpectation() {
+        return hasTokenAssociationExpectations;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractDeleteRecordSanityChecks() {
+    final HapiSpec contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(BALANCE_LOOKUP),
@@ -88,7 +88,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractCreateRecordSanityChecks() {
+    final HapiSpec contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(BALANCE_LOOKUP),
@@ -102,7 +102,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractCallWithSendRecordSanityChecks() {
+    final HapiSpec contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
                 .given(flattened(
                         uploadInitCode(PAYABLE_CONTRACT),
@@ -120,7 +120,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec circularTransfersRecordSanityChecks() {
+    final HapiSpec circularTransfersRecordSanityChecks() {
         final var contractName = "CircularTransfers";
         int numAltruists = 3;
         ToLongFunction<String> initBalanceFn = ignore -> 1_000_000L;
@@ -195,7 +195,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractUpdateRecordSanityChecks() {
+    final HapiSpec contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
                 .given(flattened(
                         newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),

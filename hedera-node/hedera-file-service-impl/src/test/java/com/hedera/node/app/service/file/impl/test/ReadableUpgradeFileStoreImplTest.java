@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
     @Test
     void getsFileMetadataIfUpgradeFileExists() {
         givenValidUpgradeFile(false, true);
-        final var file = subject.peek();
+        final var file = subject.peek(fileUpgradeFileId);
 
         assertNotNull(file);
 
@@ -66,10 +66,9 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
                 ListReadableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY).build();
         final var stateFile = MapWritableKVState.<FileID, File>builder(FILES).build();
 
-        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(stateData);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(stateFile);
         subject = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
-        assertThat(subject.peek()).isNull();
+        assertThat(subject.peek(fileUpgradeFileId)).isNull();
     }
 
     @Test
@@ -86,17 +85,12 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
     @Test
     void validGetFullFileContent() throws IOException {
         givenValidFile();
-        assertTrue(subject.getFull().length() > 0);
+        assertTrue(subject.getFull(fileUpgradeFileId).length() > 0);
     }
 
     @Test
     void verifyFileStateKey() {
         assertEquals(UPGRADE_FILE_KEY, subject.getFileStateKey());
-    }
-
-    @Test
-    void verifyIterator() {
-        assertEquals(subject.iterator().next(), wellKnowUpgradeId().next());
     }
 
     private Iterator<File> wellKnowUpgradeId() {

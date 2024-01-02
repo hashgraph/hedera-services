@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ public class ReconnectController implements Runnable {
             // the ReconnectHelper uses a ReconnectLearnerThrottle to exit if there are too many failed attempts
             // so in this thread we can just try until it succeeds or the throttle kicks in
             while (!executeReconnect()) {
-                logger.error(LogMarker.RECONNECT.getMarker(), "Reconnect failed, retrying");
+                logger.error(EXCEPTION.getMarker(), "Reconnect failed, retrying");
                 Thread.sleep(minTimeBetweenReconnects.toMillis());
             }
         } catch (final RuntimeException | InterruptedException e) {

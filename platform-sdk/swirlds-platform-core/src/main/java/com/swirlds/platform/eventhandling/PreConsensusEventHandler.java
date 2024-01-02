@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ public class PreConsensusEventHandler implements Clearable, Startable {
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-curr")
                 .setStopBehavior(Stoppable.StopBehavior.BLOCKING)
-                .setHandler(swirldStateManager::handlePreConsensusEvent)
+                .setHandler(swirldStateManager::prehandleSystemTransactions)
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
@@ -148,7 +148,7 @@ public class PreConsensusEventHandler implements Clearable, Startable {
         }
 
         // All events are supplied for preHandle
-        swirldStateManager.preHandle(event);
+        swirldStateManager.prehandleApplicationTransactions(event);
 
         try {
             // update the estimate now, so the queue can sort on it

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.INVALID_ACCOUNT_ADDRESS;
-import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
-import static contract.XTestConstants.INVALID_CONTRACT_ID_KEY;
 import static contract.XTestConstants.INVALID_ID;
 import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
 import static contract.XTestConstants.SENDER_ADDRESS;
@@ -75,7 +73,8 @@ public class UpdatesKeysXTest extends AbstractContractXTest {
     private final Tuple[] INVALID_TOKEN_KEY = new Tuple[] {
         Tuple.of(
                 BigInteger.valueOf(1),
-                Tuple.of(false, asAddress(""), new byte[] {}, new byte[] {}, INVALID_ACCOUNT_HEADLONG_ADDRESS))
+                // Ensure this key is invalid by leaving all key options unset
+                Tuple.of(false, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")))
     };
 
     @Override
@@ -87,7 +86,7 @@ public class UpdatesKeysXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, TOKEN_KEY)
                         .array()),
                 assertSuccess());
-        // Should throw `INVALID_SIGNATURE` as we are passing an invalid admin key
+        // Should throw `INVALID_SIGNATURE` as the sender is not authorized via a contractID
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION
@@ -101,10 +100,8 @@ public class UpdatesKeysXTest extends AbstractContractXTest {
                 Bytes.wrap(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, INVALID_TOKEN_KEY)
                         .array()),
-                output -> {
-                    assertEquals(
-                            Bytes.wrap(ReturnTypes.encodedRc(INVALID_ADMIN_KEY).array()), output);
-                });
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ADMIN_KEY).array()), output, "Invalid admin key"));
         // Should throw `INVALID_TOKEN_ID` as we are passing an invalid token address
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -146,17 +143,6 @@ public class UpdatesKeysXTest extends AbstractContractXTest {
                         .adminKey(SENDER_CONTRACT_ID_KEY)
                         .autoRenewAccountId(SENDER_ID)
                         .build());
-
-        tokens.put(
-                ERC20_TOKEN_ID,
-                Token.newBuilder()
-                        .tokenId(ERC20_TOKEN_ID)
-                        .treasuryAccountId(INVALID_ID)
-                        .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .supplyKey(AN_ED25519_KEY)
-                        .adminKey(INVALID_CONTRACT_ID_KEY)
-                        .autoRenewAccountId(INVALID_ID)
-                        .build());
         tokens.put(
                 A_TOKEN_ID,
                 Token.newBuilder()
@@ -185,7 +171,7 @@ public class UpdatesKeysXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(INVALID_ID)
                         .alias(INVALID_ACCOUNT_ADDRESS)
-                        .key(INVALID_CONTRACT_ID_KEY)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .smartContract(true)
                         .build());
         return accounts;

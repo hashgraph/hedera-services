@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.queries.crypto;
 
+import static com.hedera.node.app.service.mono.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -23,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -37,6 +39,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenBalance;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
@@ -51,11 +54,16 @@ import javax.inject.Singleton;
 public class GetAccountBalanceAnswer implements AnswerService {
     private final AliasManager aliasManager;
     private final OptionValidator optionValidator;
+    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
-    public GetAccountBalanceAnswer(final AliasManager aliasManager, final OptionValidator optionValidator) {
+    public GetAccountBalanceAnswer(
+            final AliasManager aliasManager,
+            final OptionValidator optionValidator,
+            final GlobalDynamicProperties dynamicProperties) {
         this.aliasManager = aliasManager;
         this.optionValidator = optionValidator;
+        this.dynamicProperties = dynamicProperties;
     }
 
     @Override
@@ -90,6 +98,20 @@ public class GetAccountBalanceAnswer implements AnswerService {
             final var key = EntityNum.fromAccountId(id);
             final var account = accounts.get(key);
             opAnswer.setBalance(account.getBalance());
+            if (dynamicProperties.areTokenBalancesEnabledInQueries()) {
+                final var maxRels = dynamicProperties.maxTokensRelsPerInfoQuery();
+                final var firstRel = account.getLatestAssociation();
+                doBoundedIteration(
+                        view.tokenAssociations(),
+                        view.tokens(),
+                        firstRel,
+                        maxRels,
+                        (token, rel) -> opAnswer.addTokenBalances(TokenBalance.newBuilder()
+                                .setTokenId(token.grpcId())
+                                .setDecimals(token.decimals())
+                                .setBalance(rel.getBalance())
+                                .build()));
+            }
         }
 
         return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();

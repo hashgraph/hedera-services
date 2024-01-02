@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SI
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;

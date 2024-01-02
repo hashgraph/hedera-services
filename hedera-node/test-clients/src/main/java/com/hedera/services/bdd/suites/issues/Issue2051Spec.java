@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec tbdCanPayForItsOwnDeletion() {
+    final HapiSpec tbdCanPayForItsOwnDeletion() {
         return defaultHapiSpec("TbdCanPayForItsOwnDeletion")
                 .given(cryptoCreate("tbd"), cryptoCreate(TRANSFER))
                 .when()
@@ -74,7 +74,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferAccountCannotBeDeleted() {
+    final HapiSpec transferAccountCannotBeDeleted() {
         return defaultHapiSpec("TransferAccountCannotBeDeleted")
                 .given(cryptoCreate(PAYER), cryptoCreate(TRANSFER), cryptoCreate("tbd"))
                 .when(cryptoDelete(TRANSFER))
@@ -90,7 +90,7 @@ public class Issue2051Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferAccountCannotBeDeletedForContractTarget() {
+    final HapiSpec transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
                 .given(
                         uploadInitCode("CreateTrivial"),

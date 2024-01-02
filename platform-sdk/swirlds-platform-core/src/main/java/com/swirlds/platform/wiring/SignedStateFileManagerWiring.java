@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,12 +56,14 @@ public record SignedStateFileManagerWiring(
                 scheduler
                         .getOutputWire()
                         .buildTransformer(
-                                "extract oldestMinimumGenerationOnDisk",
+                                "extractOldestMinimumGenerationOnDisk",
+                                "state saving result",
                                 StateSavingResult::oldestMinimumGenerationOnDisk),
                 scheduler
                         .getOutputWire()
                         .buildTransformer(
-                                "to StateWrittenToDiskAction",
+                                "toStateWrittenToDiskAction",
+                                "state saving result",
                                 ssr -> new StateWrittenToDiskAction(ssr.round(), ssr.freezeState())));
     }
 

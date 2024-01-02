@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package contract;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static contract.CreatesXTestConstants.DECIMALS;
 import static contract.CreatesXTestConstants.DECIMALS_BIG_INT;
 import static contract.CreatesXTestConstants.DECIMALS_LONG;
@@ -39,6 +40,7 @@ import static contract.CreatesXTestConstants.TOKEN_INVALID_ADMIN_KEY;
 import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
+import static contract.XTestConstants.COINBASE_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.ONE_HBAR;
@@ -50,7 +52,7 @@ import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.addErc20Relation;
-import static contract.XTestConstants.assertSuccess;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
@@ -64,6 +66,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
@@ -127,13 +130,21 @@ public class CreatesERC20XTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
+        final AtomicInteger tokenId = new AtomicInteger(1004);
         // should successfully create fungible token v1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
                         .array()),
-                assertSuccess("createFungibleTokenV1"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -153,7 +164,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
-                assertSuccess("createFungibleTokenV1 - sans keys"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert on invalid account address
         runHtsCallAndExpectRevert(
@@ -215,7 +233,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
                         .array()),
-                assertSuccess("createFungibleTokenV2"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -235,7 +260,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_LONG)
                         .array()),
-                assertSuccess("createFungibleTokenV2 - sans keys"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert on invalid account address
         runHtsCallAndExpectRevert(
@@ -297,7 +329,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY, DECIMALS)
                         .array()),
-                assertSuccess("createFungibleTokenV3"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -317,7 +356,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY,
                                 DECIMALS)
                         .array()),
-                assertSuccess("createFungibleTokenV3 - sans keys"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert on invalid account address
         runHtsCallAndExpectRevert(
@@ -385,7 +431,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess("createFungibleWithCustomFeesV1"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -409,7 +462,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess("createFungibleWithCustomFeesV1"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert on invalid account address
         runHtsCallAndExpectRevert(
@@ -492,7 +552,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess("createFungibleWithCustomFeesV2"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -516,7 +583,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess("createFungibleWithCustomFeesV2"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert on invalid account address
         runHtsCallAndExpectRevert(
@@ -599,7 +673,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess("createFungibleWithCustomFeesV3"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -623,7 +704,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess("createFungibleWithCustomFeesV3"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert on invalid account address
         runHtsCallAndExpectRevert(
@@ -717,13 +805,14 @@ public class CreatesERC20XTest extends AbstractContractXTest {
     @Override
     protected Map<AccountID, Account> initialAccounts() {
         final Map<AccountID, Account> accounts = new HashMap<>();
+        accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
         accounts.put(
                 SENDER_ID,
                 Account.newBuilder()
                         .accountId(SENDER_ID)
                         .alias(SENDER_ADDRESS)
                         .key(AN_ED25519_KEY)
-                        .tinybarBalance(100 * ONE_HBAR)
+                        .tinybarBalance(10_000 * ONE_HBAR)
                         .build());
         accounts.put(
                 OWNER_ID,

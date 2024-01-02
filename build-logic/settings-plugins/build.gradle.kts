@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,4 +16,7 @@
 
 plugins { `kotlin-dsl` }
 
-dependencies { implementation("com.gradle:gradle-enterprise-gradle-plugin:3.15.1") }
+dependencies {
+    implementation("org.gradle.toolchains:foojay-resolver:0.7.0")
+    implementation("com.gradle:gradle-enterprise-gradle-plugin:3.15.1")
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class UtilScalePricingCheck extends HapiSuite {
     }
 
     // Can only be run against an isolated network since it assumes the state begins with 0 NFTs minted
-    private HapiSpec nftPriceScalesWithUtilization() {
+    final HapiSpec nftPriceScalesWithUtilization() {
         final var civilian = "civilian";
         final var maxAllowed = 100;
         final IntFunction<String> mintOp = i -> "mint" + i;

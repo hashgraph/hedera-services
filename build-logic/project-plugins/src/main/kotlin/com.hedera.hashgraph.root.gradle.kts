@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,10 +69,10 @@ tasks.register("versionAsPrefixedCommit") {
     inputs.property(
         "commit",
         providers
-            .exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+            .exec { commandLine("git", "rev-parse", "HEAD") }
             .standardOutput
             .asText
-            .map { it.trim() }
+            .map { it.trim().substring(0, 7) }
     )
     inputs.property("commitPrefix", providers.gradleProperty("commitPrefix").orElse("adhoc"))
     inputs.property("version", productVersion)

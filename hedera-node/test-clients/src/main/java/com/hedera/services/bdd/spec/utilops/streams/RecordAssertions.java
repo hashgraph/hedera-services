@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,10 @@ import org.apache.logging.log4j.Logger;
 
 public class RecordAssertions extends UtilOp {
     private static final Logger LOG = LogManager.getLogger(RecordAssertions.class);
-    private static final Duration DEFAULT_INTER_CHECK_DELAY = Duration.ofMillis(2_000L);
+    // Wait just a bit longer than the 2-second block period to be certain we've ended the period
+    private static final Duration END_OF_BLOCK_PERIOD_SLEEP_PERIOD = Duration.ofMillis(2_200L);
+    // Wait just over a second to give the record stream file a chance to close
+    private static final Duration BLOCK_CREATION_SLEEP_PERIOD = Duration.ofMillis(1_100L);
 
     @Nullable
     private final String loc;
@@ -72,7 +75,7 @@ public class RecordAssertions extends UtilOp {
     }
 
     public static void triggerAndCloseAtLeastOneFile(final HapiSpec spec) throws InterruptedException {
-        Thread.sleep(DEFAULT_INTER_CHECK_DELAY.toMillis());
+        Thread.sleep(END_OF_BLOCK_PERIOD_SLEEP_PERIOD.toMillis());
         // Should trigger a new record to be written if we have crossed a 2-second boundary
         final var triggerOp = cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
                 .deferStatusResolution()
@@ -84,8 +87,8 @@ public class RecordAssertions extends UtilOp {
     public static void triggerAndCloseAtLeastOneFileIfNotInterrupted(final HapiSpec spec) {
         try {
             RecordAssertions.triggerAndCloseAtLeastOneFile(spec);
-            LOG.info("Sleeping for a second to give the record stream a (very generous) chance to close");
-            Thread.sleep(1000L);
+            LOG.info("Sleeping a bit to give the record stream a chance to close");
+            Thread.sleep(BLOCK_CREATION_SLEEP_PERIOD.toMillis());
         } catch (final InterruptedException ignore) {
             Thread.currentThread().interrupt();
         }

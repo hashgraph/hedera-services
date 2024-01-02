@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
+    final HapiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForAutoRemovedAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -138,7 +138,7 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
                         wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(INVALID_ACCOUNT_ID));
     }
 
-    private HapiSpec uniqueTokenOperationsFailForExpiredAccount() {
+    final HapiSpec uniqueTokenOperationsFailForExpiredAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForExpiredAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)

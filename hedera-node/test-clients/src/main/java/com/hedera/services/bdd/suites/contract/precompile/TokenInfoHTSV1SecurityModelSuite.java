@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,7 +158,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 happyPathUpdateTokenKeysAndReadLatestInformation());
     }
 
-    private HapiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
+    final HapiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return propertyPreservingHapiSpec("happyPathUpdateTokenInfoAndGetLatestInfo")
@@ -269,7 +269,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
+    final HapiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return propertyPreservingHapiSpec("happyPathUpdateFungibleTokenInfoAndGetLatestInfo")
@@ -377,7 +377,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
+    final HapiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -498,7 +498,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
+    final HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
         return propertyPreservingHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)

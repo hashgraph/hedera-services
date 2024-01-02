@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.creation.tipset;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -80,11 +81,11 @@ public class ChildlessEventTracker {
     /**
      * Remove ancient events.
      *
-     * @param minimumGenerationNonAncient the minimum generation of non-ancient events
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void pruneOldEvents(final long minimumGenerationNonAncient) {
+    public void pruneOldEvents(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         for (final EventDescriptor event : getChildlessEvents()) {
-            if (event.getGeneration() < minimumGenerationNonAncient) {
+            if (nonAncientEventWindow.isAncient(event)) {
                 removeEvent(event);
             }
         }

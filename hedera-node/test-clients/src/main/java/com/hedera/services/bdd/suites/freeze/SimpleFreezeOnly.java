@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class SimpleFreezeOnly extends HapiSuite {
         return true;
     }
 
-    private HapiSpec simpleFreezeWithTimestamp() {
+    final HapiSpec simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(11000))

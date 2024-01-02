@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 
 /**
  * Provides an "expand" operation that acts in-place on the {@link
@@ -43,7 +43,7 @@ import com.swirlds.platform.system.SwirldDualState;
  * have active signatures for the wrapped gRPC txn to be valid; and creates the cryptographic
  * signatures at the bases of the signing hierarchies for these keys. This implicitly requests the
  * Platform to verify these cryptographic signatures, by setting them in the sigs list of the
- * platform txn, <b>before</b> {@link ServicesState#handleConsensusRound(Round, SwirldDualState)} is
+ * platform txn, <b>before</b> {@link ServicesState#handleConsensusRound(Round, PlatformState)} is
  * called with {@code isConsensus=true}.
  */
 public final class HederaToPlatformSigOps {

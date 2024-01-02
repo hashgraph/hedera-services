@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
+import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
@@ -25,7 +27,6 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.NETWORK_REWARDS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +42,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
@@ -75,6 +77,8 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -243,6 +247,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
+        given(token1.decimals()).willReturn(100);
+        given(token1.symbol()).willReturn("FOO");
         given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
@@ -271,14 +277,18 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    @DisplayName("returns empty token relations list")
-    void returnsEmptyTokenRelations() {
+    @DisplayName("check multiple token relations list")
+    void checkMulitpleTokenRelations() {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfos();
 
         account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
+        given(token1.decimals()).willReturn(100);
+        given(token2.decimals()).willReturn(50);
+        given(token1.symbol()).willReturn("FOO");
+        given(token2.symbol()).willReturn("BAR");
         given(token1.tokenId()).willReturn(asToken(3L));
         given(token2.tokenId()).willReturn(asToken(4L));
         setupTokenStore(token1, token2);
@@ -329,8 +339,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
         assertEquals(ResponseCodeEnum.OK, cryptoGetInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, cryptoGetInfoResponse.accountInfo());
-        // We don't return token relationships information in queries
-        assertThat(cryptoGetInfoResponse.accountInfo().tokenRelationships()).isEmpty();
+        assertEquals(2, cryptoGetInfoResponse.accountInfo().tokenRelationships().size());
     }
 
     @Test
@@ -344,6 +353,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         setupAccountStore();
 
+        given(token1.decimals()).willReturn(100);
+        given(token1.symbol()).willReturn("FOO");
         given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
@@ -384,6 +395,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         setupAccountStore();
 
+        given(token1.decimals()).willReturn(100);
+        given(token1.symbol()).willReturn("FOO");
         given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
@@ -487,6 +500,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ethereumNonce(0)
                 .alias(alias.alias())
                 .contractAccountID("0000000000000000000000000000000000000003")
+                .tokenRelationships(getExpectedTokenRelationship())
                 .stakingInfo(getExpectedStakingInfo())
                 .build();
     }
@@ -507,6 +521,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ethereumNonce(0)
                 .alias(alias.alias())
                 .contractAccountID("0000000000000000000000000000000000000003")
+                .tokenRelationships(getExpectedTokenRelationship())
                 .stakingInfo(getExpectedStakingInfo2())
                 .build();
     }
@@ -526,6 +541,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .maxAutomaticTokenAssociations(10)
                 .ethereumNonce(0)
                 .contractAccountID("6aeb3773ea468a814d954e6dec795bfee7d76e26")
+                .tokenRelationships(getExpectedTokenRelationship())
                 .stakingInfo(getExpectedStakingInfo())
                 .build();
     }
@@ -546,8 +562,50 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ethereumNonce(0)
                 .alias(alias.alias())
                 .contractAccountID("0000000000000000000000000000000000000003")
+                .tokenRelationships(getExpectedTokenRelationships())
                 .stakingInfo(getExpectedStakingInfo())
                 .build();
+    }
+
+    private List<TokenRelationship> getExpectedTokenRelationship() {
+        var ret = new ArrayList<TokenRelationship>();
+        final var tokenRelationship1 = TokenRelationship.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(3L).build())
+                .symbol("FOO")
+                .balance(1000)
+                .decimals(100)
+                .kycStatus(KYC_NOT_APPLICABLE)
+                .freezeStatus(FREEZE_NOT_APPLICABLE)
+                .automaticAssociation(true)
+                .build();
+        ret.add(tokenRelationship1);
+        return ret;
+    }
+
+    private List<TokenRelationship> getExpectedTokenRelationships() {
+        var ret = new ArrayList<TokenRelationship>();
+        final var tokenRelationship1 = TokenRelationship.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(3L).build())
+                .symbol("FOO")
+                .balance(1000)
+                .decimals(100)
+                .kycStatus(KYC_NOT_APPLICABLE)
+                .freezeStatus(FREEZE_NOT_APPLICABLE)
+                .automaticAssociation(true)
+                .build();
+        final var tokenRelationship2 = TokenRelationship.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(4L).build())
+                .symbol("BAR")
+                .balance(100)
+                .decimals(50)
+                .kycStatus(KYC_NOT_APPLICABLE)
+                .freezeStatus(FREEZE_NOT_APPLICABLE)
+                .automaticAssociation(true)
+                .build();
+
+        ret.add(tokenRelationship1);
+        ret.add(tokenRelationship2);
+        return ret;
     }
 
     private StakingInfo getExpectedStakingInfo() {

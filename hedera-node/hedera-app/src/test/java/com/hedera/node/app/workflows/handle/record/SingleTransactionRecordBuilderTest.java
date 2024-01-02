@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
@@ -73,7 +72,6 @@ public class SingleTransactionRecordBuilderTest {
     public static final long NEW_TOTAL_SUPPLY = 34134546L;
     public static final String MEMO = "Yo Memo";
     private @Mock Transaction transaction;
-    private @Mock TransactionBody transactionBody;
     private @Mock TransactionID transactionID;
     private final Bytes transactionBytes = Bytes.wrap("Hello Tester");
     private @Mock ContractFunctionResult contractCallResult;
@@ -234,7 +232,7 @@ public class SingleTransactionRecordBuilderTest {
 
     private void assertTransactionReceiptProps(TransactionReceipt receipt, List<Long> serialNumbers) {
         assertEquals(status, receipt.status());
-        assertEquals(accountID, receipt.accountID());
+        assertNull(receipt.accountID());
         assertEquals(fileID, receipt.fileID());
         assertEquals(contractID, receipt.contractID());
         assertNull(receipt.exchangeRate());

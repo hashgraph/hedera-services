@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.common.test.fixtures.crypto;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
@@ -260,7 +262,7 @@ public class SignaturePool {
 
             System.arraycopy(sig, 0, buffer, offset, sig.length);
         } catch (Exception ex) {
-            logger.error(LOGM_EXCEPTION, "Adv Crypto Subsystem: Failed to sign transaction", ex);
+            logger.error(EXCEPTION.getMarker(), "Adv Crypto Subsystem: Failed to sign transaction", ex);
         }
     }
 

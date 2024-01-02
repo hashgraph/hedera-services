@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -29,16 +32,22 @@ public class PlatformCoordinator {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final EventCreationManagerWiring eventCreationManagerWiring;
+    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
     /**
      * Constructor
      *
-     * @param internalEventValidatorWiring  the internal event validator wiring
-     * @param eventDeduplicatorWiring       the event deduplicator wiring
-     * @param eventSignatureValidatorWiring the event signature validator wiring
-     * @param orphanBufferWiring            the orphan buffer wiring
-     * @param inOrderLinkerWiring           the in order linker wiring
-     * @param linkedEventIntakeWiring       the linked event intake wiring
+     * @param internalEventValidatorWiring           the internal event validator wiring
+     * @param eventDeduplicatorWiring                the event deduplicator wiring
+     * @param eventSignatureValidatorWiring          the event signature validator wiring
+     * @param orphanBufferWiring                     the orphan buffer wiring
+     * @param inOrderLinkerWiring                    the in order linker wiring
+     * @param linkedEventIntakeWiring                the linked event intake wiring
+     * @param eventCreationManagerWiring             the event creation manager wiring
+     * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
+     * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
      */
     public PlatformCoordinator(
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
@@ -46,7 +55,10 @@ public class PlatformCoordinator {
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
-            @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring) {
+            @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
+            @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
+            @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
+            @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring) {
 
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
@@ -54,6 +66,24 @@ public class PlatformCoordinator {
         this.orphanBufferWiring = Objects.requireNonNull(orphanBufferWiring);
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
+        this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
+        this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
+        this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
+    }
+
+    /**
+     * Flushes the intake pipeline
+     */
+    public void flushIntakePipeline() {
+        internalEventValidatorWiring.flushRunnable().run();
+        eventDeduplicatorWiring.flushRunnable().run();
+        eventSignatureValidatorWiring.flushRunnable().run();
+        orphanBufferWiring.flushRunnable().run();
+        eventCreationManagerWiring.flush();
+        inOrderLinkerWiring.flushRunnable().run();
+        linkedEventIntakeWiring.flushRunnable().run();
+        applicationTransactionPrehandlerWiring.flushRunnable().run();
+        stateSignatureCollectorWiring.flush();
     }
 
     /**
@@ -62,27 +92,30 @@ public class PlatformCoordinator {
      * Future work: this method should be expanded to coordinate the clearing of the entire system
      */
     public void clear() {
-        // pause the linked event intake, to prevent any new events from making it through the intake pipeline
+        // Phase 1: pause
+        // Pause the linked event intake and event creator, to prevent any new events from making it through the intake
+        // pipeline.
         linkedEventIntakeWiring.pauseInput().inject(true);
+        eventCreationManagerWiring.pauseInput().inject(true);
         linkedEventIntakeWiring.flushRunnable().run();
+        eventCreationManagerWiring.flush();
 
-        // flush everything remaining in the intake pipeline out into the void
-        internalEventValidatorWiring.flushRunnable().run();
-        eventDeduplicatorWiring.flushRunnable().run();
-        eventSignatureValidatorWiring.flushRunnable().run();
-        orphanBufferWiring.flushRunnable().run();
-        inOrderLinkerWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
+        // Phase 2: flush
+        // Flush everything remaining in the intake pipeline out into the void.
+        flushIntakePipeline();
 
-        // once everything has been flushed out of the system, it's safe to unpause the linked event intake
-        linkedEventIntakeWiring.pauseInput().inject(false);
-
-        // data is no longer moving through the system. clear all the internal data structures in the wiring objects
+        // Phase 3: clear
+        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
         eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
         eventDeduplicatorWiring.flushRunnable().run();
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
         orphanBufferWiring.flushRunnable().run();
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.flushRunnable().run();
+
+        // Phase 4: unpause
+        // Once everything has been flushed out of the system, it's safe to unpause event intake and creation.
+        linkedEventIntakeWiring.pauseInput().inject(false);
+        eventCreationManagerWiring.pauseInput().inject(false);
     }
 }

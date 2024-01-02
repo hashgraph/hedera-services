@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class NWayDistNoHotspots extends HapiSuite {
         });
     }
 
-    private HapiSpec runDistributions() {
+    final HapiSpec runDistributions() {
         return customHapiSpec("runCreations")
                 .withProperties(Map.of("default.keyAlgorithm", "ED25519"))
                 .given(logIt("Creating at least "

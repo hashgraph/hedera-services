@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.stats.simple;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.units.UnitConstants;
 
 /**
  * Tracks the average time taken for an operation by accumulating the time and the number of operation. The actual

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 
@@ -51,8 +52,8 @@ public class SignedStateManagerBuilder {
         return this;
     }
 
-    public SignedStateManager build() {
-        return new SignedStateManager(
+    public SignedStateManagerTester build() {
+        return SignedStateManagerTester.create(
                 stateConfig,
                 metrics,
                 newLatestCompleteStateConsumer,

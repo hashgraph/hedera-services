@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec balanceOf() {
+    final HapiSpec balanceOf() {
         final var totalSupply = 50;
         return defaultHapiSpec("balanceOf")
                 .given(
@@ -110,7 +110,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec redirectToInvalidToken() {
+    final HapiSpec redirectToInvalidToken() {
         return defaultHapiSpec("redirectToInvalidToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -144,7 +144,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec redirectToNullSelector() {
+    final HapiSpec redirectToNullSelector() {
         return defaultHapiSpec("redirectToNullSelector")
                 .given(
                         newKeyNamed(MULTI_KEY),

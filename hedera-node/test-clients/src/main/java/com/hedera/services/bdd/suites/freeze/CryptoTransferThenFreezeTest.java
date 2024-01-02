@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
         return List.of(runCryptoTransfers(), freezeAfterTransfers());
     }
 
-    private HapiSpec freezeAfterTransfers() {
+    final HapiSpec freezeAfterTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("FreezeAfterTransfers")
                 .given(

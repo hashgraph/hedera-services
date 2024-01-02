@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -114,7 +115,8 @@ public class SyncNode {
         discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         consensus = mock(Consensus.class);
         this.executor = executor;
     }
@@ -241,6 +243,7 @@ public class SyncNode {
                 platformContext,
                 Time.getCurrent(),
                 shadowGraph,
+                null,
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,

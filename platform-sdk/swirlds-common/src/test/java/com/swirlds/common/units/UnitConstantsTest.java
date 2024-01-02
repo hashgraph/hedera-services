@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,18 @@
 
 package com.swirlds.common.units;
 
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_MILLISECONDS;
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;

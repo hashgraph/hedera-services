@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
     }
 
     @SuppressWarnings({"java:S5960", "java:S1141", "java:S1135"})
-    private HapiSpec createAccount() {
+    final HapiSpec createAccount() {
         int maxRetries = 5;
         return customHapiSpec("CreatePayerAccountForEachClient")
                 .withProperties(Map.of("nodes", nodes, "default.node", "0.0." + defaultNode))

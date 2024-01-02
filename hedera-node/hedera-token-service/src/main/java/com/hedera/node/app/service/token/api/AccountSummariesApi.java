@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.service.token.api;
 
+import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.UNFROZEN;
+import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
+import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
+import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.epochSecondAtStartOfPeriod;
@@ -28,12 +34,22 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenFreezeStatus;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenKycStatus;
+import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 /**
@@ -41,7 +57,7 @@ import java.util.function.UnaryOperator;
  */
 public interface AccountSummariesApi {
     int EVM_ADDRESS_SIZE = 20;
-    int SENTINEL_NODE_ID = -1;
+    long SENTINEL_NODE_ID = -1L;
     AccountID SENTINEL_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).build();
 
     /**
@@ -63,6 +79,72 @@ public interface AccountSummariesApi {
         } else {
             return hex(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
         }
+    }
+
+    /**
+     * Returns up to the given limit of token relationships for the given account, relative to the provided
+     * {@link ReadableTokenStore} and {@link ReadableTokenRelationStore}.
+     *
+     * @param account the account to get token relationships for
+     * @param readableTokenStore the readable token store
+     * @param tokenRelationStore the readable token relation store
+     * @param limit the maximum number of token relationships to return
+     * @return the token relationships for the given account
+     */
+    static List<TokenRelationship> tokenRelationshipsOf(
+            @NonNull final Account account,
+            @NonNull final ReadableTokenStore readableTokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelationStore,
+            final long limit) {
+        requireNonNull(account);
+        requireNonNull(tokenRelationStore);
+        requireNonNull(readableTokenStore);
+
+        final var ret = new ArrayList<TokenRelationship>();
+        var tokenId = account.headTokenId();
+        int count = 0;
+        TokenRelation tokenRelation;
+        Token token; // token from readableToken store by tokenID
+        AccountID accountID; // build from accountNumber
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count < limit) {
+            accountID = account.accountId();
+            tokenRelation = tokenRelationStore.get(accountID, tokenId);
+            if (tokenRelation != null) {
+                token = readableTokenStore.get(tokenId);
+                if (token != null) {
+                    addTokenRelation(ret, token, tokenRelation, tokenId);
+                }
+                tokenId = tokenRelation.nextToken();
+            } else {
+                break;
+            }
+            count++;
+        }
+        return ret;
+    }
+
+    private static void addTokenRelation(
+            ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
+        TokenFreezeStatus freezeStatus = FREEZE_NOT_APPLICABLE;
+        if (token.hasFreezeKey()) {
+            freezeStatus = tokenRelation.frozen() ? FROZEN : UNFROZEN;
+        }
+
+        TokenKycStatus kycStatus = KYC_NOT_APPLICABLE;
+        if (token.hasKycKey()) {
+            kycStatus = tokenRelation.kycGranted() ? GRANTED : REVOKED;
+        }
+
+        final var tokenRelationship = TokenRelationship.newBuilder()
+                .tokenId(tokenId)
+                .symbol(token.symbol())
+                .balance(tokenRelation.balance())
+                .decimals(token.decimals())
+                .kycStatus(kycStatus)
+                .freezeStatus(freezeStatus)
+                .automaticAssociation(tokenRelation.automaticAssociation())
+                .build();
+        ret.add(tokenRelationship);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isKeyAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NO_STAKE_PERIOD_START;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -391,6 +393,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 .tinybarBalance(op.initialBalance())
                 .declineReward(op.declineReward())
                 .key(op.keyOrThrow())
+                .stakeAtStartOfLastRewardedPeriod(NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE)
+                .stakePeriodStart(NO_STAKE_PERIOD_START)
                 .alias(op.alias());
 
         // We do this separately because we want to let the protobuf object remain UNSET for the staked ID if neither

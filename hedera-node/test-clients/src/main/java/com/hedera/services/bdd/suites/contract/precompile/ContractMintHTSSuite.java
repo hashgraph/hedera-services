@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferNftAfterNestedMint() {
+    final HapiSpec transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
 
         return defaultHapiSpec(
@@ -220,7 +220,7 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
+    final HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
         return defaultHapiSpec(

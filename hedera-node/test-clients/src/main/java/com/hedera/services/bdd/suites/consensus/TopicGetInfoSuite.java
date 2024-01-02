@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class TopicGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec allFieldsSetHappyCase() {
+    final HapiSpec allFieldsSetHappyCase() {
         // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("AllFieldsSetHappyCase")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.config.AddressBookConfig_;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -340,10 +339,8 @@ class AddressBookInitializerTest {
         final SwirldState swirldState = getMockSwirldStateSupplier(weightValue).get();
         when(signedState.getAddressBook()).thenReturn(stateAddressBook);
         when(signedState.getSwirldState()).thenReturn(swirldState);
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformData.getCreationSoftwareVersion()).thenReturn(softwareVersion);
         final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
+        when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
         final State state = mock(State.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(signedState.getState()).thenReturn(state);

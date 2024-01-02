@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.ChatterNotifier;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
@@ -73,6 +74,7 @@ class ChatterNotifierTest {
                 List.of(event),
                 mock(EventImpl.class),
                 new Generations(1, 2, 3),
+                mock(NonAncientEventWindow.class),
                 mock(ConsensusSnapshot.class)));
         verify(chatterCore).shiftWindow(1);
     }

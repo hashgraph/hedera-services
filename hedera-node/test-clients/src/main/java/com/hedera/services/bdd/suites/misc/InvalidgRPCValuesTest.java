@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ public class InvalidgRPCValuesTest extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidIdCheck() {
+    final HapiSpec invalidIdCheck() {
         final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
         final String invalidMaxId = MAX_NUM_ALLOWED + 1 + ".2.3";
         return defaultHapiSpec("TransferWithInvalidAccount")

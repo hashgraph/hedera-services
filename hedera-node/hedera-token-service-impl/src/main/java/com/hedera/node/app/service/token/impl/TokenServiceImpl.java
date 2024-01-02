@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.StakingInfo;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -48,14 +48,10 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.token.impl.schemas.TokenSchema;
-import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -64,12 +60,10 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
-import java.util.function.BiConsumer;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 /** An implementation of the {@link TokenService} interface. */
@@ -134,36 +128,41 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
         requireNonNull(registry);
-        registry.register(new TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts));
+        registry.register(new TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, version));
 
-//        if(true)return;
+        //        if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
                 System.out.println("BBM: migrating token service");
 
                 // ---------- NFTs
-                if(true) {
+                if (true) {
                     System.out.println("BBM: doing nfts...");
                     var nftsToState = ctx.newStates().<NftID, Nft>get(NFTS_KEY);
                     try {
-                        VirtualMapLike.from(nftsFs).extractVirtualMapData(
-                                AdHocThreadManager.getStaticThreadManager(), entry -> {
-                                    var nftId = entry.left();
-                                    var toNftId = NftID.newBuilder()
-                                            .tokenId(TokenID.newBuilder().tokenNum(
-                                                    nftId.getNum()).build())
-                                            .serialNumber(nftId.getTokenSerial())
-                                            .build();
-                                    var fromNft = entry.right();
-                                    var fromNft2 = new MerkleUniqueToken(fromNft.getOwner(),
-                                            fromNft.getMetadata(), fromNft.getCreationTime());
-                                    var translated = NftStateTranslator.nftFromMerkleUniqueToken(
-                                            fromNft2);
-                                    nftsToState.put(toNftId, translated);
-                                }, 1);
+                        VirtualMapLike.from(nftsFs)
+                                .extractVirtualMapData(
+                                        AdHocThreadManager.getStaticThreadManager(),
+                                        entry -> {
+                                            var nftId = entry.left();
+                                            var toNftId = NftID.newBuilder()
+                                                    .tokenId(TokenID.newBuilder()
+                                                            .tokenNum(nftId.getNum())
+                                                            .build())
+                                                    .serialNumber(nftId.getTokenSerial())
+                                                    .build();
+                                            var fromNft = entry.right();
+                                            var fromNft2 = new MerkleUniqueToken(
+                                                    fromNft.getOwner(),
+                                                    fromNft.getMetadata(),
+                                                    fromNft.getCreationTime());
+                                            var translated = NftStateTranslator.nftFromMerkleUniqueToken(fromNft2);
+                                            nftsToState.put(toNftId, translated);
+                                        },
+                                        1);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -172,53 +171,62 @@ public class TokenServiceImpl implements TokenService {
                 }
 
                 // ---------- Token Rels/Associations
-                if(true) {
+                if (true) {
                     System.out.println("BBM: doing token rels...");
-                    var tokenRelsToState = ctx.newStates().<EntityIDPair, TokenRelation>get(
-                            TOKEN_RELS_KEY);
+                    var tokenRelsToState = ctx.newStates().<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY);
                     try {
-                        VirtualMapLike.from(trFs).extractVirtualMapData(
-                                AdHocThreadManager.getStaticThreadManager(), entry -> {
-                                    var fromTokenRel = entry.right();
-                                    var key = fromTokenRel.getKey();
-                                    var translated =
-                                            TokenRelationStateTranslator.tokenRelationFromMerkleTokenRelStatus(
-                                                    new MerkleTokenRelStatus(
-                                                            fromTokenRel.getBalance(),
-                                                            fromTokenRel.isFrozen(),
-                                                            fromTokenRel.isKycGranted(),
-                                                            fromTokenRel.isAutomaticAssociation(),
-                                                            fromTokenRel.getNumbers()));
-                                    var newPair = EntityIDPair.newBuilder().accountId(
-                                            AccountID.newBuilder().accountNum(
-                                                    key.getHiOrderAsLong()).build()).tokenId(
-                                            TokenID.newBuilder().tokenNum(
-                                                    key.getLowOrderAsLong()).build()).build();
-                                    tokenRelsToState.put(newPair, translated);
-                                }, 1);
+                        VirtualMapLike.from(trFs)
+                                .extractVirtualMapData(
+                                        AdHocThreadManager.getStaticThreadManager(),
+                                        entry -> {
+                                            var fromTokenRel = entry.right();
+                                            var key = fromTokenRel.getKey();
+                                            var translated =
+                                                    TokenRelationStateTranslator.tokenRelationFromMerkleTokenRelStatus(
+                                                            new MerkleTokenRelStatus(
+                                                                    fromTokenRel.getBalance(),
+                                                                    fromTokenRel.isFrozen(),
+                                                                    fromTokenRel.isKycGranted(),
+                                                                    fromTokenRel.isAutomaticAssociation(),
+                                                                    fromTokenRel.getNumbers()));
+                                            var newPair = EntityIDPair.newBuilder()
+                                                    .accountId(AccountID.newBuilder()
+                                                            .accountNum(key.getHiOrderAsLong())
+                                                            .build())
+                                                    .tokenId(TokenID.newBuilder()
+                                                            .tokenNum(key.getLowOrderAsLong())
+                                                            .build())
+                                                    .build();
+                                            tokenRelsToState.put(newPair, translated);
+                                        },
+                                        1);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                    if (tokenRelsToState.isModified())
-                        ((WritableKVStateBase) tokenRelsToState).commit();
+                    if (tokenRelsToState.isModified()) ((WritableKVStateBase) tokenRelsToState).commit();
                     System.out.println("BBM: finished token rels");
                 }
 
                 // ---------- Accounts
-                if(true) {
+                if (true) {
                     System.out.println("BBM: doing accounts");
                     var acctsToState = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
                     try {
-                        VirtualMapLike.from(acctsFs).extractVirtualMapData(
-                                AdHocThreadManager.getStaticThreadManager(), entry -> {
-                                    var acctNum = entry.left().asEntityNum().longValue();
-                                    var fromAcct = entry.right();
-                                    var toAcct = AccountStateTranslator.accountFromOnDiskAccount(
-                                            fromAcct);
-                                    acctsToState.put(
-                                            AccountID.newBuilder().accountNum(acctNum).build(),
-                                            toAcct);
-                                }, 1);
+                        VirtualMapLike.from(acctsFs)
+                                .extractVirtualMapData(
+                                        AdHocThreadManager.getStaticThreadManager(),
+                                        entry -> {
+                                            var acctNum =
+                                                    entry.left().asEntityNum().longValue();
+                                            var fromAcct = entry.right();
+                                            var toAcct = AccountStateTranslator.accountFromOnDiskAccount(fromAcct);
+                                            acctsToState.put(
+                                                    AccountID.newBuilder()
+                                                            .accountNum(acctNum)
+                                                            .build(),
+                                                    toAcct);
+                                        },
+                                        1);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -227,7 +235,7 @@ public class TokenServiceImpl implements TokenService {
                 }
 
                 // ---------- Tokens
-                if(true) {
+                if (true) {
                     System.out.println("BBM: starting tokens (both fung and non-fung)");
                     var tokensToState = ctx.newStates().<TokenID, Token>get(TOKENS_KEY);
                     MerkleMapLike.from(tFs).forEachNode(new BiConsumer<EntityNum, MerkleToken>() {
@@ -235,7 +243,9 @@ public class TokenServiceImpl implements TokenService {
                         public void accept(EntityNum entityNum, MerkleToken merkleToken) {
                             var toToken = TokenStateTranslator.tokenFromMerkle(merkleToken);
                             tokensToState.put(
-                                    TokenID.newBuilder().tokenNum(entityNum.longValue()).build(),
+                                    TokenID.newBuilder()
+                                            .tokenNum(entityNum.longValue())
+                                            .build(),
                                     toToken);
                         }
                     });
@@ -244,27 +254,27 @@ public class TokenServiceImpl implements TokenService {
                 }
 
                 // ---------- Staking Info
-                if(true) {
+                if (true) {
                     System.out.println("BBM: starting staking info");
                     var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
                     stakingFs.forEach(new BiConsumer<EntityNum, MerkleStakingInfo>() {
                         @Override
-                        public void accept(EntityNum entityNum,
-                                MerkleStakingInfo merkleStakingInfo) {
+                        public void accept(EntityNum entityNum, MerkleStakingInfo merkleStakingInfo) {
                             var toStakingInfo =
-                                    StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(
-                                            merkleStakingInfo);
-                            stakingToState.put(EntityNumber.newBuilder().number(
-                                    merkleStakingInfo.getKey().longValue()).build(), toStakingInfo);
+                                    StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
+                            stakingToState.put(
+                                    EntityNumber.newBuilder()
+                                            .number(merkleStakingInfo.getKey().longValue())
+                                            .build(),
+                                    toStakingInfo);
                         }
                     });
-                    if (stakingToState.isModified())
-                        ((WritableKVStateBase) stakingToState).commit();
+                    if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
                     System.out.println("BBM: finished staking info");
                 }
 
                 // ---------- Staking Rewards
-                if(true) {
+                if (true) {
                     System.out.println("BBM: starting staking rewards");
                     var srToState = ctx.newStates().<NetworkStakingRewards>getSingleton(STAKING_NETWORK_REWARDS_KEY);
                     var toSr = NetworkingStakingTranslator.networkStakingRewardsFromMerkleNetworkContext(mnc);

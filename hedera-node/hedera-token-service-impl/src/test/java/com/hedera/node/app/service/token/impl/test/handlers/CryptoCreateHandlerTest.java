@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -291,7 +291,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
         assertEquals(0L, createdAccount.stakedToMe());
-        assertEquals(0L, createdAccount.stakePeriodStart());
+        assertEquals(-1L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
         assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
@@ -306,7 +306,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(createdAccount.smartContract());
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
-        assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(-1L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());
@@ -362,7 +362,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals("Create Account", createdAccount.memo());
         assertFalse(createdAccount.deleted());
         assertEquals(0L, createdAccount.stakedToMe());
-        assertEquals(0L, createdAccount.stakePeriodStart());
+        assertEquals(-1L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
         assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
@@ -377,7 +377,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(createdAccount.smartContract());
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
-        assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(-1L, createdAccount.stakeAtStartOfLastRewardedPeriod());
         assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSeconds());
         assertEquals(0, createdAccount.contractKvPairsNumber());

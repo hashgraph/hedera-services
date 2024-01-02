@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.merkle.map.test.lifecycle;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -97,7 +99,10 @@ public class SaveExpectedMapHandler {
             zos.flush();
             fos.flush();
         } catch (IOException e) {
-            logger.error(MARKER, String.format("Error occurred while serializing ExpectedMap: %s", jsonZipFileName), e);
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    String.format("Error occurred while serializing ExpectedMap: %s", jsonZipFileName),
+                    e);
         }
 
         return jsonValue;
@@ -116,14 +121,14 @@ public class SaveExpectedMapHandler {
         final File jsonFile = unzipExpectedMap(sourceFile);
 
         if (jsonFile == null) {
-            logger.error(MARKER, "No JSON file found in the zip file: {}", sourceFile);
+            logger.error(EXCEPTION.getMarker(), "No JSON file found in the zip file: {}", sourceFile);
             return newMap;
         }
 
         try (FileInputStream fileInputStream = new FileInputStream(jsonFile)) {
             newMap = objectMapper.readValue(fileInputStream, new TypeReference<Map<MapKey, ExpectedValue>>() {});
         } catch (IOException e) {
-            logger.error(MARKER, "Error occurred while reading: {}", sourceFile, e);
+            logger.error(EXCEPTION.getMarker(), "Error occurred while reading: {}", sourceFile, e);
         }
 
         jsonFile.delete();
@@ -149,7 +154,7 @@ public class SaveExpectedMapHandler {
             }
 
         } catch (IOException e) {
-            logger.error(MARKER, "Error occurred while unzipping: {}", sourceFile, e);
+            logger.error(EXCEPTION.getMarker(), "Error occurred while unzipping: {}", sourceFile, e);
         }
 
         return null;
@@ -169,7 +174,7 @@ public class SaveExpectedMapHandler {
                 fos.write(buffer, 0, len);
             }
         } catch (IOException e) {
-            logger.error(MARKER, "Error occurred while extracting file", e);
+            logger.error(EXCEPTION.getMarker(), "Error occurred while extracting file", e);
         }
 
         return newFile;

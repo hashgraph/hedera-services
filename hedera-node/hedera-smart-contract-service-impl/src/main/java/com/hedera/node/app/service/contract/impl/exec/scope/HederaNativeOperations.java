@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Provides Hedera operations using PBJ types to allow a {@link DispatchingEvmFrameState} to access and change
@@ -199,13 +200,14 @@ public interface HederaNativeOperations {
             long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
 
     /**
-     * Tracks the deletion of a contract and the beneficiary that should receive any staking awards otherwise
+     * Tracks the self-destruction of a contract and the beneficiary that should receive any staking awards otherwise
      * earned by the deleted contract.
      *
      * @param deletedNumber the number of the deleted contract
      * @param beneficiaryNumber the number of the beneficiary
+     * @param frame the frame in which to track the self-destruct
      */
-    void trackDeletion(long deletedNumber, final long beneficiaryNumber);
+    void trackSelfDestructBeneficiary(long deletedNumber, long beneficiaryNumber, @NonNull MessageFrame frame);
 
     /**
      * Checks if the given transfer operation uses custom fees.

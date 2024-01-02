@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,7 +163,10 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
                     new MerkleHederaState(
-                            (tree, state) -> {}, (e, m, s) -> {}, (state, platform, dualState, trigger, version) -> {}),
+                            (tree, state) -> {},
+                            (e, m, s) -> {},
+                            (state, platform, dualState, trigger, version) -> {},
+                            (s, ab, pc) -> {}),
                     version(9, 0, 0),
                     version(10, 0, 0),
                     config,
@@ -181,7 +184,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState((tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {});
+            merkleTree = new MerkleHederaState(
+                    (tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {}, (s, ab, pc) -> {});
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];

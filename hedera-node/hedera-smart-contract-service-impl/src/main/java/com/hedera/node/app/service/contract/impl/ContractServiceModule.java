@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_030;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_034;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
+import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
 
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
@@ -34,10 +35,12 @@ import com.hedera.node.app.service.contract.impl.exec.v034.V034Module;
 import com.hedera.node.app.service.contract.impl.exec.v038.V038Module;
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
@@ -53,6 +56,12 @@ public interface ContractServiceModule {
     @Binds
     @Singleton
     GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
+
+    @Provides
+    @Singleton
+    static EvmConfiguration provideEvmConfiguration() {
+        return new EvmConfiguration(EvmConfiguration.DEFAULT.jumpDestCacheWeightKB(), JOURNALED);
+    }
 
     @Binds
     @IntoMap

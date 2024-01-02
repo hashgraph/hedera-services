@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,36 +128,48 @@ class ScheduleSecondVirtualValueTest {
 
     @Test
     void serializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-        final var inOrder = inOrder(buffer);
+        final ByteBuffer buffer = ByteBuffer.allocate(256);
         subject.serialize(buffer);
 
-        inOrder.verify(buffer).putInt(2);
+        final ByteBuffer inOrder = ByteBuffer.allocate(256);
+        inOrder.putInt(2);
 
-        inOrder.verify(buffer).putInt(3);
-        inOrder.verify(buffer).putLong(50L);
-        inOrder.verify(buffer).putLong(60L);
-        inOrder.verify(buffer).putLong(70L);
-        inOrder.verify(buffer).putLong(10L);
-        inOrder.verify(buffer).putInt(20);
+        inOrder.putInt(3);
+        inOrder.putLong(50L);
+        inOrder.putLong(60L);
+        inOrder.putLong(70L);
+        inOrder.putLong(10L);
+        inOrder.putInt(20);
 
-        inOrder.verify(buffer).putInt(1);
-        inOrder.verify(buffer).putLong(80L);
-        inOrder.verify(buffer).putLong(30L);
-        inOrder.verify(buffer).putInt(40);
-        inOrder.verify(buffer).putLong(3L);
+        inOrder.putInt(1);
+        inOrder.putLong(80L);
+        inOrder.putLong(30L);
+        inOrder.putInt(40);
+        inOrder.putLong(3L);
 
-        inOrder.verifyNoMoreInteractions();
+        assertEquals(buffer, inOrder);
     }
 
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-        final var defaultSubject = new ScheduleSecondVirtualValue();
+        final ByteBuffer buffer = ByteBuffer.allocate(256);
+        buffer.putInt(2);
 
-        given(buffer.getInt()).willReturn(2, 3, 20, 1, 40);
-        given(buffer.get()).willReturn((byte) 1);
-        given(buffer.getLong()).willReturn(50L, 60L, 70L, 10L, 80L, 30L, 3L);
+        buffer.putInt(3);
+        buffer.putLong(50L);
+        buffer.putLong(60L);
+        buffer.putLong(70L);
+        buffer.putLong(10L);
+        buffer.putInt(20);
+
+        buffer.putInt(1);
+        buffer.putLong(80L);
+        buffer.putLong(30L);
+        buffer.putInt(40);
+        buffer.putLong(3L);
+        buffer.rewind();
+
+        final var defaultSubject = new ScheduleSecondVirtualValue();
 
         defaultSubject.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
 

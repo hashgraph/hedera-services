@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiTransferFromForFungibleToken() {
+    final HapiSpec hapiTransferFromForFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -352,7 +352,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiTransferFromForFungibleTokenToSystemAccountsFails() {
+    final HapiSpec hapiTransferFromForFungibleTokenToSystemAccountsFails() {
         final var UPPER_BOUND_SYSTEM_ADDRESS = 750L;
         final var ADDRESS_ONE = 1L;
         final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
@@ -453,7 +453,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiTransferFromForNFT() {
+    final HapiSpec hapiTransferFromForNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         return defaultHapiSpec(
@@ -553,7 +553,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
+    final HapiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
         final var repeatedIdsPrecompileXferTxn = "repeatedIdsPrecompileXfer";
         final var senderStartBalance = 200L;
         final var receiverStartBalance = 0L;
@@ -633,7 +633,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
+    final HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -706,7 +706,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonNestedCryptoTransferForNonFungibleToken() {
+    final HapiSpec nonNestedCryptoTransferForNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -776,7 +776,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
+    final HapiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -863,7 +863,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
+    final HapiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -970,7 +970,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
+    final HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1094,7 +1094,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
+    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
         return defaultHapiSpec(
                         "HapiTransferFromForNFTWithCustomFeesWithoutApproveFails",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -1241,7 +1241,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
+    final HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
@@ -1341,7 +1341,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    final HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";

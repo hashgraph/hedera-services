@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionBody() {
+    final HapiSpec invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
@@ -79,7 +79,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
                         .balance(10000L)
                         .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD) // Ensure legacy construction so
                         // removeTransactionBody() works
-                        .scrambleTxnBody(CryptoCornerCasesSuite::removeTransactionBody)
+                        .withTxnTransform(CryptoCornerCasesSuite::removeTransactionBody)
                         .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION));
     }
 
@@ -93,13 +93,13 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidNodeAccount() {
+    final HapiSpec invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
                 .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
-                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnNodeAccount)
+                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnNodeAccount)
                         .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION));
     }
 
@@ -108,13 +108,13 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionDuration() {
+    final HapiSpec invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
                 .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
-                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnDuration)
+                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnDuration)
                         .hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION));
     }
 
@@ -124,13 +124,13 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionMemoTooLong() {
+    final HapiSpec invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
                 .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
-                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnMemo)
+                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnMemo)
                         .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION));
     }
 
@@ -144,13 +144,13 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionPayerAccountNotFound() {
+    final HapiSpec invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
                 .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
-                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnPayerAccount)
+                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnPayerAccount)
                         .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION));
     }
 
@@ -160,13 +160,13 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidTransactionStartTime() {
+    final HapiSpec invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()
                 .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
-                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnStartTtime)
+                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnStartTtime)
                         .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));
     }
 

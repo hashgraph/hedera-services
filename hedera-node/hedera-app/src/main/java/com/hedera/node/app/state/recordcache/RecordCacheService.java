@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableQueueStateBase;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Set;
 
@@ -60,10 +58,10 @@ public class RecordCacheService implements Service {
 
     /** {@inheritDoc} */
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         // This is the genesis schema for this service, and simply creates the queue state that stores the
         // transaction records.
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public SemanticVersion getVersion() {
@@ -89,11 +87,26 @@ public class RecordCacheService implements Service {
                     var fromTxnId = fromRec.getTxnId();
                     var fromTransactionValidStart = fromTxnId.getValidStart();
 
-//                    fromRec.getExpiry();  //??? where should this go? is it needed?
-                    var toTxnValidStart = Timestamp.newBuilder().seconds(fromTransactionValidStart.getSeconds()).nanos(fromTransactionValidStart.getNanos());
-                    var toTxnId = TransactionID.newBuilder().accountID(fromTxnId.getPayerAccount().toPbjAccountId()).transactionValidStart(toTxnValidStart).build();
-                    var toConsensusTime = Timestamp.newBuilder().seconds(fromRec.getConsensusTime().getSeconds()).nanos(fromRec.getConsensusTime().getNanos()).build();
-                    var toRec = TransactionRecordEntry.newBuilder().transactionRecord(TransactionRecord.newBuilder().consensusTimestamp(toConsensusTime).transactionID(toTxnId).build()).nodeId(fromRec.getSubmittingMember()).payerAccountId(fromTxnId.getPayerAccount().toPbjAccountId()).build();
+                    //                    fromRec.getExpiry();  //??? where should this go? is it needed?
+                    var toTxnValidStart = Timestamp.newBuilder()
+                            .seconds(fromTransactionValidStart.getSeconds())
+                            .nanos(fromTransactionValidStart.getNanos());
+                    var toTxnId = TransactionID.newBuilder()
+                            .accountID(fromTxnId.getPayerAccount().toPbjAccountId())
+                            .transactionValidStart(toTxnValidStart)
+                            .build();
+                    var toConsensusTime = Timestamp.newBuilder()
+                            .seconds(fromRec.getConsensusTime().getSeconds())
+                            .nanos(fromRec.getConsensusTime().getNanos())
+                            .build();
+                    var toRec = TransactionRecordEntry.newBuilder()
+                            .transactionRecord(TransactionRecord.newBuilder()
+                                    .consensusTimestamp(toConsensusTime)
+                                    .transactionID(toTxnId)
+                                    .build())
+                            .nodeId(fromRec.getSubmittingMember())
+                            .payerAccountId(fromTxnId.getPayerAccount().toPbjAccountId())
+                            .build();
                     toState.add(toRec);
                 }
                 ((WritableQueueStateBase) toState).commit();

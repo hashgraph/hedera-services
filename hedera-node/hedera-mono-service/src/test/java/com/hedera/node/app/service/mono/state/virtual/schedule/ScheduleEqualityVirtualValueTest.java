@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,42 +133,41 @@ class ScheduleEqualityVirtualValueTest {
 
     @Test
     void serializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-        final var inOrder = inOrder(buffer);
+        final ByteBuffer buffer = ByteBuffer.allocate(1024);
         subject.serialize(buffer);
 
-        inOrder.verify(buffer).putInt(2);
+        final ByteBuffer inOrder = ByteBuffer.allocate(buffer.limit());
+        inOrder.putInt(2);
 
-        inOrder.verify(buffer).putInt(3);
-        inOrder.verify(buffer).put("foo".getBytes(StandardCharsets.UTF_8));
-        inOrder.verify(buffer).putLong(1L);
+        inOrder.putInt(3);
+        inOrder.put("foo".getBytes(StandardCharsets.UTF_8));
+        inOrder.putLong(1L);
 
-        inOrder.verify(buffer).putInt(5);
-        inOrder.verify(buffer).put("truck".getBytes(StandardCharsets.UTF_8));
-        inOrder.verify(buffer).putLong(2L);
-        inOrder.verify(buffer).putLong(3L);
+        inOrder.putInt(5);
+        inOrder.put("truck".getBytes(StandardCharsets.UTF_8));
+        inOrder.putLong(2L);
+        inOrder.putLong(3L);
 
-        inOrder.verifyNoMoreInteractions();
+        assertEquals(buffer, inOrder);
     }
 
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
         final var defaultSubject = new ScheduleEqualityVirtualValue();
 
-        given(buffer.getInt()).willReturn(2, 3, 5);
+        final ByteBuffer buffer = ByteBuffer.allocate(1024);
+        buffer.putInt(2);
 
-        given(buffer.get()).willReturn((byte) 1);
-        given(buffer.getLong()).willReturn(1L, 2L, 3L);
+        buffer.putInt(3);
+        buffer.put("foo".getBytes(StandardCharsets.UTF_8));
+        buffer.putLong(1L);
 
-        doAnswer(invocationOnMock -> null).when(buffer).get(ArgumentMatchers.argThat(b -> {
-            if (b.length == 3) {
-                System.arraycopy("foo".getBytes(StandardCharsets.UTF_8), 0, b, 0, 3);
-            } else {
-                System.arraycopy("truck".getBytes(StandardCharsets.UTF_8), 0, b, 0, 5);
-            }
-            return true;
-        }));
+        buffer.putInt(5);
+        buffer.put("truck".getBytes(StandardCharsets.UTF_8));
+        buffer.putLong(2L);
+        buffer.putLong(3L);
+        buffer.limit(buffer.position());
+        buffer.rewind();
 
         defaultSubject.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 

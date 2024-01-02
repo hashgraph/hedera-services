@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.util.iterator;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -43,9 +42,10 @@ public class SkippingIterator<T> implements Iterator<T> {
      * 		the array to iterate over
      * @param skipIndices
      * 		the zero based indices to skip over
+     * @throws NullPointerException in case {@code array} parameter is {@code null}
      */
     public SkippingIterator(final T[] array, final Set<Integer> skipIndices) {
-        throwArgNull(array, "array must not be null");
+        Objects.requireNonNull(array, "array must not be null");
 
         this.array = array;
         this.skipIndices = skipIndices == null ? Collections.emptySet() : Set.copyOf(skipIndices);

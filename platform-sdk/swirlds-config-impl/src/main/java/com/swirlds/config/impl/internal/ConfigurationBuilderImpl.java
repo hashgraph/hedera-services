@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.Locks;
-import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
@@ -31,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class is an implementation of the {@link ConfigurationBuilder} interface that is based on the given config
@@ -41,7 +39,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     /**
      * Internal lock to support a thread safe initialization
      */
-    private final AutoClosableLock initializationLock = Locks.createAutoLock();
+    private final ReentrantLock initializationLock = new ReentrantLock();
 
     /**
      * The configuration instance
@@ -92,7 +90,8 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     @NonNull
     @Override
     public Configuration build() {
-        try (final Locked ignored = initializationLock.lock()) {
+        initializationLock.lock();
+        try {
             if (initialized.get()) {
                 throw new IllegalStateException("Configuration already initialized");
             }
@@ -105,6 +104,8 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
             validationService.init();
             configuration.init();
             initialized.set(true);
+        } finally {
+            initializationLock.unlock();
         }
         return configuration;
     }

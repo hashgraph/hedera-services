@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec approvalFallbacksRequiredWithoutTopLevelSigAccess() {
+    final HapiSpec approvalFallbacksRequiredWithoutTopLevelSigAccess() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -331,7 +331,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
+    final HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
@@ -394,7 +394,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
+    final HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final var otherContractAsKey = "otherContractAsKey";

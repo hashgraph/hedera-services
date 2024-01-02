@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -245,13 +245,14 @@ public interface ContractsV_0_30Module {
     @Provides
     @Singleton
     @V_0_30
-    static EVM provideV_0_30EVM(@V_0_30 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+    static EVM provideV_0_30EVM(
+            @V_0_30 Set<Operation> hederaOperations, GasCalculator gasCalculator, EvmConfiguration evmConfiguration) {
         var operationRegistry = new OperationRegistry();
         // ChainID will be overridden
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
     }
 
     @Provides

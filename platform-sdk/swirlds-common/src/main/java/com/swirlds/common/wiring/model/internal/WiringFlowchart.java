@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SE
 
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
+import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -62,15 +63,18 @@ public class WiringFlowchart {
      * @param modelVertexMap a map from vertex name to vertex
      * @param substitutions  a list of edge substitutions to perform
      * @param groups         a list of groups to create
+     * @param manualLinks    a list of manual links to draw
      */
     public WiringFlowchart(
             @NonNull final Map<String, ModelVertex> modelVertexMap,
             @NonNull final List<ModelEdgeSubstitution> substitutions,
-            @NonNull final List<ModelGroup> groups) {
+            @NonNull final List<ModelGroup> groups,
+            @NonNull final List<ModelManualLink> manualLinks) {
 
         Objects.requireNonNull(modelVertexMap);
 
         vertexMap = copyVertexMap(modelVertexMap);
+        addManualLinks(manualLinks);
         substituteEdges(substitutions);
         handleGroups(groups);
     }
@@ -104,13 +108,36 @@ public class WiringFlowchart {
                 final ModelVertex destination = copy.get(edge.getDestination().getName());
 
                 final ModelEdge edgeCopy =
-                        new ModelEdge(source, destination, edge.getLabel(), edge.isInsertionIsBlocking());
+                        new ModelEdge(source, destination, edge.getLabel(), edge.isInsertionIsBlocking(), false);
 
                 source.getOutgoingEdges().add(edgeCopy);
             }
         }
 
         return copy;
+    }
+
+    /**
+     * Add manual links to the flowchart.
+     *
+     * @param manualLinks the manual links to add
+     */
+    private void addManualLinks(@NonNull final List<ModelManualLink> manualLinks) {
+        for (final ModelManualLink link : manualLinks) {
+            final ModelVertex source = vertexMap.get(link.source());
+            final ModelVertex destination = vertexMap.get(link.target());
+
+            if (source == null) {
+                throw new IllegalStateException("Source vertex " + link.source() + " does not exist.");
+            }
+
+            if (destination == null) {
+                throw new IllegalStateException("Destination vertex " + link.target() + " does not exist.");
+            }
+
+            final ModelEdge edge = new ModelEdge(source, destination, link.label(), false, true);
+            source.getOutgoingEdges().add(edge);
+        }
     }
 
     /**

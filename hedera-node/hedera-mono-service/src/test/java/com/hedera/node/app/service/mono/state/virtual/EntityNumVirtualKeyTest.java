@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,18 +75,25 @@ class EntityNumVirtualKeyTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(8);
+        final ByteBuffer verify = ByteBuffer.allocate(8);
+
+        verify.putLong(longKey);
+        verify.limit(verify.position());
+        verify.rewind();
 
         subject.serialize(buffer);
+        buffer.rewind();
 
-        verify(buffer).putLong(longKey);
+        assertEquals(buffer, verify);
     }
 
     @Test
     void deserializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-
-        given(buffer.getLong()).willReturn(longKey);
+        final ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.putLong(longKey);
+        buffer.limit(buffer.position());
+        buffer.rewind();
 
         EntityNumVirtualKey key = new EntityNumVirtualKey();
 

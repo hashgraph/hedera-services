@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.context.primitives;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
@@ -52,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -125,6 +127,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
@@ -153,6 +156,7 @@ class StateViewTest {
     private final RichInstant now =
             RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
     private final int maxTokensFprAccountInfo = 10;
+    private final boolean aretokenBalancesEnabledInQueries = true;
     private final long expiry = 2_000_000L;
     private final byte[] data = "SOMETHING".getBytes();
     private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
@@ -615,10 +619,20 @@ class StateViewTest {
         final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
+        List<TokenRelationship> rels = List.of(TokenRelationship.newBuilder()
+                .setTokenId(TokenID.newBuilder().setTokenNum(123L))
+                .setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
+                .setKycStatus(TokenKycStatus.KycNotApplicable)
+                .setBalance(321L)
+                .build());
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo))
+                .thenReturn(rels);
 
-        final var info =
-                subject.infoForContract(cid, aliasManager, rewardCalculator).get();
+        final var info = subject.infoForContract(
+                        cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator, aretokenBalancesEnabledInQueries)
+                .get();
 
         assertEquals(cid, info.getContractID());
         assertEquals(asAccount(cid), info.getAccountID());
@@ -629,6 +643,7 @@ class StateViewTest {
         assertEquals(CommonUtils.hex(create2Address.toByteArray()), info.getContractAccountID());
         assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
         assertEquals(EntityId.fromIdentityCode(4), contract.getAutoRenewAccount());
+        assertEquals(rels, info.getTokenRelationshipsList());
         assertEquals(ledgerId, info.getLedgerId());
         assertTrue(info.getDeleted());
         assertEquals(expectedTotalStorage, info.getStorage());
@@ -638,15 +653,26 @@ class StateViewTest {
 
     @Test
     void getsContractInfoWithoutCreate2Address() throws Exception {
+        final var target = EntityNum.fromContractId(cid);
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         contract.setAlias(ByteString.EMPTY);
         final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
+        List<TokenRelationship> rels = List.of(TokenRelationship.newBuilder()
+                .setTokenId(TokenID.newBuilder().setTokenNum(123L))
+                .setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
+                .setKycStatus(TokenKycStatus.KycNotApplicable)
+                .setBalance(321L)
+                .build());
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo))
+                .thenReturn(rels);
 
-        final var info =
-                subject.infoForContract(cid, aliasManager, rewardCalculator).get();
+        final var info = subject.infoForContract(
+                        cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator, aretokenBalancesEnabledInQueries)
+                .get();
 
         assertEquals(cid, info.getContractID());
         assertEquals(asAccount(cid), info.getAccountID());
@@ -656,10 +682,42 @@ class StateViewTest {
         assertEquals(contract.getBalance(), info.getBalance());
         assertEquals(EntityIdUtils.asHexedEvmAddress(asAccount(cid)), info.getContractAccountID());
         assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
+        assertEquals(rels, info.getTokenRelationshipsList());
         assertEquals(ledgerId, info.getLedgerId());
         assertTrue(info.getDeleted());
         assertEquals(expectedTotalStorage, info.getStorage());
         mockedStatic.close();
+    }
+
+    @Test
+    void getTokenRelationship() {
+        given(tokens.getOrDefault(tokenNum, REMOVED_TOKEN)).willReturn(token);
+        given(tokens.getOrDefault(EntityNum.fromTokenId(nftTokenId), REMOVED_TOKEN))
+                .willReturn(nft);
+
+        List<TokenRelationship> expectedRels = List.of(
+                TokenRelationship.newBuilder()
+                        .setTokenId(tokenId)
+                        .setSymbol("UnfrozenToken")
+                        .setBalance(123L)
+                        .setKycStatus(TokenKycStatus.Granted)
+                        .setFreezeStatus(TokenFreezeStatus.Unfrozen)
+                        .setAutomaticAssociation(true)
+                        .setDecimals(1)
+                        .build(),
+                TokenRelationship.newBuilder()
+                        .setTokenId(nftTokenId)
+                        .setSymbol("UnfrozenToken")
+                        .setBalance(2L)
+                        .setKycStatus(TokenKycStatus.Granted)
+                        .setFreezeStatus(TokenFreezeStatus.Unfrozen)
+                        .setAutomaticAssociation(false)
+                        .setDecimals(1)
+                        .build());
+
+        final var actualRels = StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo);
+
+        assertEquals(expectedRels, actualRels);
     }
 
     @Test
@@ -701,6 +759,9 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
@@ -724,7 +785,12 @@ class StateViewTest {
                         .build())
                 .build();
 
-        final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                tokenAccountId,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
 
         assertEquals(expectedResponse, actualResponse.get());
         mockedStatic.close();
@@ -745,6 +811,9 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         final var expectedResponse = StakingInfo.newBuilder()
@@ -753,7 +822,12 @@ class StateViewTest {
                 .setStakePeriodStart(Timestamp.newBuilder().setSeconds(1_234_567L))
                 .build();
 
-        final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                tokenAccountId,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
 
         assertEquals(expectedResponse, actualResponse.get().getStakingInfo());
         mockedStatic.close();
@@ -767,6 +841,9 @@ class StateViewTest {
         final var expectedAddress = CommonUtils.hex(recoverAddressFromPubKey(ecdsaKey));
 
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
@@ -790,7 +867,12 @@ class StateViewTest {
                         .build())
                 .build();
 
-        final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                tokenAccountId,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
         mockedStatic.close();
 
         assertEquals(expectedResponse, actualResponse.get());
@@ -805,6 +887,9 @@ class StateViewTest {
         final var expectedAddress = CommonUtils.hex(pretendAddress);
 
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
@@ -827,7 +912,12 @@ class StateViewTest {
                         .build())
                 .build();
 
-        final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                tokenAccountId,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
         mockedStatic.close();
 
         assertEquals(expectedResponse, actualResponse.get());
@@ -872,6 +962,9 @@ class StateViewTest {
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
@@ -895,7 +988,12 @@ class StateViewTest {
                         .build())
                 .build();
 
-        final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                accountWithAlias,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
         mockedStatic.close();
         assertEquals(expectedResponse, actualResponse.get());
     }
@@ -906,6 +1004,9 @@ class StateViewTest {
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         tokenAccount.setAlias(ByteStringUtils.wrapUnsafely(pretendAddress));
@@ -929,7 +1030,12 @@ class StateViewTest {
                         .build())
                 .build();
 
-        final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                accountWithAlias,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
         mockedStatic.close();
         assertEquals(expectedResponse, actualResponse.get());
     }
@@ -945,7 +1051,12 @@ class StateViewTest {
     void infoForMissingAccount() {
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
-        final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                tokenAccountId,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
 
         assertEquals(Optional.empty(), actualResponse);
     }
@@ -957,7 +1068,12 @@ class StateViewTest {
         given(aliasManager.lookupIdBy(any())).willReturn(mockedEntityNum);
         given(contracts.get(mockedEntityNum)).willReturn(null);
 
-        final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, rewardCalculator);
+        final var actualResponse = subject.infoForAccount(
+                accountWithAlias,
+                aliasManager,
+                maxTokensFprAccountInfo,
+                rewardCalculator,
+                aretokenBalancesEnabledInQueries);
         assertEquals(Optional.empty(), actualResponse);
     }
 
@@ -1024,7 +1140,9 @@ class StateViewTest {
     void returnsEmptyOptionalIfContractMissing() {
         given(contracts.get(any())).willReturn(null);
 
-        assertTrue(subject.infoForContract(cid, aliasManager, rewardCalculator).isEmpty());
+        assertTrue(subject.infoForContract(
+                        cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator, aretokenBalancesEnabledInQueries)
+                .isEmpty());
     }
 
     @Test
@@ -1032,10 +1150,12 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic.when(() -> StateView.tokenRels(any(), any(), anyInt())).thenReturn(Collections.emptyList());
         contract.setAccountKey(null);
 
-        final var info =
-                subject.infoForContract(cid, aliasManager, rewardCalculator).get();
+        final var info = subject.infoForContract(
+                        cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator, aretokenBalancesEnabledInQueries)
+                .get();
 
         assertFalse(info.hasAdminKey());
         mockedStatic.close();
@@ -1046,10 +1166,12 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic.when(() -> StateView.tokenRels(any(), any(), anyInt())).thenReturn(Collections.emptyList());
         contract.setAutoRenewAccount(null);
 
-        final var info =
-                subject.infoForContract(cid, aliasManager, rewardCalculator).get();
+        final var info = subject.infoForContract(
+                        cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator, aretokenBalancesEnabledInQueries)
+                .get();
 
         assertFalse(info.hasAutoRenewAccountId());
         mockedStatic.close();

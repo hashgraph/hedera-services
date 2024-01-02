@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,7 +59,7 @@ public class TipsetTracker {
 
     private final AddressBook addressBook;
 
-    private long minimumGenerationNonAncient;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     private final RateLimitedLogger ancientEventLogger;
 
@@ -80,22 +81,23 @@ public class TipsetTracker {
     }
 
     /**
-     * Set the minimum generation that is not considered ancient.
+     * Set the non-ancient event window.
      *
-     * @param minimumGenerationNonAncient the minimum non-ancient generation, all lower generations are ancient
+     * @param nonAncientEventWindow the minimum non-ancient generation, all lower generations are ancient
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        tipsets.shiftWindow(minimumGenerationNonAncient);
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+        tipsets.shiftWindow(nonAncientEventWindow.getLowerBound());
     }
 
     /**
-     * Get the minimum generation that is not considered ancient (from this class's perspective).
+     * Get the current non-ancient event window (from this class's perspective).
      *
-     * @return the minimum non-ancient generation, all lower generations are ancient
+     * @return the non-ancient event window
      */
-    public long getMinimumGenerationNonAncient() {
-        return minimumGenerationNonAncient;
+    @NonNull
+    public NonAncientEventWindow getNonAncientEventWindow() {
+        return nonAncientEventWindow;
     }
 
     /**
@@ -109,17 +111,16 @@ public class TipsetTracker {
     public Tipset addEvent(
             @NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
 
-        if (eventDescriptor.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(eventDescriptor)) {
             // Note: although we don't immediately return from this method, the tipsets.put()
             // will not update the data structure for an ancient event. We should never
             // enter this bock of code. This log is here as a canary to alert us if we somehow do.
             ancientEventLogger.error(
                     EXCEPTION.getMarker(),
-                    "Rejecting ancient event from {} with generation {}. "
-                            + "Current minimum generation non-ancient is {}",
+                    "Rejecting ancient event from {} with generation {}. Current non-ancient event window is {}",
                     eventDescriptor.getCreator(),
                     eventDescriptor.getGeneration(),
-                    minimumGenerationNonAncient);
+                    nonAncientEventWindow);
         }
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());

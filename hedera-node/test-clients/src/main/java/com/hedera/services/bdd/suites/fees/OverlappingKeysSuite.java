@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class OverlappingKeysSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec feeCalcUsesNumPayerKeys() {
+    final HapiSpec feeCalcUsesNumPayerKeys() {
         SigControl SHAPE = threshSigs(2, threshSigs(2, ANY, ANY, ANY), threshSigs(2, ANY, ANY, ANY));
         KeyLabel ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));
         SigControl SIGN_ONCE = threshSigs(2, threshSigs(3, ON, OFF, OFF), threshSigs(3, OFF, OFF, OFF));

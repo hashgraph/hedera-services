@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -236,10 +237,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         if (!relationships.isEmpty()
                 || alreadyUsedAutomaticAssociations.isPresent()
                 || !absentRelationships.isEmpty()
-                || expectations.isPresent()
+                || (expectations.isPresent() && expectations.get().hasTokenAssociationExpectation())
                 || registryEntry.isPresent()) {
             final var detailsLookup = QueryVerbs.getAccountDetails(
-                    "0.0." + actualInfo.getAccountID().getAccountNum());
+                            "0.0." + actualInfo.getAccountID().getAccountNum())
+                    .payingWith(GENESIS);
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             var actualTokenRels =

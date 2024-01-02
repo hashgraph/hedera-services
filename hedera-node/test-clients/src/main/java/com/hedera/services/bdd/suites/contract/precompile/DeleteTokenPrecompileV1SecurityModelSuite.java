@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
         return List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases());
     }
 
-    private HapiSpec deleteFungibleTokenWithNegativeCases() {
+    final HapiSpec deleteFungibleTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
 
@@ -146,7 +146,7 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
                                                 htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
-    private HapiSpec deleteNftTokenWithNegativeCases() {
+    final HapiSpec deleteNftTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";
 

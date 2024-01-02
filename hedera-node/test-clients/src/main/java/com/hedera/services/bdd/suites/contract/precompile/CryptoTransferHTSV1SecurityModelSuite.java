@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
-    private HapiSpec nonNestedCryptoTransferForFungibleToken() {
+    final HapiSpec nonNestedCryptoTransferForFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return propertyPreservingHapiSpec("nonNestedCryptoTransferForFungibleToken")
@@ -216,7 +216,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(FUNGIBLE_TOKEN, RECEIVER, 50))));
     }
 
-    private HapiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
+    final HapiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
         final var revertedFungibleTransferTxn = "revertedFungibleTransferTxn";
         final var successfulFungibleTransferTxn = "successfulFungibleTransferTxn";
         final var revertedNftTransferTxn = "revertedNftTransferTxn";
@@ -390,7 +390,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, CONTRACT, RECEIVER, 2L))));
     }
 
-    private HapiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
+    final HapiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
         final var SPENDER_SIGNATURE = "spenderSignature";
         return propertyPreservingHapiSpec("cryptoTransferNFTsWithCustomFeesMixedScenario")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -532,7 +532,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
+    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
         return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithApproveForAll")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -692,7 +692,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.Address;
@@ -103,7 +104,12 @@ class UptimeTests {
     private static ConsensusRound mockRound(@NonNull final List<EventImpl> events) {
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
         final ConsensusRound round = new ConsensusRound(
-                mock(AddressBook.class), events, mock(EventImpl.class), mock(GraphGenerations.class), snapshot);
+                mock(AddressBook.class),
+                events,
+                mock(EventImpl.class),
+                mock(GraphGenerations.class),
+                mock(NonAncientEventWindow.class),
+                snapshot);
         final Instant consensusTimestamp = events.get(events.size() - 1).getConsensusTimestamp();
         when(snapshot.consensusTimestamp()).thenReturn(consensusTimestamp);
         return round;

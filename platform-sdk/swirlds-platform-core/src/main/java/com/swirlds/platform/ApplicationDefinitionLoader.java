@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.JarAppConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;

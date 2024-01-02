@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,15 @@ class CallOutcomeTest {
     @Test
     void recognizesCreatedIdWhenEvmAddressIsSet() {
         given(updater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
-        final var outcome = new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, null, NETWORK_GAS_PRICE);
+        final var outcome =
+                new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, null, NETWORK_GAS_PRICE, null, null);
         assertEquals(CALLED_CONTRACT_ID, outcome.recipientIdIfCreated());
     }
 
     @Test
     void recognizesNoCreatedIdWhenEvmAddressNotSet() {
-        final var outcome = new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, null, NETWORK_GAS_PRICE);
+        final var outcome =
+                new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, null, NETWORK_GAS_PRICE, null, null);
         assertNull(outcome.recipientIdIfCreated());
     }
 
@@ -57,7 +59,9 @@ class CallOutcomeTest {
                 SUCCESS_RESULT.asProtoResultOf(updater),
                 INVALID_CONTRACT_ID,
                 CALLED_CONTRACT_ID,
-                SUCCESS_RESULT.gasPrice());
+                SUCCESS_RESULT.gasPrice(),
+                null,
+                null);
         assertEquals(CALLED_CONTRACT_ID, outcome.recipientId());
     }
 }

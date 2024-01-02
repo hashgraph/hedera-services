@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.ConsensusConfig_;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.ConsensusConfig_;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;

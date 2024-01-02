@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package com.swirlds.common.context;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.PlatformMetricsProvider;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -32,40 +30,63 @@ import java.util.Objects;
 public final class DefaultPlatformContext implements PlatformContext {
 
     private final Configuration configuration;
-
     private final Metrics metrics;
-
     private final Cryptography cryptography;
+    private final Time time;
 
+    /**
+     * Constructor.
+     *
+     * @param configuration the configuration
+     * @param metrics       the metrics
+     * @param cryptography  the cryptography
+     * @param time          the time
+     */
     public DefaultPlatformContext(
-            final NodeId nodeId,
-            @NonNull final PlatformMetricsProvider metricsProvider,
-            @NonNull final Configuration configuration) {
-        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        this.metrics = Objects.requireNonNull(metricsProvider, "metricsProvider must not be null")
-                .createPlatformMetrics(nodeId);
-        this.cryptography = CryptographyHolder.get();
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Cryptography cryptography,
+            @NonNull final Time time) {
+
+        this.configuration = Objects.requireNonNull(configuration);
+        this.metrics = Objects.requireNonNull(metrics);
+        this.cryptography = Objects.requireNonNull(cryptography);
+        this.time = Objects.requireNonNull(time);
     }
 
-    public DefaultPlatformContext(
-            final Configuration configuration, final Metrics metrics, final Cryptography cryptography) {
-        this.configuration = Objects.requireNonNull(configuration, "configuration");
-        this.metrics = Objects.requireNonNull(metrics, "metrics");
-        this.cryptography = Objects.requireNonNull(cryptography, "cryptography");
-    }
-
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
     @Override
     public Configuration getConfiguration() {
         return configuration;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
     @Override
     public Cryptography getCryptography() {
         return cryptography;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
     @Override
     public Metrics getMetrics() {
         return metrics;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Time getTime() {
+        return time;
     }
 }

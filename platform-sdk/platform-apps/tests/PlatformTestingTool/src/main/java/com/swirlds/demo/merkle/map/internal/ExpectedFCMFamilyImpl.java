@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.demo.merkle.map.internal;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.NFT;
@@ -323,7 +324,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
                         entityType,
                         type.name());
             } catch (InterruptedException e) {
-                logger.error(ERROR, "", e);
+                logger.error(EXCEPTION.getMarker(), "", e);
             }
         }
     }
@@ -560,7 +561,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
                 updateDeleteIndex(entityType, i + 1);
                 if (key.getShardId() != nodeId) {
                     logger.error(
-                            ERROR,
+                            EXCEPTION.getMarker(),
                             "getMapKeyToDelete :: shardId {} doesn't match nodeID {}: , entityType: {}",
                             key.getShardId(),
                             nodeId,
@@ -723,7 +724,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
             return false;
         } else {
             logger.error(
-                    ERROR,
+                    EXCEPTION.getMarker(),
                     "Error PerformOnNonExistingEntities, " + "MapKey: {}, TransactionType: {}",
                     mapKey,
                     transactionType);
@@ -760,12 +761,6 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
                         transactionType,
                         expectedValue.getEntityType());
             } else {
-                logger.error(
-                        PERFORM_ON_CREATE_DELETE,
-                        "ERROR CreateOnExistingEntities, " + "MapKey: {}, TransactionType: {},  EntityType: {}",
-                        mapKey,
-                        transactionType,
-                        expectedValue.getEntityType());
                 expectedValue.setErrored(true);
             }
             return true;
@@ -797,7 +792,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
 
         if (trans == null) {
             logger.error(
-                    ERROR,
+                    EXCEPTION.getMarker(),
                     "Error while parsing transaction, so could not insert entity with MapKey {} " + "to ExpectedMap",
                     key);
             return false;
@@ -815,7 +810,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
             // This should never happen because the key provided to modifySubmitStatus
             // is extracted from FCMTransaction
             logger.error(
-                    ERROR,
+                    EXCEPTION.getMarker(),
                     "MapKeys extracted from FCMTransaction {} and MapKey provided to "
                             + "modifySubmitStatus {} doesn't match ",
                     mapKeys,
@@ -827,7 +822,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
         if (transactionType != Create) {
             if (!payloadConfig.isPerformOnNonExistingEntities()) {
                 logger.error(
-                        ERROR,
+                        EXCEPTION.getMarker(),
                         "performOnNonExistingEntities is not allowed and MapKey {} doesn't exist"
                                 + " in ExpectedMap while modifyingSubmitStatus for transactionType {} ",
                         key,
@@ -897,7 +892,11 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
                         .getTestTransactionRawBytes()
                         .toByteArray();
             } catch (InvalidProtocolBufferException e) {
-                logger.error(ERROR, "Could not parsing TestTransactionWrapper with payload {}", hex(payload), e);
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Could not parsing TestTransactionWrapper with payload {}",
+                        hex(payload),
+                        e);
                 return null;
             }
         } else {
@@ -907,7 +906,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
         try {
             trans = TestTransaction.parseFrom(payloadBytes);
         } catch (Exception e) {
-            logger.error(ERROR, "Could not parsing TestTransaction with payload {}", hex(payload), e);
+            logger.error(EXCEPTION.getMarker(), "Could not parsing TestTransaction with payload {}", hex(payload), e);
             return null;
         }
         return trans;
@@ -927,7 +926,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
         // log an error, and set isErrored to be true
         if (expectedMap.containsKey(mapKey) && !checkEntityType(mapKey, entityType)) {
             logger.error(
-                    ERROR,
+                    EXCEPTION.getMarker(),
                     "Entity type mismatch, " + "MapKey: {}, TransactionType: {}, originId: {}",
                     mapKey,
                     transactionType,
@@ -1120,12 +1119,12 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
      */
     public void rebuildExpectedMap(final FCMFamily fcmFamily, final boolean isRestart, final long timestamp) {
         if (fcmFamily == null) {
-            logger.error(ERROR, "fail to rebuild ExpectedMap, fcmFamily is null");
+            logger.error(EXCEPTION.getMarker(), "fail to rebuild ExpectedMap, fcmFamily is null");
             return;
         }
         // expectedMap should not be null
         if (this.expectedMap == null) {
-            logger.error(ERROR, "fail to rebuild ExpectedMap, ExpectedMap is null");
+            logger.error(EXCEPTION.getMarker(), "fail to rebuild ExpectedMap, ExpectedMap is null");
             return;
         }
         // Save old expectedMap to check during killNetworkReconnect if the transactions for delete or
@@ -1174,7 +1173,8 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
             final Map<MapKey, ExpectedValue> expectedMapOld) {
         final Map<MapKey, ? extends MerkleNode> actualMap = fcmFamily.getActualMap(entityType);
         if (actualMap == null) {
-            logger.error(ERROR, "fail to rebuild ExpectedMap for {} Entity, actualMap is null", entityType);
+            logger.error(
+                    EXCEPTION.getMarker(), "fail to rebuild ExpectedMap for {} Entity, actualMap is null", entityType);
             return;
         }
 

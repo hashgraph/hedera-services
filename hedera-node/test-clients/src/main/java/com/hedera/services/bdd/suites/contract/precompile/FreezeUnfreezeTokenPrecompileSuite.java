@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noTokenIdReverts() {
+    final HapiSpec noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
@@ -141,7 +141,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec isFrozenHappyPathWithAliasLocalCall() {
+    final HapiSpec isFrozenHappyPathWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";

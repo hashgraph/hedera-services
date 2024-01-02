@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.queries.AnswerService;
@@ -53,13 +54,18 @@ public class GetContractInfoAnswer implements AnswerService {
 
     private final AliasManager aliasManager;
     private final OptionValidator validator;
+    private final GlobalDynamicProperties dynamicProperties;
     private final RewardCalculator rewardCalculator;
 
     @Inject
     public GetContractInfoAnswer(
-            final AliasManager aliasManager, final OptionValidator validator, final RewardCalculator rewardCalculator) {
+            final AliasManager aliasManager,
+            final OptionValidator validator,
+            final GlobalDynamicProperties dynamicProperties,
+            final RewardCalculator rewardCalculator) {
         this.aliasManager = aliasManager;
         this.validator = validator;
+        this.dynamicProperties = dynamicProperties;
         this.rewardCalculator = rewardCalculator;
     }
 
@@ -153,7 +159,12 @@ public class GetContractInfoAnswer implements AnswerService {
                 response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
             }
         } else {
-            final var info = view.infoForContract(op.getContractID(), aliasManager, rewardCalculator);
+            final var info = view.infoForContract(
+                    op.getContractID(),
+                    aliasManager,
+                    dynamicProperties.maxTokensRelsPerInfoQuery(),
+                    rewardCalculator,
+                    dynamicProperties.areTokenBalancesEnabledInQueries());
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
             } else {

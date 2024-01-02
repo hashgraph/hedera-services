@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,9 @@ import java.time.Duration;
  *                                                        w.r.t. the state snapshot.
  * @param compactLastFileOnStartup                        if true, then compact the last file's generational span on
  *                                                        startup.
+ * @param forceIgnorePcesSignatures                       if true, then ignore the signatures on preconsensus events.
+ *                                                        Note: This is a TEST ONLY setting. It must never be enabled
+ *                                                        in production.
  */
 @ConfigData("event.preconsensus")
 public record PreconsensusEventStreamConfig(
@@ -115,4 +118,5 @@ public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "1024") int replayQueueSize,
         @ConfigProperty(defaultValue = "8") int replayHashPoolSize,
         @ConfigProperty(defaultValue = "true") boolean copyRecentStreamToStateSnapshots,
-        @ConfigProperty(defaultValue = "true") boolean compactLastFileOnStartup) {}
+        @ConfigProperty(defaultValue = "true") boolean compactLastFileOnStartup,
+        @ConfigProperty(defaultValue = "false") boolean forceIgnorePcesSignatures) {}

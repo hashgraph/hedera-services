@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
@@ -94,7 +93,7 @@ public class ReconnectLearnerThrottle {
      */
     public void handleFailedReconnect(final Connection conn, final Exception e) {
         if (Utilities.isOrCausedBySocketException(e)) {
-            logger.error(SOCKET_EXCEPTIONS.getMarker(), () -> new ReconnectFailurePayload(
+            logger.error(EXCEPTION.getMarker(), () -> new ReconnectFailurePayload(
                             "Got socket exception while receiving a signed state! " + NetworkUtils.formatException(e),
                             ReconnectFailurePayload.CauseOfFailure.SOCKET)
                     .toString());

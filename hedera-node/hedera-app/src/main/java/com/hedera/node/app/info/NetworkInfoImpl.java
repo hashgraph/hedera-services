@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -96,18 +95,18 @@ public class NetworkInfoImpl implements NetworkInfo {
         final var platformAddressBook = platform.getAddressBook();
         if (platformAddressBook == null) return null;
 
-        //todo: hack! Always return the address of the first node (node 0)
-//        try {
-//            final var address = platformAddressBook.getAddress(nodeId);
-//            return NodeInfoImpl.fromAddress(address);
-//        } catch (NoSuchElementException e) {
-//            // The node ID is not in the address book
-//            logger.warn("Unable to find node with id {} in the platform address book", nodeId, e);
-//            return null;
-//        } catch (IllegalArgumentException e) {
-//            logger.warn("Unable to parse memo of node with id {} in the platform address book", nodeId, e);
-//            return null;
-//        }
+        // todo: hack! Always return the address of the first node (node 0)
+        //        try {
+        //            final var address = platformAddressBook.getAddress(nodeId);
+        //            return NodeInfoImpl.fromAddress(address);
+        //        } catch (NoSuchElementException e) {
+        //            // The node ID is not in the address book
+        //            logger.warn("Unable to find node with id {} in the platform address book", nodeId, e);
+        //            return null;
+        //        } catch (IllegalArgumentException e) {
+        //            logger.warn("Unable to parse memo of node with id {} in the platform address book", nodeId, e);
+        //            return null;
+        //        }
         final var address = platformAddressBook.getAddress(new NodeId(0));
         return NodeInfoImpl.fromAddress(address);
     }

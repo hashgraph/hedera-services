@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,5 +32,4 @@ public record FilesConfig(
         @ConfigProperty(defaultValue = "150-159") LongPair softwareUpdateRange,
         @ConfigProperty(defaultValue = "123") @NetworkProperty long throttleDefinitions,
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
-        @ConfigProperty(defaultValue = "1024") @NetworkProperty int maxSizeKb,
-        @ConfigProperty(defaultValue = "150") @NetworkProperty long upgradeFileNumber) {}
+        @ConfigProperty(defaultValue = "1024") @NetworkProperty int maxSizeKb) {}

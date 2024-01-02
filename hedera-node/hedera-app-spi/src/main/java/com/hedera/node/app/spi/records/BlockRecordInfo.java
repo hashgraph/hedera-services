@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.spi.records;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
@@ -57,12 +59,30 @@ public interface BlockRecordInfo {
     long lastBlockNo();
 
     /**
+     * Get the number of the current block.
+     *
+     * @return the number of the current block
+     */
+    default long blockNo() {
+        return lastBlockNo() + 1;
+    }
+
+    /**
      * Get the consensus time of the first transaction of the last block, this is the last completed immutable block.
      *
      * @return the consensus time of the first transaction of the last block, null if there was no previous block
      */
     @Nullable
     Instant firstConsTimeOfLastBlock();
+
+    /**
+     * The current block timestamp. Its seconds is the value returned by {@code block.timestamp} for a contract
+     * executing * in this block).
+     *
+     * @return the current block timestamp
+     */
+    @NonNull
+    Timestamp currentBlockTimestamp();
 
     /**
      * Gets the hash of the last block

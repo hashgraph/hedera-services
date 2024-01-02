@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synt
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -56,6 +57,7 @@ class SynthTxnUtilsTest {
     @Test
     void convertsParentWithStakedNodeAndDeclinedRewardAndAutoRenewIdAndNoAdminKeyAsExpected() {
         final var parent = Account.newBuilder()
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
@@ -77,6 +79,7 @@ class SynthTxnUtilsTest {
     @Test
     void convertsParentWithStakedAccountAndNoAutoRenewIdAndAdminKeyAsExpected() {
         final var parent = Account.newBuilder()
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .key(AN_ED25519_KEY)
                 .stakedAccountId(A_NEW_ACCOUNT_ID)
                 .declineReward(true)

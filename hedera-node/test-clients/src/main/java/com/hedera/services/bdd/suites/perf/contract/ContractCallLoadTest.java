@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class ContractCallLoadTest extends LoadTest {
         return List.of(runContractCalls());
     }
 
-    private HapiSpec runContractCalls() {
+    final HapiSpec runContractCalls() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";

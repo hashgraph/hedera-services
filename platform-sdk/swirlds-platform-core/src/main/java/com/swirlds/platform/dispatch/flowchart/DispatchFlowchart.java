@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.dispatch.flowchart;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -135,6 +134,7 @@ public class DispatchFlowchart {
      * 		an optional comment on the linkage
      * @param map
      * 		a map containing linkages for observers or dispatchers
+     * @throws NullPointerException in case {@code owner} parameter is {@code null}
      */
     private void registerTriggerLinkage(
             final Object owner,
@@ -142,7 +142,7 @@ public class DispatchFlowchart {
             final String comment,
             final Map<Class<?>, Set<CommentedTrigger>> map) {
 
-        throwArgNull(owner, "owner");
+        Objects.requireNonNull(owner, "owner must not be null");
 
         final Class<?> ownerClass;
         if (owner instanceof final Class<?> cls) {

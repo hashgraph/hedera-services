@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -81,6 +82,7 @@ class EventIntakeTest {
                 dispatcher,
                 mock(PhaseTimer.class),
                 shadowGraph,
+                null,
                 e -> {},
                 mock(IntakeEventCounter.class));
 
@@ -88,8 +90,11 @@ class EventIntakeTest {
         final EventImpl added = mock(EventImpl.class);
         when(added.getBaseEvent()).thenReturn(gossipEvent);
         final EventImpl consEvent1 = mock(EventImpl.class);
+        when(consEvent1.getBaseEvent()).thenReturn(mock(GossipEvent.class));
         final EventImpl consEvent2 = mock(EventImpl.class);
+        when(consEvent2.getBaseEvent()).thenReturn(mock(GossipEvent.class));
         final EventImpl stale = mock(EventImpl.class);
+        when(stale.getBaseEvent()).thenReturn(mock(GossipEvent.class));
 
         final Queue<EventImpl> staleQueue = new LinkedList<>(List.of(stale));
         when(shadowGraph.findByGeneration(anyLong(), anyLong(), any())).thenReturn(staleQueue);
@@ -106,6 +111,7 @@ class EventIntakeTest {
                     List.of(consEvent1, consEvent2),
                     added,
                     generations,
+                    mock(NonAncientEventWindow.class),
                     mock(ConsensusSnapshot.class)));
         });
 

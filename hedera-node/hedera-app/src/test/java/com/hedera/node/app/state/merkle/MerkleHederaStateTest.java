@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,12 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +56,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
     private final AtomicBoolean onMigrateCalled = new AtomicBoolean(false);
     private final AtomicBoolean onPreHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
+    private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
 
     /**
      * Start with an empty Merkle Tree, but with the "fruit" map and metadata created and ready to
@@ -65,7 +68,10 @@ class MerkleHederaStateTest extends MerkleTestBase {
         hederaMerkle = new MerkleHederaState(
                 (tree, state) -> onPreHandleCalled.set(true),
                 (evt, meta, state) -> onHandleCalled.set(true),
-                (state, platform, dual, trigger, version) -> onMigrateCalled.set(true));
+                (state, platform, platformState, trigger, version) -> onMigrateCalled.set(true),
+                (state, configAddressBook, context) -> {
+                    onUpdateWeightCalled.set(true);
+                });
     }
 
     /** Looks for a merkle node with the given label */
@@ -688,16 +694,17 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
-            final var dualState = Mockito.mock(SwirldDualState.class);
+            final var platformState = Mockito.mock(PlatformState.class);
             final var state = new MerkleHederaState(
                     (tree, st) -> onPreHandleCalled.set(true),
                     (evt, meta, provider) -> {
                         assertThat(round).isSameAs(evt);
                         onHandleCalled.set(true);
                     },
-                    (s, p, d, t, v) -> {});
+                    (s, p, d, t, v) -> {},
+                    (s, p, d) -> {});
 
-            state.handleConsensusRound(round, dualState);
+            state.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();
         }
     }
@@ -712,11 +719,11 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
-            final var dualState = Mockito.mock(SwirldDualState.class);
-            assertThrows(MutabilityException.class, () -> hederaMerkle.handleConsensusRound(round, dualState));
+            final var platformState = Mockito.mock(PlatformState.class);
+            assertThrows(MutabilityException.class, () -> hederaMerkle.handleConsensusRound(round, platformState));
 
             // But the copy does
-            copy.handleConsensusRound(round, dualState);
+            copy.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();
         }
 
@@ -752,6 +759,18 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.copy();
             assertThatThrownBy(() -> hederaMerkle.createWritableStates(FRUIT_STATE_KEY))
                     .isInstanceOf(MutabilityException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Handling updateWeight Tests")
+    final class UpdateWeightTest {
+        @Test
+        @DisplayName("The onUpdateWeight handler is called when a updateWeight is called")
+        void onUpdateWeightCalled() {
+            assertThat(onUpdateWeightCalled).isFalse();
+            hederaMerkle.updateWeight(Mockito.mock(AddressBook.class), Mockito.mock(PlatformContext.class));
+            assertThat(onUpdateWeightCalled).isTrue();
         }
     }
 }

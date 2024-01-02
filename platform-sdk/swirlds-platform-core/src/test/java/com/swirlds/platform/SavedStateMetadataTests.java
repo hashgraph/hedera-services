@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SavedStateMetadata;
@@ -224,15 +223,13 @@ class SavedStateMetadataTests {
         final State state = mock(State.class);
         when(state.getHash()).thenReturn(randomHash(random));
         final PlatformState platformState = mock(PlatformState.class);
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformData.getHashEventsCons()).thenReturn(randomHash(random));
-        when(platformData.getSnapshot()).thenReturn(mock(ConsensusSnapshot.class));
+        when(platformState.getRunningEventHash()).thenReturn(randomHash(random));
+        when(platformState.getSnapshot()).thenReturn(mock(ConsensusSnapshot.class));
         final AddressBook addressBook = mock(AddressBook.class);
 
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getAddressBook()).thenReturn(addressBook);
-        when(platformState.getPlatformData()).thenReturn(platformData);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())
                 .thenReturn(new ArrayList<>(List.of(new NodeId(3L), new NodeId(1L), new NodeId(2L))));

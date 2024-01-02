@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -47,11 +48,14 @@ public class Issue1744Suite extends HapiSuite {
         return List.of(keepsRecordOfPayerIBE());
     }
 
-    //    @HapiTest This will pass after NetworkGetTransactionRecordHandler fee is implemented
+    @HapiTest
     public HapiSpec keepsRecordOfPayerIBE() {
         return defaultHapiSpec("KeepsRecordOfPayerIBE")
                 .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).via("referenceTxn"),
+                        cryptoCreate(CIVILIAN_PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith(CIVILIAN_PAYER)
+                                .via("referenceTxn"),
                         UtilVerbs.withOpContext((spec, ctxLog) -> {
                             HapiGetTxnRecord subOp = getTxnRecord("referenceTxn");
                             allRunFor(spec, subOp);

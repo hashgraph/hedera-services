@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class FileTestBase {
     protected static final String FILES = "FILES";
     protected static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
-    protected static final String UPGRADE_DATA_KEY = "UPGRADE_DATA";
+    protected static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
     protected final String payerIdLiteral = "0.0.3";
@@ -122,10 +122,10 @@ public class FileTestBase {
     @Mock
     protected WritableStates writableStates;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     protected FilteredReadableStates filteredReadableStates;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     protected FilteredWritableStates filteredWritableStates;
 
     @Mock(strictness = LENIENT)
@@ -165,8 +165,10 @@ public class FileTestBase {
         writableUpgradeFileStates = emptyUpgradeFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
-        given(filteredWritableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
+        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY.formatted(fileUpgradeFileId)))
+                .willReturn(readableUpgradeStates);
+        given(filteredWritableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY.formatted(fileUpgradeFileId)))
+                .willReturn(writableUpgradeStates);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
@@ -187,8 +189,10 @@ public class FileTestBase {
         writableUpgradeFileStates = writableUpgradeFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
-        given(filteredWritableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
+        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY.formatted(fileUpgradeFileId)))
+                .willReturn(readableUpgradeStates);
+        given(filteredWritableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY.formatted(fileUpgradeFileId)))
+                .willReturn(writableUpgradeStates);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);

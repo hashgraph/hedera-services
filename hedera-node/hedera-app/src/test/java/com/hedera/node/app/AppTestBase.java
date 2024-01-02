@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -360,7 +360,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var initialState = new FakeHederaState();
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
-                svc.registerSchemas(reg);
+                svc.registerSchemas(reg, hederaSoftwareVersion.getServicesVersion());
                 reg.migrate(svc.getServiceName(), initialState, networkInfo);
             });
             workingStateAccessor.setHederaState(initialState);
@@ -443,11 +443,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
         @Override
         public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull String s) {
-            return null;
-        }
-
-        @Override
-        public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull String s) {
             return null;
         }
 

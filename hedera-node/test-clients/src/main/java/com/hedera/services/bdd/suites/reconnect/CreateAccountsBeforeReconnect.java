@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class CreateAccountsBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    private HapiSpec runCreateAccounts() {
+    final HapiSpec runCreateAccounts() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 ACCOUNT_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

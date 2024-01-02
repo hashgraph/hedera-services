@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TestFileUtils;
-import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +76,7 @@ class UpgradeActionsTest {
     private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private DualStateImpl dualState;
+    private PlatformState platformState;
 
     @Mock
     private UpgradeActions.UnzipAction unzipAction;
@@ -101,7 +101,7 @@ class UpgradeActionsTest {
         noiseSubFileLoc = TestFileUtils.toPath(markerFilesLoc, "edargpu");
 
         subject = new UpgradeActions(
-                unzipAction, dynamicProperties, () -> dualState, () -> specialFiles, () -> networkCtx);
+                unzipAction, dynamicProperties, () -> platformState, () -> specialFiles, () -> networkCtx);
     }
 
     @AfterEach
@@ -141,8 +141,8 @@ class UpgradeActionsTest {
         given(networkCtx.getPreparedUpdateFileNum()).willReturn(150L);
         given(specialFiles.get(IdUtils.asFile("0.0.150"))).willReturn(PRETEND_ARCHIVE);
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
-        given(dualState.getFreezeTime()).willReturn(then);
-        given(dualState.getLastFrozenTime()).willReturn(then);
+        given(platformState.getFreezeTime()).willReturn(then);
+        given(platformState.getLastFrozenTime()).willReturn(then);
         assertTrue(new File(markerFilesLoc).mkdirs());
 
         subject.catchUpOnMissedSideEffects();
@@ -163,14 +163,14 @@ class UpgradeActionsTest {
                 "Should not create " + EXEC_IMMEDIATE_MARKER + " if no prepared upgrade in state");
         assertFalse(
                 Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_SCHEDULED_MARKER + " if dual freeze time is null");
+                "Should not create " + FREEZE_SCHEDULED_MARKER + " if platform freeze time is null");
     }
 
     @Test
-    void doesntCatchUpOnFreezeScheduleIfInDualAndNoUpgradeIsPrepared() {
+    void doesntCatchUpOnFreezeScheduleIfInPlatformStateAndNoUpgradeIsPrepared() {
         rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
-        given(dualState.getFreezeTime()).willReturn(then);
+        given(platformState.getFreezeTime()).willReturn(then);
 
         subject.catchUpOnMissedSideEffects();
 
@@ -180,10 +180,10 @@ class UpgradeActionsTest {
     }
 
     @Test
-    void catchesUpOnFreezeScheduleIfInDualAndUpgradeIsPrepared() throws IOException {
+    void catchesUpOnFreezeScheduleIfInPlatformStateAndUpgradeIsPrepared() throws IOException {
         rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
-        given(dualState.getFreezeTime()).willReturn(then);
+        given(platformState.getFreezeTime()).willReturn(then);
         given(networkCtx.hasPreparedUpgrade()).willReturn(true);
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
@@ -197,17 +197,17 @@ class UpgradeActionsTest {
         rmIfPresent(FREEZE_ABORTED_MARKER);
         rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
-        given(dualState.getFreezeTime()).willReturn(then);
-        given(dualState.getLastFrozenTime()).willReturn(then);
+        given(platformState.getFreezeTime()).willReturn(then);
+        given(platformState.getLastFrozenTime()).willReturn(then);
 
         subject.catchUpOnMissedSideEffects();
 
         assertFalse(
                 Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_ABORTED_MARKER + " if dual last frozen time is freeze time");
+                "Should not create " + FREEZE_ABORTED_MARKER + " if platform last frozen time is freeze time");
         assertFalse(
                 Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_SCHEDULED_MARKER + " if dual last frozen time is freeze time");
+                "Should not create " + FREEZE_SCHEDULED_MARKER + " if platform last frozen time is freeze time");
     }
 
     @Test
@@ -302,7 +302,7 @@ class UpgradeActionsTest {
 
         subject.scheduleFreezeUpgradeAt(then);
 
-        verify(dualState).setFreezeTime(then);
+        verify(platformState).setFreezeTime(then);
 
         assertMarkerCreated(FREEZE_SCHEDULED_MARKER, then);
     }
@@ -313,7 +313,7 @@ class UpgradeActionsTest {
 
         subject.scheduleFreezeOnlyAt(then);
 
-        verify(dualState).setFreezeTime(then);
+        verify(platformState).setFreezeTime(then);
 
         assertFalse(
                 Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
@@ -321,14 +321,14 @@ class UpgradeActionsTest {
     }
 
     @Test
-    void nullsOutDualOnAborting() throws IOException {
+    void nullsOutPlatformStateOnAborting() throws IOException {
         rmIfPresent(FREEZE_ABORTED_MARKER);
 
         given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
 
         subject.abortScheduledFreeze();
 
-        verify(dualState).setFreezeTime(null);
+        verify(platformState).setFreezeTime(null);
 
         assertMarkerCreated(FREEZE_ABORTED_MARKER, null);
     }
@@ -346,7 +346,7 @@ class UpgradeActionsTest {
 
         subject.abortScheduledFreeze();
 
-        verify(dualState).setFreezeTime(null);
+        verify(platformState).setFreezeTime(null);
 
         assertMarkerCreated(FREEZE_ABORTED_MARKER, null, otherMarkerFilesLoc);
 
@@ -367,7 +367,7 @@ class UpgradeActionsTest {
 
         subject.abortScheduledFreeze();
 
-        verify(dualState).setFreezeTime(null);
+        verify(platformState).setFreezeTime(null);
 
         assertThat(
                 logCaptor.errorLogs(),
@@ -380,7 +380,7 @@ class UpgradeActionsTest {
     void determinesIfFreezeIsScheduled() {
         assertFalse(subject.isFreezeScheduled());
 
-        given(dualState.getFreezeTime()).willReturn(then);
+        given(platformState.getFreezeTime()).willReturn(then);
 
         assertTrue(subject.isFreezeScheduled());
     }

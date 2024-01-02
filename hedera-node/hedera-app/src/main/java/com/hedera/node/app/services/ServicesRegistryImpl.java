@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -59,13 +60,14 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      * Register the given service.
      *
      * @param service The service to register
+     * @param version
      */
-    public void register(@NonNull final Service service) {
+    public void register(@NonNull final Service service, final HederaSoftwareVersion version) {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
         final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords);
-        service.registerSchemas(registry);
+        service.registerSchemas(registry, version.getServicesVersion());
 
         entries.add(new Registration(service, registry));
         logger.info("Registered service {} with implementation {}", service.getServiceName(), service.getClass());

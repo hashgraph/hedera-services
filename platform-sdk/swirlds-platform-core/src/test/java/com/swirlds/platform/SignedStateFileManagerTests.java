@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
@@ -57,6 +55,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateFilePath;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
@@ -91,6 +90,10 @@ class SignedStateFileManagerTests {
     private static final NodeId SELF_ID = new NodeId(1234);
     private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
     private static final String SWIRLD_NAME = "mySwirld";
+
+    private PlatformContext context;
+    private SignedStateFilePath signedStateFilePath;
+
     /**
      * Temporary directory provided by JUnit
      */
@@ -105,6 +108,14 @@ class SignedStateFileManagerTests {
     @BeforeEach
     void beforeEach() throws IOException {
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
+        final TestConfigBuilder configBuilder = new TestConfigBuilder()
+                .withValue(
+                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        testDirectory.toFile().toString());
+        context = TestPlatformContextBuilder.create()
+                .withConfiguration(configBuilder.getOrCreateConfig())
+                .build();
+        signedStateFilePath = new SignedStateFilePath(context.getConfiguration().getConfigData(StateConfig.class));
     }
 
     private SignedStateMetrics buildMockMetrics() {
@@ -120,8 +131,8 @@ class SignedStateFileManagerTests {
      */
     private void validateSavingOfState(final SignedState originalState) throws IOException {
 
-        final Path stateDirectory =
-                getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, originalState.getRound());
+        final Path stateDirectory = signedStateFilePath.getSignedStateDirectory(
+                MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, originalState.getRound());
 
         validateSavingOfState(originalState, stateDirectory);
     }
@@ -167,20 +178,12 @@ class SignedStateFileManagerTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Standard Operation Test")
     void standardOperationTest(final boolean successExpected) throws IOException {
-        final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
-                        testDirectory.toFile().toString());
-        final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfiguration(configBuilder.getOrCreateConfig())
-                .build();
-
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
         if (!successExpected) {
             // To make the save fail, create a file with the name of the directory the state will try to be saved to
-            final Path savedDir =
-                    getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, signedState.getRound());
+            final Path savedDir = signedStateFilePath.getSignedStateDirectory(
+                    MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, signedState.getRound());
             Files.createDirectories(savedDir.getParent());
             Files.createFile(savedDir);
         }
@@ -201,14 +204,6 @@ class SignedStateFileManagerTests {
     @Test
     @DisplayName("Save Fatal Signed State")
     void saveFatalSignedState() throws InterruptedException, IOException {
-        final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
-                        testDirectory.toFile().toString());
-        final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfiguration(configBuilder.getOrCreateConfig())
-                .build();
-
         final SignedState signedState = new RandomSignedStateGenerator().build();
         ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
@@ -236,14 +231,6 @@ class SignedStateFileManagerTests {
     @Test
     @DisplayName("Save ISS Signed State")
     void saveISSignedState() throws IOException {
-        final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue(
-                        StateConfig_.SAVED_STATE_DIRECTORY,
-                        testDirectory.toFile().toString());
-        final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfiguration(configBuilder.getOrCreateConfig())
-                .build();
-
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
@@ -289,10 +276,7 @@ class SignedStateFileManagerTests {
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         final SavedStateController controller =
-                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class), (rss) -> {
-                    lastResult.set(manager.saveStateTask(rss));
-                    return lastResult.get() != null;
-                });
+                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class));
 
         Instant timestamp;
         final long firstRound;
@@ -330,12 +314,13 @@ class SignedStateFileManagerTests {
                     .setRound(round)
                     .build();
 
-            controller.maybeSaveState(signedState);
+            controller.markSavedState(signedState.reserve("markSavedState"));
 
             if (signedState.isStateToSave()) {
                 assertTrue(
                         nextBoundary == null || CompareTo.isGreaterThanOrEqualTo(timestamp, nextBoundary),
                         "timestamp should be after the boundary");
+                manager.saveStateTask(signedState.reserve("save to disk"));
 
                 savedStates.add(signedState);
 
@@ -408,12 +393,14 @@ class SignedStateFileManagerTests {
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
         final Path statesDirectory =
-                SignedStateFileUtils.getSignedStatesDirectoryForSwirld(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+                signedStateFilePath.getSignedStatesDirectoryForSwirld(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
         // Simulate the saving of an ISS state
         final int issRound = 666;
-        final Path issDirectory =
-                getSignedStatesBaseDirectory().resolve("iss").resolve("node" + SELF_ID + "_round" + issRound);
+        final Path issDirectory = signedStateFilePath
+                .getSignedStatesBaseDirectory()
+                .resolve("iss")
+                .resolve("node" + SELF_ID + "_round" + issRound);
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
         issState.markAsStateToSave(ISS);
@@ -422,8 +409,10 @@ class SignedStateFileManagerTests {
 
         // Simulate the saving of a fatal state
         final int fatalRound = 667;
-        final Path fatalDirectory =
-                getSignedStatesBaseDirectory().resolve("fatal").resolve("node" + SELF_ID + "_round" + fatalRound);
+        final Path fatalDirectory = signedStateFilePath
+                .getSignedStatesBaseDirectory()
+                .resolve("fatal")
+                .resolve("node" + SELF_ID + "_round" + fatalRound);
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
         fatalState.markAsStateToSave(FATAL_ERROR);
@@ -449,8 +438,10 @@ class SignedStateFileManagerTests {
             }
 
             // Verify that old states are properly deleted
-            assertEquals(Math.min(statesOnDisk, round), (int)
-                    Files.list(statesDirectory).count());
+            assertEquals(
+                    Math.min(statesOnDisk, round),
+                    (int) Files.list(statesDirectory).count(),
+                    "unexpected number of states on disk after saving round " + round);
 
             // ISS/fatal state should still be in place
             validateSavingOfState(issState, issDirectory);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,6 +132,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKEN_BALANCES_ENABLED_IN_QUERIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
@@ -698,6 +699,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty(STAKING_MAX_STAKE_REWARDED)).willReturn(i + 100L);
         given(properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD)).willReturn(i + 101L);
         given(properties.getBooleanProperty(HEDERA_TXN_EIP2930_ENABLED)).willReturn(i % 2 == 0);
+        given(properties.getBooleanProperty(TOKEN_BALANCES_ENABLED_IN_QUERIES)).willReturn((i + 102) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

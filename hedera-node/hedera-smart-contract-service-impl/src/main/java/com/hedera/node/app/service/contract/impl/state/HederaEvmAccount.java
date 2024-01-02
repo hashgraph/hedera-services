@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,13 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
 public interface HederaEvmAccount extends MutableAccount {
+    /**
+     * Returns a native Hedera account representation of this account.
+     *
+     * @return the native Hedera account
+     */
+    com.hedera.hapi.node.state.token.Account toNativeAccount();
+
     /**
      * Returns whether this account is an ERC-20/ERC-721 facade for a Hedera token.
      *

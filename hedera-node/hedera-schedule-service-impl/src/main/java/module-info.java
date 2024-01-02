@@ -16,7 +16,10 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler;
-    requires org.eclipse.collections.api; // javax.annotation.processing.Generated
+    requires org.eclipse
+            .collections
+            .api; // javax.annotation.processing.Generated/ javax.annotation.processing.Generated
+    requires org.apache.logging.log4j;
 
     exports com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.schedule.impl.handlers;

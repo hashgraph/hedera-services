@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.network.communication.handshake;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
@@ -80,7 +81,7 @@ public class HashCompareHandshake implements ProtocolRunnable {
         if (throwOnMismatch) {
             throw new HandshakeException(message);
         } else {
-            logger.error(LogMarker.ERROR.getMarker(), message);
+            logger.error(EXCEPTION.getMarker(), message);
         }
     }
 }

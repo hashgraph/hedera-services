@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -30,6 +29,7 @@ import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;

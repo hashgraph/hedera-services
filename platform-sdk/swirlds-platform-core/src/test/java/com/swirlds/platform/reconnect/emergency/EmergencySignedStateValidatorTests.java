@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,10 +130,7 @@ public class EmergencySignedStateValidatorTests {
     }
 
     private void assertNextEpochHashEquals(final Hash hash, final SignedState signedState, final String msg) {
-        assertEquals(
-                hash,
-                signedState.getState().getPlatformState().getPlatformData().getNextEpochHash(),
-                msg);
+        assertEquals(hash, signedState.getState().getPlatformState().getNextEpochHash(), msg);
     }
 
     /**
@@ -154,7 +151,7 @@ public class EmergencySignedStateValidatorTests {
                 .build();
 
         final Hash emergencyHash = RandomUtils.randomHash(random);
-        laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
+        laterState.getState().getPlatformState().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
                 STATE_CONFIG,
@@ -184,7 +181,7 @@ public class EmergencySignedStateValidatorTests {
 
         final Hash emergencyHash = RandomUtils.randomHash(random);
         final Hash badEpochHash = RandomUtils.randomHash(random);
-        laterState.getState().getPlatformState().getPlatformData().setNextEpochHash(badEpochHash);
+        laterState.getState().getPlatformState().setNextEpochHash(badEpochHash);
 
         validator = new EmergencySignedStateValidator(
                 STATE_CONFIG,
@@ -215,7 +212,7 @@ public class EmergencySignedStateValidatorTests {
                 .build();
 
         final Hash emergencyHash = RandomUtils.randomHash(random);
-        laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
+        laterState.getState().getPlatformState().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
                 STATE_CONFIG,

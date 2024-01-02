@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ class PreconsensusEventFileManagerTests {
 
         final Metrics metrics = new NoOpMetrics();
 
-        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get());
+        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -28,7 +30,7 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,11 +55,14 @@ public class StakingRewardsHelper {
     /**
      * Looks through all the accounts modified in state and returns a list of accounts which are staked to a node
      * and has stakedId or stakedToMe or balance or declineReward changed in this transaction.
-     * @param writableAccountStore The store to write to for updated values and original values
+     *
+     * @param writableAccountStore   The store to write to for updated values and original values
+     * @param specialRewardReceivers The accounts which are staked to a node and are special reward receivers
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
-    public static Set<AccountID> getPossibleRewardReceivers(final WritableAccountStore writableAccountStore) {
-        final var possibleRewardReceivers = new HashSet<AccountID>();
+    public static Set<AccountID> getAllRewardReceivers(
+            final WritableAccountStore writableAccountStore, final Set<AccountID> specialRewardReceivers) {
+        final var possibleRewardReceivers = new LinkedHashSet<>(specialRewardReceivers);
         for (final AccountID id : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.get(id);
             final var originalAcct = writableAccountStore.getOriginalValue(id);
@@ -84,18 +89,17 @@ public class StakingRewardsHelper {
     private static boolean isRewardSituation(
             @NonNull final Account modifiedAccount, @Nullable final Account originalAccount) {
         requireNonNull(modifiedAccount);
-        if (originalAccount == null) {
+        if (originalAccount == null || originalAccount.stakedNodeIdOrElse(SENTINEL_NODE_ID) == SENTINEL_NODE_ID) {
             return false;
         }
-        final var hasStakedToMeUpdate = modifiedAccount.stakedToMe() != originalAccount.stakedToMe();
+
+        // No need to check for stakeMetaChanges again here, since they are captured in possibleRewardReceivers
+        // in previous step
         final var hasBalanceChange = modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance();
-        final var hasStakeMetaChanges = (modifiedAccount.declineReward() != originalAccount.declineReward())
-                || (modifiedAccount.stakedId() != originalAccount.stakedId());
+        final var hasStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
         // We do this for backward compatibility with mono-service
-        // TODO: Also check that the HAPI operation was a ContractCreate/ContractCall/EthereumTransaction
         final var isCalledContract = modifiedAccount.smartContract();
-        final var isStakedToNode = originalAccount.stakedNodeIdOrElse(-1L) >= 0L;
-        return isStakedToNode && (isCalledContract || hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges);
+        return (isCalledContract || hasBalanceChange || hasStakeMetaChanges);
     }
 
     /**

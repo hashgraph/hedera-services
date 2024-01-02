@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                 isFrozenHappyPathWithLocalCall());
     }
 
-    private HapiSpec freezeUnfreezeFungibleWithNegativeCases() {
+    final HapiSpec freezeUnfreezeFungibleWithNegativeCases() {
         final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -222,7 +222,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                                                         htsPrecompileResult().withStatus(TOKEN_HAS_NO_FREEZE_KEY)))));
     }
 
-    private HapiSpec freezeUnfreezeNftsWithNegativeCases() {
+    final HapiSpec freezeUnfreezeNftsWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return propertyPreservingHapiSpec("freezeUnfreezeNftsWithNegativeCases")
@@ -312,7 +312,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                                                         .withIsFrozen(false)))));
     }
 
-    private HapiSpec isFrozenHappyPathWithLocalCall() {
+    final HapiSpec isFrozenHappyPathWithLocalCall() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("isFrozenHappyPathWithLocalCall")

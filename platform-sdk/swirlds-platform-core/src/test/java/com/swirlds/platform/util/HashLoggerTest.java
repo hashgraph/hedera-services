@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -155,13 +154,11 @@ public class HashLoggerTest {
         final AddressBook addressBook = new AddressBook();
         addressBook.setHash(merkleNode.getHash());
 
-        final PlatformData platformData = new PlatformData();
-        platformData.setRound(round);
-        platformData.setHash(merkleNode.getHash());
-
         final PlatformState platformState = new PlatformState();
-        platformState.setChild(0, platformData);
-        platformState.setChild(1, addressBook);
+
+        platformState.setRound(round);
+        platformState.setHash(merkleNode.getHash());
+        platformState.setAddressBook(addressBook);
 
         when(state.getPlatformState()).thenReturn(platformState);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());

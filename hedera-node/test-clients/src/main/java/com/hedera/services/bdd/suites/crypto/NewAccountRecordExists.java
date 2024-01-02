@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ public class NewAccountRecordExists extends HapiSuite {
         return List.of(newAccountIsReflectedInRecordStream(), newAccountIsReflectedInRecordStreamV2());
     }
 
-    private HapiSpec newAccountIsReflectedInRecordStream() {
+    final HapiSpec newAccountIsReflectedInRecordStream() {
         final var balance = 1_234_567L;
         final var novelKey = "novelKey";
         final var memo = "It was the best of times";
@@ -74,7 +74,7 @@ public class NewAccountRecordExists extends HapiSuite {
                         new AccountExistenceValidator(account, consensusTime.get()), Duration.ofMillis(2_100))));
     }
 
-    private HapiSpec newAccountIsReflectedInRecordStreamV2() {
+    final HapiSpec newAccountIsReflectedInRecordStreamV2() {
         final var balance = 1_234_567L;
         final var memo = "It was the best of times";
         final var account = "novel";

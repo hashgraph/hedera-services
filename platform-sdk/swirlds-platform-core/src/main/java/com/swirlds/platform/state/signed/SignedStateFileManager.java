@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
 import static com.swirlds.platform.state.signed.StateToDiskReason.UNKNOWN;
 
 import com.swirlds.base.time.Time;
@@ -77,6 +74,8 @@ public class SignedStateFileManager {
      * Provides system time
      */
     private final Time time;
+    /** Used to determine the path of a signed state */
+    private final SignedStateFilePath signedStateFilePath;
 
     /**
      * Creates a new instance.
@@ -103,6 +102,7 @@ public class SignedStateFileManager {
         this.swirldName = Objects.requireNonNull(swirldName);
         this.platformContext = Objects.requireNonNull(context);
         this.configuration = Objects.requireNonNull(context.getConfiguration());
+        this.signedStateFilePath = new SignedStateFilePath(configuration.getConfigData(StateConfig.class));
     }
 
     /**
@@ -161,7 +161,8 @@ public class SignedStateFileManager {
             // states requested to be written out-of-band are always written to disk
             saveStateTask(
                     reservedSignedState.get(),
-                    getSignedStatesBaseDirectory()
+                    signedStateFilePath
+                            .getSignedStatesBaseDirectory()
                             .resolve(getReason(signedState).getDescription())
                             .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())));
         }
@@ -217,7 +218,7 @@ public class SignedStateFileManager {
      * @return the File that represents the directory of the signed state for the particular round
      */
     private Path getSignedStateDir(final long round) {
-        return getSignedStateDirectory(mainClassName, selfId, swirldName, round);
+        return signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
     }
 
     /**
@@ -225,7 +226,8 @@ public class SignedStateFileManager {
      * @return the minimum generation non-ancient of the oldest state that was not deleted
      */
     private long deleteOldStates() {
-        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStates =
+                signedStateFilePath.getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
         int index = savedStates.size() - 1;

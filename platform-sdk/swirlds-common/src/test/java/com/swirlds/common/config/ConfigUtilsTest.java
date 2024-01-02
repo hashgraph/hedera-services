@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,7 @@ class ConfigUtilsTest {
         // then
         Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(ConsensusConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(OSHealthCheckConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(WiringConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(CryptoConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(TemporaryFileConfig.class));
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(ReconnectConfig.class));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingP
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -69,6 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIG
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
@@ -80,6 +83,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
@@ -89,15 +93,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -164,6 +171,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
+    private static final String ERC20_ABI = "ERC20ABI";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -212,11 +220,12 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
                 transferHbarsToECDSAKey(),
-                cannotAutoCreateWithTxnToLongZero());
+                cannotAutoCreateWithTxnToLongZero(),
+                accountDeleteResetsTheAliasNonce());
     }
 
     @HapiTest
-    private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
+    final HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("canAutoCreateWithHbarAndTokenTransfers", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
@@ -249,7 +258,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec repeatedAliasInSameTransferListFails() {
+    final HapiSpec repeatedAliasInSameTransferListFails() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -312,7 +321,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec autoCreateWithNftFallBackFeeFails() {
+    final HapiSpec autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
         return defaultHapiSpec("autoCreateWithNftFallBackFeeFails", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -375,7 +384,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canAutoCreateWithNftTransfersToAlias() {
+    final HapiSpec canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         // The expected fee to transfer four serial numbers of two token types to a receiver with
         // no auto-creation; note it is approximate because the fee will vary slightly with the
@@ -462,7 +471,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canAutoCreateWithNftTransferToEvmAddress() {
+    final HapiSpec canAutoCreateWithNftTransferToEvmAddress() {
         final var civilianBal = 10 * ONE_HBAR;
         final var nftTransfer = "multiNftTransfer";
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
@@ -506,7 +515,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 recordWith().status(SUCCESS).consensusTimeImpliedByNonce(parentConsTime.get(), -1))));
     }
 
-    private HapiSpec multipleTokenTransfersSucceed() {
+    @HapiTest
+    final HapiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
 
@@ -595,7 +605,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
+    final HapiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
         final var secondAliasKey = "secondAlias";
         final var secondPayer = "secondPayer";
         final AtomicLong totalAutoCreationFees = new AtomicLong();
@@ -644,7 +654,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
+    final HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
         // The expected (network + service) fee for two token transfers to a receiver
@@ -727,7 +737,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noStakePeriodStartIfNotStakingToNode() {
+    final HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
         return defaultHapiSpec("noStakePeriodStartIfNotStakingToNode", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -746,7 +756,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hollowAccountCreationWithCryptoTransfer() {
+    final HapiSpec hollowAccountCreationWithCryptoTransfer() {
         final var initialTokenSupply = 1000;
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
@@ -851,7 +861,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failureAfterHollowAccountCreationReclaimsAlias() {
+    final HapiSpec failureAfterHollowAccountCreationReclaimsAlias() {
         final var underfunded = "underfunded";
         final var secondTransferTxn = "SecondTransferTxn";
         final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
@@ -899,7 +909,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canGetBalanceAndInfoViaAlias() {
+    final HapiSpec canGetBalanceAndInfoViaAlias() {
         final var ed25519SourceKey = "ed25519Alias";
         final var secp256k1SourceKey = "secp256k1Alias";
         final var secp256k1Shape = KeyShape.SECP256K1;
@@ -948,7 +958,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
+    final HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
         return defaultHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
                 .given(
                         /* have alias key on other accounts and tokens not as alias */
@@ -982,7 +992,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec accountCreatedIfAliasUsedAsPubKey() {
+    final HapiSpec accountCreatedIfAliasUsedAsPubKey() {
         return defaultHapiSpec("accountCreatedIfAliasUsedAsPubKey")
                 .given(
                         newKeyNamed(ALIAS),
@@ -1009,7 +1019,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
+    final HapiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
         return defaultHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
                 .given(
                         newKeyNamed(ALIAS),
@@ -1041,7 +1051,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferFromAliasToAlias() {
+    final HapiSpec transferFromAliasToAlias() {
         return defaultHapiSpec("transferFromAliasToAlias")
                 .given(
                         newKeyNamed(ALIAS),
@@ -1066,7 +1076,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferFromAliasToAccount() {
+    final HapiSpec transferFromAliasToAccount() {
         final var payer = PAYER_4;
         final var alias = ALIAS;
         return defaultHapiSpec("transferFromAliasToAccount")
@@ -1091,7 +1101,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferToAccountAutoCreatedUsingAccount() {
+    final HapiSpec transferToAccountAutoCreatedUsingAccount() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAccount")
                 .given(newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -1123,7 +1133,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferToAccountAutoCreatedUsingAlias() {
+    final HapiSpec transferToAccountAutoCreatedUsingAlias() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAlias")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -1149,7 +1159,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec autoAccountCreationUnsupportedAlias() {
+    final HapiSpec autoAccountCreationUnsupportedAlias() {
         final var threshKeyAlias = Key.newBuilder()
                 .setThresholdKey(ThresholdKey.newBuilder()
                         .setThreshold(2)
@@ -1193,7 +1203,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec autoAccountCreationBadAlias() {
+    final HapiSpec autoAccountCreationBadAlias() {
         final var invalidAlias = VALID_25519_ALIAS.substring(0, 10);
 
         return defaultHapiSpec("autoAccountCreationBadAlias")
@@ -1205,7 +1215,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec autoAccountCreationsHappyPath() {
+    final HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
         return defaultHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -1313,7 +1323,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec multipleAutoAccountCreations() {
+    final HapiSpec multipleAutoAccountCreations() {
         return defaultHapiSpec("multipleAutoAccountCreations")
                 .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -1326,27 +1336,42 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         tinyBarsFromToWithAlias(PAYER, "alias1", ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(PAYER, "alias3", ONE_HUNDRED_HBARS))
-                                .via("multipleAutoAccountCreates"),
-                        getTxnRecord("multipleAutoAccountCreates")
-                                .hasNonStakingChildRecordCount(3)
-                                .logged(),
-                        getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)))
-                .then(
-                        cryptoTransfer(
-                                        tinyBarsFromToWithAlias(PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
-                                        tinyBarsFromToWithAlias(PAYER, "alias5", 100))
-                                .via("failedAutoCreate")
-                                .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
-                        getTxnRecord("failedAutoCreate")
-                                .hasNonStakingChildRecordCount(0)
-                                .logged(),
-                        getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
+                                .via("multipleAutoAccountCreates")
+                                // In CI this could fail due to an end-of-staking period record already
+                                // being added as a child to this transaction before its auto-creations
+                                .hasKnownStatusFrom(SUCCESS, MAX_CHILD_RECORDS_EXCEEDED))
+                .then(withOpContext((spec, opLog) -> {
+                    final var lookup = getTxnRecord("multipleAutoAccountCreates");
+                    allRunFor(spec, lookup);
+                    final var actualStatus =
+                            lookup.getResponseRecord().getReceipt().getStatus();
+                    // Continue with more assertions given the normal case the preceding transfer succeeded
+                    if (actualStatus == SUCCESS) {
+                        allRunFor(
+                                spec,
+                                getTxnRecord("multipleAutoAccountCreates")
+                                        .hasNonStakingChildRecordCount(3)
+                                        .logged(),
+                                getAccountInfo(PAYER)
+                                        .has(accountWith()
+                                                .balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)),
+                                cryptoTransfer(
+                                                tinyBarsFromToWithAlias(PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
+                                                tinyBarsFromToWithAlias(PAYER, "alias5", 100))
+                                        .via("failedAutoCreate")
+                                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
+                                getTxnRecord("failedAutoCreate")
+                                        .hasNonStakingChildRecordCount(0)
+                                        .logged(),
+                                getAccountInfo(PAYER)
+                                        .has(accountWith()
+                                                .balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
+                    }
+                }));
     }
 
     @HapiTest
-    private HapiSpec transferHbarsToEVMAddressAlias() {
+    final HapiSpec transferHbarsToEVMAddressAlias() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
@@ -1403,7 +1428,99 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferHbarsToECDSAKey() {
+    final HapiSpec accountDeleteResetsTheAliasNonce() {
+
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
+        final AtomicReference<AccountID> aliasedAccountId = new AtomicReference<>();
+        final AtomicReference<String> tokenNum = new AtomicReference<>();
+        final var totalSupply = 50;
+        final var ercUser = "ercUser";
+
+        return defaultHapiSpec("accountDeleteResetsTheAliasNonce")
+                .given(
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(TOKEN_TREASURY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                            partyId.set(registry.getAccountID(PARTY));
+                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                            counterAlias.set(evmAddressBytes);
+                        }),
+                        tokenCreate("token")
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(totalSupply)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(SECP_256K1_SOURCE_KEY)
+                                .supplyKey(SECP_256K1_SOURCE_KEY)
+                                .exposingCreatedIdTo(tokenNum::set))
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .signedBy(DEFAULT_PAYER, PARTY)
+                                    .via(HBAR_XFER);
+
+                            var op2 = getAliasedAccountInfo(counterAlias.get())
+                                    .logged()
+                                    .exposingIdTo(aliasedAccountId::set)
+                                    .has(accountWith()
+                                            .hasEmptyKey()
+                                            .noAlias()
+                                            .nonce(0)
+                                            .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                            .receiverSigReq(false)
+                                            .memo(LAZY_MEMO));
+
+                            // send eth transaction signed by the ecdsa key
+                            var op3 = ethereumCallWithFunctionAbi(
+                                            true,
+                                            "token",
+                                            getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                    .payingWith(GENESIS)
+                                    .nonce(0)
+                                    .gasPrice(50L)
+                                    .maxGasAllowance(FIVE_HBARS)
+                                    .maxPriorityGas(2L)
+                                    .gasLimit(1_000_000L)
+                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+
+                            // assert account nonce is increased to 1
+                            var op4 = getAliasedAccountInfo(counterAlias.get())
+                                    .logged()
+                                    .has(accountWith().nonce(1));
+
+                            allRunFor(spec, op1, op2, op3, op4);
+
+                            spec.registry().saveAccountId(ercUser, aliasedAccountId.get());
+                            spec.registry().saveKey(ercUser, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
+                        }),
+                        // delete the account currently holding the alias
+                        cryptoDelete(ercUser))
+                .then(
+                        // try to create a new account with the same alias
+                        withOpContext((spec, opLog) -> {
+                            var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .signedBy(DEFAULT_PAYER, PARTY)
+                                    .hasKnownStatus(ACCOUNT_DELETED);
+
+                            allRunFor(spec, op1);
+                        }));
+    }
+
+    @HapiTest
+    final HapiSpec transferHbarsToECDSAKey() {
 
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var transferToECDSA = "transferToЕCDSA";
@@ -1450,7 +1567,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferFungibleToEVMAddressAlias() {
+    final HapiSpec transferFungibleToEVMAddressAlias() {
 
         final var fungibleToken = "fungibleToken";
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
@@ -1546,7 +1663,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transferNonFungibleToEVMAddressAlias() {
+    final HapiSpec transferNonFungibleToEVMAddressAlias() {
         final var nonFungibleToken = "nonFungibleToken";
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -1645,7 +1762,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotAutoCreateWithTxnToLongZero() {
+    final HapiSpec cannotAutoCreateWithTxnToLongZero() {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
 

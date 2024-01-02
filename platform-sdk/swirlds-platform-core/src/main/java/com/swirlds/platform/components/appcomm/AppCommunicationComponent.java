@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -126,7 +125,7 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
     private void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 reservedSignedState.get().getSwirldState(),
-                reservedSignedState.get().getState().getSwirldDualState(),
+                reservedSignedState.get().getState().getPlatformState(),
                 reservedSignedState.get().getRound(),
                 reservedSignedState.get().getConsensusTimestamp());
 

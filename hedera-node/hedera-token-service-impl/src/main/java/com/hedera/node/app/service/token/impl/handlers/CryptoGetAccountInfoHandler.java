@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -41,6 +42,8 @@ import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccou
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.AccountSummariesApi;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
@@ -48,6 +51,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -56,7 +60,6 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#CRYPTO_GET_INFO}.
- * The token relationships field is deprecated and is no more returned by this query.
  */
 @Singleton
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
@@ -133,9 +136,12 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         requireNonNull(accountID);
         requireNonNull(context);
 
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         final var accountStore = context.createStore(ReadableAccountStore.class);
+        final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var stakingInfoStore = context.createStore(ReadableStakingInfoStore.class);
         final var stakingRewardsStore = context.createStore(ReadableNetworkStakingRewardsStore.class);
 
@@ -160,8 +166,13 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
             info.ethereumNonce(account.ethereumNonce());
+            //  info.proxyAccountID(); Deprecated
             if (!isOfEvmAddressSize(account.alias())) {
                 info.alias(account.alias());
+            }
+            if (tokensConfig.balancesInQueriesEnabled()) {
+                info.tokenRelationships(tokenRelationshipsOf(
+                        account, tokenStore, tokenRelationStore, tokensConfig.maxRelsPerInfoQuery()));
             }
             info.stakingInfo(AccountSummariesApi.summarizeStakingInfo(
                     stakingConfig.rewardHistoryNumStoredPeriods(),
@@ -183,7 +194,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var account = accountStore.getAccountById(accountId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountInfoResourceUsage(
-                        cryptoOpsUsage, null, null)
+                        cryptoOpsUsage, null, null, null)
                 .usageGiven(query, account));
     }
 }

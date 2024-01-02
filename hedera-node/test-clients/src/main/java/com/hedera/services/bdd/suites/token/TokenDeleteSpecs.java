@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
+    final HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
         return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
                 .given(
                         newKeyNamed(TOKEN_ADMIN),
@@ -99,7 +99,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletionValidatesAlreadyDeletedToken() {
+    final HapiSpec deletionValidatesAlreadyDeletedToken() {
         return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -111,7 +111,7 @@ public class TokenDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletionValidatesMissingAdminKey() {
+    final HapiSpec deletionValidatesMissingAdminKey() {
         return defaultHapiSpec("DeletionValidatesMissingAdminKey")
                 .given(
                         newKeyNamed(MULTI_KEY),

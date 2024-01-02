@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.common.merkle.synchronization.internal;
 
 import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -277,7 +278,7 @@ public class LearnerThread<T> {
             logger.warn(RECONNECT.getMarker(), "learner thread interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            logger.error(RECONNECT.getMarker(), "exception in the learner's receiving thread", ex);
+            logger.error(EXCEPTION.getMarker(), "exception in the learner's receiving thread", ex);
             throw new MerkleSynchronizationException("exception in the learner's receiving thread", ex);
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
@@ -29,6 +30,7 @@ public class StakingUtilities {
     }
 
     public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
+    public static final long NO_STAKE_PERIOD_START = -1;
 
     public static long roundedToHbar(final long value) {
         return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
@@ -52,8 +54,9 @@ public class StakingUtilities {
                     || modifiedAccount.declineReward();
         }
         final var differDeclineReward = originalAccount.declineReward() != modifiedAccount.declineReward();
-        final var differStakedNodeId =
-                !originalAccount.stakedNodeIdOrElse(0L).equals(modifiedAccount.stakedNodeIdOrElse(0L));
+        final var differStakedNodeId = !originalAccount
+                .stakedNodeIdOrElse(SENTINEL_NODE_ID)
+                .equals(modifiedAccount.stakedNodeIdOrElse(SENTINEL_NODE_ID));
         final var differStakeAccountId = !originalAccount
                 .stakedAccountIdOrElse(AccountID.DEFAULT)
                 .equals(modifiedAccount.stakedAccountIdOrElse(AccountID.DEFAULT));

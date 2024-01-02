@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.utils.UnzipUtility;
-import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.state.PlatformState;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
@@ -41,8 +41,8 @@ public final class NetworkLogicModule {
 
     @Provides
     @Singleton
-    public static Supplier<SwirldDualState> provideDualState(DualStateAccessor dualStateAccessor) {
-        return dualStateAccessor::getDualState;
+    public static Supplier<PlatformState> providePlatformState(PlatformStateAccessor platformStateAccessor) {
+        return platformStateAccessor::getPlatformState;
     }
 
     @Provides

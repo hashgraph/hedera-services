@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class AssortedHcsOps extends HapiSuite {
 
     final String TARGET_DIR = "./dev-system-files";
 
-    private HapiSpec testRechargingPayer() {
+    final HapiSpec testRechargingPayer() {
         long startingBalance = 1_000_000L;
 
         return defaultHapiSpec("testRechargingPayer")
@@ -83,14 +83,14 @@ public class AssortedHcsOps extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new));
     }
 
-    private HapiSpec infoLookup() {
+    final HapiSpec infoLookup() {
         return defaultHapiSpec("infoLookup")
                 .given()
                 .when()
                 .then(QueryVerbs.getTopicInfo("0.0.1161").logged());
     }
 
-    private HapiSpec runMisc() {
+    final HapiSpec runMisc() {
         final int SUBMIT_BURST_SIZE = 10;
 
         AtomicReference<String> vanillaTopic = new AtomicReference<>();

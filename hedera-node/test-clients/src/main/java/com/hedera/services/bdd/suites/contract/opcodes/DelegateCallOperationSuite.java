@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -62,7 +64,10 @@ public class DelegateCallOperationSuite extends HapiSuite {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return defaultHapiSpec("VerifiesExistence")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, "delegateCall", asHeadlongAddress(INVALID_ADDRESS))

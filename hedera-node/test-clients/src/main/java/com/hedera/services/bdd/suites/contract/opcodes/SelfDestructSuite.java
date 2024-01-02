@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
+    final HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
         return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
@@ -101,7 +101,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructWhenCalling() {
+    final HapiSpec hscsEvm008SelfDestructWhenCalling() {
         return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
                 .given(
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
@@ -118,7 +118,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
                 .given(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,11 +38,11 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
-import static contract.XTestConstants.INVALID_CONTRACT_ID_KEY;
 import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.addErc20Relation;
@@ -347,7 +347,7 @@ public class MintsXTest extends AbstractContractXTest {
                         .tokenId(C_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .supplyKey(INVALID_CONTRACT_ID_KEY)
+                        .supplyKey(SENDER_CONTRACT_ID_KEY)
                         .build());
         tokens.put(
                 D_TOKEN_ID,
@@ -355,7 +355,7 @@ public class MintsXTest extends AbstractContractXTest {
                         .tokenId(D_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                        .supplyKey(INVALID_CONTRACT_ID_KEY)
+                        .supplyKey(SENDER_CONTRACT_ID_KEY)
                         .build());
         return tokens;
     }

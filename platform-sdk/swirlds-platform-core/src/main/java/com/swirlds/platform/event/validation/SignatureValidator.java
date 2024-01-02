@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
@@ -94,7 +93,7 @@ public class SignatureValidator implements GossipEventValidator {
 
         if (!valid) {
             logger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     """
 							failed the signature check {}
 							with sig {}

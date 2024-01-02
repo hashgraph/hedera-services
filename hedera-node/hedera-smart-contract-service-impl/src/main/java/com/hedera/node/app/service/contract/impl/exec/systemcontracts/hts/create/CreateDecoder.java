@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +65,7 @@ public class CreateDecoder {
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeCreateFungibleTokenV1(
+    public @Nullable TransactionBody decodeCreateFungibleTokenV1(
             @NonNull final byte[] encoded,
             @NonNull final AccountID senderId,
             @NonNull final HederaNativeOperations nativeOperations,
@@ -73,9 +74,9 @@ public class CreateDecoder {
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
         final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValue();
         final var decimals = ((BigInteger) call.get(DECIMALS)).intValue();
-        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapper(
+        final var tokenCreateWrapper = getTokenCreateWrapper(
                 hederaToken, true, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -95,7 +96,7 @@ public class CreateDecoder {
         final var decimals = ((Long) call.get(DECIMALS)).intValue();
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapper(
                 hederaToken, true, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -118,7 +119,7 @@ public class CreateDecoder {
                 senderId,
                 nativeOperations,
                 addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -147,7 +148,7 @@ public class CreateDecoder {
                 senderId,
                 nativeOperations,
                 addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -176,7 +177,7 @@ public class CreateDecoder {
                 senderId,
                 nativeOperations,
                 addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -200,7 +201,7 @@ public class CreateDecoder {
                 senderId,
                 nativeOperations,
                 addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -217,7 +218,7 @@ public class CreateDecoder {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungible(
                 call.get(HEDERA_TOKEN), senderId, nativeOperations, addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -234,7 +235,7 @@ public class CreateDecoder {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungible(
                 call.get(HEDERA_TOKEN), senderId, nativeOperations, addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -251,7 +252,7 @@ public class CreateDecoder {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungible(
                 call.get(HEDERA_TOKEN), senderId, nativeOperations, addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -273,7 +274,7 @@ public class CreateDecoder {
                 senderId,
                 nativeOperations,
                 addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -295,7 +296,7 @@ public class CreateDecoder {
                 senderId,
                 nativeOperations,
                 addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     /**
@@ -317,7 +318,7 @@ public class CreateDecoder {
                 senderId,
                 nativeOperations,
                 addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
+        return bodyFor(tokenCreateWrapper);
     }
 
     private TransactionBody bodyOf(@NonNull final TokenCreateTransactionBody.Builder tokenCreate) {
@@ -563,5 +564,13 @@ public class CreateDecoder {
                     numerator, denominator, fixedFee, feeCollector.accountNum() != 0 ? feeCollector : null));
         }
         return decodedRoyaltyFees;
+    }
+
+    private @Nullable TransactionBody bodyFor(@NonNull final TokenCreateWrapper tokenCreateWrapper) {
+        try {
+            return bodyOf(createToken(tokenCreateWrapper));
+        } catch (IllegalArgumentException ignore) {
+            return null;
+        }
     }
 }

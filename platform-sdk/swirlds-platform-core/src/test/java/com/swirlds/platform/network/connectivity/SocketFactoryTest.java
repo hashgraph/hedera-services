@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import com.swirlds.common.config.SocketConfig;
-import com.swirlds.common.config.SocketConfig_;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.network.SocketConfig_;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -110,9 +110,9 @@ class SocketFactoryTest {
 
         final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, PORT);
         clientSocket.getOutputStream().write(DATA);
-        clientSocket.close();
 
         server.join();
+        clientSocket.close();
 
         if (threadException.get() != null) {
             throw threadException.get();

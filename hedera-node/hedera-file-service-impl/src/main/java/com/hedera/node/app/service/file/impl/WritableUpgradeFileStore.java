@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.file.impl;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -27,6 +28,7 @@ import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -36,8 +38,8 @@ import java.util.function.Predicate;
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
-    /** The underlying data storage class that holds the file data. */
-    private final WritableQueueState<ProtoBytes> writableUpgradeState;
+
+    private final WritableStates states;
 
     private final WritableKVState<FileID, File> writableUpgradeFileState;
 
@@ -50,24 +52,31 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
      */
     public WritableUpgradeFileStore(@NonNull final WritableStates states) {
         super(states);
-        writableUpgradeState = requireNonNull(states.getQueue(getStateKey()));
+        this.states = requireNonNull(states);
         writableUpgradeFileState = requireNonNull(states.get(BLOBS_KEY));
     }
 
     public void add(@NonNull final File file) {
         requireNonNull(file);
-        writableUpgradeState.add(new ProtoBytes(file.contents()));
         writableUpgradeFileState.put(file.fileIdOrThrow(), file);
     }
 
-    public void append(@NonNull final Bytes bytes) {
+    public void addUpgradeContent(@NonNull final FileID fileID, Bytes content) {
+        final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
+        upgradeState.add(new ProtoBytes(content));
+    }
+
+    public void append(@NonNull final Bytes bytes, @NonNull final FileID fileID) {
         requireNonNull(bytes);
-        writableUpgradeState.add(new ProtoBytes(bytes));
+        requireNonNull(fileID);
+        final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
+        upgradeState.add(new ProtoBytes(bytes));
     }
 
     @SuppressWarnings({"StatementWithEmptyBody"})
-    public void resetFileContents() {
-        while (writableUpgradeState.removeIf(TRUE_PREDICATE) != null)
+    public void resetFileContents(@NonNull final FileID fileID) {
+        final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
+        while (upgradeState.removeIf(TRUE_PREDICATE) != null)
             ;
     }
 
@@ -76,5 +85,10 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
         public boolean test(final ProtoBytes file) {
             return true;
         }
+    }
+
+    @NonNull
+    private WritableQueueState<ProtoBytes> getUpgradeState(@NonNull FileID fileID) {
+        return Objects.requireNonNull(states.getQueue(UPGRADE_DATA_KEY.formatted(fileID)));
     }
 }

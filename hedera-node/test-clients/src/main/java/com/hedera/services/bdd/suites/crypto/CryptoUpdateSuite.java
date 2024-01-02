@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateStakingFieldsWorks() {
+    final HapiSpec updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -191,7 +191,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec usdFeeAsExpectedCryptoUpdate() {
+    final HapiSpec usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
         double baseFee = 0.00022;
         double plusOneSlotFee = baseFee + autoAssocSlotPrice;
@@ -246,7 +246,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateFailsWithOverlyLongLifetime() {
+    final HapiSpec updateFailsWithOverlyLongLifetime() {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
         return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
@@ -256,7 +256,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    final HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.99";
         String randomAccount = "randomAccount";
         String firstKey = "firstKey";
@@ -282,7 +282,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canUpdateMemo() {
+    final HapiSpec canUpdateMemo() {
         String firstMemo = "First";
         String secondMemo = "Second";
         return defaultHapiSpec("CanUpdateMemo")
@@ -298,7 +298,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateWithUniqueSigs() {
+    final HapiSpec updateWithUniqueSigs() {
         return defaultHapiSpec("UpdateWithUniqueSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -310,7 +310,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateWithOneEffectiveSig() {
+    final HapiSpec updateWithOneEffectiveSig() {
         KeyLabel oneUniqueKey =
                 complex(complex("X", "X", "X", "X", "X", "X", "X"), complex("X", "X", "X", "X", "X", "X", "X"));
         SigControl singleSig = SigControl.threshSigs(
@@ -330,7 +330,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateWithOverlappingSigs() {
+    final HapiSpec updateWithOverlappingSigs() {
         return defaultHapiSpec("UpdateWithOverlappingSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -343,7 +343,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateFailsWithContractKey() {
+    final HapiSpec updateFailsWithContractKey() {
         AtomicLong id = new AtomicLong();
         final var CONTRACT = "Multipurpose";
         return defaultHapiSpec(
@@ -365,7 +365,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateFailsWithInsufficientSigs() {
+    final HapiSpec updateFailsWithInsufficientSigs() {
         return defaultHapiSpec("UpdateFailsWithInsufficientSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -378,7 +378,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotSetThresholdNegative() {
+    final HapiSpec cannotSetThresholdNegative() {
         return defaultHapiSpec("CannotSetThresholdNegative", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(TEST_ACCOUNT))
                 .when()
@@ -386,7 +386,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateFailsIfMissingSigs() {
+    final HapiSpec updateFailsIfMissingSigs() {
         SigControl origKeySigs = SigControl.threshSigs(3, ON, ON, SigControl.threshSigs(1, OFF, ON));
         SigControl updKeySigs = SigControl.listSigs(ON, OFF, SigControl.threshSigs(1, ON, OFF, OFF, OFF));
 
@@ -405,7 +405,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateWithEmptyKeyFails() {
+    final HapiSpec updateWithEmptyKeyFails() {
         SigControl updKeySigs = threshOf(0, 0);
 
         return defaultHapiSpec("updateWithEmptyKeyFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -417,7 +417,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateMaxAutoAssociationsWorks() {
+    final HapiSpec updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;
         final int newBadMax = originalMax - 1;

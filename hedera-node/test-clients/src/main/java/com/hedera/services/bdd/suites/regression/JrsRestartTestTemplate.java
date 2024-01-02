@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
         });
     }
 
-    private HapiSpec enableHSS() {
+    final HapiSpec enableHSS() {
         return defaultHapiSpec("enableHSS")
                 .given(
                         // Directly puting this request in the customHapiSpec before
@@ -109,7 +109,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec jrsRestartTemplate() {
+    final HapiSpec jrsRestartTemplate() {
         return customHapiSpec("JrsRestartTemplate")
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())

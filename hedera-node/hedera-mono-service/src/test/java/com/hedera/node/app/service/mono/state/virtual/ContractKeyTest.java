@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,20 +154,25 @@ class ContractKeyTest {
     void serializeUsingByteBufferWorks() throws IOException {
         subject = new ContractKey(contractNum, key_array);
 
-        final var out = mock(ByteBuffer.class);
-        final var inOrder = inOrder(out);
+        final ByteBuffer out = ByteBuffer.allocate(4);
+        final ByteBuffer inOrder = ByteBuffer.allocate(4);
 
         final var contractIdNonZeroBytes = subject.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = subject.getUint256KeyNonZeroBytes();
 
         subject.serialize(out);
-        inOrder.verify(out).put(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        out.rewind();
+
+        inOrder.put(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.verify(out).put((byte) (subject.getContractId() >> (b * 8)));
+            inOrder.put((byte) (subject.getContractId() >> (b * 8)));
         }
         for (int b = uint256KeyNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.verify(out).put(subject.getUint256Byte(b));
+            inOrder.put(subject.getUint256Byte(b));
         }
+        inOrder.rewind();
+
+        assertEquals(inOrder, out);
     }
 
     @Test
@@ -198,14 +203,15 @@ class ContractKeyTest {
         subject = new ContractKey(contractNum, key);
         final var testSubject = new ContractKey();
 
-        final var bin = mock(ByteBuffer.class);
-        given(bin.get())
-                .willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .willReturn((byte) (subject.getContractId() >> 8))
-                .willReturn((byte) (subject.getContractId()))
-                .willReturn(subject.getUint256Byte(0));
+        final ByteBuffer bin = ByteBuffer.allocate(4);
+        bin.put(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.put((byte) (subject.getContractId() >> 8));
+        bin.put((byte) (subject.getContractId()));
+        bin.put(subject.getUint256Byte(0));
+        bin.rewind();
 
         testSubject.deserialize(bin, 1);
+        bin.rewind();
 
         assertEquals(subject, testSubject);
     }
@@ -264,9 +270,9 @@ class ContractKeyTest {
         subject = new ContractKey(contractNum, key);
         final var contractIdNonZeroBytes = subject.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = subject.getUint256KeyNonZeroBytes();
-        final var bin = mock(ByteBuffer.class);
-
-        given(bin.get()).willReturn(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        final ByteBuffer bin = ByteBuffer.allocate(8);
+        bin.put(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.rewind();
 
         assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, readKeySize(bin));
     }

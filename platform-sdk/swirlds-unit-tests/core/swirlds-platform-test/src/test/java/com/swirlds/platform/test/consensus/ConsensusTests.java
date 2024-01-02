@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -259,20 +259,6 @@ class ConsensusTests {
     void fastRestartWithEvents(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::restart)
-                .setParams(params)
-                .setIterations(NUM_ITER)
-                .run();
-    }
-
-    @ParameterizedTest
-    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#migrationTestParams")
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @Tag(TestComponentTags.CONSENSUS)
-    @DisplayName("Migration from a state with events to new consensus")
-    void migrationTest(final ConsensusTestParams params) {
-        ConsensusTestRunner.create()
-                .setTest(ConsensusTestDefinitions::migrationTest)
                 .setParams(params)
                 .setIterations(NUM_ITER)
                 .run();

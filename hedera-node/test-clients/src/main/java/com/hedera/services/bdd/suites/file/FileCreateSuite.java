@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec exchangeRateControlAccountIsntCharged() {
+    final HapiSpec exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
@@ -94,7 +94,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createFailsWithExcessiveLifetime() {
+    final HapiSpec createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
                 .when()
@@ -104,7 +104,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createWithMemoWorks() {
+    final HapiSpec createWithMemoWorks() {
         String memo = "Really quite something!";
 
         return defaultHapiSpec("createWithMemoWorks")
@@ -117,7 +117,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createFailsWithMissingSigs() {
+    final HapiSpec createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -143,7 +143,7 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createFailsWithPayerAccountNotFound() {
+    final HapiSpec createFailsWithPayerAccountNotFound() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
@@ -154,7 +154,7 @@ public class FileCreateSuite extends HapiSuite {
                         .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
                         .waclShape(shape)
                         .sigControl(forKey("test", validSig))
-                        .scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)
+                        .withTxnTransform(FileCreateSuite::replaceTxnNodeAccount)
                         .hasPrecheckFrom(INVALID_NODE_ACCOUNT));
     }
 

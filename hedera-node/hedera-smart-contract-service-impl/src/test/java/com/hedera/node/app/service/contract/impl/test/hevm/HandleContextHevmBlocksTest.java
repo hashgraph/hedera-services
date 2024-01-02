@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -65,8 +66,10 @@ class HandleContextHevmBlocksTest {
 
     @Test
     void blockValuesHasExpectedValues() {
-        given(blockRecordInfo.lastBlockNo()).willReturn(123L);
-        given(context.consensusNow()).willReturn(ETERNAL_NOW);
+        final var now = new Timestamp(1_234_567L, 890);
+        given(blockRecordInfo.blockNo()).willReturn(123L);
+        given(blockRecordInfo.currentBlockTimestamp()).willReturn(now);
+        given(context.blockRecordInfo()).willReturn(blockRecordInfo);
 
         final var blockValues = subject.blockValuesOf(456L);
 

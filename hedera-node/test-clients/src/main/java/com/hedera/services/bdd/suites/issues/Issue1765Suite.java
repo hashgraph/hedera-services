@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     @HapiTest
-    private static HapiSpec recordOfInvalidContractUpdateSanityChecks() {
+    final HapiSpec recordOfInvalidContractUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_CONTRACT = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;

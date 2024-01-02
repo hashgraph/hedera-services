@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec handleRejectsMissingFile() {
+    final HapiSpec handleRejectsMissingFile() {
         return defaultHapiSpec("handleRejectsMissingFile")
                 .given()
                 .when()
@@ -51,7 +51,7 @@ public class DeleteFailuresSpec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec handleRejectsDeletedFile() {
+    final HapiSpec handleRejectsDeletedFile() {
         return defaultHapiSpec("handleRejectsDeletedFile")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))

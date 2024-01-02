@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Account.Builder;
-import com.hedera.hapi.node.state.token.Account.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
@@ -71,7 +70,6 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.test.utils.KeyUtils;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
@@ -430,8 +428,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void verifyTheCorrectOutsideValidatorsAndUpdateContractAPIAreCalled() {
         doReturn(attributeValidator).when(context).attributeValidator();
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
+        when(contract.accountIdOrThrow())
+                .thenReturn(AccountID.newBuilder().accountNum(666).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
-        when(contract.stakedId()).thenReturn(new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, null));
         when(context.expiryValidator()).thenReturn(expiryValidator);
         when(context.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -634,5 +633,38 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         assertEquals(op.autoRenewAccountId(), updatedContract.autoRenewAccountId());
         assertEquals(op.maxAutomaticTokenAssociations(), updatedContract.maxAutoAssociations());
         verify(attributeValidator, times(1)).validateMemo(op.memo());
+    }
+
+    @Test
+    void handleWhenTargetIdContainOnlyEvmAddress() {
+        doReturn(attributeValidator).when(context).attributeValidator();
+        when(accountStore.getContractById(targetContractWithEvmAddress)).thenReturn(contract);
+        when(contract.accountIdOrThrow())
+                .thenReturn(AccountID.newBuilder().accountNum(999L).build());
+        when(contract.key()).thenReturn(Key.newBuilder().build());
+        when(context.expiryValidator()).thenReturn(expiryValidator);
+        when(context.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContractWithEvmAddress)
+                        .adminKey(adminKey)
+                        .memo("memo"))
+                .transactionID(transactionID)
+                .build();
+        when(context.body()).thenReturn(txn);
+        when(context.configuration()).thenReturn(configuration);
+        when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
+        when(stakingConfig.isEnabled()).thenReturn(true);
+        when(contract.copyBuilder()).thenReturn(mock(Builder.class));
+        when(context.recordBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+
+        subject.handle(context);
+
+        verify(expiryValidator, times(1)).resolveUpdateAttempt(any(), any(), anyBoolean());
+        verify(tokenServiceApi, times(1))
+                .assertValidStakingElectionForUpdate(anyBoolean(), anyBoolean(), any(), any(), any(), any(), any());
+        verify(tokenServiceApi, times(1)).updateContract(any());
+        verify(recordBuilder, times(1)).contractID(any());
     }
 }

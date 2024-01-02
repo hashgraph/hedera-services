@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,7 +196,8 @@ public class AccountStateTranslator {
     }
 
     @Nullable
-    static List<AccountApprovalForAllAllowance> orderedOperatorApprovalsFrom(@NonNull final Set<FcTokenAllowanceId> approveForAllNfts) {
+    static List<AccountApprovalForAllAllowance> orderedOperatorApprovalsFrom(
+            @NonNull final Set<FcTokenAllowanceId> approveForAllNfts) {
         return orderedOperatorApprovals(approveForAllNfts.stream()
                 .map(a -> AccountApprovalForAllAllowance.newBuilder()
                         .spenderId(AccountID.newBuilder()
@@ -212,7 +213,8 @@ public class AccountStateTranslator {
     }
 
     @Nullable
-    static List<AccountCryptoAllowance> orderedHbarAllowancesFrom(@NonNull final Map<EntityNum, Long> cryptoAllowances) {
+    static List<AccountCryptoAllowance> orderedHbarAllowancesFrom(
+            @NonNull final Map<EntityNum, Long> cryptoAllowances) {
         return orderedHbarAllowances(cryptoAllowances.entrySet().stream()
                 .map(e -> AccountCryptoAllowance.newBuilder()
                         .spenderId(AccountID.newBuilder()
@@ -346,8 +348,8 @@ public class AccountStateTranslator {
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         if (account.firstContractStorageKey() != null)
             merkleAccount.setFirstUint256StorageKey(new ContractKey(
-                    account.accountIdOrElse(AccountID.DEFAULT).accountNum(),
-                    account.firstContractStorageKey().toByteArray())
+                            account.accountIdOrElse(AccountID.DEFAULT).accountNum(),
+                            account.firstContractStorageKey().toByteArray())
                     .getKey());
         return merkleAccount;
     }

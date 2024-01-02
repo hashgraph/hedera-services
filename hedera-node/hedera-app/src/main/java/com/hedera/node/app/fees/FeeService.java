@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.fees;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -47,9 +48,9 @@ public class FeeService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
         // BBM: reducing version just for testing
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
@@ -83,7 +84,7 @@ public class FeeService implements Service {
             }
         });
 
-//        if(true)return;
+        //        if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
@@ -94,14 +95,12 @@ public class FeeService implements Service {
                         .currentRate(ExchangeRate.newBuilder()
                                 .centEquiv(fs.getCurrCentEquiv())
                                 .hbarEquiv(fs.getCurrHbarEquiv())
-                                .expirationTime(
-                                        TimestampSeconds.newBuilder().seconds(fs.getCurrExpiry()))
+                                .expirationTime(TimestampSeconds.newBuilder().seconds(fs.getCurrExpiry()))
                                 .build())
                         .nextRate(ExchangeRate.newBuilder()
                                 .centEquiv(fs.getNextCentEquiv())
                                 .hbarEquiv(fs.getNextHbarEquiv())
-                                .expirationTime(
-                                        TimestampSeconds.newBuilder().seconds(fs.getNextExpiry()))
+                                .expirationTime(TimestampSeconds.newBuilder().seconds(fs.getNextExpiry()))
                                 .build())
                         .build();
                 toState.put(toRates);

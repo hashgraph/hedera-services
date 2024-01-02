@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.Objects;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Hash;
@@ -35,12 +34,10 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 @QueryScope
 public class QueryContextHevmBlocks implements HederaEvmBlocks {
     private final QueryContext context;
-    private final Instant consensusTime;
 
     @Inject
-    public QueryContextHevmBlocks(@NonNull final QueryContext context, @NonNull final Instant consensusTime) {
+    public QueryContextHevmBlocks(@NonNull final QueryContext context) {
         this.context = Objects.requireNonNull(context);
-        this.consensusTime = Objects.requireNonNull(consensusTime);
     }
 
     /**
@@ -57,6 +54,6 @@ public class QueryContextHevmBlocks implements HederaEvmBlocks {
      */
     @Override
     public BlockValues blockValuesOf(final long gasLimit) {
-        return new HevmBlockValues(gasLimit, context.blockRecordInfo().lastBlockNo(), consensusTime);
+        return HevmBlockValues.from(context.blockRecordInfo(), gasLimit);
     }
 }

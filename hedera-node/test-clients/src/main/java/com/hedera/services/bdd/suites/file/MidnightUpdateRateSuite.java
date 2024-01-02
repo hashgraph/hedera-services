@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ public class MidnightUpdateRateSuite extends HapiSuite {
         return List.of();
     }
 
-    private HapiSpec acct57UpdatesMidnightRateAtMidNight() throws ParseException {
+    final HapiSpec acct57UpdatesMidnightRateAtMidNight() throws ParseException {
         return defaultHapiSpec("Acct57UpdatesMidnightRateAtMidNight")
                 .given(resetRatesOp, cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS)))
                 .when(

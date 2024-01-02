@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,10 +67,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("SignedState Read/Write Test")
 class SignedStateFileReadWriteTest {
-
-    private static final NodeId SELF_ID = new NodeId(1234);
-    private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
-    private static final String SWIRLD_NAME = "mySwirld";
     /**
      * Temporary directory provided by JUnit
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.chatter.simulator;
 
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 import static java.time.temporal.ChronoUnit.NANOS;
 

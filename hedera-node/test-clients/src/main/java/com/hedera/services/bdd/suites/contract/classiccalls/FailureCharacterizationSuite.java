@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,7 +178,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
 
     // assertions in production code, repeated string literals
     @SuppressWarnings({"java:S5960", "java:S1192"})
-    private HapiSpec characterizeClassicFailureModes(
+    final HapiSpec characterizeClassicFailureModes(
             @NonNull final List<FailableClassicCall> calls, @NonNull final CharacterizationMode characterizationMode) {
         if (characterizationMode == CharacterizationMode.RECORD_SNAPSHOT) {
             CALL_RESULTS_SNAPSHOT.begin();

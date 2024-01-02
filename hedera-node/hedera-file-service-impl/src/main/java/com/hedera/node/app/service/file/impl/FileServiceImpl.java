@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
 import com.hedera.node.app.service.file.impl.codec.FileServiceStateTranslator;
+import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
 import com.hedera.node.app.service.mono.files.DataMapFactory;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.MetadataMapFactory;
@@ -32,20 +33,26 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
 public final class FileServiceImpl implements FileService {
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
-    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA";
+    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
+    private ConfigProvider configProvider;
+
+    @Inject
+    public FileServiceImpl(ConfigProvider configProvider) {
+        this.configProvider = configProvider;
+    }
 
     private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
     private Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
@@ -59,11 +66,11 @@ public final class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new FileGenesisSchema());
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new FileGenesisSchema(version, configProvider));
 
-//        if(true)return;
-        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
+        //        if(true)return;
+        registry.register(new Schema(version) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
@@ -71,9 +78,15 @@ public final class FileServiceImpl implements FileService {
                 System.out.println("BBM:running file migration...");
                 List<com.hederahashgraph.api.proto.java.FileID> fileIds = new ArrayList<>();
                 try {
-                    fss.get().extractVirtualMapData(AdHocThreadManager.getStaticThreadManager(), entry -> {
-                        fileIds.add(com.hederahashgraph.api.proto.java.FileID.newBuilder().setFileNum(entry.left().getEntityNumCode()).build());
-                    }, 1);
+                    fss.get()
+                            .extractVirtualMapData(
+                                    AdHocThreadManager.getStaticThreadManager(),
+                                    entry -> {
+                                        fileIds.add(com.hederahashgraph.api.proto.java.FileID.newBuilder()
+                                                .setFileNum(entry.left().getEntityNumCode())
+                                                .build());
+                                    },
+                                    1);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -82,9 +95,11 @@ public final class FileServiceImpl implements FileService {
                     var fromFileMeta = fileAttrs.get(fromFileId);
                     if (fromFileMeta != null) {
                         var toFile = FileServiceStateTranslator.stateToPbj(
-                                fileContents.get(fromFileId),
-                                fromFileMeta, fromFileId);
-                        ts.put(FileID.newBuilder().fileNum(fromFileId.getFileNum()).build(),
+                                fileContents.get(fromFileId), fromFileMeta, fromFileId);
+                        ts.put(
+                                FileID.newBuilder()
+                                        .fileNum(fromFileId.getFileNum())
+                                        .build(),
                                 toFile);
                     } else {
                         System.out.println("BBM: WARN: no meta for fileid: " + fromFileId);

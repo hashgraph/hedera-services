@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import com.hedera.node.app.service.mono.queries.QueriesModule;
 import com.hedera.node.app.service.mono.records.RecordsModule;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.SigsModule;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryModule;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
@@ -135,7 +135,7 @@ public interface ServicesApp {
 
     ServicesInitFlow initializationFlow();
 
-    DualStateAccessor dualStateAccessor();
+    PlatformStateAccessor platformStateAccessor();
 
     VirtualMapFactory virtualMapFactory();
 

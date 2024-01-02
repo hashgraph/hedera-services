@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 
 import com.swirlds.common.config.StateConfig;
@@ -96,7 +95,9 @@ public final class StartupStateUtils {
                         + "Any states with a round number higher than {} will be recycled.",
                 initialStateRound);
 
-        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStateFiles = new SignedStateFilePath(
+                        platformContext.getConfiguration().getConfigData(StateConfig.class))
+                .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
             if (stateInfo.metadata().round() > initialStateRound) {
                 recycleState(recycleBin, stateInfo);
@@ -201,7 +202,9 @@ public final class StartupStateUtils {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
-        final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStateFiles = new SignedStateFilePath(
+                        platformContext.getConfiguration().getConfigData(StateConfig.class))
+                .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         logStatesFound(savedStateFiles);
 
         if (savedStateFiles.isEmpty()) {
@@ -406,9 +409,8 @@ public final class StartupStateUtils {
         final Hash targetEpoch =
                 emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
         final Hash stateHash = state == null ? null : state.get().getState().getHash();
-        final Hash stateEpoch = state == null
-                ? null
-                : state.get().getState().getPlatformState().getPlatformData().getEpochHash();
+        final Hash stateEpoch =
+                state == null ? null : state.get().getState().getPlatformState().getEpochHash();
 
         final boolean inEpoch = isInEpoch(targetEpoch, stateHash, stateEpoch);
 
@@ -430,7 +432,6 @@ public final class StartupStateUtils {
             state.get()
                     .getState()
                     .getPlatformState()
-                    .getPlatformData()
                     .setNextEpochHash(
                             emergencyRecoveryManager.getEmergencyRecoveryFile().hash());
 
@@ -517,8 +518,7 @@ public final class StartupStateUtils {
         final Hash oldHash = deserializedSignedState.originalHash();
         final Hash newHash = rehashTree(state);
 
-        final SoftwareVersion loadedVersion =
-                state.getPlatformState().getPlatformData().getCreationSoftwareVersion();
+        final SoftwareVersion loadedVersion = state.getPlatformState().getCreationSoftwareVersion();
 
         if (oldHash.equals(newHash)) {
             logger.info(STARTUP.getMarker(), "Loaded state's hash is the same as when it was saved.");

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class CreateTopicPerfSuite extends HapiSuite {
         return false;
     }
 
-    private HapiSpec createTopicPerf() {
+    final HapiSpec createTopicPerf() {
         final int NUM_TOPICS = 100000;
 
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));

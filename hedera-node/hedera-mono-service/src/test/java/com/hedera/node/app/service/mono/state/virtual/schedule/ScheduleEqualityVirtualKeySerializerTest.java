@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.IOException;
@@ -38,7 +35,7 @@ class ScheduleEqualityVirtualKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(Long.BYTES);
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
@@ -49,21 +46,26 @@ class ScheduleEqualityVirtualKeySerializerTest {
 
     @Test
     void deserializeWorks() throws IOException {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(Long.BYTES);
         final var expectedKey = new ScheduleEqualityVirtualKey(longKey);
-        given(bin.getLong()).willReturn(longKey);
+        bin.putLong(longKey);
+        bin.rewind();
 
         assertEquals(expectedKey, subject.deserialize(bin, 1));
     }
 
     @Test
     void serializeWorks() throws IOException {
-        final var out = mock(ByteBuffer.class);
+        final ByteBuffer out = ByteBuffer.allocate(Long.BYTES);
+        final ByteBuffer verify = ByteBuffer.allocate(Long.BYTES);
+
         final var virtualKey = new ScheduleEqualityVirtualKey(longKey);
-
+        verify.putLong(longKey);
+        verify.rewind();
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualKey, out));
+        out.rewind();
 
-        verify(out).putLong(longKey);
+        assertEquals(verify, out);
     }
 
     @Test
@@ -71,10 +73,13 @@ class ScheduleEqualityVirtualKeySerializerTest {
         final var someKey = new ScheduleEqualityVirtualKey(longKey);
         final var diffNum = new ScheduleEqualityVirtualKey(otherLongKey);
 
-        final var bin = mock(ByteBuffer.class);
-        given(bin.getLong()).willReturn(someKey.getKeyAsLong());
+        final ByteBuffer bin = ByteBuffer.allocate(Long.BYTES);
+        bin.putLong(someKey.getKeyAsLong());
+        bin.rewind();
 
         assertTrue(subject.equals(bin, 1, someKey));
+        bin.rewind();
+
         assertFalse(subject.equals(bin, 1, diffNum));
     }
 

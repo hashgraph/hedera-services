@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,18 +48,20 @@ import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -111,7 +113,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     private static final long DO_NOT_USE_IN_REAL_LIFE_CLASS_ID = 0x0000deadbeef0000L;
 
-//    private static final long CLASS_ID = 0x2de3ead3caf06392L;
+    //    private static final long CLASS_ID = 0x2de3ead3caf06392L;
     private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     private static final int VERSION_1 = 25;
     private static final int CURRENT_VERSION = VERSION_1;
@@ -146,6 +148,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private OnStateInitialized onInit;
 
     /**
+     * This callback is invoked whenever the updateWeight is called.
+     */
+    private OnUpdateWeight onUpdateWeight;
+
+    /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
@@ -161,10 +168,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     public MerkleHederaState(
             @NonNull final PreHandleListener onPreHandle,
             @NonNull final HandleConsensusRoundListener onHandleConsensusRound,
-            @NonNull final OnStateInitialized onInit) {
+            @NonNull final OnStateInitialized onInit,
+            @NonNull final OnUpdateWeight onUpdateWeight) {
         this.onPreHandle = requireNonNull(onPreHandle);
         this.onHandleConsensusRound = requireNonNull(onHandleConsensusRound);
         this.onInit = requireNonNull(onInit);
+        this.onUpdateWeight = requireNonNull(onUpdateWeight);
         this.classId = CLASS_ID;
     }
 
@@ -192,13 +201,15 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState dualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
         var testNode = getChild(StateChildIndices.NETWORK_CTX);
         if (testNode != null) {
-            logger.info("Now we have a mono-service state, e.g. child {} is {}",
-                    StateChildIndices.NETWORK_CTX, testNode.getClass().getSimpleName());
+            logger.info(
+                    "Now we have a mono-service state, e.g. child {} is {}",
+                    StateChildIndices.NETWORK_CTX,
+                    testNode.getClass().getSimpleName());
         } else {
             throw new IllegalStateException("Unexpectedly couldn't load state...");
         }
@@ -207,7 +218,18 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,
         // we simply call the callback handler, which is implemented by the app.
-        this.onInit.onStateInitialized(this, platform, dualState, trigger, deserializedVersion);
+        this.onInit.onStateInitialized(this, platform, platformState, trigger, deserializedVersion);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public AddressBook updateWeight(
+            @NonNull final AddressBook configAddressBook, @NonNull final PlatformContext context) {
+        this.onUpdateWeight.updateWeight(this, configAddressBook, context);
+        return configAddressBook;
     }
 
     /**
@@ -317,10 +339,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.onConsensusRound(round, swirldDualState, this);
+            onHandleConsensusRound.onConsensusRound(round, platformState, this);
         }
     }
 

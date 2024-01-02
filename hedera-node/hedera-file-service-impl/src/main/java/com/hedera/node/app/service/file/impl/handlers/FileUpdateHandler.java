@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.types.LongPair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -121,7 +122,9 @@ public class FileUpdateHandler implements TransactionHandler {
 
         // the update file always will be for the node, not a particular ledger that's why we just compare the fileNum
         // and ignore shard and realm
-        if (fileUpdate.fileIDOrThrow().fileNum() == fileServiceConfig.upgradeFileNumber()) {
+        FileID fileID = fileUpdate.fileIDOrThrow();
+        LongPair upgradeFileRange = fileServiceConfig.softwareUpdateRange();
+        if (fileID.fileNum() >= upgradeFileRange.left() && fileID.fileNum() <= upgradeFileRange.right()) {
             handleUpdateUpgradeFile(fileUpdate, handleContext);
             return;
         }
@@ -135,7 +138,6 @@ public class FileUpdateHandler implements TransactionHandler {
         validateFalse(file.deleted(), FILE_DELETED);
 
         // First validate this file is mutable; and the pending mutations are allowed
-        // TODO: add or condition for privilege accounts from context
         if (wantsToMutateNonExpiryField(fileUpdate)) {
             validateFalse(file.keys() == null, UNAUTHORIZED);
             validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
@@ -181,15 +183,18 @@ public class FileUpdateHandler implements TransactionHandler {
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
         final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
         // empty old upgrade file
-        fileStore.resetFileContents();
+        FileID fileId = fileUpdate.fileIDOrThrow();
+
+        if (fileUpdate.contents() != null && fileUpdate.contents().length() > 0) {
+            fileStore.resetFileContents(fileId);
+            fileStore.addUpgradeContent(fileId, fileUpdate.contents());
+        }
+        // Note that upgrade file memos are generated programmatically
+        // as the SHA-384 hash of their contents
         final var file = new File.Builder()
-                .fileId(FileID.newBuilder()
-                        .fileNum(fileUpdate.fileIDOrThrow().fileNum())
-                        .build())
-                .contents(fileUpdate.contents())
+                .fileId(fileId)
                 .deleted(false)
                 .expirationSecond(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
-                .memo(fileUpdate.memo())
                 .build();
         fileStore.add(file);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
         });
     }
 
-    private HapiSpec setNewLimits() {
+    final HapiSpec setNewLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/split-throttles.json");
 
         return defaultHapiSpec("SetNewLimits")
@@ -75,7 +75,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
                         .contents(artificialLimits.toByteArray()));
     }
 
-    private HapiSpec tryCreations() {
+    final HapiSpec tryCreations() {
         return defaultHapiSpec("TryCreations")
                 .given()
                 .when(runWithProvider(cryptoCreateOps())

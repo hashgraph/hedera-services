@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetTokenInfo() {
+    final HapiSpec happyPathGetTokenInfo() {
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetTokenInfo")
                 .given(
@@ -254,7 +254,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetFungibleTokenInfo() {
+    final HapiSpec happyPathGetFungibleTokenInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetFungibleTokenInfo")
@@ -349,7 +349,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetNonFungibleTokenInfo() {
+    final HapiSpec happyPathGetNonFungibleTokenInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -461,7 +461,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnDeletedFungibleTokenWorks() {
+    final HapiSpec getInfoOnDeletedFungibleTokenWorks() {
         return defaultHapiSpec("getInfoOnDeletedFungibleTokenWorks")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -507,7 +507,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnInvalidFungibleTokenFails() {
+    final HapiSpec getInfoOnInvalidFungibleTokenFails() {
         return defaultHapiSpec("getInfoOnInvalidFungibleTokenFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -550,7 +550,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
+    final HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoOnDeletedNonFungibleTokenFails")
                 .given(
@@ -593,7 +593,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
+    final HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoOnInvalidNonFungibleTokenFails")
                 .given(
@@ -647,7 +647,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetTokenCustomFees() {
+    final HapiSpec happyPathGetTokenCustomFees() {
         return defaultHapiSpec("HappyPathGetTokenCustomFees")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -703,7 +703,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathGetNonFungibleTokenCustomFees() {
+    final HapiSpec happyPathGetNonFungibleTokenCustomFees() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("HappyPathGetNonFungibleTokenCustomFees")

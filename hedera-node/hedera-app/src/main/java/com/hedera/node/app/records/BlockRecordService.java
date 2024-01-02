@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.records;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -26,9 +28,7 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.util.Set;
 import javax.inject.Singleton;
@@ -56,6 +56,8 @@ public final class BlockRecordService implements Service {
     private RecordsRunningHashLeaf fs;
     private MerkleNetworkContext mnc;
 
+    public static final Timestamp EPOCH = new Timestamp(0, 0);
+
     @NonNull
     @Override
     public String getServiceName() {
@@ -63,9 +65,8 @@ public final class BlockRecordService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        // BBM: reducing version just for testing
-        registry.register(new Schema(RELEASE_045_VERSION) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
             @Override
@@ -82,7 +83,7 @@ public final class BlockRecordService implements Service {
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
                 final var isGenesis = ctx.previousStates().isEmpty();
                 if (isGenesis) {
-                    final var blocks = new BlockInfo(0, null, Bytes.EMPTY, null, false);
+                    final var blocks = new BlockInfo(-1, EPOCH, Bytes.EMPTY, EPOCH, false, EPOCH);
                     blocksState.put(blocks);
                     final var runningHashes =
                             RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
@@ -96,7 +97,7 @@ public final class BlockRecordService implements Service {
             }
         });
 
-//        if(true)return;
+        //        if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.demo.platform;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
@@ -59,7 +61,7 @@ public class PayloadDistribution {
             System.out.println("ERROR Payload distribution array is not same size " + ratioDistribution.length
                     + sizeDistribution.length + typeDistribution.length);
             logger.error(
-                    ERROR,
+                    EXCEPTION.getMarker(),
                     " Payload distribution array is not same size {} {} {} ",
                     ratioDistribution.length,
                     sizeDistribution.length,
@@ -82,7 +84,7 @@ public class PayloadDistribution {
                     sum += ratioDistribution[i];
                 }
             } catch (ArrayIndexOutOfBoundsException e) {
-                logger.error(ERROR, "", e);
+                logger.error(EXCEPTION.getMarker(), "", e);
             }
         }
         return property;

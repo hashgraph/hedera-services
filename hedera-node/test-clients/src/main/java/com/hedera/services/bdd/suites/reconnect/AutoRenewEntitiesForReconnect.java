@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                 accountAutoRenewalSuiteCleanup());
     }
 
-    private HapiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
+    final HapiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
         String autoDeleteAccount = "autoDeleteAccount";
         int autoRenewSecs = 1;
         return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
@@ -86,7 +86,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                         .hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID));
     }
 
-    private HapiSpec accountAutoRenewalSuiteCleanup() {
+    final HapiSpec accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()

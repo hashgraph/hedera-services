@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,7 +157,7 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
         return List.of(justDoOne(), addFibNums());
     }
 
-    private HapiSpec addFibNums() {
+    final HapiSpec addFibNums() {
         return defaultHapiSpec("AddFibNums")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, SUITE_PROPS_PREFIX),
@@ -355,7 +355,7 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
         gasUsed.addAndGet(gas);
     }
 
-    private HapiSpec justDoOne() {
+    final HapiSpec justDoOne() {
         final var civilian = "civilian";
         final int[] firstTargets = {19, 24};
         final int[] secondTargets = {30, 31};

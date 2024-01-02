@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class TokenTransfersLoadProvider extends HapiSuite {
         });
     }
 
-    private HapiSpec runTokenTransfers() {
+    final HapiSpec runTokenTransfers() {
         return HapiSpec.defaultHapiSpec("RunTokenTransfers")
                 .given(
                         getAccountBalance(DEFAULT_PAYER).logged(),

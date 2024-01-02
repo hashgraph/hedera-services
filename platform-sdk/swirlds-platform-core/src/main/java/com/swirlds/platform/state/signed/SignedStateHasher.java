@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,13 +61,19 @@ public class SignedStateHasher {
      * @param signedStateMetrics the SignedStateMetrics instance to record time spent hashing.
      * @param stateHashedTrigger the StateHashedTrigger dispatcher to notify with hash.
      * @param fatalErrorConsumer the FatalErrorConsumer to consume any fatal errors during hashing.
+     *
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code stateHashedTrigger}</li>
+     *       <li>{@code fatalErrorConsumer}</li>
+     *     </ul>
      */
     public SignedStateHasher(
             SignedStateMetrics signedStateMetrics,
             StateHashedTrigger stateHashedTrigger,
             FatalErrorConsumer fatalErrorConsumer) {
-        this.stateHashedTrigger = CommonUtils.throwArgNull(stateHashedTrigger, "stateHashedTrigger");
-        this.fatalErrorConsumer = CommonUtils.throwArgNull(fatalErrorConsumer, "fatalErrorConsumer");
+        this.stateHashedTrigger = Objects.requireNonNull(stateHashedTrigger, "stateHashedTrigger must not be null");
+        this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.signedStateMetrics = signedStateMetrics;
     }
 

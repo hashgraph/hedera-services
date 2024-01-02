@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -290,32 +290,30 @@ class DispatchTests {
         final DispatchBuilder builder = new DispatchBuilder(config);
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(null, null, null),
                 "null arguments not allowed");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(DispatchTests.class, TestDispatchOne.class, null),
                 "null arguments not allowed");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(TestDispatchOne.class, null, (TestDispatchOne) x -> {}),
                 "null arguments not allowed");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.registerObserver(DispatchTests.class, null, (TestDispatchOne) x -> {}),
                 "null arguments not allowed");
-        assertThrows(
-                IllegalArgumentException.class, () -> builder.registerObservers(null), "null arguments not allowed");
+        assertThrows(NullPointerException.class, () -> builder.registerObservers(null), "null arguments not allowed");
 
         builder.start();
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> builder.getDispatcher(null, TestDispatchOne.class),
                 "null arguments not allowed");
-        assertThrows(
-                IllegalArgumentException.class, () -> builder.getDispatcher(this, null), "null arguments not allowed");
+        assertThrows(NullPointerException.class, () -> builder.getDispatcher(this, null), "null arguments not allowed");
     }
 
     @Test

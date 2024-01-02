@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
@@ -36,15 +37,18 @@ import javax.inject.Singleton;
 public final class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
     private final CryptoOpsUsage cryptoOpsUsage;
     private final AliasManager aliasManager;
+    private final GlobalDynamicProperties dynamicProperties;
     private final RewardCalculator rewardCalculator;
 
     @Inject
     public GetAccountInfoResourceUsage(
             final CryptoOpsUsage cryptoOpsUsage,
             final AliasManager aliasManager,
+            final GlobalDynamicProperties dynamicProperties,
             final RewardCalculator rewardCalculator) {
         this.cryptoOpsUsage = cryptoOpsUsage;
         this.aliasManager = aliasManager;
+        this.dynamicProperties = dynamicProperties;
         this.rewardCalculator = rewardCalculator;
     }
 
@@ -58,7 +62,12 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
         final var op = query.getCryptoGetInfo();
 
         final var account = op.getAccountID();
-        final var info = view.infoForAccount(account, aliasManager, rewardCalculator);
+        final var info = view.infoForAccount(
+                account,
+                aliasManager,
+                dynamicProperties.maxTokensRelsPerInfoQuery(),
+                rewardCalculator,
+                dynamicProperties.areTokenBalancesEnabledInQueries());
         /* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
          * under the extraordinary circumstance that the desired account expired during the query
          * answer flow (which will now fail downstream with an appropriate status code); so

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -45,10 +42,8 @@ import java.util.Objects;
  */
 public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
 
-    private static final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
-
     /** The underlying data storage class that holds the file data. */
-    private final ReadableQueueState<ProtoBytes> upgradeState;
+    private final ReadableStates states;
 
     private final ReadableKVState<FileID, File> upgradeFileState;
 
@@ -58,7 +53,7 @@ public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
      * @param states The state to use.
      */
     public ReadableUpgradeFileStoreImpl(@NonNull final ReadableStates states) {
-        upgradeState = Objects.requireNonNull(states.getQueue(UPGRADE_DATA_KEY));
+        this.states = Objects.requireNonNull(states);
         upgradeFileState = Objects.requireNonNull(states.get(BLOBS_KEY));
     }
 
@@ -75,26 +70,27 @@ public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
 
     @Override
     @Nullable
-    public File peek() {
-        return upgradeFileState.get(UPGRADE_FILE_ID);
+    public File peek(final FileID fileID) {
+        return upgradeFileState.get(fileID);
     }
 
     @Override
     @NonNull
-    public Iterator<File> iterator() {
-        final File upgradeFile = upgradeFileState.get(UPGRADE_FILE_ID);
-        return upgradeFile != null ? List.of(upgradeFile).iterator() : Collections.emptyIterator();
-    }
-
-    @Override
-    @NonNull
-    public Bytes getFull() throws IOException {
+    public Bytes getFull(final FileID fileID) throws IOException {
         ByteArrayOutputStream collector = new ByteArrayOutputStream();
-        final var iterator = upgradeState.iterator();
-        while (iterator.hasNext()) {
-            final var file = iterator.next();
-            collector.write(file.value().toByteArray());
+        final ReadableQueueState<ProtoBytes> upgradeState =
+                Objects.requireNonNull(states.getQueue(UPGRADE_DATA_KEY.formatted(fileID)));
+        final Bytes fullContents;
+        if (upgradeFileState.get(fileID) != null) {
+            final var iterator = upgradeState.iterator();
+            while (iterator.hasNext()) {
+                final var file = iterator.next();
+                collector.write(file.value().toByteArray());
+            }
+            fullContents = Bytes.wrap(collector.toByteArray());
+        } else {
+            fullContents = Bytes.EMPTY;
         }
-        return Bytes.wrap(collector.toByteArray());
+        return fullContents;
     }
 }

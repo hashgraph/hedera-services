@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.ids;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -52,8 +52,8 @@ public class EntityIdService implements Service {
 
     /** {@inheritDoc} */
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(RELEASE_045_VERSION) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new Schema(version) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
              * perhaps in this version of the schema, you need to create a new state FOO. The set will have
@@ -88,7 +88,7 @@ public class EntityIdService implements Service {
             }
         });
 
-//        if(true)return;
+        //        if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {

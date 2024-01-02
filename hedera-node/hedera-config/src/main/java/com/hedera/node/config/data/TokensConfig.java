@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,4 +48,6 @@ public record TokensConfig(
         @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "true") @NetworkProperty
                 boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
-                boolean autoCreationsIsEnabled) {}
+                boolean autoCreationsIsEnabled,
+        @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "true") @NetworkProperty
+                boolean balancesInQueriesEnabled) {}

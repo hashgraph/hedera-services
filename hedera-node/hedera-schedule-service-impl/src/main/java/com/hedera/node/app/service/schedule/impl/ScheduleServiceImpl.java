@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
@@ -37,17 +38,14 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
-
-import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
+import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
@@ -64,24 +62,30 @@ public final class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(scheduleSchema());
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(scheduleSchema(version));
 
-//        if(true)return;
-        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
+        //        if(true)return;
+        registry.register(new Schema(version) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 System.out.println("BBM: doing schedule migration");
 
                 System.out.println("BBM: doing schedule by id");
-                final WritableKVState<ScheduleID, Schedule> schedulesById = ctx.newStates().get(SCHEDULES_BY_ID_KEY);
+                final WritableKVState<ScheduleID, Schedule> schedulesById =
+                        ctx.newStates().get(SCHEDULES_BY_ID_KEY);
                 fs.byId().forEachNode(new BiConsumer<EntityNumVirtualKey, ScheduleVirtualValue>() {
                     @Override
-                    public void accept(EntityNumVirtualKey entityNumVirtualKey,
-                            ScheduleVirtualValue scheduleVirtualValue) {
+                    public void accept(
+                            EntityNumVirtualKey entityNumVirtualKey, ScheduleVirtualValue scheduleVirtualValue) {
                         try {
-                            var schedule = ScheduleServiceStateTranslator.convertScheduleVirtualValueToSchedule(scheduleVirtualValue);
-                            schedulesById.put(ScheduleID.newBuilder().scheduleNum(entityNumVirtualKey.getKeyAsLong()).build(), schedule);
+                            var schedule = ScheduleServiceStateTranslator.convertScheduleVirtualValueToSchedule(
+                                    scheduleVirtualValue);
+                            schedulesById.put(
+                                    ScheduleID.newBuilder()
+                                            .scheduleNum(entityNumVirtualKey.getKeyAsLong())
+                                            .build(),
+                                    schedule);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -91,63 +95,77 @@ public final class ScheduleServiceImpl implements ScheduleService {
                 System.out.println("BBM: finished schedule by id");
 
                 System.out.println("BBM: doing schedule by expiration");
-                final WritableKVState<ProtoLong, ScheduleList> schedulesByExpiration = ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
-                fs.byExpirationSecond().forEachNode(
-                        new BiConsumer<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>() {
+                final WritableKVState<ProtoLong, ScheduleList> schedulesByExpiration =
+                        ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
+                fs.byExpirationSecond()
+                        .forEachNode(new BiConsumer<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>() {
                             @Override
-                            public void accept(SecondSinceEpocVirtualKey secondSinceEpocVirtualKey,
+                            public void accept(
+                                    SecondSinceEpocVirtualKey secondSinceEpocVirtualKey,
                                     ScheduleSecondVirtualValue sVv) {
-                                sVv.getIds().forEach(
-                                        new BiConsumer<RichInstant, ImmutableLongList>() {
+                                sVv.getIds().forEach(new BiConsumer<RichInstant, ImmutableLongList>() {
+                                    @Override
+                                    public void accept(RichInstant richInstant, ImmutableLongList scheduleIds) {
+
+                                        List<Schedule> schedules = new ArrayList<>();
+                                        scheduleIds.forEach(new LongProcedure() {
                                             @Override
-                                            public void accept(RichInstant richInstant,
-                                                    ImmutableLongList scheduleIds) {
-
-                                                List<Schedule> schedules = new ArrayList<>();
-                                                scheduleIds.forEach(new LongProcedure() {
-                                                    @Override
-                                                    public void value(long scheduleId) {
-                                                        var schedule = schedulesById.get(ScheduleID.newBuilder().scheduleNum(scheduleId).build());
-                                                        if (schedule != null) schedules.add(schedule);
-                                                        else {
-                                                            System.out.println("BBM: ERROR: no schedule for expiration->id " + richInstant + " -> " + scheduleId);
-                                                        }
-                                                    }
-                                                });
-
-                                                schedulesByExpiration.put(ProtoLong.newBuilder().value(secondSinceEpocVirtualKey.getKeyAsLong()).build(), ScheduleList.newBuilder().schedules(schedules).build());
+                                            public void value(long scheduleId) {
+                                                var schedule = schedulesById.get(ScheduleID.newBuilder()
+                                                        .scheduleNum(scheduleId)
+                                                        .build());
+                                                if (schedule != null) schedules.add(schedule);
+                                                else {
+                                                    System.out.println("BBM: ERROR: no schedule for expiration->id "
+                                                            + richInstant + " -> " + scheduleId);
+                                                }
                                             }
                                         });
+
+                                        schedulesByExpiration.put(
+                                                ProtoLong.newBuilder()
+                                                        .value(secondSinceEpocVirtualKey.getKeyAsLong())
+                                                        .build(),
+                                                ScheduleList.newBuilder()
+                                                        .schedules(schedules)
+                                                        .build());
+                                    }
+                                });
                             }
                         });
                 if (schedulesByExpiration.isModified()) ((WritableKVStateBase) schedulesByExpiration).commit();
                 System.out.println("BBM: finished schedule by expiration");
 
                 System.out.println("BBM: doing schedule by equality");
-                final WritableKVState<ProtoString, ScheduleList> schedulesByEquality = ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
-                fs.byEquality().forEachNode(
-                        new BiConsumer<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>() {
+                final WritableKVState<ProtoString, ScheduleList> schedulesByEquality =
+                        ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
+                fs.byEquality().forEachNode(new BiConsumer<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>() {
+                    @Override
+                    public void accept(
+                            ScheduleEqualityVirtualKey scheduleEqualityVirtualKey, ScheduleEqualityVirtualValue sevv) {
+
+                        List<Schedule> schedules = new ArrayList<>();
+                        sevv.getIds().forEach(new BiConsumer<String, Long>() {
                             @Override
-                            public void accept(
-                                    ScheduleEqualityVirtualKey scheduleEqualityVirtualKey,
-                                    ScheduleEqualityVirtualValue sevv) {
-
-                                List<Schedule> schedules = new ArrayList<>();
-                                sevv.getIds().forEach(new BiConsumer<String, Long>() {
-                                    @Override
-                                    public void accept(String scheduleObjHash, Long scheduleId) {
-                                        var schedule = schedulesById.get(ScheduleID.newBuilder().scheduleNum(scheduleId).build());
-                                        if (schedule != null) schedules.add(schedule);
-                                        else {
-                                            System.out.println("BBM: ERROR: no schedule for scheduleObjHash->id " + scheduleObjHash + " -> " + scheduleId);
-                                        }
-                                    }
-                                });
-
-                                schedulesByEquality.put(ProtoString.newBuilder().value(String.valueOf(scheduleEqualityVirtualKey.getKeyAsLong())).build(),
-                                        ScheduleList.newBuilder().schedules(schedules).build());
+                            public void accept(String scheduleObjHash, Long scheduleId) {
+                                var schedule = schedulesById.get(ScheduleID.newBuilder()
+                                        .scheduleNum(scheduleId)
+                                        .build());
+                                if (schedule != null) schedules.add(schedule);
+                                else {
+                                    System.out.println("BBM: ERROR: no schedule for scheduleObjHash->id "
+                                            + scheduleObjHash + " -> " + scheduleId);
+                                }
                             }
                         });
+
+                        schedulesByEquality.put(
+                                ProtoString.newBuilder()
+                                        .value(String.valueOf(scheduleEqualityVirtualKey.getKeyAsLong()))
+                                        .build(),
+                                ScheduleList.newBuilder().schedules(schedules).build());
+                    }
+                });
                 if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
                 System.out.println("BBM: finished schedule by equality");
 
@@ -156,14 +174,14 @@ public final class ScheduleServiceImpl implements ScheduleService {
         });
     }
 
-    private Schema scheduleSchema() {
+    private Schema scheduleSchema(final SemanticVersion version) {
         // Everything in memory for now
-        return new ScheduleServiceSchema();
+        return new ScheduleServiceSchema(version);
     }
 
     private static final class ScheduleServiceSchema extends Schema {
-        public ScheduleServiceSchema() {
-            super(RELEASE_045_VERSION);
+        public ScheduleServiceSchema(final SemanticVersion version) {
+            super(version);
         }
 
         @SuppressWarnings("rawtypes")

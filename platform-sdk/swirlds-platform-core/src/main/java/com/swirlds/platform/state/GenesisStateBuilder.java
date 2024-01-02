@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,34 +42,15 @@ public final class GenesisStateBuilder {
             final AddressBook addressBook, final SoftwareVersion appVersion) {
 
         final PlatformState platformState = new PlatformState();
-        final PlatformData platformData = new PlatformData();
-        platformState.setPlatformData(platformData);
         platformState.setAddressBook(addressBook.copy());
 
-        platformData.setCreationSoftwareVersion(appVersion);
-        platformData.setRound(0);
-        platformData.setHashEventsCons(null);
-        platformData.setEpochHash(null);
-        platformData.setConsensusTimestamp(Instant.ofEpochSecond(0L));
+        platformState.setCreationSoftwareVersion(appVersion);
+        platformState.setRound(0);
+        platformState.setRunningEventHash(null);
+        platformState.setEpochHash(null);
+        platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
         return platformState;
-    }
-
-    /**
-     * Construct a genesis dual state.
-     *
-     * @param configuration configuration for the platform
-     * @return a genesis dual state
-     */
-    private static DualStateImpl buildGenesisDualState(final BasicConfig configuration) {
-        final DualStateImpl dualState = new DualStateImpl();
-
-        final long genesisFreezeTime = configuration.genesisFreezeTime();
-        if (genesisFreezeTime > 0) {
-            dualState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
-        }
-
-        return dualState;
     }
 
     /**
@@ -91,7 +72,11 @@ public final class GenesisStateBuilder {
         final State state = new State();
         state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
         state.setSwirldState(swirldState);
-        state.setDualState(buildGenesisDualState(basicConfig));
+
+        final long genesisFreezeTime = basicConfig.genesisFreezeTime();
+        if (genesisFreezeTime > 0) {
+            state.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+        }
 
         final SignedState signedState = new SignedState(platformContext, state, "genesis state", false);
         return signedState.reserve("initial reservation on genesis state");

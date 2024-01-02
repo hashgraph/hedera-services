@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
@@ -41,7 +42,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -407,35 +407,21 @@ public final class SyncUtils {
      * <li>Don't send non-ancestors of self events unless we've known about that event for a long time.</li>
      * </ul>
      *
-     * @param shadowGraph          the shadow graph
-     * @param selfId               the id of this node
-     * @param nonAncestorThreshold for each event that is not a self event and is not an ancestor of a self event, the
-     *                             amount of time the event must be known about before it is eligible to be sent
-     * @param now                  the current time
-     * @param eventsTheyNeed       the list of events we think they need
+     * @param selfId                the id of this node
+     * @param nonAncestorThreshold  for each event that is not a self event and is not an ancestor of a self event, the
+     *                              amount of time the event must be known about before it is eligible to be sent
+     * @param now                   the current time
+     * @param eventsTheyNeed        the list of events we think they need
+     * @param latestSelfEventTipset the tipset of the latest self event, or null if there is none
      * @return the events that should be actually sent, will be a subset of the eventsTheyNeed list
      */
     @NonNull
     public static List<EventImpl> filterLikelyDuplicates(
-            @NonNull final ShadowGraph shadowGraph,
             @NonNull final NodeId selfId,
             @NonNull final Duration nonAncestorThreshold,
             @NonNull final Instant now,
-            @NonNull final List<EventImpl> eventsTheyNeed) {
-
-        final ShadowEvent latestSelfEvent = getLatestSelfEventInShadowgraph(shadowGraph, selfId);
-
-        final Set<ShadowEvent> selfEventAncestors;
-        if (latestSelfEvent == null) {
-            selfEventAncestors = Set.of();
-        } else {
-            final List<ShadowEvent> listOfLatestSelfEvent = List.of(latestSelfEvent);
-            selfEventAncestors = shadowGraph.findAncestors(listOfLatestSelfEvent, event -> true);
-        }
-
-        // Convert to a list of hashes for easy lookup.
-        final List<Hash> selfEventAncestorHashes =
-                selfEventAncestors.stream().map(ShadowEvent::getEventBaseHash).toList();
+            @NonNull final List<EventImpl> eventsTheyNeed,
+            @Nullable final Tipset latestSelfEventTipset) {
 
         final List<EventImpl> filteredList = new ArrayList<>();
 
@@ -446,12 +432,43 @@ public final class SyncUtils {
                 continue;
             }
 
+            if (latestSelfEventTipset == null) {
+                // Special case: we have no self events yet.
+                filteredList.add(event);
+                continue;
+            }
+
+            final long latestGenerationInAncestry = latestSelfEventTipset.getTipGenerationForNode(event.getCreatorId());
+
+            if (latestGenerationInAncestry == Tipset.UNDEFINED) {
+                // Special case: we don't have enough information to decide if this node is in our ancestry.
+                filteredList.add(event);
+                continue;
+            }
+
+            if (latestGenerationInAncestry >= event.getGeneration()) {
+                // This event is an ancestor* of our latest self event.
+                //
+                // We want to answer the question: "Is this event an ancestor of my latest self event?"
+                // The latest self event's tipset makes this easy to answer. A tipset is basically just
+                // an array containing the latest generations of each event creator in our ancestry.
+                // If we compare the generation of the event we're looking at to the generation of the
+                // latest ancestor from the same creator, we can tell if this is an ancestor. If the event's
+                // generation is less than or equal to the latest ancestor's generation, then it is an ancestor.
+                // If it is greater than the latest ancestor's generation, then it is not an ancestor.
+                //
+                // *Note: there is an edge case where this breaks down a little. If this event's creator is branching,
+                // then we may falsely conclude that this event is in our ancestry when it is not. But this is not
+                // harmful. The purpose of this method is to reduce the number of events we send to the peer, and so
+                // the worst that can happen is that we send a few extra events and get a slightly higher duplication
+                // rate.
+                filteredList.add(event);
+                continue;
+            }
+
             final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
             final Duration timeKnown = Duration.between(eventReceivedTime, now);
-
-            final boolean isAncestor = selfEventAncestorHashes.contains(event.getBaseHash());
-
-            if (isAncestor || CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {
+            if (CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {
                 // Always send ancestors of self events right away.
                 // For all other events, only send it if we've known about it for long enough.
                 filteredList.add(event);

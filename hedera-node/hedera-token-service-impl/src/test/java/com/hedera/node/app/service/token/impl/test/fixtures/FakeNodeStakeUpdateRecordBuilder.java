@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,20 @@ public class FakeNodeStakeUpdateRecordBuilder {
 
     public NodeStakeUpdateRecordBuilder create() {
         return new NodeStakeUpdateRecordBuilder() {
+            private String memo;
             private Transaction txn;
 
             @NotNull
             @Override
             public NodeStakeUpdateRecordBuilder transaction(@NotNull final Transaction txn) {
                 this.txn = txn;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public NodeStakeUpdateRecordBuilder memo(@NotNull String memo) {
+                this.memo = memo;
                 return this;
             }
         };

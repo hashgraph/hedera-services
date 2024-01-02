@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,8 @@ public class FileServiceUtils {
 
         // @future('8172'): check if upgrade file exist after modularization is done
         FileMetadata fileMeta = null;
-        if (fileId.fileNum() != fileConfig.upgradeFileNumber()) {
+        if (fileId.fileNum() < fileConfig.softwareUpdateRange().left()
+                || fileId.fileNum() > fileConfig.softwareUpdateRange().right()) {
             fileMeta = fileStore.getFileMetadata(fileId);
             mustExist(fileMeta, INVALID_FILE_ID);
         }

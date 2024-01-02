@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,33 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.merkle.MerkleInternal;
-import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * The root of the merkle tree holding the state of the Swirlds ledger. Contains three children: the state used by the
- * application; the state used by the platform; and the state used by both application and platform.
+ * The root of the merkle tree holding the state of the Swirlds ledger. Contains two children: the state used by the
+ * application and the state used by the platform.
  */
 public class State extends PartialNaryMerkleInternal implements MerkleInternal {
+
+    private static final Logger logger = LogManager.getLogger(State.class);
 
     private static final long CLASS_ID = 0x2971b4ba7dd84402L;
 
@@ -48,6 +52,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         public static final int EVENT_REFACTOR = 3;
         public static final int MIGRATE_TO_SERIALIZABLE = 4;
         public static final int ADD_DUAL_STATE = 5;
+        public static final int REMOVE_DUAL_STATE = 6;
     }
 
     private static class ChildIndices {
@@ -61,7 +66,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
          */
         public static final int PLATFORM_STATE = 1;
         /**
-         * The state either read or written by the platform and the application
+         * Not used after migration.
          */
         public static final int DUAL_STATE = 2;
     }
@@ -86,26 +91,48 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         if (that.getPlatformState() != null) {
             this.setPlatformState(that.getPlatformState().copy());
         }
-        if (that.getDualState() != null) {
-            this.setDualState(that.getDualState().copy());
-        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean childHasExpectedType(final int index, final long childClassId) {
-        switch (index) {
-            case ChildIndices.SWIRLD_STATE:
-                return true;
-            case ChildIndices.PLATFORM_STATE:
-                return childClassId == PlatformState.CLASS_ID;
-            case ChildIndices.DUAL_STATE:
-                return childClassId == DualStateImpl.CLASS_ID;
-            default:
-                throw new IllegalChildIndexException(getMinimumChildCount(), getMaximumChildCount(), index);
+    public MerkleNode migrate(final int version) {
+        if (version < ClassVersion.REMOVE_DUAL_STATE) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Migrating legacy platform state to new platform state at version (State version {} -> {}).",
+                    version,
+                    getVersion());
+
+            final State newState = new State();
+
+            final PlatformState newPlatformState = new PlatformState();
+
+            final LegacyPlatformState platformState = getChild(ChildIndices.PLATFORM_STATE);
+            final PlatformData platformData = platformState.getPlatformData();
+            final DualStateImpl dualState = getChild(ChildIndices.DUAL_STATE);
+
+            newPlatformState.setAddressBook(platformState.getAddressBook());
+            newPlatformState.setPreviousAddressBook(platformState.getPreviousAddressBook());
+            newPlatformState.setRound(platformData.getRound());
+            newPlatformState.setRunningEventHash(platformData.getHashEventsCons());
+            newPlatformState.setConsensusTimestamp(platformData.getConsensusTimestamp());
+            newPlatformState.setCreationSoftwareVersion(platformData.getCreationSoftwareVersion());
+            newPlatformState.setEpochHash(platformData.getEpochHash());
+            newPlatformState.setNextEpochHash(platformData.getNextEpochHash());
+            newPlatformState.setRoundsNonAncient(platformData.getRoundsNonAncient());
+            newPlatformState.setSnapshot(platformData.getSnapshot());
+            newPlatformState.setFreezeTime(dualState.getFreezeTime());
+            newPlatformState.setLastFrozenTime(dualState.getLastFrozenTime());
+            newPlatformState.setUptimeData(dualState.getUptimeData());
+
+            newState.setPlatformState(newPlatformState);
+            newState.setSwirldState(getSwirldState());
+
+            return newState;
         }
+        return this;
     }
 
     /**
@@ -113,7 +140,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.ADD_MIN_GEN;
+        return ClassVersion.ADD_DUAL_STATE;
     }
 
     /**
@@ -153,42 +180,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     }
 
     /**
-     * Get the dualState.
-     *
-     * @return the dualState
-     */
-    private DualStateImpl getDualState() {
-        return getChild(ChildIndices.DUAL_STATE);
-    }
-
-    /**
-     * Get current dualState object which can be read/written by the platform
-     *
-     * @return current dualState object which can be read/written by the platform
-     */
-    public PlatformDualState getPlatformDualState() {
-        return getDualState();
-    }
-
-    /**
-     * Get current dualState object which can be read/written by the application
-     *
-     * @return current dualState object which can be read/written by the application
-     */
-    public SwirldDualState getSwirldDualState() {
-        return getDualState();
-    }
-
-    /**
-     * Set the dual state.
-     *
-     * @param dualState the dual state
-     */
-    public void setDualState(final DualStateImpl dualState) {
-        setChild(ChildIndices.DUAL_STATE, dualState);
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -201,7 +192,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ADD_DUAL_STATE;
+        return ClassVersion.REMOVE_DUAL_STATE;
     }
 
     /**
@@ -245,8 +236,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         }
         final State state = (State) other;
         return Objects.equals(getPlatformState(), state.getPlatformState())
-                && Objects.equals(getSwirldState(), state.getSwirldState())
-                && Objects.equals(getPlatformDualState(), state.getPlatformDualState());
+                && Objects.equals(getSwirldState(), state.getSwirldState());
     }
 
     /**
@@ -254,7 +244,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getPlatformState(), getSwirldState(), getPlatformDualState());
+        return Objects.hash(getPlatformState(), getSwirldState());
     }
 
     /**
@@ -263,27 +253,26 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      * @param hashDepth the depth of the tree to visit and print
      */
     public String getInfoString(final int hashDepth) {
-        final PlatformData data = getPlatformState().getPlatformData();
-        final Hash epochHash = data.getNextEpochHash();
-        final Hash hashEventsCons = data.getHashEventsCons();
-        final List<MinGenInfo> minGenInfo = data.getMinGenInfo();
-        final ConsensusSnapshot snapshot = data.getSnapshot();
+        final PlatformState platformState = getPlatformState();
+        final Hash epochHash = platformState.getNextEpochHash();
+        final Hash hashEventsCons = platformState.getRunningEventHash();
+        final List<MinGenInfo> minGenInfo = platformState.getMinGenInfo();
+        final ConsensusSnapshot snapshot = platformState.getSnapshot();
 
         final StringBuilder sb = new StringBuilder();
 
         new TextTable()
                 .setBordersEnabled(false)
-                .addRow("Round:", data.getRound())
-                .addRow("Timestamp:", data.getConsensusTimestamp())
+                .addRow("Round:", platformState.getRound())
+                .addRow("Timestamp:", platformState.getConsensusTimestamp())
                 .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
                 .addRow("Running event hash:", hashEventsCons)
                 .addRow("Running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .addRow("Rounds non-ancient:", data.getRoundsNonAncient())
-                .addRow("Creation version:", data.getCreationSoftwareVersion())
+                .addRow("Rounds non-ancient:", platformState.getRoundsNonAncient())
+                .addRow("Creation version:", platformState.getCreationSoftwareVersion())
                 .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())
                 .addRow("Epoch hash:", epochHash)
                 .addRow("Min gen hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
-                .addRow("Events hash code:", Arrays.hashCode(data.getEvents()))
                 .addRow("Root hash:", getHash())
                 .render(sb);
 
@@ -300,7 +289,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         return new ToStringBuilder(this)
                 .append("platformState", getPlatformState())
                 .append("swirldState", getSwirldState())
-                .append("dualState", getPlatformDualState())
                 .toString();
     }
 }

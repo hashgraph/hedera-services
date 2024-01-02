@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,8 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static java.lang.Integer.max;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,74 +30,6 @@ import java.util.Random;
 import java.util.Set;
 
 public abstract class EventUtils {
-
-    /**
-     * Creates a copy of the supplies SignedState to simulate a restart or reconnect
-     *
-     * @param signedState the state to copy
-     * @return a copy of the state
-     */
-    public static SignedState serializeDeserialize(final Path dir, final SignedState signedState)
-            throws ConstructableRegistryException, IOException {
-        final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.platform.state");
-        registry.registerConstructables("com.swirlds.common.*");
-        final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
-        final SignedState signedStateCopy =
-                new SignedState(TestPlatformContextBuilder.create().build(), stateCopy, "test", false);
-        signedStateCopy.setSigSet(signedState.getSigSet());
-        return signedStateCopy;
-    }
-
-    /**
-     * Converts events in the SignedState to IndexedEvent
-     *
-     * @param signedState the state where events are stored
-     */
-    public static void convertEvents(final SignedState signedState) {
-        final EventImpl[] events =
-                signedState.getState().getPlatformState().getPlatformData().getEvents();
-        for (int i = 0; i < events.length; i++) {
-            final IndexedEvent ie = new IndexedEvent(events[i]);
-            events[i] = ie;
-        }
-        State.linkParents(events);
-    }
-
-    /**
-     * Get a map from creator sequence pairs to the corresponding event.
-     *
-     * @param events
-     * 		an array of events
-     */
-    public static Map<Hash, EventImpl> getEventMap(final EventImpl[] events) {
-        final Map<Hash, EventImpl> map = new HashMap<>();
-        for (final EventImpl event : events) {
-            map.put(event.getBaseHash(), event);
-        }
-        return map;
-    }
-
-    /**
-     * Find the max generation number for each node in a sequence of events. Assumes events are sorted and that there
-     * are no forks.
-     *
-     * @param events
-     * 		a list of events
-     * @param numberOfNodes
-     * 		the total number of nodes
-     * @return a map containing the max generation number for each node
-     */
-    @NonNull
-    public static Map<NodeId, Long> getLastGenerationInState(
-            @NonNull final EventImpl[] events, final int numberOfNodes) {
-        Objects.requireNonNull(events, "events must not be null");
-        final Map<NodeId, Long> last = new HashMap<>(numberOfNodes);
-        for (final EventImpl event : events) {
-            last.put(event.getCreatorId(), event.getGeneration());
-        }
-        return last;
-    }
 
     /**
      * Choose a random integer given a list of probabilistic weights.

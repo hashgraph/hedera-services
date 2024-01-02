@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package com.swirlds.platform.internal;
-
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
@@ -58,7 +56,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -111,27 +108,6 @@ public class EventImpl extends EventMetadata
 
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
-
-    /**
-     * The sequence number of an event before it is added to the write queue.
-     */
-    public static final long NO_STREAM_SEQUENCE_NUMBER = -1;
-
-    /**
-     * The sequence number of an event that will never be written to disk because it is stale.
-     */
-    public static final long STALE_EVENT_STREAM_SEQUENCE_NUMBER = -2;
-
-    /**
-     * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
-     * signal when events have been made durable.
-     */
-    private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
-
-    /**
-     * This latch counts down when prehandle has been called on all application transactions contained in this event.
-     */
-    private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
 
     public EventImpl() {}
 
@@ -189,52 +165,10 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Set the sequence number in the preconsenus event stream for this event.
-     *
-     * @param streamSequenceNumber the sequence number
-     */
-    public void setStreamSequenceNumber(final long streamSequenceNumber) {
-        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
-                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("sequence number already set");
-        }
-        this.streamSequenceNumber = streamSequenceNumber;
-    }
-
-    /**
-     * Get the sequence number in the preconsensus event stream for this event.
-     *
-     * @return the sequence number
-     */
-    public long getStreamSequenceNumber() {
-        if (streamSequenceNumber == NO_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("sequence number not set");
-        }
-        return streamSequenceNumber;
-    }
-
-    /**
-     * Signal that all transactions have been prehandled for this event.
-     */
-    public void signalPrehandleCompletion() {
-        prehandleCompleted.countDown();
-    }
-
-    /**
-     * Wait until all transactions have been prehandled for this event.
-     */
-    public void awaitPrehandleCompletion() {
-        abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
-    }
-
-    /**
      * initialize RunningHash instance
      */
     private void setDefaultValues() {
         runningHash = new RunningHash();
-        if (baseEvent.getHashedData().getHash() != null) {
-            baseEvent.buildDescriptor();
-        }
     }
 
     /**

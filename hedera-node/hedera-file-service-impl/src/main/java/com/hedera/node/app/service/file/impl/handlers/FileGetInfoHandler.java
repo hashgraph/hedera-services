@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,11 +154,12 @@ public class FileGetInfoHandler extends FileQueryBase {
         long contentSize = 0L;
         // upgrade is for the entire network, not a node. It's across shards and realms, however, which is why we ignore
         // the shard and realm values.
-        if (fileID.fileNum() == fileServiceConfig.upgradeFileNumber()) {
-            final var file = upgradeFileStore.peek();
+        if (fileID.fileNum() >= fileServiceConfig.softwareUpdateRange().left()
+                && fileID.fileNum() <= fileServiceConfig.softwareUpdateRange().right()) {
+            final var file = upgradeFileStore.peek(fileID);
             if (file != null) {
                 // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
-                final var contents = upgradeFileStore.getFull().toByteArray();
+                final var contents = upgradeFileStore.getFull(fileID).toByteArray();
                 contentSize = contents.length;
                 final var upgradeHash =
                         hex(CryptographyHolder.get().digestSync(contents).getValue());

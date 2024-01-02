@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import com.swirlds.platform.system.Platform;
 import java.awt.Font;
@@ -65,7 +66,9 @@ class WinTab2Consensus extends PrePaintableJPanel {
             long r3 = consensus.getMaxRound();
             final StateManagementComponent stateManagementComponent =
                     GuiPlatformAccessor.getInstance().getStateManagementComponent(platform.getSelfId());
-            long r0 = stateManagementComponent.getLastCompleteRound();
+            final SignedStateNexus latestCompleteStateComponent =
+                    GuiPlatformAccessor.getInstance().getLatestCompleteStateComponent(platform.getSelfId());
+            long r0 = latestCompleteStateComponent.getRound();
 
             if (r1 == -1) {
                 s += "\n           = latest deleted round-created";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,6 @@ class NameConvertTest {
         assertThat(NameConverter.fix("Hello_World:42")).isEqualTo("Hello_World:42");
         assertThat(NameConverter.fix("")).isEmpty();
         assertThat(NameConverter.fix(".- /%")).isEqualTo(":___per_Percent");
-        assertThatThrownBy(() -> NameConverter.fix(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> NameConverter.fix(null)).isInstanceOf(NullPointerException.class);
     }
 }

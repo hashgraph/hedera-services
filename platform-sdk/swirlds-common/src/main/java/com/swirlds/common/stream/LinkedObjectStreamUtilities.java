@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package com.swirlds.common.stream;
 
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.OBJECT_STREAM_VERSION;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;

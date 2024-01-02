@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,45 +16,42 @@
 
 package com.swirlds.platform;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.state.DualStateImpl;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManagerUtils;
-import com.swirlds.platform.system.address.AddressBook;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SwirldStateManagerFreezePeriodCheckerTest {
 
     @Test
     void isInFreezePeriodTest() {
-        final State mockState = mock(State.class);
 
-        final DualStateImpl mockDualState = mock(DualStateImpl.class);
-        final Instant consensusTime = Instant.now();
+        final Instant t1 = Instant.now();
+        final Instant t2 = t1.plusSeconds(1);
+        final Instant t3 = t2.plusSeconds(1);
+        final Instant t4 = t3.plusSeconds(1);
 
-        final AddressBook addressBook = mock(AddressBook.class);
-        when(addressBook.iterator()).thenReturn(Collections.emptyIterator());
+        // No freeze time set
+        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t1, null, null));
 
-        when(mockState.getPlatformDualState()).thenReturn(null);
-        assertFalse(
-                SwirldStateManagerUtils.isInFreezePeriod(Instant.now(), mockState),
-                "when DualState is null, any Instant should not be in freezePeriod");
+        // No freeze time set, previous freeze time set
+        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t2, null, t1));
 
-        when(mockState.getPlatformDualState()).thenReturn(mockDualState);
-        for (boolean isInFreezeTime : List.of(true, false)) {
-            when(mockDualState.isInFreezePeriod(consensusTime)).thenReturn(isInFreezeTime);
-            assertEquals(
-                    isInFreezeTime,
-                    SwirldStateManagerUtils.isInFreezePeriod(consensusTime, mockState),
-                    "swirldStateManager#isInFreezePeriod() should return the same result "
-                            + "as current consensus DualState#isInFreezePeriod");
-        }
+        // Freeze time is in the future, never frozen before
+        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t2, t3, null));
+
+        // Freeze time is in the future, frozen before
+        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t2, t3, t1));
+
+        // Freeze time is in the past, never frozen before
+        assertTrue(SwirldStateManagerUtils.isInFreezePeriod(t2, t1, null));
+
+        // Freeze time is in the past, frozen before at an earlier time
+        assertTrue(SwirldStateManagerUtils.isInFreezePeriod(t3, t2, t1));
+
+        // Freeze time in the past, already froze at that exact time
+        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t3, t2, t2));
     }
 }

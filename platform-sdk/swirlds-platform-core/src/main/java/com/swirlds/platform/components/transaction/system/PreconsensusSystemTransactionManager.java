@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class PreconsensusSystemTransactionManager {
             } catch (final RuntimeException e) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Error while handling system transaction preconsensus: handler: {}, id: {}, transaction: {}, error: {}",
+                        "Error while handling system transaction preconsensus: handler: {}, id: {}, transaction: {}",
                         handler,
                         creatorId,
                         transaction,

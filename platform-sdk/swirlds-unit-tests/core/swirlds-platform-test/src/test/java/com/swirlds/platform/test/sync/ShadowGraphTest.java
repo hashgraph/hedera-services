@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;
@@ -99,7 +101,8 @@ class ShadowGraphTest {
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
 
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         for (int i = 0; i < numEvents; i++) {
             IndexedEvent event = emitter.emitEvent();
@@ -122,13 +125,10 @@ class ShadowGraphTest {
     }
 
     /**
-     * Tests that the {@link ShadowGraph#findAncestors(Iterable, Predicate)} returns the correct set of
-     * ancestors.
+     * Tests that the {@link ShadowGraph#findAncestors(Iterable, Predicate)} returns the correct set of ancestors.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -210,12 +210,9 @@ class ShadowGraphTest {
     /**
      * This test verifies a single reservation can be made and closed without any event expiry.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -244,12 +241,9 @@ class ShadowGraphTest {
     /**
      * This test verifies multiple reservations of the same generation without any event expiry.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -293,12 +287,9 @@ class ShadowGraphTest {
     /**
      * This test verifies multiple reservations of the same generation with event expiry.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -359,12 +350,9 @@ class ShadowGraphTest {
     /**
      * This test verifies that event expiry works correctly when there are no reservations.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -401,12 +389,9 @@ class ShadowGraphTest {
     /**
      * Tests that event expiry works correctly when there are reservations for generations that should be expired.
      *
-     * @param numEvents
-     * 		the number of events to put in the shadow graph
-     * @param numNodes
-     * 		the number of nodes in the shadow graph
-     * @throws Exception
-     * 		if there was an error closing the reservation
+     * @param numEvents the number of events to put in the shadow graph
+     * @param numNodes  the number of nodes in the shadow graph
+     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -707,7 +692,8 @@ class ShadowGraphTest {
 
     @Test
     void testInitFromEvents_NullEventList() {
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> shadowGraph.initFromEvents(null, 0L),
@@ -716,7 +702,8 @@ class ShadowGraphTest {
 
     @Test
     void testInitFromEvents_EmptyEventList() {
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         final List<EventImpl> empty = Collections.emptyList();
         assertThrows(
                 IllegalArgumentException.class,
@@ -733,7 +720,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(4).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         List<IndexedEvent> events = emitter.emitEvents(20);
         List<EventImpl> filteredEvents = events.stream()
@@ -760,7 +748,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(4).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         List<IndexedEvent> events = emitter.emitEvents(20);
         List<EventImpl> filteredEvents =
@@ -785,7 +774,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(4).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
         List<IndexedEvent> events = emitter.emitEvents(20);
         List<EventImpl> filteredEvents =
@@ -814,7 +804,8 @@ class ShadowGraphTest {
                 new RandomAddressBookGenerator(random).setSize(numNodes).build();
         final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         for (int i = 0; i < numEvents; i++) {
             shadowGraph.addEvent(emitter.emitEvent());
         }

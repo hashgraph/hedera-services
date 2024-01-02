@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -72,16 +71,14 @@ class RoundCalculationUtilsTest {
         final SignedState signedState = Mockito.mock(SignedState.class);
         final State state = Mockito.mock(State.class);
         final PlatformState platformState = Mockito.mock(PlatformState.class);
-        final PlatformData platformData = Mockito.mock(PlatformData.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
-        when(platformState.getPlatformData()).thenReturn(platformData);
 
         final AtomicLong lastRoundDecided = new AtomicLong();
         when(signedState.getRound()).thenAnswer(a -> lastRoundDecided.get());
         when(signedState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
-        when(platformData.getRound()).thenAnswer(a -> lastRoundDecided.get());
-        when(platformData.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
+        when(platformState.getRound()).thenAnswer(a -> lastRoundDecided.get());
+        when(platformState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
 
         lastRoundDecided.set(10);
         Assertions.assertEquals(

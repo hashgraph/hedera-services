@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.OutputFn.STANDARD_OUTPUT_FN;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -29,19 +34,18 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.Function;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An HTS call that simply dispatches a synthetic transaction body and returns a result that is
  * an encoded {@link com.hedera.hapi.node.base.ResponseCodeEnum}.
- *
- * @param <T> the type of the record builder to expect from the dispatch
  */
-public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBuilder> extends AbstractHtsCall {
+public class DispatchForResponseCodeHtsCall extends AbstractHtsCall {
     /**
      * The "standard" failure customizer that replaces {@link ResponseCodeEnum#INVALID_SIGNATURE} with
      * {@link ResponseCodeEnum#INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE}. (Note this code no longer
@@ -52,8 +56,10 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
             (body, code, enhancement) -> standardized(code);
 
     private final AccountID senderId;
+
+    @Nullable
     private final TransactionBody syntheticBody;
-    private final Class<T> recordBuilderType;
+
     private final OutputFn outputFn;
     private final FailureCustomizer failureCustomizer;
     private final VerificationStrategy verificationStrategy;
@@ -100,20 +106,17 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      *
      * @param attempt the attempt to translate to a dispatching
      * @param syntheticBody the synthetic body to dispatch
-     * @param recordBuilderType the type of the record builder to expect from the dispatch
      * @param dispatchGasCalculator the dispatch gas calculator to use
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
-            @NonNull final TransactionBody syntheticBody,
-            @NonNull final Class<T> recordBuilderType,
+            @Nullable final TransactionBody syntheticBody,
             @NonNull final DispatchGasCalculator dispatchGasCalculator) {
         this(
                 attempt.enhancement(),
                 attempt.systemContractGasCalculator(),
                 attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
-                recordBuilderType,
                 attempt.defaultVerificationStrategy(),
                 dispatchGasCalculator,
                 STANDARD_FAILURE_CUSTOMIZER,
@@ -125,13 +128,11 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      *
      * @param attempt the attempt to translate to a dispatching
      * @param syntheticBody the synthetic body to dispatch
-     * @param recordBuilderType the type of the record builder to expect from the dispatch
      * @param dispatchGasCalculator the dispatch gas calculator to use
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
-            @NonNull final TransactionBody syntheticBody,
-            @NonNull final Class<T> recordBuilderType,
+            @Nullable final TransactionBody syntheticBody,
             @NonNull final DispatchGasCalculator dispatchGasCalculator,
             @NonNull final FailureCustomizer failureCustomizer) {
         this(
@@ -139,7 +140,6 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 attempt.systemContractGasCalculator(),
                 attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
-                recordBuilderType,
                 attempt.defaultVerificationStrategy(),
                 dispatchGasCalculator,
                 failureCustomizer,
@@ -151,13 +151,11 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      *
      * @param attempt the attempt to translate to a dispatching
      * @param syntheticBody the synthetic body to dispatch
-     * @param recordBuilderType the type of the record builder to expect from the dispatch
      * @param dispatchGasCalculator the dispatch gas calculator to use
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
-            @NonNull final TransactionBody syntheticBody,
-            @NonNull final Class<T> recordBuilderType,
+            @Nullable final TransactionBody syntheticBody,
             @NonNull final DispatchGasCalculator dispatchGasCalculator,
             @NonNull final OutputFn outputFn) {
         this(
@@ -165,7 +163,6 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 attempt.systemContractGasCalculator(),
                 attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
-                recordBuilderType,
                 attempt.defaultVerificationStrategy(),
                 dispatchGasCalculator,
                 STANDARD_FAILURE_CUSTOMIZER,
@@ -178,7 +175,6 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      * @param enhancement the enhancement to use
      * @param senderId the id of the spender
      * @param syntheticBody the synthetic body to dispatch
-     * @param recordBuilderType the type of the record builder to expect from the dispatch
      * @param verificationStrategy the verification strategy to use
      * @param dispatchGasCalculator the dispatch gas calculator to use
      * @param failureCustomizer the status customizer to use
@@ -186,12 +182,11 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      */
     // too many parameters
     @SuppressWarnings("java:S107")
-    public <U extends SingleTransactionRecordBuilder> DispatchForResponseCodeHtsCall(
+    public DispatchForResponseCodeHtsCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final AccountID senderId,
-            @NonNull final TransactionBody syntheticBody,
-            @NonNull final Class<T> recordBuilderType,
+            @Nullable final TransactionBody syntheticBody,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final DispatchGasCalculator dispatchGasCalculator,
             @NonNull final FailureCustomizer failureCustomizer,
@@ -199,15 +194,22 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
         super(gasCalculator, enhancement, false);
         this.senderId = Objects.requireNonNull(senderId);
         this.outputFn = Objects.requireNonNull(outputFn);
-        this.syntheticBody = Objects.requireNonNull(syntheticBody);
-        this.recordBuilderType = Objects.requireNonNull(recordBuilderType);
+        this.syntheticBody = syntheticBody;
         this.verificationStrategy = Objects.requireNonNull(verificationStrategy);
         this.dispatchGasCalculator = Objects.requireNonNull(dispatchGasCalculator);
         this.failureCustomizer = Objects.requireNonNull(failureCustomizer);
     }
 
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
+        if (syntheticBody == null) {
+            return gasOnly(
+                    haltResult(
+                            ERROR_DECODING_PRECOMPILE_INPUT,
+                            contractsConfigOf(frame).precompileHtsDefaultGasCost()),
+                    INVALID_TRANSACTION_BODY,
+                    false);
+        }
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement =

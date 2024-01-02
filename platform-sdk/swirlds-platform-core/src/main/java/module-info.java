@@ -22,7 +22,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.common.query;
     exports com.swirlds.platform.components.state;
     exports com.swirlds.platform.components.state.output;
-    exports com.swirlds.platform.components.state.query;
     exports com.swirlds.platform.config;
     exports com.swirlds.platform.config.legacy;
     exports com.swirlds.platform.event.report;
@@ -70,14 +69,16 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures,
             com.fasterxml.jackson.core,
-            com.fasterxml.jackson.databind, com.hedera.node.app;
+            com.fasterxml.jackson.databind,
+            com.hedera.node.app;
     exports com.swirlds.platform.swirldapp to
             com.swirlds.platform.test;
     exports com.swirlds.platform.observers to
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
-            com.swirlds.platform.core.test.fixtures, com.hedera.node.app;
+            com.swirlds.platform.core.test.fixtures,
+            com.hedera.node.app;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test,
             com.hedera.node.test.clients;
@@ -110,7 +111,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to
-            com.swirlds.platform.test, com.hedera.node.app;
+            com.swirlds.platform.test,
+            com.hedera.node.app;
     exports com.swirlds.platform.uptime to
             com.swirlds.config.impl,
             com.swirlds.common,
@@ -161,5 +163,6 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
 
-    exports com.swirlds.platform.event.creation to com.swirlds.config.impl;
+    exports com.swirlds.platform.event.creation to
+            com.swirlds.config.impl;
 }

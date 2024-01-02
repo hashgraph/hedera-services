@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,6 +231,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKEN_BALANCES_ENABLED_IN_QUERIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
@@ -558,7 +559,8 @@ class BootstrapPropertiesTest {
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
-            entry(RECORDS_USE_CONSOLIDATED_FCQ, true));
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, true),
+            entry(TOKEN_BALANCES_ENABLED_IN_QUERIES, true));
 
     @Test
     void containsProperty() {

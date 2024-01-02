@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
     @HapiTest
     @Order(1)
-    private HapiSpec setArtificialLimits() {
+    final HapiSpec setArtificialLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
 
         return defaultHapiSpec("SetArtificialLimits")
@@ -143,37 +143,37 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    private HapiSpec checkXfersTps() {
+    final HapiSpec checkXfersTps() {
         return checkTps("Xfers", EXPECTED_XFER_TPS, xferOps());
     }
 
     @HapiTest
     @Order(3)
-    private HapiSpec checkFungibleMintsTps() {
+    final HapiSpec checkFungibleMintsTps() {
         return checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps());
     }
 
     //    @HapiTest - This test fails
     @Order(4)
-    private HapiSpec checkContractCallsTps() {
+    final HapiSpec checkContractCallsTps() {
         return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
     }
 
     //    @HapiTest - This test fails
     @Order(5)
-    private HapiSpec checkCryptoCreatesTps() {
+    final HapiSpec checkCryptoCreatesTps() {
         return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
     }
 
     //    @HapiTest - This test hangs
     @Order(6)
-    private HapiSpec checkBalanceQps() {
+    final HapiSpec checkBalanceQps() {
         return checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS);
     }
 
     @HapiTest
     @Order(7)
-    private HapiSpec restoreDevLimits() {
+    final HapiSpec restoreDevLimits() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("RestoreDevLimits")
                 .given()
@@ -187,7 +187,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
-    private HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
+    @HapiTest
+    final HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
 
@@ -204,8 +205,9 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
      *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
+    @HapiTest
     @SuppressWarnings("java:S5960")
-    private HapiSpec checkCustomNetworkTps(
+    final HapiSpec checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
         final var name = "Throttles" + txn + "AsExpected";
         final var baseSpec =
@@ -229,7 +231,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 }));
     }
 
-    private HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
+    @HapiTest
+    final HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))
                 .when()

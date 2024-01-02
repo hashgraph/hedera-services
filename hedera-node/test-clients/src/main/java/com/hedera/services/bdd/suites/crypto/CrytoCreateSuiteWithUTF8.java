@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createCryptoTxvWithUTF8Memo() {
+    final HapiSpec createCryptoTxvWithUTF8Memo() {
         return defaultHapiSpec("CreateCryptoTxvWithUTF8Memo")
                 .given(cryptoCreate("UTF8MemoTestAccount").via("utf8MemoTxn"))
                 .when()
@@ -63,7 +63,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cryptoCreateTxnCustomSpec() {
+    final HapiSpec cryptoCreateTxnCustomSpec() {
         return customHapiSpec("UTF8CustomSpecMemoTxn")
                 .withProperties(Map.of("default.useMemoUTF8", utf8Mode.toString()))
                 .given(cryptoCreate("UTF8CustomSpecTestAccount").via("utf8CustomSpecMemoTxn"))

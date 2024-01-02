@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package contract;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static contract.CreatesXTestConstants.EXPIRY;
 import static contract.CreatesXTestConstants.FIXED_FEE;
@@ -36,6 +37,7 @@ import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
 import static contract.CreatesXTestConstants.TOKEN_SUPPLY_KEY;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
+import static contract.XTestConstants.COINBASE_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.ONE_HBAR;
@@ -47,7 +49,7 @@ import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.addErc20Relation;
-import static contract.XTestConstants.assertSuccess;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
@@ -61,6 +63,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
@@ -124,13 +127,21 @@ public class CreatesERC721XTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
+        final AtomicInteger tokenId = new AtomicInteger(1004);
         // should successfully create non-fungible token without custom fees v1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
                         .array()),
-                assertSuccess("createNonFungibleTokenV1"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert without provided supply key
         runHtsCallAndExpectRevert(
@@ -203,7 +214,14 @@ public class CreatesERC721XTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
                         .array()),
-                assertSuccess("createNonFungibleTokenV2"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert without provided supply key
         runHtsCallAndExpectRevert(
@@ -276,7 +294,14 @@ public class CreatesERC721XTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
                         .array()),
-                assertSuccess("createNonFungibleTokenV3"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert without provided supply key
         runHtsCallAndExpectRevert(
@@ -349,7 +374,14 @@ public class CreatesERC721XTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                assertSuccess("createNonFungibleWithCustomFeesV1"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert without provided supply key
         runHtsCallAndExpectRevert(
@@ -432,7 +464,14 @@ public class CreatesERC721XTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                assertSuccess("createNonFungibleWithCustomFeesV2"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert without provided supply key
         runHtsCallAndExpectRevert(
@@ -515,7 +554,14 @@ public class CreatesERC721XTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                assertSuccess("createNonFungibleWithCustomFeesV3"));
+                output -> assertEquals(
+                        Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) SUCCESS.protoOrdinal(),
+                                        asLongZeroHeadlongAddress(new TokenID(0, 0, tokenId.getAndIncrement())))
+                                .array()),
+                        output));
 
         // should revert without provided supply key
         runHtsCallAndExpectRevert(
@@ -616,13 +662,14 @@ public class CreatesERC721XTest extends AbstractContractXTest {
     @Override
     protected Map<AccountID, Account> initialAccounts() {
         final Map<AccountID, Account> accounts = new HashMap<>();
+        accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
         accounts.put(
                 SENDER_ID,
                 Account.newBuilder()
                         .accountId(SENDER_ID)
                         .alias(SENDER_ADDRESS)
                         .key(AN_ED25519_KEY)
-                        .tinybarBalance(100 * ONE_HBAR)
+                        .tinybarBalance(10_000 * ONE_HBAR)
                         .build());
         accounts.put(
                 OWNER_ID,

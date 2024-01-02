@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,9 +194,10 @@ public class AddressBookInitializer {
             previousAddressBook = stateAddressBook;
         } else if (initialState.isGenesisState()) {
             // Starting from Genesis, config and state address book should be the same.
-//            if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
-//                throw new IllegalStateException("Config and State Address Books do not match on Genesis Start.");
-//            }
+            //            if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
+            //                throw new IllegalStateException("Config and State Address Books do not match on Genesis
+            // Start.");
+            //            }
             logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);

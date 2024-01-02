@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
         return List.of(updateWithTooLongNameAndSymbol(), updateTokenWithKeysNegative());
     }
 
-    private HapiSpec updateTokenWithKeysHappyPath() {
+    final HapiSpec updateTokenWithKeysHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateTokenWithKeysHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -407,7 +407,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(TOKEN_SYMBOL_TOO_LONG)))));
     }
 
-    private HapiSpec updateTokenWithKeysNegative() {
+    final HapiSpec updateTokenWithKeysNegative() {
         final var updateTokenWithKeysFunc = "updateTokenWithKeys";
         final var NO_FEE_SCHEDULE_KEY_TXN = "NO_FEE_SCHEDULE_KEY_TXN";
         final var NO_PAUSE_KEY_TXN = "NO_PAUSE_KEY_TXN";
@@ -645,7 +645,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(TOKEN_HAS_NO_KYC_KEY)))));
     }
 
-    private HapiSpec updateOnlyTokenKeysAndGetTheUpdatedValues() {
+    final HapiSpec updateOnlyTokenKeysAndGetTheUpdatedValues() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateOnlyTokenKeysAndGetTheUpdatedValues")
@@ -908,7 +908,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .hasPauseKey(TOKEN_UPDATE_AS_KEY))));
     }
 
-    private HapiSpec updateTokenWithoutNameSymbolMemo() {
+    final HapiSpec updateTokenWithoutNameSymbolMemo() {
         final var updateTokenWithoutNameSymbolMemoFunc = "updateTokenWithoutNameSymbolMemo";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateTokenWithoutNameSymbolMemo")

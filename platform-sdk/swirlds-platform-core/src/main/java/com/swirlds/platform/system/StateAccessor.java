@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,17 +34,4 @@ public interface StateAccessor {
      * @return a wrapper around the most recent immutable state
      */
     <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason);
-
-    /**
-     * Get the most recent fully signed state. May return a wrapper around null if the platform does not have any fully
-     * signed states still in memory (e.g. right after boot or if there is trouble with the collection of state
-     * signatures).
-     *
-     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
-     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @param <T>    the type of the state
-     * @return a wrapper around the most recent fully signed state, or a wrapper around null if there are no available
-     * fully signed states
-     */
-    <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull final String reason);
 }

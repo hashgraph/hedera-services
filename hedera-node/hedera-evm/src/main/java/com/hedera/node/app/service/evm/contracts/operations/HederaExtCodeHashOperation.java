@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
@@ -88,7 +88,7 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
                 return new OperationResult(localCost, null);
             }
-        } catch (final FixedStack.UnderflowException ufe) {
+        } catch (final UnderflowException ufe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         }
     }

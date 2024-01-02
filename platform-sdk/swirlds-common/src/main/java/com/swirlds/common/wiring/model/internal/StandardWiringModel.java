@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
+import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
@@ -171,8 +172,10 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public String generateWiringDiagram(
-            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions) {
-        final WiringFlowchart flowchart = new WiringFlowchart(vertices, substitutions, groups);
+            @NonNull final List<ModelGroup> groups,
+            @NonNull final List<ModelEdgeSubstitution> substitutions,
+            @NonNull final List<ModelManualLink> manualLinks) {
+        final WiringFlowchart flowchart = new WiringFlowchart(vertices, substitutions, groups, manualLinks);
         return flowchart.render();
     }
 
@@ -228,7 +231,7 @@ public class StandardWiringModel implements WiringModel {
         final ModelVertex destination = getVertex(destinationVertex);
         final boolean blocking = blockingEdge && destination.isInsertionIsBlocking();
 
-        final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
+        final ModelEdge edge = new ModelEdge(origin, destination, label, blocking, false);
         origin.getOutgoingEdges().add(edge);
 
         final boolean unique = edges.add(edge);

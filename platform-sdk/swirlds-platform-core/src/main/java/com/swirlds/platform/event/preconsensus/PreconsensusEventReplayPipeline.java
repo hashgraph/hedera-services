@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.platform.event.preconsensus;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -116,11 +118,11 @@ public class PreconsensusEventReplayPipeline {
             gossipEvent.buildDescriptor();
             intakeHandler.accept(gossipEvent);
         } catch (final InterruptedException e) {
-            logger.error("Interrupted while handling event from PCES", e);
+            logger.error(EXCEPTION.getMarker(), "Interrupted while handling event from PCES", e);
             Thread.currentThread().interrupt();
             error.set(true);
         } catch (final Exception e) {
-            logger.error("Error while handling event from PCES", e);
+            logger.error(EXCEPTION.getMarker(), "Error while handling event from PCES", e);
             error.set(true);
         }
     }

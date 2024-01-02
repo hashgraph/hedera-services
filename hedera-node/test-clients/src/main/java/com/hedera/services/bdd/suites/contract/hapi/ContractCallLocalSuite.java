@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec htsOwnershipCheckWorksWithAliasAddress() {
+    final HapiSpec htsOwnershipCheckWorksWithAliasAddress() {
         final AtomicReference<AccountID> ecdsaAccountId = new AtomicReference<>();
         final AtomicReference<ByteString> ecdsaAccountIdLongZeroAddress = new AtomicReference<>();
         final AtomicReference<ByteString> ecdsaAccountIdAlias = new AtomicReference<>();
@@ -185,7 +185,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec vanillaSuccess() {
+    final HapiSpec vanillaSuccess() {
         return defaultHapiSpec("vanillaSuccess")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
@@ -199,7 +199,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec impureCallFails() {
+    final HapiSpec impureCallFails() {
         return defaultHapiSpec("impureCallFails")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when()
@@ -211,7 +211,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidDeletedContract() {
+    final HapiSpec invalidDeletedContract() {
         return defaultHapiSpec("invalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
@@ -221,7 +221,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractID() {
+    final HapiSpec invalidContractID() {
         final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
         final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
         return defaultHapiSpec("InvalidContractID")
@@ -237,7 +237,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec insufficientFeeFails() {
+    final HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
         return defaultHapiSpec("insufficientFeeFails")
@@ -253,7 +253,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec lowBalanceFails() {
+    final HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
         return defaultHapiSpec("lowBalanceFails")
@@ -276,7 +276,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec erc20Query() {
+    final HapiSpec erc20Query() {
         final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
                 + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
                 + "\"type\": \"function\"}";
@@ -290,7 +290,7 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/pull/5485
     @HapiTest
-    private HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
+    final HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
         return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))

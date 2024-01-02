@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,6 @@ public class CryptoGetInfoRegression extends HapiSuite {
             failsForDeletedAccount(),
             failsForMissingAccount(),
             failsForMissingPayment(),
-            failsForInsufficientPayment(),
             failsForMalformedPayment(),
             failsForUnfundablePayment(),
             succeedsNormally(),
@@ -86,7 +85,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
 
     /** For Demo purpose : The limit on each account info and account balance queries is set to 5 */
     @HapiTest
-    private HapiSpec fetchesOnlyALimitedTokenAssociations() {
+    final HapiSpec fetchesOnlyALimitedTokenAssociations() {
         final int infoLimit = 3;
         final var account = "test";
         final var aKey = "tokenKey";
@@ -198,7 +197,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec succeedsNormally() {
+    final HapiSpec succeedsNormally() {
         long balance = 1_234_567L;
         KeyShape misc = listOf(SIMPLE, listOf(2));
 
@@ -239,7 +238,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForMissingAccount() {
+    final HapiSpec failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
                 .when()
@@ -247,7 +246,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForMalformedPayment() {
+    final HapiSpec failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
@@ -255,7 +254,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForUnfundablePayment() {
+    final HapiSpec failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
@@ -266,16 +265,19 @@ public class CryptoGetInfoRegression extends HapiSuite {
                         .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
-    // this test failed on mono code too, don't need to enable it
-    private HapiSpec failsForInsufficientPayment() {
+    @HapiTest
+    final HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
-                .given()
+                .given(cryptoCreate(CIVILIAN_PAYER))
                 .when()
-                .then(getAccountInfo(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+                .then(getAccountInfo(GENESIS)
+                        .payingWith(CIVILIAN_PAYER)
+                        .nodePayment(1L)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
     @HapiTest // this test needs to be updated for both mono and module code.
-    private HapiSpec failsForMissingPayment() {
+    final HapiSpec failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()
                 .when()
@@ -285,7 +287,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsForDeletedAccount() {
+    final HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate("toBeDeleted"))
                 .when(cryptoDelete("toBeDeleted").transfer(GENESIS))

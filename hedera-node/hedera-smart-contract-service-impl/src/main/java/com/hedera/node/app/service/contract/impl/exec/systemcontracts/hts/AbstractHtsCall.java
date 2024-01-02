@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.completionResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
@@ -28,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -53,6 +53,10 @@ public abstract class AbstractHtsCall implements HtsCall {
         this.isViewCall = isViewCall;
     }
 
+    protected HederaOperations operations() {
+        return enhancement.operations();
+    }
+
     protected HederaNativeOperations nativeOperations() {
         return enhancement.nativeOperations();
     }
@@ -75,7 +79,7 @@ public abstract class AbstractHtsCall implements HtsCall {
             @NonNull final ByteBuffer output) {
         requireNonNull(output);
         requireNonNull(recordBuilder);
-        return gasOnly(completionResult(output, gasRequirement, recordBuilder), recordBuilder.status(), isViewCall);
+        return gasOnly(successResult(output, gasRequirement, recordBuilder), recordBuilder.status(), isViewCall);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {

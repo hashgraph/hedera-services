@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
         return false;
     }
 
-    private HapiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
+    final HapiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
         final var nfToken = "nfToken";
         final var civilian = "civilian";
         final var multiAssociate = "multiAssociate";

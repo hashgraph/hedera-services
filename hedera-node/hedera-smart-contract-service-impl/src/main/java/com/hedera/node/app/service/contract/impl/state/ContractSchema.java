@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,8 +39,13 @@ public class ContractSchema extends Schema {
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
     private static final SemanticVersion CURRENT_VERSION = RELEASE_045_VERSION;
 
-    public ContractSchema() {
-        super(CURRENT_VERSION);
+    public ContractSchema(final SemanticVersion version) {
+        super(version);
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        super.migrate(ctx);
     }
 
     @NonNull

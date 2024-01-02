@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,6 +230,7 @@ class AbstractEvmRecordingCreateOperationTest {
         given(txValues.transientStorage()).willReturn(undoTable);
         given(txValues.messageFrameStack()).willReturn(messageFrameStack);
         given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(txValues.maxStackSize()).willReturn(1024);
         given(undoTable.mark()).willReturn(1L);
     }
 

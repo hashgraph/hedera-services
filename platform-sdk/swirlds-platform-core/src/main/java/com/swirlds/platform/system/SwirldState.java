@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 package com.swirlds.platform.system;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -45,7 +44,7 @@ public interface SwirldState extends MerkleNode {
      * </p>
      *
      * @param platform                the Platform that instantiated this state
-     * @param swirldDualState         the dual state instance used by the initialization function
+     * @param platformState           the platform state
      * @param trigger                 describes the reason why the state was created/recreated
      * @param previousSoftwareVersion the previous version of the software, {@link SoftwareVersion#NO_VERSION} if this
      *                                is genesis or if migrating from code from before the concept of an application
@@ -53,7 +52,7 @@ public interface SwirldState extends MerkleNode {
      */
     default void init(
             final Platform platform,
-            final SwirldDualState swirldDualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
         // Override if needed
@@ -67,47 +66,23 @@ public interface SwirldState extends MerkleNode {
      * actual public key, or attaching metadata. Additional signatures extracted from the transaction payload can also
      * be added to the list of signatures to be verified.
      * <p>
-     * If signature verification is desired, it is recommended that process be started in this method on a background
-     * thread using one of the methods below to give it time to complete before the transaction is handled
-     * post-consensus.
-     * <ul>
-     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(TransactionSignature)}</li>
-     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(List)}</li>
-     * </ul>
-     * <p>
      * <strong>This method is always invoked on an immutable state.</strong>
      *
      * @param event the event to perform pre-handling on
-     * @see #handleConsensusRound(Round, SwirldDualState)
      */
     default void preHandle(final Event event) {}
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * The state of this object must NEVER change except inside the methods below.
+     * This method should apply the transactions in the provided round to the state. Only called on mutable states.
      *
-     * <ul>
-     *     <li>{@link #init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}</li>
-     *     <li>{@link #copy()}</li>
-     *     <li>{@link #handleConsensusRound(Round, SwirldDualState)}</li>
-     *  </ul>
-     * <p>
-     * If signature verification was started on a background thread in {@link #preHandle(Event)}, the process
-     * should be checked for completion. Accessing {@link TransactionSignature#getSignatureStatus()} before this
-     * process is complete will cause it to return {@code null}:
-     *
-     * <pre>
-     *     for (TransactionSignature sig : transaction.getSignatures()) {
-     *         Future&lt;Void&gt; future = sig.waitForFuture().get();
-     *     }
-     * </pre>
+     * @param round         the round to apply
+     * @param platformState the platform state
      */
-    void handleConsensusRound(final Round round, final SwirldDualState swirldDualState);
+    void handleConsensusRound(final Round round, final PlatformState platformState);
 
     /**
      * Implementations of the SwirldState should always override this method in production.  The AddressBook returned
-     * should have the same Adddress entries as the configuration AddressBook, but with the weight values updated.
+     * should have the same Address entries as the configuration AddressBook, but with the weight values updated.
      * <p>
      * The default implementation of this method is provided for use in testing and to prevent compilation failure of
      * implementing classes that have not yet implemented this method.

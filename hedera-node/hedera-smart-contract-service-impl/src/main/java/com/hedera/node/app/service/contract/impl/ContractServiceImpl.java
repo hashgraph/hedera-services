@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.WritableKVState;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -60,24 +60,24 @@ public enum ContractServiceImpl implements ContractService {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        var cs = new ContractSchema();
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        var cs = new ContractSchema(version);
         registry.register(cs);
 
-//        if(true)return;
+        //        if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
 
-           @Override
-           public void migrate(MigrationContext ctx) {
-               System.out.println("BBM: migrating contract service");
+            @Override
+            public void migrate(MigrationContext ctx) {
+                System.out.println("BBM: migrating contract service");
 
-               var result = ContractStateMigrator.migrateFromContractStorageVirtualMap(fromState, toState, flusher);
+                var result = ContractStateMigrator.migrateFromContractStorageVirtualMap(fromState, toState, flusher);
 
-               fromState = null;
-               toState = null;
+                fromState = null;
+                toState = null;
 
-               System.out.println("BBM: contract migration result: " + result);
-           }
+                System.out.println("BBM: contract migration result: " + result);
+            }
         });
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,17 +42,6 @@ public final class TipsetUtils {
             throw new IllegalStateException("event is not hashed");
         }
         return event.getHashedData().createEventDescriptor();
-    }
-
-    /**
-     * Build a descriptor from a GossipEvent.
-     *
-     * @param event the event
-     * @return the descriptor
-     */
-    public static EventDescriptor buildDescriptor(@NonNull final GossipEvent event) {
-        event.buildDescriptor();
-        return event.getDescriptor();
     }
 
     /**

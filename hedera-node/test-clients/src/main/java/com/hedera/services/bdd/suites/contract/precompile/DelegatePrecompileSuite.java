@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForTransfer() {
+    final HapiSpec delegateCallForTransfer() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -159,7 +159,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForBurn() {
+    final HapiSpec delegateCallForBurn() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("delegateCallForBurn")
@@ -208,7 +208,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateCallForMint() {
+    final HapiSpec delegateCallForMint() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("delegateCallForMint")

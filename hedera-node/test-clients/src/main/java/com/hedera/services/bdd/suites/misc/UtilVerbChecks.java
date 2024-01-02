@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class UtilVerbChecks extends HapiSuite {
         });
     }
 
-    private HapiSpec testMakingFree() {
+    final HapiSpec testMakingFree() {
         return defaultHapiSpec("TestMakingFree")
                 .given(
                         cryptoCreate("civilian"),
@@ -68,7 +68,7 @@ public class UtilVerbChecks extends HapiSuite {
                         .hasAnswerOnlyPrecheck(OK));
     }
 
-    private HapiSpec testDissociation() {
+    final HapiSpec testDissociation() {
         return defaultHapiSpec("TestDissociation")
                 .given(
                         cryptoCreate("t"),
@@ -82,7 +82,7 @@ public class UtilVerbChecks extends HapiSuite {
                 .then(getAccountInfo("somebody").hasNoTokenRelationship("a").hasNoTokenRelationship("b"));
     }
 
-    private HapiSpec testLivenessTimeout() {
+    final HapiSpec testLivenessTimeout() {
         return defaultHapiSpec("TestLivenessTimeout")
                 .given()
                 .when()

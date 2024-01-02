@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ class MerkleDbStatisticsTest {
 
     @Test
     void testConstructorWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> new MerkleDbStatistics(null));
+        assertThrows(NullPointerException.class, () -> new MerkleDbStatistics(null));
     }
 
     @Test
@@ -115,7 +115,7 @@ class MerkleDbStatisticsTest {
         final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
 
         // then
-        assertThrows(IllegalArgumentException.class, () -> statistics.registerMetrics(null));
+        assertThrows(NullPointerException.class, () -> statistics.registerMetrics(null));
     }
 
     private Metric getMetric(final String section, final String suffix) {

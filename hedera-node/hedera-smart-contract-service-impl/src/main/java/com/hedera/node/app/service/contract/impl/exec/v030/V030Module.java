@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,10 +71,10 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
- * Provides the Services 0.30 EVM implementation, which consists of London operations and
- * Instanbul precompiles plus the Hedera gas calculator, system contracts, and operations
- * as they were configured in the 0.30 release (in particular, without lazy creation and
- * without special treatment to make system addresses "invisible").
+ * Provides the Services 0.30 EVM implementation, which consists of London operations and Istanbul
+ * precompiles plus the Hedera gas calculator, system contracts, and operations as they were
+ * configured in the 0.30 release (in particular, without lazy creation and without special
+ * treatment to make system addresses "invisible").
  */
 @Module
 public interface V030Module {
@@ -122,12 +122,14 @@ public interface V030Module {
     @Singleton
     @ServicesV030
     static EVM provideEVM(
-            @ServicesV030 @NonNull final Set<Operation> customOperations, @NonNull final GasCalculator gasCalculator) {
+            @ServicesV030 @NonNull final Set<Operation> customOperations,
+            @NonNull final EvmConfiguration evmConfiguration,
+            @NonNull final GasCalculator gasCalculator) {
         // Use London EVM with 0.30 custom operations and 0x00 chain id (set at runtime)
         final var operationRegistry = new OperationRegistry();
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
     }
 
     @Provides

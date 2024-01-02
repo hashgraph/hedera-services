@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -69,10 +68,9 @@ public class WipeTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleWipe = body.tokenWipeOrThrow().serialNumbers().isEmpty();
-        return new DispatchForResponseCodeHtsCall<>(
+        return new DispatchForResponseCodeHtsCall(
                 attempt,
                 body,
-                SingleTransactionRecordBuilder.class,
                 isFungibleWipe ? WipeTranslator::fungibleWipeGasRequirement : WipeTranslator::nftWipeGasRequirement,
                 NOOP_CUSTOMIZER);
     }

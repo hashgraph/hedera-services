@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@ import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,7 +149,7 @@ class HederaSLoadOperationTest {
     @Test
     void executeWithUnderFlowException() {
         givenAdditionalContext(keyBytesMock, valueBytesMock);
-        given(messageFrame.popStackItem()).willThrow(new FixedStack.UnderflowException());
+        given(messageFrame.popStackItem()).willThrow(new UnderflowException());
         final var result = subject.execute(messageFrame, evm);
         assertEquals(INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
     }
@@ -163,7 +164,7 @@ class HederaSLoadOperationTest {
         frameStack.add(messageFrame);
 
         given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
-        doThrow(new FixedStack.OverflowException()).when(messageFrame).pushStackItem(any());
+        doThrow(new OverflowException()).when(messageFrame).pushStackItem(any());
 
         final var result = subject.execute(messageFrame, evm);
         assertEquals(TOO_MANY_STACK_ITEMS, result.getHaltReason());

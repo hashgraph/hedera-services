@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S125")
-    private HapiSpec renewalCappedByAffordablePeriod() {
+    final HapiSpec renewalCappedByAffordablePeriod() {
         final long briefAutoRenew = 10L;
         final long normalAutoRenew = THREE_MONTHS_IN_SECONDS;
         final long threeHoursInSeconds = 3 * 3600L;
@@ -130,7 +130,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec feesChargedMatchNumberOfRenewals() {
+    final HapiSpec feesChargedMatchNumberOfRenewals() {
         final long reqAutoRenew = 2L;
         final long startBalance = ONE_HUNDRED_HBARS;
         final var target = "czar";
@@ -229,7 +229,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
         return new RenewalFeeComponents(inTinybars(constantPrice, rates), inTinybars(variablePrice, rates));
     }
 
-    private HapiSpec macroFeesChargedSanityCheckSuiteCleanup() {
+    final HapiSpec macroFeesChargedSanityCheckSuiteCleanup() {
         return defaultHapiSpec("MacroFeesChargedSanityCheckSuiteCleanup")
                 .given()
                 .when()

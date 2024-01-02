@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,7 +164,7 @@ public class TokenBalanceValidation extends HapiSuite {
      * Create HAPI queries to check whether token balances match what's given in <code>expectedTokenBalances</code>
      * @return HAPI queries to execute
      */
-    private HapiSpec validateTokenBalances() {
+    final HapiSpec validateTokenBalances() {
         return defaultHapiSpec("ValidateTokenBalances")
                 .given(getHapiSpecsForTransferTxs()) // set up transfers if needed
                 .when()

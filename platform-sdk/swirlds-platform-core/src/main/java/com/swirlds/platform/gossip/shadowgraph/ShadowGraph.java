@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,16 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.PlatformEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -108,16 +112,27 @@ public class ShadowGraph implements Clearable {
     /** the number of nodes in the network, used for debugging */
     private final int numberOfNodes;
 
-    /**
-     * Constructs a new instance.
-     */
-    public ShadowGraph(final SyncMetrics syncMetrics) {
-        this(syncMetrics, -1);
-    }
+    private final NodeId selfId;
 
-    public ShadowGraph(final SyncMetrics syncMetrics, final int numberOfNodes) {
+    /**
+     * Constructor.
+     *
+     * @param time              provides wall clock time
+     * @param syncMetrics       metrics for sync gossip
+     * @param addressBook       the address book
+     * @param selfId            the id of this node
+     */
+    public ShadowGraph(
+            @NonNull final Time time,
+            @NonNull final SyncMetrics syncMetrics,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId) {
+
+        Objects.requireNonNull(time);
+
         this.syncMetrics = syncMetrics;
-        this.numberOfNodes = numberOfNodes;
+        this.numberOfNodes = addressBook.getSize();
+        this.selfId = Objects.requireNonNull(selfId);
         expireBelow = FIRST_GENERATION;
         oldestGeneration = FIRST_GENERATION;
         tips = new HashSet<>();
@@ -130,17 +145,14 @@ public class ShadowGraph implements Clearable {
      * <p>Initializes the {@link ShadowGraph} with the given {@code events}. This method should be used after
      * reconnect or restart. {@code events} must be ordered by generation, smallest to largest.</p>
      *
-     * <p>A minimum generation is necessary because events loaded from signed state a could have generation gaps and are
-     * used in {@link com.swirlds.platform.Consensus}. {@link com.swirlds.platform.Consensus} will eventually expire its
-     * smallest generation and that generation must be present in the {@link ShadowGraph} or an exception is thrown, so
-     * we create empty generations to match {@link com.swirlds.platform.Consensus}.</p>
+     * <p>A minimum generation is necessary because events loaded from signed state a could have generation gaps and
+     * are used in {@link com.swirlds.platform.Consensus}. {@link com.swirlds.platform.Consensus} will eventually expire
+     * its smallest generation and that generation must be present in the {@link ShadowGraph} or an exception is thrown,
+     * so we create empty generations to match {@link com.swirlds.platform.Consensus}.</p>
      *
-     * @param events
-     * 		the events to add to the shadow graph
-     * @param minGeneration
-     * 		the generation to use as a minimum generation
-     * @throws IllegalArgumentException
-     * 		if argument is null or empty
+     * @param events        the events to add to the shadow graph
+     * @param minGeneration the generation to use as a minimum generation
+     * @throws IllegalArgumentException if argument is null or empty
      */
     public synchronized void initFromEvents(final List<EventImpl> events, final long minGeneration) {
         if (events == null || events.isEmpty()) {
@@ -181,6 +193,7 @@ public class ShadowGraph implements Clearable {
 
     /**
      * Define the starting generation for the shadowgraph, it will not keep any events older than this
+     *
      * @param generation the starting generation
      */
     public synchronized void startFromGeneration(final long generation) {
@@ -234,8 +247,7 @@ public class ShadowGraph implements Clearable {
     /**
      * Determines if the provided {@code hash} is in the shadow graph.
      *
-     * @param hash
-     * 		the hash to look for
+     * @param hash the hash to look for
      * @return true if the hash matches the hash of a shadow event in the shadow graph, false otherwise
      */
     public synchronized boolean isHashInGraph(final Hash hash) {
@@ -244,8 +256,8 @@ public class ShadowGraph implements Clearable {
 
     /**
      * <p>Returns the ancestors of the provided {@code events} that pass the provided {@code predicate} using a
-     * depth-first search. The provided {@code events} are not included in the return set. Searching stops at nodes
-     * that have no parents, or nodes that do not pass the {@code predicate}.</p>
+     * depth-first search. The provided {@code events} are not included in the return set. Searching stops at nodes that
+     * have no parents, or nodes that do not pass the {@code predicate}.</p>
      *
      * <p>It is safe for this method not to be synchronized because:</p>
      * <ol>
@@ -257,10 +269,8 @@ public class ShadowGraph implements Clearable {
      * {@link #getTips()}, which acts as a memory gate and causes the calling thread to read the latest values for all
      * variables from memory, including {@link ShadowEvent} links.</p>
      *
-     * @param events
-     * 		the event to find ancestors of
-     * @param predicate
-     * 		determines whether or not to add the ancestor to the return list
+     * @param events    the event to find ancestors of
+     * @param predicate determines whether or not to add the ancestor to the return list
      * @return the set of matching ancestors
      */
     public Set<ShadowEvent> findAncestors(final Iterable<ShadowEvent> events, final Predicate<ShadowEvent> predicate) {
@@ -276,12 +286,9 @@ public class ShadowGraph implements Clearable {
      * Private method that searches for ancestors and takes a HashSet as input. This method exists for efficiency, when
      * looking for ancestors of multiple events, we want to append to the same HashSet.
      *
-     * @param ancestors
-     * 		the HashSet to add ancestors to
-     * @param event
-     * 		the event to find ancestors of
-     * @param predicate
-     * 		determines whether or not to add the ancestor to the return list
+     * @param ancestors the HashSet to add ancestors to
+     * @param event     the event to find ancestors of
+     * @param predicate determines whether or not to add the ancestor to the return list
      */
     private void findAncestors(
             final HashSet<ShadowEvent> ancestors, final ShadowEvent event, final Predicate<ShadowEvent> predicate) {
@@ -329,12 +336,9 @@ public class ShadowGraph implements Clearable {
     /**
      * Looks for events in a generation range that pass the provided predicate.
      *
-     * @param startGen
-     * 		the start of the generation range (inclusive)
-     * @param endGen
-     * 		the end of the generation range (exclusive)
-     * @param predicate
-     * 		the predicate to filter out events
+     * @param startGen  the start of the generation range (inclusive)
+     * @param endGen    the end of the generation range (exclusive)
+     * @param predicate the predicate to filter out events
      * @return a collection of events found
      */
     public synchronized Collection<EventImpl> findByGeneration(
@@ -363,9 +367,8 @@ public class ShadowGraph implements Clearable {
      *     <li>whose generation is less than the smallest generation with a non-zero number of reservations</li>
      * </ol>
      *
-     * @param generation
-     * 		The generation below which all generations should be expired. For example, if {@code generation}
-     * 		is 100, events in generation 99 and below should be expired.
+     * @param generation The generation below which all generations should be expired. For example, if
+     *                   {@code generation} is 100, events in generation 99 and below should be expired.
      */
     public synchronized void expireBelow(final long generation) {
         if (generation < expireBelow) {
@@ -417,7 +420,7 @@ public class ShadowGraph implements Clearable {
      * Removes reservations that can and should be expired, starting with the oldest generation reservation.
      *
      * @return the oldest generation with at least one reservation, or {@code -1} if there are no generations with at
-     * 		least one reservation.
+     * least one reservation.
      * @see ShadowGraph#expireBelow
      */
     private long pruneReservationList() {
@@ -451,8 +454,7 @@ public class ShadowGraph implements Clearable {
     /**
      * Expires a single {@link ShadowEvent} from the shadow graph.
      *
-     * @param shadow
-     * 		the shadow event to expire
+     * @param shadow the shadow event to expire
      */
     private void expire(final ShadowEvent shadow) {
         // Remove the shadow from the shadow graph
@@ -466,8 +468,7 @@ public class ShadowGraph implements Clearable {
     /**
      * Get the shadow event that references a hashgraph event instance.
      *
-     * @param e
-     * 		The event.
+     * @param e The event.
      * @return the shadow event that references an event, or null is {@code e} is null
      */
     public synchronized ShadowEvent shadow(final PlatformEvent e) {
@@ -479,11 +480,9 @@ public class ShadowGraph implements Clearable {
     }
 
     /**
-     * Get the shadow events that reference the hashgraph event instances
-     * with the given hashes.
+     * Get the shadow events that reference the hashgraph event instances with the given hashes.
      *
-     * @param hashes
-     * 		The event hashes to get shadow events for
+     * @param hashes The event hashes to get shadow events for
      * @return the shadow events that reference the events with the given hashes
      */
     public synchronized List<ShadowEvent> shadows(final List<Hash> hashes) {
@@ -498,8 +497,7 @@ public class ShadowGraph implements Clearable {
     /**
      * Get a hashgraph event from a hash
      *
-     * @param h
-     * 		the hash
+     * @param h the hash
      * @return the hashgraph event, if there is one in {@code this} shadow graph, else `null`
      */
     public synchronized EventImpl hashgraphEvent(final Hash h) {
@@ -512,23 +510,20 @@ public class ShadowGraph implements Clearable {
     }
 
     /**
-     * Returns a copy of the tips at the time of invocation. The returned list is not affected by changes
-     * made to the tip set.
+     * Returns a copy of the tips at the time of invocation. The returned list is not affected by changes made to the
+     * tip set.
      *
      * @return an unmodifiable copy of the tips
      */
     public synchronized List<ShadowEvent> getTips() {
         return new ArrayList<>(tips);
     }
-
     /**
      * If Event `e` is insertable, then insert it and update the tip set, else do nothing.
      *
-     * @param e
-     * 		The event reference to insert.
+     * @param e The event reference to insert.
      * @return true iff e was inserted
-     * @throws ShadowGraphInsertionException
-     * 		if the event was unable to be added to the shadow graph
+     * @throws ShadowGraphInsertionException if the event was unable to be added to the shadow graph
      */
     public synchronized boolean addEvent(final EventImpl e) throws ShadowGraphInsertionException {
         final InsertableStatus status = insertable(e);
@@ -591,8 +586,7 @@ public class ShadowGraph implements Clearable {
     }
 
     /**
-     * @param h
-     * 		the hash of the event
+     * @param h the hash of the event
      * @return the event that has the hash provided, or null if none exists
      */
     public synchronized EventImpl getEvent(final Hash h) {
@@ -601,11 +595,10 @@ public class ShadowGraph implements Clearable {
     }
 
     /**
-     * Attach a shadow of a Hashgraph event to this graph. Only a shadow for which a parent
-     * hash matches a hash in this@entry is inserted.
+     * Attach a shadow of a Hashgraph event to this graph. Only a shadow for which a parent hash matches a hash in
+     * this@entry is inserted.
      *
-     * @param e
-     * 		The Hashgraph event shadow to be inserted
+     * @param e The Hashgraph event shadow to be inserted
      * @return the inserted shadow event
      */
     private ShadowEvent insert(final EventImpl e) {
@@ -627,8 +620,7 @@ public class ShadowGraph implements Clearable {
     /**
      * Predicate to determine if an event has expired.
      *
-     * @param event
-     * 		The event.
+     * @param event The event.
      * @return true iff the given event is expired
      */
     private boolean expired(final PlatformEvent event) {
@@ -673,10 +665,9 @@ public class ShadowGraph implements Clearable {
     /**
      * Determine whether an event is insertable at time of call.
      *
-     * @param e
-     * 		The event to evaluate
+     * @param e The event to evaluate
      * @return An insertable status, indicating whether the event can be inserted, and if not, the reason it can not be
-     * 		inserted.
+     * inserted.
      */
     private InsertableStatus insertable(final EventImpl e) {
         if (e == null) {

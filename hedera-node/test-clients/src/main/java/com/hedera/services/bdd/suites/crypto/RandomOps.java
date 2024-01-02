@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -65,7 +66,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountDetailsDemo() {
+    final HapiSpec getAccountDetailsDemo() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -138,7 +139,7 @@ public class RandomOps extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec retryLimitDemo() {
+    final HapiSpec retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
                 .when()
@@ -150,8 +151,8 @@ public class RandomOps extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
-    // @todo('8687') Revisit once isolated tests are enabled
-    private HapiSpec freezeDemo() {
+    @BddMethodIsNotATest
+    final HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()

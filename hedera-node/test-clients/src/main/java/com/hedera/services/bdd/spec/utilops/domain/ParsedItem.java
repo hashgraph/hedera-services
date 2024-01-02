@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 
 package com.hedera.services.bdd.spec.utilops.domain;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.stream.proto.RecordStreamItem;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -30,6 +33,9 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
  * @param itemRecord the transaction record
  */
 public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord) {
+    private static final FileID PROPERTIES_FILE_ID =
+            FileID.newBuilder().setFileNum(121).build();
+
     public static ParsedItem parse(final RecordStreamItem item) throws InvalidProtocolBufferException {
         final var txn = item.getTransaction();
         final TransactionBody body;
@@ -41,5 +47,11 @@ public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord)
             body = TransactionBody.parseFrom(signedTxn.getBodyBytes());
         }
         return new ParsedItem(body, item.getRecord());
+    }
+
+    public boolean isPropertyOverride() {
+        return itemRecord.getReceipt().getStatus() == SUCCESS
+                && itemBody.hasFileUpdate()
+                && PROPERTIES_FILE_ID.equals(itemBody.getFileUpdate().getFileID());
     }
 }

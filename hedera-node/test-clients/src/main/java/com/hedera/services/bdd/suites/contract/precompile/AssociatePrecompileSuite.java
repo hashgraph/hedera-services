@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
+    final HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -133,7 +133,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
+    final HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("invalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -151,7 +151,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
+    final HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -166,7 +166,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    final HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -215,7 +215,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    final HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
@@ -273,7 +273,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
+    final HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var missingAddress =
                 Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
@@ -299,7 +299,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
+    final HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(

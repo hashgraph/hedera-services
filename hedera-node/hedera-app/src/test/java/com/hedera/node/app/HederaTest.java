@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,35 @@
 
 package com.hedera.node.app;
 
-final class HederaTest {
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
+import static com.hedera.node.app.state.merkle.AddresBookUtils.createPretendBookFrom;
+import static com.swirlds.common.constructable.ConstructableRegistryFactory.createConstructableRegistry;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.state.merkle.MerkleTestBase;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.Platform;
+import java.util.Iterator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+final class HederaTest extends MerkleTestBase {
     // Constructor: null registry throws
     // Constructor: bootstrap props throws
     // Constructor: Null version throws (pass the version in)
@@ -70,4 +98,152 @@ final class HederaTest {
     // restart: housekeeping? freeze? etc.
 
     // rebuild aliases?
+
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private PlatformContext platformContext;
+
+    @Mock
+    private MerkleHederaState merkleHederaState;
+
+    @Mock
+    private MapReadableStates readableStates;
+
+    @Mock
+    private MapReadableKVState<EntityNumber, StakingNodeInfo> mockReadableKVState;
+
+    @Mock
+    private Iterator<EntityNumber> mockIterator;
+
+    private ConstructableRegistry constructableRegistry = createConstructableRegistry();
+    private Hedera hedera = new Hedera(constructableRegistry);
+
+    @BeforeEach
+    void setUp() {
+        given(merkleHederaState.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+        final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                .value(
+                        EntityNumber.newBuilder().number(0L).build(),
+                        StakingNodeInfo.newBuilder().nodeNumber(0L).build())
+                .value(
+                        EntityNumber.newBuilder().number(1L).build(),
+                        StakingNodeInfo.newBuilder().nodeNumber(1L).build())
+                .build();
+        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
+                .willReturn(readableStakingNodes);
+        lenient().when(mockReadableKVState.keys()).thenReturn(mockIterator);
+    }
+
+    @Nested
+    @DisplayName("Handling updateWeight Tests")
+    final class UpdateWeightTest {
+        @Test
+        void updatesAddressBookWithZeroWeightOnGenesisStart() {
+            final var node0 = new NodeId(0);
+            final var node1 = new NodeId(1);
+            given(platform.getSelfId()).willReturn(node0);
+            given(platform.getContext()).willReturn(platformContext);
+
+            final var pretendAddressBook = createPretendBookFrom(platform, true);
+
+            assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+            assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+            hedera.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
+
+            // if staking info map has node with 0 weight and a new node is added,
+            // both gets weight of 0
+            assertEquals(0L, pretendAddressBook.getAddress(node0).getWeight());
+            assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
+        }
+
+        @Test
+        void updatesAddressBookWithZeroWeightForNewNodes() {
+            final var node0 = new NodeId(0);
+            final var node1 = new NodeId(1);
+            given(platform.getSelfId()).willReturn(node0);
+            given(platform.getContext()).willReturn(platformContext);
+
+            final var pretendAddressBook = createPretendBookFrom(platform, true);
+            final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                    .value(
+                            EntityNumber.newBuilder().number(0L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(0L)
+                                    .stake(1000L)
+                                    .weight(500)
+                                    .build())
+                    .build();
+            given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
+                    .willReturn(readableStakingNodes);
+
+            assertEquals(
+                    1000L,
+                    readableStakingNodes
+                            .get(EntityNumber.newBuilder().number(0L).build())
+                            .stake());
+
+            assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+            assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+            hedera.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
+
+            // if staking info map has node with 0 weight and a new node is added,
+            // new nodes gets weight of 0
+            assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
+            assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
+        }
+
+        @Test
+        void updatesAddressBookWithNonZeroWeightsOnGenesisStartIfStakesExist() {
+            final var node0 = new NodeId(0);
+            final var node1 = new NodeId(1);
+            given(platform.getSelfId()).willReturn(node0);
+            given(platform.getContext()).willReturn(platformContext);
+
+            final var pretendAddressBook = createPretendBookFrom(platform, true);
+
+            final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                    .value(
+                            EntityNumber.newBuilder().number(0L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(0L)
+                                    .stake(1000L)
+                                    .weight(250)
+                                    .build())
+                    .value(
+                            EntityNumber.newBuilder().number(1L).build(),
+                            StakingNodeInfo.newBuilder()
+                                    .nodeNumber(1L)
+                                    .stake(1000L)
+                                    .weight(250)
+                                    .build())
+                    .build();
+            given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
+                    .willReturn(readableStakingNodes);
+
+            assertEquals(
+                    1000L,
+                    readableStakingNodes
+                            .get(EntityNumber.newBuilder().number(0L).build())
+                            .stake());
+            assertEquals(
+                    1000L,
+                    readableStakingNodes
+                            .get(EntityNumber.newBuilder().number(1L).build())
+                            .stake());
+
+            assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+            assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+            hedera.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
+
+            // if staking info map has node with 250L weight and a new node is added,
+            // both gets weight of 250L
+            assertEquals(250L, pretendAddressBook.getAddress(node0).getWeight());
+            assertEquals(250L, pretendAddressBook.getAddress(node1).getWeight());
+        }
+    }
 }

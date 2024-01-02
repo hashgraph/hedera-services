@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.common.stream.internal;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -75,7 +77,11 @@ public class SingleStreamIterator<T extends SelfSerializable> implements Iterato
                     "SingleStreamIterator :: read OBJECT_STREAM_VERSION: {}",
                     () -> objectStreamVersion);
         } catch (IllegalArgumentException | IOException e) {
-            logger.error(LOGM_EXCEPTION, "SingleStreamIterator :: got Exception when parse File {}", file.getName(), e);
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "SingleStreamIterator :: got Exception when parse File {}",
+                    file.getName(),
+                    e);
             closeStream();
         }
     }
@@ -105,7 +111,7 @@ public class SingleStreamIterator<T extends SelfSerializable> implements Iterato
             return true;
         } catch (IOException e) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     () -> new StreamParseErrorPayload("parseStream :: got IOException when readSerializable. "),
                     e);
             closeStream();
@@ -122,7 +128,7 @@ public class SingleStreamIterator<T extends SelfSerializable> implements Iterato
             return stream.readSerializable();
         } catch (IOException e) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     () -> new StreamParseErrorPayload("parseStream :: got IOException when readSerializable. "),
                     e);
             closeStream();
@@ -139,7 +145,7 @@ public class SingleStreamIterator<T extends SelfSerializable> implements Iterato
                 stream.close();
             }
         } catch (IOException e) {
-            logger.error(LOGM_EXCEPTION, "SingleStreamIterator :: got IOException when closing stream. ", e);
+            logger.error(EXCEPTION.getMarker(), "SingleStreamIterator :: got IOException when closing stream. ", e);
         }
         streamClosed = true;
     }

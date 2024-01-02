@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,10 @@ public class PropertyConfigSource implements ConfigSource {
         // It is important to use the Thread's context class loader because the resource we want to load might
         // be part of another module.
         try (final var in = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName)) {
+            if (in == null) {
+                throw new UncheckedIOException(
+                        "Property file " + resourceName + " could not be found", new IOException());
+            }
             final var props = new Properties();
             props.load(in);
             return props;

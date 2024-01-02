@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -522,12 +522,14 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return summarizedWith(null);
     }
 
-    public String summarizedWith(final DualStateAccessor dualStateAccessor) {
-        final var isDualStateAvailable = dualStateAccessor != null && dualStateAccessor.getDualState() != null;
-        final var freezeTime =
-                isDualStateAvailable ? dualStateAccessor.getDualState().getFreezeTime() : null;
+    public String summarizedWith(final PlatformStateAccessor platformStateAccessor) {
+        final var isPlatformStateAvailable =
+                platformStateAccessor != null && platformStateAccessor.getPlatformState() != null;
+        final var freezeTime = isPlatformStateAvailable
+                ? platformStateAccessor.getPlatformState().getFreezeTime()
+                : null;
         final var pendingUpdateDesc = currentPendingUpdateDesc();
-        final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
+        final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isPlatformStateAvailable) + pendingUpdateDesc;
 
         return "The network context (state version "
                 + (stateVersion == UNRECORDED_STATE_VERSION ? NOT_AVAILABLE : stateVersion)
@@ -665,10 +667,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 + CommonUtils.hex(preparedUpdateFileHash).substring(0, 8);
     }
 
-    private String freezeTimeDesc(@Nullable final Instant freezeTime, final boolean isDualStateAvailable) {
+    private String freezeTimeDesc(@Nullable final Instant freezeTime, final boolean isPlatformStateAvailable) {
         final var nmtDescSkip = LINE_WRAP;
         if (freezeTime == null) {
-            return (isDualStateAvailable ? NOT_EXTANT : NOT_AVAILABLE) + nmtDescSkip;
+            return (isPlatformStateAvailable ? NOT_EXTANT : NOT_AVAILABLE) + nmtDescSkip;
         }
         return freezeTime + nmtDescSkip;
     }

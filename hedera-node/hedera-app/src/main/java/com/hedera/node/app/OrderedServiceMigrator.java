@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  * The entire purpose of this class is to ensure that inter-service dependencies are respected between
  * migrations. The only required dependency right now is the {@link EntityIdService}, which is needed
  * for genesis blocklist accounts in the token service genesis migration. (See {@link
- * TokenServiceImpl#registerSchemas(SchemaRegistry)}).
+ * Service#registerSchemas(SchemaRegistry, SemanticVersion)}).
  *
  * <p>Note: there are only two ordering requirements to maintain: first, that the entity ID service
  * is migrated before the token service; and second, that the remaining services are migrated _in any
@@ -77,9 +77,7 @@ public class OrderedServiceMigrator {
                 .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
                 .findFirst()
                 .orElseThrow();
-        final var entityIdService = new EntityIdService();
         final var entityIdRegistry = (MerkleSchemaRegistry) entityIdRegistration.registry();
-        entityIdService.registerSchemas(entityIdRegistry);
         entityIdRegistry.migrate(
                 state,
                 previousVersion,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.util.iterator;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * A wrapper for an iterator that allows the exposed type to be a super type of the iterator provided.
@@ -37,9 +36,10 @@ public class TypedIterator<T> implements Iterator<T> {
      *
      * @param itr
      * 		the iterator to wrap
+     * @throws NullPointerException in case {@code itr} parameter is {@code null}
      */
     public TypedIterator(final Iterator<? extends T> itr) {
-        throwArgNull(itr, "itr must not be null");
+        Objects.requireNonNull(itr, "itr must not be null");
         this.itr = itr;
     }
 

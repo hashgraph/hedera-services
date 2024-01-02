@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -392,7 +392,11 @@ public class StateView {
     }
 
     public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
-            final AccountID id, final AliasManager aliasManager, final RewardCalculator rewardCalculator) {
+            final AccountID id,
+            final AliasManager aliasManager,
+            final int maxTokensForAccountInfo,
+            final RewardCalculator rewardCalculator,
+            final boolean areTokenBalancesEnabledInQueries) {
         final var accountNum = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = accounts().get(accountNum);
         if (account == null) {
@@ -417,6 +421,12 @@ public class StateView {
         Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(info::setProxyAccountID);
         if (!isOfEvmAddressSize(account.getAlias())) {
             info.setAlias(account.getAlias());
+        }
+        if (areTokenBalancesEnabledInQueries) {
+            final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
+            if (!tokenRels.isEmpty()) {
+                info.addAllTokenRelationships(tokenRels);
+            }
         }
         info.setStakingInfo(stakingInfo(account, rewardCalculator));
 
@@ -539,7 +549,11 @@ public class StateView {
     }
 
     public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
-            final ContractID id, final AliasManager aliasManager, final RewardCalculator rewardCalculator) {
+            final ContractID id,
+            final AliasManager aliasManager,
+            final int maxTokensForAccountInfo,
+            final RewardCalculator rewardCalculator,
+            final boolean areTokenBalancesEnabledInQueries) {
         final var contractId = EntityIdUtils.unaliased(id, aliasManager);
         final var contract = contracts().get(contractId);
         if (contract == null) {
@@ -567,6 +581,12 @@ public class StateView {
             info.setContractAccountID(hex(contract.getAlias().toByteArray()));
         } else {
             info.setContractAccountID(asHexedEvmAddress(mirrorId));
+        }
+        if (areTokenBalancesEnabledInQueries) {
+            final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
+            if (!tokenRels.isEmpty()) {
+                info.addAllTokenRelationships(tokenRels);
+            }
         }
         info.setStakingInfo(stakingInfo(contract, rewardCalculator));
 

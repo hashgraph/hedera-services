@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getByteCodeWorks() {
+    final HapiSpec getByteCodeWorks() {
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("GetByteCodeWorks")
                 .given(uploadInitCode(contract), contractCreate(contract))
@@ -89,7 +89,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromCostAnswer() {
+    final HapiSpec invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -98,7 +98,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromAnswerOnly() {
+    final HapiSpec invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

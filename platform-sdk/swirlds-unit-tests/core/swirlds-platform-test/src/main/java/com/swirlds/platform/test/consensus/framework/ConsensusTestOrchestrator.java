@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
@@ -58,10 +57,6 @@ public class ConsensusTestOrchestrator {
     public void runGui() {
         final ConsensusTestNode node = nodes.stream().findAny().orElseThrow();
         new TestGuiSource(node.getEventEmitter().getGraphGenerator(), node.getIntake()).runGui();
-    }
-
-    public void loadSignedState(final SignedState signedState) {
-        nodes.forEach(node -> node.loadSignedState(signedState));
     }
 
     /** Generates all events defined in the input */
