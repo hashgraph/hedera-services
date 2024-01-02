@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,19 +204,21 @@ class ConversionUtilsTest {
                         ContractStateChange.newBuilder()
                                 .contractId(ContractID.newBuilder().contractNum(123L))
                                 .storageChanges(new StorageChange(
-                                        tuweniToPbjBytes(UInt256.MIN_VALUE), tuweniToPbjBytes(UInt256.MAX_VALUE), null))
+                                        tuweniToPbjBytes(UInt256.MIN_VALUE.trimLeadingZeros()),
+                                        tuweniToPbjBytes(UInt256.MAX_VALUE.trimLeadingZeros()),
+                                        null))
                                 .build(),
                         ContractStateChange.newBuilder()
                                 .contractId(ContractID.newBuilder().contractNum(456L))
                                 .storageChanges(
                                         new StorageChange(
-                                                tuweniToPbjBytes(UInt256.MAX_VALUE),
-                                                tuweniToPbjBytes(UInt256.MIN_VALUE),
+                                                tuweniToPbjBytes(UInt256.MAX_VALUE.trimLeadingZeros()),
+                                                tuweniToPbjBytes(UInt256.MIN_VALUE.trimLeadingZeros()),
                                                 null),
                                         new StorageChange(
-                                                tuweniToPbjBytes(UInt256.ONE),
-                                                tuweniToPbjBytes(UInt256.MIN_VALUE),
-                                                tuweniToPbjBytes(UInt256.MAX_VALUE)))
+                                                tuweniToPbjBytes(UInt256.ONE.trimLeadingZeros()),
+                                                tuweniToPbjBytes(UInt256.MIN_VALUE.trimLeadingZeros()),
+                                                tuweniToPbjBytes(UInt256.MAX_VALUE.trimLeadingZeros())))
                                 .build())
                 .build();
         final var actualPbj = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);

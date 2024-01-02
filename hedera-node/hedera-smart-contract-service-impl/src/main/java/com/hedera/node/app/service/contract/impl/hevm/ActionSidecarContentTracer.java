@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.hevm;
 
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -51,4 +52,11 @@ public interface ActionSidecarContentTracer extends OperationTracer {
      * @param type the type of precompile called; expected values are {@code PRECOMPILE} and {@code SYSTEM}
      */
     void tracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type);
+
+    /**
+     * The final list of actions traced by this tracer.
+     *
+     * @return the actions traced by this tracer
+     */
+    ContractActions contractActions();
 }
