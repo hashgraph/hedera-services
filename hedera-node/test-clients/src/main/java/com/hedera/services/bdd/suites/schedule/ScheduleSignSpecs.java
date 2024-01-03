@@ -44,10 +44,24 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFERRED_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.NEW_SENDER_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RANDOM_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SHARED_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SOMEBODY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TOKEN_A;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -59,7 +73,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURE
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -78,23 +91,6 @@ public class ScheduleSignSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
     private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
     private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
-
-    private static final String defaultTxExpiry =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
-    private static final String defaultWhitelist =
-            HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
-    private static final String NEW_SENDER_KEY = "newSKey";
-    private static final String DEFERRED_XFER = "deferredXfer";
-    private static final String ADMIN = "admin";
-    private static final String SHARED_KEY = "sharedKey";
-    private static final String TWO_SIG_XFER = "twoSigXfer";
-    private static final String PAYER = "payer";
-    private static final String SOMEBODY = "somebody";
-    private static final String RANDOM_KEY = "randomKey";
-    private static final String SENDER = "sender";
-    private static final String RECEIVER = "receiver";
-    private static final String BASIC_XFER = "basicXfer";
-    private static final String TOKEN_A = "tokenA";
 
     public static void main(String... args) {
         new ScheduleSignSpecs().runSuiteSync();
@@ -138,8 +134,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .then(fileUpdate(APP_PROPERTIES)
                         .payingWith(ADDRESS_BOOK_CONTROL)
                         .overridingProps(Map.of(
-                                LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, defaultTxExpiry,
-                                SCHEDULING_WHITELIST, defaultWhitelist)));
+                                LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, DEFAULT_TX_EXPIRY,
+                                SCHEDULING_WHITELIST, WHITELIST_DEFAULT)));
     }
 
     @HapiTest
@@ -808,7 +804,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
                         getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + defaultTxExpiry));
+                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + DEFAULT_TX_EXPIRY));
     }
 
     @Override
