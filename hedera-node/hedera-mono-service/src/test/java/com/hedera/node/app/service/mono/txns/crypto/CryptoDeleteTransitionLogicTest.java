@@ -165,6 +165,26 @@ class CryptoDeleteTransitionLogicTest {
     }
 
     @Test
+    void followsHappyPathWithAliasDeletion() {
+        final var targetAsByteString = target.toByteString();
+        givenValidTxnCtx();
+        given(globalDynamicProperties.releaseAliasAfterDeletion()).willReturn(true);
+        given(ledger.alias(target)).willReturn(targetAsByteString);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        verify(ledger).delete(target, payer);
+        verify(txnCtx).recordBeneficiaryOfDeleted(target.getAccountNum(), payer.getAccountNum());
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(sigImpactHistorian).markEntityChanged(target.getAccountNum());
+        verify(ledger).clearAlias(target);
+        verify(aliasManager).unlink(targetAsByteString);
+        verify(sigImpactHistorian).markAliasChanged(targetAsByteString);
+    }
+
+    @Test
     void rejectsDetachedAccountAsTarget() {
         // setup:
         givenValidTxnCtx();

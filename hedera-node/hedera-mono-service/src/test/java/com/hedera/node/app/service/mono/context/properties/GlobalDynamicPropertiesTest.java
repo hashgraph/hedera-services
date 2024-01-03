@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,6 +236,9 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.releaseAliasAfterDeletion());
+        assertFalse(subject.validateSidecarsEnabled());
+        assertFalse(subject.areTokenBalancesEnabledInQueries());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
         assertFalse(subject.isContractsNoncesExternalizationEnabled());
         assertFalse(subject.isEip2930Enabled());
@@ -406,6 +409,9 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertFalse(subject.isLazyCreationEnabled());
         assertTrue(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.releaseAliasAfterDeletion());
+        assertFalse(subject.validateSidecarsEnabled());
+        assertTrue(subject.areTokenBalancesEnabledInQueries());
         assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
         assertFalse(subject.isImplicitCreationEnabled());
     }
