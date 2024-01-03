@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,8 +76,8 @@ class IntakeAndConsensusTests {
         // the generated events are first fed into consensus so that round created is calculated before we start
         // using them
         final GeneratorWithConsensus generator = new GeneratorWithConsensus(seed, numNodes, consensusConfig);
-        final TestIntake node1 = new TestIntake(generator.getAddressBook());
-        final TestIntake node2 = new TestIntake(generator.getAddressBook());
+        final TestIntake node1 = new TestIntake(generator.getAddressBook(), consensusConfig);
+        final TestIntake node2 = new TestIntake(generator.getAddressBook(), consensusConfig);
 
         // first we generate events regularly, until we have some ancient rounds
         final int firstBatchSize = 5000;
@@ -194,7 +194,7 @@ class IntakeAndConsensusTests {
         @Override
         public IndexedEvent generateEvent() {
             final IndexedEvent event = generator.generateEvent();
-            intake.addEvent(event);
+            intake.addEvent(event.getBaseEvent());
             return event;
         }
 

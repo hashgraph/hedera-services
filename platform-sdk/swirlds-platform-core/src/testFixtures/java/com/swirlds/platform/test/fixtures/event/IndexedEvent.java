@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.ConsensusData;
 
 /**
  * An event with the same behavior as a standard event but with the addition of some debugging
@@ -31,23 +29,10 @@ import com.swirlds.platform.system.events.ConsensusData;
 public class IndexedEvent extends EventImpl {
 
     private long generatorIndex;
-    private int sequenceNum = -1;
 
     private static final long CLASS_ID = 0x284d35dc6f9265d0L;
 
     public IndexedEvent() {}
-
-    public IndexedEvent(
-            final BaseEventHashedData baseEventHashedData, final BaseEventUnhashedData baseEventUnhashedData) {
-        super(baseEventHashedData, baseEventUnhashedData);
-    }
-
-    public IndexedEvent(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData) {
-        super(baseEventHashedData, baseEventUnhashedData, consensusData);
-    }
 
     public IndexedEvent(
             final BaseEventHashedData baseEventHashedData,
@@ -55,29 +40,6 @@ public class IndexedEvent extends EventImpl {
             final EventImpl selfParent,
             final EventImpl otherParent) {
         super(baseEventHashedData, baseEventUnhashedData, selfParent, otherParent);
-    }
-
-    public IndexedEvent(final EventImpl event) {
-        super(
-                event.getBaseEventHashedData(),
-                event.getBaseEventUnhashedData(),
-                event.getConsensusData(),
-                event.getSelfParent(),
-                event.getOtherParent());
-    }
-
-    /**
-     * Convert this object into a regular EventImpl (as opposed to the IndexedEvent subclass).
-     */
-    public EventImpl convertToEventImpl() {
-        final EventImpl event = new EventImpl(
-                getBaseEventHashedData(),
-                getBaseEventUnhashedData(),
-                getConsensusData(),
-                getSelfParent(),
-                getOtherParent());
-        CryptographyHolder.get().digestSync(event);
-        return event;
     }
 
     /**
@@ -96,14 +58,6 @@ public class IndexedEvent extends EventImpl {
     /** Set the generator index of this event. */
     public void setGeneratorIndex(final long generatorIndex) {
         this.generatorIndex = generatorIndex;
-    }
-
-    public int getSequenceNum() {
-        return sequenceNum;
-    }
-
-    public void setSequenceNum(final int sequenceNum) {
-        this.sequenceNum = sequenceNum;
     }
 
     @Override
