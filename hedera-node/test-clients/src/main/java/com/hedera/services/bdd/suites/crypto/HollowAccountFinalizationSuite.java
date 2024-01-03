@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assumingNoStakingChildRecordCausesMaxChildRecordsExceeded;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -797,40 +798,48 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
                 .then(withOpContext((spec, opLog) -> {
-                    // send a crypto transfer from the hollow payer
-                    // also sending hbars from the other hollow account
-                    final var op3 = cryptoTransfer(sendFromEvmAddressFromECDSAKey(
-                                            spec,
-                                            spec.registry().getKey(recipientKey).toByteString(),
-                                            ecdsaKey2)
-                                    .toArray(Function[]::new))
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN_2);
-                    final var childRecordCheck = childRecordsCheck(
+                    final var op = assumingNoStakingChildRecordCausesMaxChildRecordsExceeded(
+                            // send a crypto transfer from the hollow payer
+                            // also sending hbars from the other hollow account
+                            cryptoTransfer(sendFromEvmAddressFromECDSAKey(
+                                                    spec,
+                                                    spec.registry()
+                                                            .getKey(recipientKey)
+                                                            .toByteString(),
+                                                    ecdsaKey2)
+                                            .toArray(Function[]::new))
+                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                    .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2)),
                             TRANSFER_TXN_2,
-                            SUCCESS,
-                            recordWith().status(SUCCESS),
-                            recordWith().status(SUCCESS),
-                            recordWith().status(SUCCESS));
-                    // assert that the payer has been finalized
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                    final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
-                            ecdsaKey.getECDSASecp256K1().toByteArray()));
-                    final var op4 = getAliasedAccountInfo(payerEvmAddress)
-                            .has(accountWith()
-                                    .key(SECP_256K1_SOURCE_KEY)
-                                    .noAlias()
-                                    .evmAddress(payerEvmAddress));
-                    // assert that the other hollow account has been finalized
-                    final var otherEcdsaKey = spec.registry().getKey(ecdsaKey2);
-                    final var otherEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
-                            otherEcdsaKey.getECDSASecp256K1().toByteArray()));
-                    final var op5 = getAliasedAccountInfo(otherEvmAddress)
-                            .has(accountWith().key(ecdsaKey2).noAlias().evmAddress(otherEvmAddress));
-                    allRunFor(spec, op3, childRecordCheck, op4, op5);
+                            childRecordsCheck(
+                                    TRANSFER_TXN_2,
+                                    SUCCESS,
+                                    recordWith().status(SUCCESS),
+                                    recordWith().status(SUCCESS),
+                                    recordWith().status(SUCCESS)),
+                            withOpContext((ignoredSpec, ignoredOpLog) -> {
+                                final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
+                                        ecdsaKey.getECDSASecp256K1().toByteArray()));
+                                // assert that the payer has been finalized
+                                final var op4 = getAliasedAccountInfo(payerEvmAddress)
+                                        .has(accountWith()
+                                                .key(SECP_256K1_SOURCE_KEY)
+                                                .noAlias()
+                                                .evmAddress(payerEvmAddress));
+                                // assert that the other hollow account has been finalized
+                                final var otherEcdsaKey = spec.registry().getKey(ecdsaKey2);
+                                final var otherEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
+                                        otherEcdsaKey.getECDSASecp256K1().toByteArray()));
+                                final var op5 = getAliasedAccountInfo(otherEvmAddress)
+                                        .has(accountWith()
+                                                .key(ecdsaKey2)
+                                                .noAlias()
+                                                .evmAddress(otherEvmAddress));
+                                allRunFor(spec, op4, op5);
+                            }));
+                    allRunFor(spec, op);
                 }));
     }
 

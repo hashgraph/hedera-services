@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assumingNoStakingChildRecordCausesMaxChildRecordsExceeded;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -83,7 +84,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
@@ -724,7 +724,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var sponsor = spec.registry().getAccountID(DEFAULT_PAYER);
                             final var payer = spec.registry().getAccountID(CIVILIAN);
                             final var parent = lookup.getResponseRecord();
-                            final var child = lookup.getChildRecord(0);
+                            final var child = lookup.getFirstNonStakingChildRecord();
                             assertAliasBalanceAndFeeInChildRecord(parent, child, sponsor, payer, 0L, approxTransferFee);
                         }))
                 .then(
@@ -1331,43 +1331,28 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         newKeyNamed(ALIAS_2),
                         newKeyNamed("alias3"),
                         newKeyNamed("alias4"),
-                        newKeyNamed("alias5"),
+                        newKeyNamed("alias5"))
+                .then(assumingNoStakingChildRecordCausesMaxChildRecordsExceeded(
                         cryptoTransfer(
-                                        tinyBarsFromToWithAlias(PAYER, "alias1", ONE_HUNDRED_HBARS),
-                                        tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
-                                        tinyBarsFromToWithAlias(PAYER, "alias3", ONE_HUNDRED_HBARS))
-                                .via("multipleAutoAccountCreates")
-                                // In CI this could fail due to an end-of-staking period record already
-                                // being added as a child to this transaction before its auto-creations
-                                .hasKnownStatusFrom(SUCCESS, MAX_CHILD_RECORDS_EXCEEDED))
-                .then(withOpContext((spec, opLog) -> {
-                    final var lookup = getTxnRecord("multipleAutoAccountCreates");
-                    allRunFor(spec, lookup);
-                    final var actualStatus =
-                            lookup.getResponseRecord().getReceipt().getStatus();
-                    // Continue with more assertions given the normal case the preceding transfer succeeded
-                    if (actualStatus == SUCCESS) {
-                        allRunFor(
-                                spec,
-                                getTxnRecord("multipleAutoAccountCreates")
-                                        .hasNonStakingChildRecordCount(3)
-                                        .logged(),
-                                getAccountInfo(PAYER)
-                                        .has(accountWith()
-                                                .balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)),
-                                cryptoTransfer(
-                                                tinyBarsFromToWithAlias(PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
-                                                tinyBarsFromToWithAlias(PAYER, "alias5", 100))
-                                        .via("failedAutoCreate")
-                                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
-                                getTxnRecord("failedAutoCreate")
-                                        .hasNonStakingChildRecordCount(0)
-                                        .logged(),
-                                getAccountInfo(PAYER)
-                                        .has(accountWith()
-                                                .balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
-                    }
-                }));
+                                tinyBarsFromToWithAlias(PAYER, "alias1", ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(PAYER, "alias3", ONE_HUNDRED_HBARS)),
+                        "multipleAutoAccountCreates",
+                        getTxnRecord("multipleAutoAccountCreates")
+                                .hasNonStakingChildRecordCount(3)
+                                .logged(),
+                        getAccountInfo(PAYER)
+                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(
+                                        tinyBarsFromToWithAlias(PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
+                                        tinyBarsFromToWithAlias(PAYER, "alias5", 100))
+                                .via("failedAutoCreate")
+                                .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
+                        getTxnRecord("failedAutoCreate")
+                                .hasNonStakingChildRecordCount(0)
+                                .logged(),
+                        getAccountInfo(PAYER)
+                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS))));
     }
 
     @HapiTest

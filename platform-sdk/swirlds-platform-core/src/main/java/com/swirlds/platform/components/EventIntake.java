@@ -238,7 +238,10 @@ public class EventIntake {
      */
     @NonNull
     private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
-        return () -> prehandleEvent.accept(event);
+        return () -> {
+            prehandleEvent.accept(event);
+            event.getBaseEvent().signalPrehandleCompletion();
+        };
     }
 
     /**
