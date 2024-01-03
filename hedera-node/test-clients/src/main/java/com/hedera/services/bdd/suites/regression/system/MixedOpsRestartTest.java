@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,21 +95,21 @@ public class MixedOpsRestartTest extends HapiSuite {
                         cryptoCreate(TREASURY),
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).logged(),
                         inParallel(mixedOpsBurst.get()))
                 .when(
                         // freeze nodes
                         freezeOnly().startingIn(10).payingWith(GENESIS),
                         // wait for all nodes to be in FREEZE status
-                        waitForNodesToFreeze(75),
+                        waitForNodesToFreeze(75).logged(),
                         // shut down all nodes, since the platform doesn't automatically go back to ACTIVE status
-                        shutDownAllNodes(),
+                        shutDownAllNodes().logged(),
                         // wait for all nodes to be shut down
-                        waitForNodesToShutDown(60),
+                        waitForNodesToShutDown(60).logged(),
                         // start all nodes
-                        startAllNodes(),
+                        startAllNodes().logged(),
                         // wait for all nodes to be ACTIVE
-                        waitForNodesToBecomeActive(60))
+                        waitForNodesToBecomeActive(60).logged())
                 .then(
                         // Once nodes come back ACTIVE, submit some operations again
                         cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,15 @@ public abstract class LifecycleOp extends UtilOp {
 
         // Run the op for each node, and if ANY node returns "true", then the test is over and we should also
         // return true. If they all return false, then we also return false.
-        return nodes.stream().anyMatch(this::run);
+        final var isPassed = nodes.stream().anyMatch(this::run);
+        if (verboseLoggingOn) {
+            log.info(
+                    "LifecycleOp {} - {}, with nodes size {}",
+                    this.toString(),
+                    isPassed ? "passed" : "failed",
+                    nodes.size());
+        }
+        return isPassed;
     }
 
     /**

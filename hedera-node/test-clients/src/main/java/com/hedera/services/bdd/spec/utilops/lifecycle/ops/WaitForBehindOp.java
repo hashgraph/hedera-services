@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.spec.utilops.lifecycle.LifecycleOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,9 +44,14 @@ public class WaitForBehindOp extends LifecycleOp {
             node.waitForBehind(waitSeconds);
             logger.info("Node {} fell behind other nodes", node);
             return false; // Do not stop the test, all is well.
-        } catch (TimeoutException e) {
+        } catch (Exception e) {
             logger.info("Node {} did not fall behind {}s", node, waitSeconds);
             return true; // Stop the test, we're toast.
         }
+    }
+
+    @Override
+    public String toString() {
+        return "WaitForBehindOp";
     }
 }

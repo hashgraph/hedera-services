@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,6 @@ import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PRO
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiTestEnv {
     private static final Logger logger = LogManager.getLogger(HapiTestEnv.class);
@@ -108,20 +107,23 @@ public class HapiTestEnv {
         started = true;
         for (final var node : nodes) {
             logger.info("Started node {}", node.getName());
-            try{
+            try {
                 node.start();
             } catch (RuntimeException e) {
-                logger.error("Node {} failed to start within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                logger.error(
+                        "Node {} failed to start within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
                 throw e;
             }
-
         }
         for (final var node : nodes) {
-            try{
+            try {
                 logger.info("Wiatimng for node to become active{}", node.getName());
                 node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
             } catch (TimeoutException e) {
-                logger.error("Node {} failed to become active within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                logger.error(
+                        "Node {} failed to become active within {} seconds",
+                        node.getName(),
+                        CAPTIVE_NODE_STARTUP_TIME_LIMIT);
                 throw e;
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,8 +189,6 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                     .directory(workingDir.toFile())
                     .redirectOutput(stdout.toFile())
                     .redirectError(stderr.toFile());
-//                    .inheritIO();
-//            logger.info(e);
             handle = builder.start().toHandle();
             logger.info("Started node {} with pid {}", nodeId, handle.pid());
         } catch (Exception e) {
@@ -207,6 +205,8 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 throw new TimeoutException(
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
             }
+
+            logger.info("node {}: Waiting for node to become active... But currently {} ", nodeId, getPlatformStatus());
 
             if ("ACTIVE".equals(getPlatformStatus())) {
                 // Actually try to open a connection with the node, to make sure it is really up and running.
@@ -435,6 +435,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         String statusKey = "";
         try {
             final var response = httpClient.send(prometheusRequest, HttpResponse.BodyHandlers.ofString());
+            logger.info("node {}: prometheus response {}", nodeId, response.body());
             final var reader = new BufferedReader(new StringReader(response.body()));
             String line;
             while ((line = reader.readLine()) != null) {
@@ -444,6 +445,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                     for (final var kvPair : kvPairs) {
                         final var parts = kvPair.split("=");
                         statusMap.put(parts[0], parts[1]);
+                        logger.info("node {}: statusMap[{}] = {}", nodeId, parts[0], parts[1]);
                     }
                 }
 
@@ -451,12 +453,14 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 if (matcher.matches()) {
                     // This line always comes AFTER the # HELP line.
                     statusKey = matcher.group(1);
+                    logger.info("node {}: statusKey = {}", nodeId, statusKey);
                     break;
                 }
             }
         } catch (IOException | InterruptedException ignored) {
+            logger.info("node {}: Unable to get platform status, exception {}", nodeId, ignored);
         }
-
+        logger.info("node {}: status = {}", nodeId, statusMap.get(statusKey));
         return statusMap.get(statusKey);
     }
 }
