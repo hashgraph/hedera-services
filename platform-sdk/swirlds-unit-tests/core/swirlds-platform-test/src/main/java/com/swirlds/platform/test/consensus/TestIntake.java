@@ -107,6 +107,8 @@ public class TestIntake implements LoadableFromSignedState {
 
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
+
+        model.start();
     }
 
     /**
