@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
+import static com.hedera.hapi.streams.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
@@ -40,9 +42,10 @@ public class FrameUtils {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
     public static final String TRACKER_CONTEXT_VARIABLE = "storageAccessTracker";
     public static final String TINYBAR_VALUES_CONTEXT_VARIABLE = "tinybarValues";
-    public static final String SELF_DESTRUCT_BENEFICIARIES = "selfDestructBeneficiaries";
+    public static final String HAPI_RECORD_BUILDER_CONTEXT_VARIABLE = "hapiRecordBuilder";
     public static final String PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE = "propagatedCallFailure";
     public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
+    public static final String PENDING_CREATION_BUILDER_CONTEXT_VARIABLE = "pendingCreationBuilder";
 
     private FrameUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -54,6 +57,10 @@ public class FrameUtils {
 
     public static @NonNull ContractsConfig contractsConfigOf(@NonNull final MessageFrame frame) {
         return configOf(frame).getConfigData(ContractsConfig.class);
+    }
+
+    public static boolean hasBytecodeSidecarsEnabled(@NonNull final MessageFrame frame) {
+        return contractsConfigOf(frame).sidecars().contains(CONTRACT_BYTECODE);
     }
 
     public static boolean hasActionSidecarsEnabled(@NonNull final MessageFrame frame) {
@@ -99,8 +106,18 @@ public class FrameUtils {
         return propagatedCallFailureReference(frame).getAndClear();
     }
 
-    private static PropagatedCallFailureReference propagatedCallFailureReference(@NonNull final MessageFrame frame) {
-        return initialFrameOf(frame).getContextVariable(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE);
+    /**
+     * Gets and clears any metadata for a pending creation in the context of the given frame.
+     *
+     * @param frame a frame in the transaction of interest
+     * @param contractID the contract id of the pending creation
+     * @return the metadata for the pending creation
+     */
+    public static @NonNull PendingCreationMetadata getAndClearPendingCreationMetadata(
+            @NonNull final MessageFrame frame, @NonNull final ContractID contractID) {
+        requireNonNull(frame);
+        requireNonNull(contractID);
+        return pendingCreationMetadataRef(frame).getAndClearOrThrowFor(contractID);
     }
 
     public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {
@@ -124,7 +141,7 @@ public class FrameUtils {
      */
     public static @NonNull DeleteCapableTransactionRecordBuilder selfDestructBeneficiariesFor(
             @NonNull final MessageFrame frame) {
-        return requireNonNull(initialFrameOf(frame).getContextVariable(SELF_DESTRUCT_BENEFICIARIES));
+        return requireNonNull(initialFrameOf(frame).getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE));
     }
 
     public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(
@@ -251,5 +268,13 @@ public class FrameUtils {
     private static @NonNull MessageFrame initialFrameOf(@NonNull final MessageFrame frame) {
         final var stack = frame.getMessageFrameStack();
         return stack.isEmpty() ? frame : stack.getLast();
+    }
+
+    private static PropagatedCallFailureRef propagatedCallFailureReference(@NonNull final MessageFrame frame) {
+        return initialFrameOf(frame).getContextVariable(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE);
+    }
+
+    private static PendingCreationMetadataRef pendingCreationMetadataRef(@NonNull final MessageFrame frame) {
+        return initialFrameOf(frame).getContextVariable(PENDING_CREATION_BUILDER_CONTEXT_VARIABLE);
     }
 }

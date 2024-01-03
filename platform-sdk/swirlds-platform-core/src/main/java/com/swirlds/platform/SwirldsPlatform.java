@@ -874,8 +874,6 @@ public class SwirldsPlatform implements Platform {
                 intakeQueue,
                 swirldStateManager,
                 latestCompleteState,
-                eventValidator,
-                eventObserverDispatcher,
                 syncMetrics,
                 eventLinker,
                 platformStatusManager,

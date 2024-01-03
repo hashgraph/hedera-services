@@ -170,7 +170,6 @@ public class SyncGossip extends AbstractGossip {
                 intakeQueue,
                 swirldStateManager,
                 latestCompleteState,
-                syncMetrics,
                 platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);

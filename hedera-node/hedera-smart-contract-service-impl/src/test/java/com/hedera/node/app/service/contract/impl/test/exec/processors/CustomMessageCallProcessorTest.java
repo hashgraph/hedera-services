@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
+import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalH
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.swirlds.config.api.Configuration;
@@ -53,7 +55,6 @@ import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,7 +92,7 @@ class CustomMessageCallProcessorTest {
     private PrecompiledContract nativePrecompile;
 
     @Mock
-    private OperationTracer operationTracer;
+    private ActionSidecarContentTracer operationTracer;
 
     @Mock
     private PrecompileContractRegistry registry;
@@ -137,6 +138,7 @@ class CustomMessageCallProcessorTest {
         verify(frame).setOutputData(OUTPUT_DATA);
         verify(frame).setState(MessageFrame.State.CODE_SUCCESS);
         verify(frame).setExceptionalHaltReason(Optional.empty());
+        verify(operationTracer).tracePrecompileResult(frame, SYSTEM);
     }
 
     @Test
