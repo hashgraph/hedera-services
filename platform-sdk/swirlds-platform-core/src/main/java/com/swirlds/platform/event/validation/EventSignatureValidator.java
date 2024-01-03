@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Verifies event signatures.
- * <p>
- * This class was written to be compatible with the new intake pipeline. The previous signature validator
- * {@link SignatureValidator} has been left unchanged, to be used by the legacy intake monolith.
+ * Verifies event signatures
  */
 public class EventSignatureValidator {
     private static final Logger logger = LogManager.getLogger(EventSignatureValidator.class);

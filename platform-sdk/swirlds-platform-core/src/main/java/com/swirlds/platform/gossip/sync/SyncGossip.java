@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -34,12 +32,9 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.utility.Clearable;
-import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
@@ -70,7 +65,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
-import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -99,11 +93,6 @@ public class SyncGossip extends AbstractGossip {
     private final IntakeEventCounter intakeEventCounter;
 
     /**
-     * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
-     */
-    private final Clearable clearAllInternalPipelines;
-
-    /**
      * A list of threads that execute the sync protocol using bidirectional connections
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
@@ -128,7 +117,6 @@ public class SyncGossip extends AbstractGossip {
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
-     * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
      * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -153,7 +141,6 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
@@ -174,7 +161,6 @@ public class SyncGossip extends AbstractGossip {
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
-        Objects.requireNonNull(eventLinker);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
@@ -198,19 +184,6 @@ public class SyncGossip extends AbstractGossip {
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 false,
                 () -> {});
-
-        if (eventConfig.useLegacyIntake()) {
-            // legacy intake clears these things as part of gossip
-            clearAllInternalPipelines = new LoggingClearables(
-                    RECONNECT.getMarker(),
-                    List.of(
-                            Pair.of(intakeQueue, "intakeQueue"),
-                            Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-                            Pair.of(shadowGraph, "shadowGraph")));
-        } else {
-            // the new intake pipeline clears everything from the top level, rather than delegating to gossip
-            clearAllInternalPipelines = null;
-        }
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
@@ -355,17 +328,6 @@ public class SyncGossip extends AbstractGossip {
     @Override
     public void loadFromSignedState(@NonNull SignedState signedState) {
         // intentional no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clear() {
-        // this will be null if the new intake pipeline is being used
-        if (clearAllInternalPipelines != null) {
-            clearAllInternalPipelines.clear();
-        }
     }
 
     /**

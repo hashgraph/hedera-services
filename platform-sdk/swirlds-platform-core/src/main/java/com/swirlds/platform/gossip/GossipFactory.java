@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
@@ -80,7 +79,6 @@ public final class GossipFactory {
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
-     * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
      * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -106,7 +104,6 @@ public final class GossipFactory {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
@@ -128,7 +125,6 @@ public final class GossipFactory {
         Objects.requireNonNull(swirldStateManager);
         Objects.requireNonNull(latestCompleteState);
         Objects.requireNonNull(syncMetrics);
-        Objects.requireNonNull(eventLinker);
         Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
@@ -144,7 +140,6 @@ public final class GossipFactory {
                     addressBook,
                     selfId,
                     appVersion,
-                    shadowGraph,
                     intakeQueue,
                     swirldStateManager,
                     latestCompleteState,
@@ -171,7 +166,6 @@ public final class GossipFactory {
                     swirldStateManager,
                     latestCompleteState,
                     syncMetrics,
-                    eventLinker,
                     platformStatusManager,
                     loadReconnectState,
                     clearAllPipelinesForReconnect,
