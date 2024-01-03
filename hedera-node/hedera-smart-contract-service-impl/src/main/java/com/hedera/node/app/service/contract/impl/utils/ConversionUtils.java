@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -37,6 +39,7 @@ import com.hedera.hapi.streams.StorageChange;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -127,19 +130,23 @@ public class ConversionUtils {
 
     /**
      * Given a {@link AccountID}, returns its address as a headlong address.
+     *
      * @param accountID the account id
      * @return the headlong address
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
         requireNonNull(accountID);
         final var integralAddress = accountID.hasAccountNum()
-                ? asEvmAddress(accountID.accountNum())
-                : accountID.alias().toByteArray();
+                ? asEvmAddress(accountID.accountNumOrThrow())
+                : accountID
+                        .aliasOrElse(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY)
+                        .toByteArray();
         return asHeadlongAddress(integralAddress);
     }
 
     /**
      * Given a {@link ContractID}, returns its address as a headlong address.
+     *
      * @param contractId the contract id
      * @return the headlong address
      */
@@ -153,6 +160,7 @@ public class ConversionUtils {
 
     /**
      * Given a {@link TokenID}, returns its address as a headlong address.
+     *
      * @param tokenId
      * @return
      */
@@ -170,6 +178,26 @@ public class ConversionUtils {
     public static Address priorityAddressOf(@NonNull final Account account) {
         requireNonNull(account);
         return Address.wrap(Bytes.wrap(explicitAddressOf(account)));
+    }
+
+    /**
+     * Given a contract id, returns its "priority" form if the id refers to an extant contract with an
+     * EVM address outside the long-zero subspace.
+     *
+     * <p>If there is no such contract; or if the id refers to a contract with an EVM address within the
+     * long-zero subspace; then returns the given contract id.
+     *
+     * @param contractID the contract id
+     * @param accountStore the account store
+     * @return the priority form of the contract id
+     */
+    public static ContractID asPriorityId(
+            @NonNull final ContractID contractID, @NonNull final ReadableAccountStore accountStore) {
+        final var maybeContract = accountStore.getContractById(contractID);
+        if (maybeContract != null && maybeContract.alias().length() == EVM_ADDRESS_LENGTH_AS_LONG) {
+            return ContractID.newBuilder().evmAddress(maybeContract.alias()).build();
+        }
+        return contractID;
     }
 
     /**
@@ -249,9 +277,12 @@ public class ConversionUtils {
             final List<StorageChange> changes = new ArrayList<>();
             for (final var access : storageAccess.accesses()) {
                 changes.add(new StorageChange(
-                        tuweniToPbjBytes(access.key()),
-                        tuweniToPbjBytes(access.value()),
-                        access.isReadOnly() ? null : tuweniToPbjBytes(requireNonNull(access.writtenValue()))));
+                        tuweniToPbjBytes(access.key().trimLeadingZeros()),
+                        tuweniToPbjBytes(access.value().trimLeadingZeros()),
+                        access.isReadOnly()
+                                ? null
+                                : tuweniToPbjBytes(
+                                        requireNonNull(access.writtenValue()).trimLeadingZeros())));
             }
             allStateChanges.add(new ContractStateChange(
                     ContractID.newBuilder()
@@ -307,7 +338,7 @@ public class ConversionUtils {
     /**
      * Given a {@link MessageFrame}, returns the id number of the given address's Hedera id.
      *
-     * @param frame   the {@link MessageFrame}
+     * @param frame the {@link MessageFrame}
      * @param address the address to get the id number of
      * @return the id number of the given address's Hedera id
      */
@@ -333,7 +364,7 @@ public class ConversionUtils {
      * if the address does not correspond to a known Hedera entity; or {@link HederaNativeOperations#NON_CANONICAL_REFERENCE_NUMBER}
      * if the address references an account by its "non-priority" long-zero address.
      *
-     * @param address       the EVM address
+     * @param address the EVM address
      * @param nativeOperations the {@link HandleHederaNativeOperations} to use for resolving aliases
      * @return the number of the corresponding Hedera entity, if it exists and has this priority address
      */
@@ -360,7 +391,7 @@ public class ConversionUtils {
      * within the given {@link HandleHederaNativeOperations}; or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
      * if the address is not long-zero and does not correspond to a known Hedera entity.
      *
-     * @param address       the EVM address
+     * @param address the EVM address
      * @param nativeOperations the {@link HandleHederaNativeOperations} to use for resolving aliases
      * @return the number of the corresponding Hedera entity, if it exists
      */
@@ -682,12 +713,59 @@ public class ConversionUtils {
         return Address.fromHexString(address.toString());
     }
 
+    /**
+     * Given an exchange rate and a tinycent amount, returns the equivalent tinybar amount.
+     *
+     * @param exchangeRate the exchange rate
+     * @param tinycents the tinycent amount
+     * @return the equivalent tinybar amount
+     */
     public static long fromTinycentsToTinybars(final ExchangeRate exchangeRate, final long tinycents) {
         return fromAToB(BigInteger.valueOf(tinycents), exchangeRate.hbarEquiv(), exchangeRate.centEquiv())
                 .longValueExact();
     }
 
+    /**
+     * Given an amount in one unit and its conversion rate to another unit, returns the equivalent amount
+     * in the other unit.
+     *
+     * @param aAmount the amount in one unit
+     * @param bEquiv the numerator of the conversion rate
+     * @param aEquiv the denominator of the conversion rate
+     * @return the equivalent amount in the other unit
+     */
     public static @NonNull BigInteger fromAToB(@NonNull final BigInteger aAmount, final int bEquiv, final int aEquiv) {
         return aAmount.multiply(BigInteger.valueOf(bEquiv)).divide(BigInteger.valueOf(aEquiv));
+    }
+
+    /**
+     * Given a {@link ContractCreateTransactionBody} and a sponsor {@link Account}, returns a creation body
+     * fully customized with the sponsor's properties.
+     *
+     * @param op the creation body
+     * @param sponsor the sponsor
+     * @return the fully customized creation body
+     */
+    public static @NonNull ContractCreateTransactionBody sponsorCustomizedCreation(
+            @NonNull final ContractCreateTransactionBody op, @NonNull final Account sponsor) {
+        requireNonNull(op);
+        requireNonNull(sponsor);
+        final var builder = op.copyBuilder();
+        if (sponsor.memo() != null) {
+            builder.memo(sponsor.memo());
+        }
+        if (sponsor.autoRenewAccountId() != null) {
+            builder.autoRenewAccountId(sponsor.autoRenewAccountId());
+        }
+        if (sponsor.stakedAccountId() != null) {
+            builder.stakedAccountId(sponsor.stakedAccountId());
+        }
+        if (sponsor.autoRenewSeconds() > 0) {
+            builder.autoRenewPeriod(
+                    Duration.newBuilder().seconds(sponsor.autoRenewSeconds()).build());
+        }
+        return builder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations())
+                .declineReward(sponsor.declineReward())
+                .build();
     }
 }

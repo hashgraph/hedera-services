@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
@@ -83,6 +84,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
@@ -544,8 +546,9 @@ public class UtilVerbs {
         return overridingAllOf(defaultValues);
     }
 
-    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles() {
-        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled());
+    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles(
+            @NonNull final String... exceptFeatures) {
+        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled(exceptFeatures));
         allOverrides.putAll(Map.of(
                 "contracts.throttle.throttleByGas",
                 FALSE_VALUE,
@@ -1444,6 +1447,44 @@ public class UtilVerbs {
 
     public static TransferListBuilder transferList() {
         return new TransferListBuilder();
+    }
+
+    /**
+     * Returns an operation that attempts to execute the given transaction passing the
+     * provided name to {@link HapiTxnOp#via(String)}; and accepting either
+     * {@link com.hedera.hapi.node.base.ResponseCodeEnum#SUCCESS} or
+     * {@link com.hedera.hapi.node.base.ResponseCodeEnum#MAX_CHILD_RECORDS_EXCEEDED}
+     * as the final status.
+     *
+     * <p>On success, executes the remaining operations. This lets us stabilize operations
+     * in CI that need to use all preceding child records to succeed; and hence fail if
+     * their transaction triggers an end-of-day staking record.
+     *
+     * @param txnRequiringMaxChildRecords the transaction requiring all child records
+     * @param name the transaction name to use
+     * @param onSuccess the operations to run on success
+     * @return the operation doing this conditional execution
+     */
+    public static HapiSpecOperation assumingNoStakingChildRecordCausesMaxChildRecordsExceeded(
+            @NonNull final HapiTxnOp<?> txnRequiringMaxChildRecords,
+            @NonNull final String name,
+            @NonNull final HapiSpecOperation... onSuccess) {
+        return blockingOrder(
+                txnRequiringMaxChildRecords
+                        .via(name)
+                        // In CI this could fail due to an end-of-staking period record already
+                        // being added as a child to this transaction before its auto-creations
+                        .hasKnownStatusFrom(SUCCESS, MAX_CHILD_RECORDS_EXCEEDED),
+                withOpContext((spec, opLog) -> {
+                    final var lookup = getTxnRecord(name);
+                    allRunFor(spec, lookup);
+                    final var actualStatus =
+                            lookup.getResponseRecord().getReceipt().getStatus();
+                    // Continue with more assertions given the normal case the preceding transfer succeeded
+                    if (actualStatus == SUCCESS) {
+                        allRunFor(spec, onSuccess);
+                    }
+                }));
     }
 
     public static class TransferListBuilder {

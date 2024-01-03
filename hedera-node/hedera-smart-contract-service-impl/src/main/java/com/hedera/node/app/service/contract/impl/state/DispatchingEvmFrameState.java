@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
@@ -80,7 +81,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
-    private static final Key HOLLOW_ACCOUNT_KEY =
+    public static final Key HOLLOW_ACCOUNT_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
@@ -216,6 +217,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public long getNonce(final long number) {
         return validatedAccount(number).ethereumNonce();
+    }
+
+    @Override
+    public com.hedera.hapi.node.state.token.Account getNativeAccount(final long number) {
+        return validatedAccount(number);
     }
 
     /**
@@ -401,8 +407,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTrackingDeletion(
-            @NonNull final Address deleted, @NonNull final Address beneficiary) {
+    public Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull final Address deleted, @NonNull final Address beneficiary, @NonNull final MessageFrame frame) {
+        requireNonNull(deleted);
+        requireNonNull(beneficiary);
+        requireNonNull(frame);
         if (deleted.equals(beneficiary)) {
             return Optional.of(SELF_DESTRUCT_TO_SELF);
         }
@@ -418,7 +427,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (deletedAccount.numPositiveTokenBalances() > 0) {
             return Optional.of(CONTRACT_STILL_OWNS_NFTS);
         }
-        nativeOperations.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
+        nativeOperations.trackSelfDestructBeneficiary(
+                deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number, frame);
         return Optional.empty();
     }
 

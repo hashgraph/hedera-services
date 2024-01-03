@@ -98,7 +98,7 @@ class SyncPreconsensusEventWriterTests {
 
         final Metrics metrics = new NoOpMetrics();
 
-        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get());
+        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
     }
 
     @Test

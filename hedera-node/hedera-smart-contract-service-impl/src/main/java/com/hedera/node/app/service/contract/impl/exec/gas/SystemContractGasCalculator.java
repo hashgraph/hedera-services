@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,18 @@ public class SystemContractGasCalculator {
     }
 
     /**
+     * Given a transaction body whose, returns the gas requirement for the transaction to be
+     * dispatched using the gas price of the top-level HAPI operation and no markup.
+     *
+     * @param body the transaction body to be dispatched
+     * @param payer the payer of the transaction
+     * @return the gas requirement for the transaction to be dispatched
+     */
+    public long topLevelGasRequirement(@NonNull final TransactionBody body, @NonNull final AccountID payer) {
+        return feeCalculator.applyAsLong(body, payer) / tinybarValues.topLevelTinybarGasPrice();
+    }
+
+    /**
      * Given a dispatch type, returns the canonical gas requirement for that dispatch type.
      * Useful when providing a ballpark gas requirement in the absence of a valid
      * transaction body for the dispatch type.
@@ -112,13 +124,37 @@ public class SystemContractGasCalculator {
     }
 
     /**
+     * Given a dispatch, returns the canonical price for that dispatch.
+     *
+     * @param body the transaction body to be dispatched
+     * @param payer the payer account
+     * @return the canonical price for that dispatch
+     */
+    public long canonicalPriceInTinybars(@NonNull final TransactionBody body, @NonNull final AccountID payer) {
+        return feeCalculator.applyAsLong(body, payer);
+    }
+
+    /**
+     * Given a gas requirement, returns the equivalent tinybar cost at the current gas price.
+     *
+     * @param gas the gas requirement
+     * @return the equivalent tinybar cost at the current gas price
+     */
+    public long gasCostInTinybars(final long gas) {
+        return gas * tinybarValues.childTransactionTinybarGasPrice();
+    }
+
+    /**
      * Given a tinybar price, returns the equivalent gas requirement at the current gas price.
      *
      * @param tinybarPrice the tinybar price
      * @return the equivalent gas requirement at the current gas price
      */
     private long asGasRequirement(final long tinybarPrice) {
-        final var gasPrice = tinybarValues.childTransactionTinybarGasPrice();
+        return asGasRequirement(tinybarPrice, tinybarValues.childTransactionTinybarGasPrice());
+    }
+
+    private long asGasRequirement(final long tinybarPrice, final long gasPrice) {
         // We round up to the nearest gas unit, and then add 20% to account for the premium
         // of doing a HAPI operation from inside the EVM
         final var gasRequirement = (tinybarPrice + gasPrice - 1) / gasPrice;

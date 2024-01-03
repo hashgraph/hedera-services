@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,12 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @Nullable
     default HederaEvmAccount getHederaAccount(@NonNull Address address) {
-        return getHederaAccount(getHederaContractId(address));
+        requireNonNull(address);
+        final var maybeAccount = get(address);
+        if (maybeAccount instanceof HederaEvmAccount account) {
+            return account;
+        }
+        return null;
     }
 
     /**
@@ -177,11 +182,13 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * Attempts to track the given deletion of an account with the designated beneficiary, returning an optional
      * {@link ExceptionalHaltReason} to indicate whether the deletion could be successfully tracked.
      *
-     * @param deleted     the address of the account being deleted
+     * @param deleted the address of the account being deleted
      * @param beneficiary the address of the beneficiary of the deletion
+     * @param frame
      * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
      */
-    Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
+    Optional<ExceptionalHaltReason> tryTrackingSelfDestructBeneficiary(
+            @NonNull Address deleted, @NonNull Address beneficiary, MessageFrame frame);
 
     /**
      * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
@@ -252,9 +259,10 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * exist in Besu because there contracts are just normal accounts with code; but in Hedera, there
      * are a few other properties that need to be set to "convert" an account into a contract.
      *
-     * @param alias the hollow account to be finalized as a contract
+     * @param address the hollow account to be finalized as a contract
+     * @param parent the address of the "parent" account finalizing the hollow account
      */
-    void finalizeHollowAccount(@NonNull Address alias);
+    void finalizeHollowAccount(@NonNull Address address, @NonNull Address parent);
 
     /**
      * Returns all storage updates that would be committed by this updater, necessary for constructing

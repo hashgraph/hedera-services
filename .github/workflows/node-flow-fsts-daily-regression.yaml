@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,18 +82,18 @@ jobs:
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
-#  interval-05:
-#    name: Interval 5
-#    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
-#    needs:
-#      - interval-04
-#    with:
-#      ref: ${{ github.event.inputs.ref || github.sha }}
-#      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
-#      workflow-file: node-flow-fsts-daily-interval-05.yaml
-#      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-05
-#    secrets:
-#      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+  interval-05:
+    name: Interval 5
+    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
+    needs:
+      - interval-04
+    with:
+      ref: ${{ github.event.inputs.ref || github.sha }}
+      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
+      workflow-file: node-flow-fsts-daily-interval-05.yaml
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-05
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
 #  interval-06:
 #    name: Interval 6

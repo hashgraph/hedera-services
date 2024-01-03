@@ -33,9 +33,16 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @throws IllegalStateException if the {@link ScheduleID} to be deleted is not present in this state,
      *     or the ID value has a mismatched realm or shard for this node.
      */
-    public Schedule delete(@Nullable final ScheduleID scheduleToDelete, @NonNull final Instant consensusTime);
+    Schedule delete(@Nullable final ScheduleID scheduleToDelete, @NonNull final Instant consensusTime);
 
-    public Schedule getForModify(final ScheduleID idToFind);
+    Schedule getForModify(final ScheduleID idToFind);
 
-    public void put(Schedule scheduleToAdd);
+    void put(Schedule scheduleToAdd);
+
+    /**
+     * Purges expired schedules from the store.
+     * @param firstSecondToExpire The consensus second of the first schedule to expire.
+     * @param lastSecondToExpire The consensus second of the last schedule to expire.
+     */
+    void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire);
 }

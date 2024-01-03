@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,8 +66,12 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.function.Predicate;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,6 +82,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleHederaNativeOperationsTest {
     @Mock
     private HandleContext context;
+
+    @Mock
+    private MessageFrame frame;
 
     @Mock
     private ReadableTokenStore tokenStore;
@@ -100,6 +109,8 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private ReadableNftStore nftStore;
+
+    private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
     private HandleHederaNativeOperations subject;
 
@@ -281,8 +292,16 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void trackDeletionIsTodo() {
-        assertDoesNotThrow(() -> subject.trackDeletion(1L, 2L));
+    void trackDeletionUpdatesMap() {
+        final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        stack.push(frame);
+        given(frame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE)).willReturn(beneficiaries);
+        subject.trackSelfDestructBeneficiary(1L, 2L, frame);
+        verify(beneficiaries)
+                .addBeneficiaryForDeletedAccount(
+                        AccountID.newBuilder().accountNum(1L).build(),
+                        AccountID.newBuilder().accountNum(2L).build());
     }
 
     @Test

@@ -69,8 +69,9 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      *                      adjusted consensus time, not the platform assigned consensus time. Assuming the two are
      *                      different.
      * @param state         The state to read BlockInfo from and update when new blocks are created
+     * @return               true if a new block was created, false otherwise
      */
-    void startUserTransaction(@NonNull Instant consensusTime, @NonNull HederaState state);
+    boolean startUserTransaction(@NonNull Instant consensusTime, @NonNull HederaState state);
 
     /**
      * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should

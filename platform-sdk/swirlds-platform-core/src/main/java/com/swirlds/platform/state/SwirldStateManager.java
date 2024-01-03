@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
@@ -152,11 +151,14 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         while (!immutableState.tryReserve()) {
             immutableState = latestImmutableState.get();
         }
-        transactionHandler.preHandle(event, immutableState.getSwirldState());
-        event.getBaseEvent().signalPrehandleCompletion();
-        immutableState.release();
+        try {
+            transactionHandler.preHandle(event, immutableState.getSwirldState());
+        } finally {
+            event.getBaseEvent().signalPrehandleCompletion();
+            immutableState.release();
 
-        stats.preHandleTime(startTime, System.nanoTime());
+            stats.preHandleTime(startTime, System.nanoTime());
+        }
     }
 
     /**
@@ -174,7 +176,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, SwirldDualState)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformState)}.
      *
      * @param round the round to handle
      */
@@ -183,7 +185,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
 
         uptimeTracker.handleRound(
                 round,
-                state.getPlatformDualState().getMutableUptimeData(),
+                state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
         consensusSystemTransactionManager.handleRound(state, round);
@@ -207,7 +209,9 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      */
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
-        stateRef.get().getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
+        stateRef.get()
+                .getPlatformState()
+                .setLastFrozenTime(stateRef.get().getPlatformState().getFreezeTime());
     }
 
     /**
@@ -272,7 +276,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private void updateEpoch() {
         final PlatformState platformState = stateRef.get().getPlatformState();
         if (platformState != null) {
-            platformState.getPlatformData().updateEpochHash();
+            platformState.updateEpochHash();
         }
     }
 
@@ -281,7 +285,9 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      */
     @Override
     public boolean isInFreezePeriod(final Instant timestamp) {
-        return SwirldStateManagerUtils.isInFreezePeriod(timestamp, getConsensusState());
+        final PlatformState platformState = getConsensusState().getPlatformState();
+        return SwirldStateManagerUtils.isInFreezePeriod(
+                timestamp, platformState.getFreezeTime(), platformState.getLastFrozenTime());
     }
 
     /**
