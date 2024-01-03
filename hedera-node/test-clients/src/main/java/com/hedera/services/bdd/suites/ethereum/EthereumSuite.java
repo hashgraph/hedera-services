@@ -169,7 +169,7 @@ public class EthereumSuite extends HapiSuite {
                                 callToTokenAddressViaEip2930TxSuccessfully(),
                                 transferTokensViaEip2930TxSuccessfully(),
                                 callToNonExistingContractFailsGracefully(),
-                                accountDeleteResetsTheAliasNonce()))
+                                accountDeletionResetsTheAliasNonce()))
                 .toList();
     }
 
@@ -1029,7 +1029,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec accountDeleteResetsTheAliasNonce() {
+    final HapiSpec accountDeletionResetsTheAliasNonce() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
@@ -1040,7 +1040,7 @@ public class EthereumSuite extends HapiSuite {
         final var ercUser = "ercUser";
         final var HBAR_XFER = "hbarXfer";
 
-        return defaultHapiSpec("accountDeleteResetsTheAliasNonce")
+        return defaultHapiSpec("accountDeletionResetsTheAliasNonce")
                 .given(
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         cryptoCreate(TOKEN_TREASURY),
