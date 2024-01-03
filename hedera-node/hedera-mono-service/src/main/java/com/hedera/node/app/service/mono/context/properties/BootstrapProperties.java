@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STORE_ON_DISK;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
@@ -413,6 +414,7 @@ public final class BootstrapProperties implements PropertySource {
             ACCOUNTS_SYSTEM_UNDELETE_ADMIN,
             ACCOUNTS_TREASURY,
             ACCOUNTS_STORE_ON_DISK,
+            ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION,
             AUTO_RENEW_GRANT_FREE_RENEWALS,
             ENTITIES_MAX_LIFETIME,
             ENTITIES_SYSTEM_DELETABLE,
@@ -638,6 +640,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, AS_LONG),
             entry(ACCOUNTS_TREASURY, AS_LONG),
             entry(ACCOUNTS_STORE_ON_DISK, AS_BOOLEAN),
+            entry(ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION, AS_BOOLEAN),
             entry(BALANCES_EXPORT_ENABLED, AS_BOOLEAN),
             entry(BALANCES_EXPORT_PERIOD_SECS, AS_INT),
             entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, AS_LONG),

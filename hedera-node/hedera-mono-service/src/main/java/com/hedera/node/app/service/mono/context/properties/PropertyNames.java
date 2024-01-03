@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_SYSTEM_UNDELETE_ADMIN = "accounts.systemUndeleteAdmin";
     public static final String ACCOUNTS_TREASURY = "accounts.treasury";
     public static final String ACCOUNTS_STORE_ON_DISK = "accounts.storeOnDisk";
+    public static final String ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION = "accounts.releaseAliasAfterDeletion";
     public static final String ENTITIES_MAX_LIFETIME = "entities.maxLifetime";
     public static final String ENTITIES_SYSTEM_DELETABLE = "entities.systemDeletable";
     public static final String FILES_ADDRESS_BOOK = "files.addressBook";

@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
@@ -59,17 +60,20 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
+    private final GlobalDynamicProperties globalDynamicProperties;
 
     @Inject
     public CryptoDeleteTransitionLogic(
             final HederaLedger ledger,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
-            final AliasManager aliasManager) {
+            final AliasManager aliasManager,
+            final GlobalDynamicProperties globalDynamicProperties) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.sigImpactHistorian = sigImpactHistorian;
         this.aliasManager = aliasManager;
+        this.globalDynamicProperties = globalDynamicProperties;
     }
 
     @Override
@@ -94,7 +98,9 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
             }
 
             ledger.delete(id, beneficiary);
-            releaseAliasAfterDeletion(id);
+            if (globalDynamicProperties.releaseAliasAfterDeletion()) {
+                releaseAliasAfterDeletion(id);
+            }
             sigImpactHistorian.markEntityChanged(id.getAccountNum());
 
             txnCtx.recordBeneficiaryOfDeleted(id.getAccountNum(), beneficiary.getAccountNum());
