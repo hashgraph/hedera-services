@@ -39,9 +39,4 @@ public class ShutDownNodesOp extends LifecycleOp {
         node.shutdown();
         return false;
     }
-
-    @Override
-    public String toString() {
-        return "ShutDownNodesOp";
-    }
 }
