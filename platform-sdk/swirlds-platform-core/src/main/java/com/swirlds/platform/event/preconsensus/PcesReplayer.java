@@ -28,6 +28,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -73,9 +74,15 @@ public class PcesReplayer {
 
     /**
      * Write information about the replay to disk.
+     *
+     * @param timestampBeforeReplay the consensus timestamp before replay
+     * @param roundBeforeReplay     the round before replay
+     * @param eventCount            the number of events replayed
+     * @param transactionCount      the number of transactions replayed
+     * @param elapsedTime           the elapsed wall clock time during replay
      */
     private void logReplayInfo(
-            @NonNull final Instant timestampBeforeReplay,
+            @Nullable final Instant timestampBeforeReplay,
             final long roundBeforeReplay,
             final long eventCount,
             final long transactionCount,
@@ -94,7 +101,13 @@ public class PcesReplayer {
             final long elapsedRounds = roundAfterReplay - roundBeforeReplay;
 
             final Instant timestampAfterReplay = stateAfterReplay.get().getConsensusTimestamp();
-            final Duration elapsedConsensusTime = Duration.between(timestampBeforeReplay, timestampAfterReplay);
+
+            final Duration elapsedConsensusTime;
+            if (timestampBeforeReplay != null) {
+                elapsedConsensusTime = Duration.between(timestampBeforeReplay, timestampAfterReplay);
+            } else {
+                elapsedConsensusTime = null;
+            }
 
             logger.info(
                     STARTUP.getMarker(),
@@ -104,9 +117,11 @@ public class PcesReplayer {
                     commaSeparatedNumber(eventCount),
                     commaSeparatedNumber(transactionCount),
                     commaSeparatedNumber(elapsedRounds),
-                    new UnitFormatter(elapsedConsensusTime.toMillis(), UNIT_MILLISECONDS)
-                            .setAbbreviate(false)
-                            .render(),
+                    elapsedConsensusTime != null
+                            ? new UnitFormatter(elapsedConsensusTime.toMillis(), UNIT_MILLISECONDS)
+                                    .setAbbreviate(false)
+                                    .render()
+                            : "n/a",
                     commaSeparatedNumber(roundAfterReplay),
                     new UnitFormatter(elapsedTime.toMillis(), UNIT_MILLISECONDS)
                             .setAbbreviate(false)
