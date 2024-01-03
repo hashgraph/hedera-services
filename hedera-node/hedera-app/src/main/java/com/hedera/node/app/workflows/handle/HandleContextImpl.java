@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -902,10 +902,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     private boolean dispatchNeedsHapiPayerChecks(@NonNull final TransactionCategory category) {
         return category == SCHEDULED;
-    }
-
-    public HederaFunctionality getFunctionality() {
-        return this.functionality;
     }
 
     private record DispatchValidationResult(@NonNull Key key, @NonNull Fees fees) {
