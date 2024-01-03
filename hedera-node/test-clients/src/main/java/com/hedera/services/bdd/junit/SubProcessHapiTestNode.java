@@ -206,7 +206,14 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
             }
 
-            logger.info("node {}: Waiting for node to become active... But currently {} ", nodeId, getPlatformStatus());
+            logger.info(
+                    "node {}: Waiting for node to become active... "
+                            + "But currently {} . Handle PID {}, Handle isAlive {}, handle {}",
+                    nodeId,
+                    getPlatformStatus(),
+                    handle.pid(),
+                    handle.isAlive(),
+                    handle.toString());
 
             if ("ACTIVE".equals(getPlatformStatus())) {
                 // Actually try to open a connection with the node, to make sure it is really up and running.
