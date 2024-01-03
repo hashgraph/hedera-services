@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -33,7 +32,6 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +43,8 @@ class PlatformWiringTests {
     @Test
     @DisplayName("Assert that all input wires are bound to something, when using new intake")
     void testBindings() {
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
 
