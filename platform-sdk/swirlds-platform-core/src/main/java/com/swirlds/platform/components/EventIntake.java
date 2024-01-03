@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
@@ -81,7 +80,11 @@ public class EventIntake {
 
     private final EventIntakeMetrics metrics;
     private final Time time;
-    private final Long roundsNonAncient;
+    /**
+     * FUTURE WORK: If nothing else is using it, delete platformContext when we switch to permanently using birthRound
+     * for determining Ancient.
+     */
+    private final PlatformContext platformContext;
 
     /**
      * Measures the time spent in each phase of event intake
@@ -140,10 +143,7 @@ public class EventIntake {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-        this.roundsNonAncient = (long) platformContext
-                .getConfiguration()
-                .getConfigData(ConsensusConfig.class)
-                .roundsNonAncient();
+        this.platformContext = platformContext;
 
         final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
         prehandlePool = new ThreadPoolExecutor(
@@ -223,8 +223,8 @@ public class EventIntake {
                 if (latestEventTipsetTracker != null) {
                     // FUTURE WORK: When this class is refactored, it should not be constructing the
                     // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
-                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
-                            consensus().getLastRoundDecided(), minimumGenerationNonAncient, roundsNonAncient));
+                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                            consensus().getLastRoundDecided(), minimumGenerationNonAncient, platformContext));
                 }
             }
         } finally {

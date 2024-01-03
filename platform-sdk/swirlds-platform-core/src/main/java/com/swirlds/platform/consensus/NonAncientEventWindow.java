@@ -17,11 +17,12 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Determines the non-ancient lower bound (inclusive) on events and communicates the window of rounds between the
@@ -34,14 +35,9 @@ public class NonAncientEventWindow {
      * receiving an updated value.
      */
     public static NonAncientEventWindow INITIAL_EVENT_WINDOW = new NonAncientEventWindow(
-            ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION);
+            ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION, false);
 
-    /**
-     * This static variable is temporary until we throw the switch permanently from minGenNonAncient to
-     * minRoundNonAncient
-     */
-    private static AtomicBoolean useBirthRoundForAncient = new AtomicBoolean(false);
-
+    private final boolean useBirthRound;
     private final long latestConsensusRound;
     private final long minRoundNonAncient;
     private final long minGenNonAncient;
@@ -59,7 +55,10 @@ public class NonAncientEventWindow {
      *                                  minGenNonAncient value is less than the first generation for events.
      */
     public NonAncientEventWindow(
-            final long latestConsensusRound, final long minRoundNonAncient, final long minGenNonAncient) {
+            final long latestConsensusRound,
+            final long minRoundNonAncient,
+            final long minGenNonAncient,
+            final boolean useBirthRound) {
         if (latestConsensusRound < ConsensusConstants.ROUND_FIRST) {
             throw new IllegalArgumentException(
                     "The latest consensus round cannot be less than the first round of consensus.");
@@ -71,23 +70,14 @@ public class NonAncientEventWindow {
         this.latestConsensusRound = latestConsensusRound;
         this.minRoundNonAncient = Math.max(minRoundNonAncient, ConsensusConstants.ROUND_FIRST);
         this.minGenNonAncient = minGenNonAncient;
+        this.useBirthRound = useBirthRound;
     }
 
     /**
-     * Use the event's birth round and minRoundNonAncient for determining ancient in {@link #isAncient(GossipEvent)}
-     * <p>
-     * This method must only be called at most once while constructing the platform.  If it is called after a call to
-     * any {@link #isAncient(GossipEvent)} method, the behavior of the system will be indeterminate.
+     * @return true if {@link #isAncient(long)} compares using the birthRound of the event, false otherwise.
      */
-    public static void setUseBirthRoundForAncient() {
-        useBirthRoundForAncient.set(true);
-    }
-
-    /**
-     * @return true if {@link #setUseBirthRoundForAncient()} was called, false otherwise.
-     */
-    public static boolean useBirthRoundForAncient() {
-        return useBirthRoundForAncient.get();
+    public boolean useBirthRoundForAncient() {
+        return useBirthRound;
     }
 
     /**
@@ -101,7 +91,7 @@ public class NonAncientEventWindow {
      * @return the lower bound of the non-ancient event window
      */
     public long getLowerBound() {
-        if (useBirthRoundForAncient.get()) {
+        if (useBirthRound) {
             return minRoundNonAncient;
         } else {
             return minGenNonAncient;
@@ -135,7 +125,7 @@ public class NonAncientEventWindow {
      * @return true if the value is ancient, false otherwise.
      */
     public boolean isAncient(final long testValue) {
-        if (useBirthRoundForAncient.get()) {
+        if (useBirthRound) {
             return testValue < minRoundNonAncient;
         } else {
             return testValue < minGenNonAncient;
@@ -153,9 +143,28 @@ public class NonAncientEventWindow {
      */
     @NonNull
     public static NonAncientEventWindow createUsingRoundsNonAncient(
-            final long latestConsensusRound, final long minGenNonAncient, final long roundsNonAncient) {
+            final long latestConsensusRound,
+            final long minGenNonAncient,
+            final long roundsNonAncient,
+            final boolean useBirthRound) {
         return new NonAncientEventWindow(
-                latestConsensusRound, latestConsensusRound - roundsNonAncient + 1, minGenNonAncient);
+                latestConsensusRound, latestConsensusRound - roundsNonAncient + 1, minGenNonAncient, useBirthRound);
+    }
+
+    @NonNull
+    public static NonAncientEventWindow createUsingPlatformContext(
+            final long latestConsensusRound,
+            final long minGenNonAncient,
+            @NonNull final PlatformContext platformContext) {
+        final long roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
+        final boolean useBirthRound = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useBirthRoundAncientThreshold();
+        return createUsingRoundsNonAncient(latestConsensusRound, minGenNonAncient, roundsNonAncient, useBirthRound);
     }
 
     @Override

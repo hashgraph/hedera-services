@@ -421,7 +421,7 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                NonAncientEventWindow.useBirthRoundForAncient()
+                nonAncientEventWindow.useBirthRoundForAncient()
                         ? nonAncientEventWindow.pendingConsensusRound()
                         : addressBook.getRound(),
                 timeCreated,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,9 +142,9 @@ class TipsetTrackerTests {
         long minimumGenerationNonAncient = 0;
         while (tracker.size() > 0) {
             minimumGenerationNonAncient += random.nextInt(1, 5);
-            // FUTURE WORK: change test to use round number instead of minimum generation non-ancient.
+            // FUTURE WORK: change test to use birthRound number instead of minimum generation non-ancient.
             final NonAncientEventWindow nonAncientEventWindow =
-                    new NonAncientEventWindow(1, 0, minimumGenerationNonAncient);
+                    new NonAncientEventWindow(1, 0, minimumGenerationNonAncient, false);
             tracker.setNonAncientEventWindow(nonAncientEventWindow);
             assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
