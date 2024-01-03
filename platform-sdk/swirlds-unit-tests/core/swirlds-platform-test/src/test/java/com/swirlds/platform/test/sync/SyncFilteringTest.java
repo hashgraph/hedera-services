@@ -142,7 +142,7 @@ class SyncFilteringTest {
             }
 
             final List<EventImpl> filteredEvents =
-                    SyncUtils.filterLikelyDuplicates(shadowGraph, selfId, nonAncestorThreshold, clock.now(), allEvents);
+                    SyncUtils.filterLikelyDuplicates(selfId, nonAncestorThreshold, clock.now(), allEvents, null);
 
             assertEquals(expectedEvents.size(), filteredEvents.size());
             for (final EventImpl event : filteredEvents) {

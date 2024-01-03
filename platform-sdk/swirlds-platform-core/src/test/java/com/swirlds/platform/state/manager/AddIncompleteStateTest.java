@@ -113,10 +113,8 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         manager.addState(stateFromDisk);
 
         assertEquals(
-                stateFromDisk.getState().getPlatformState().getPlatformData().getConsensusTimestamp(),
-                manager.getFirstStateTimestamp());
-        assertEquals(
-                stateFromDisk.getState().getPlatformState().getPlatformData().getRound(), manager.getFirstStateRound());
+                stateFromDisk.getState().getPlatformState().getConsensusTimestamp(), manager.getFirstStateTimestamp());
+        assertEquals(stateFromDisk.getState().getPlatformState().getRound(), manager.getFirstStateRound());
 
         assertNull(manager.getLatestSignedState("test"));
         assertEquals(-1, manager.getLastCompleteRound());

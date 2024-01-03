@@ -46,8 +46,8 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
-import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
+import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
@@ -118,7 +118,7 @@ public interface HederaInjectionComponent {
 
     ThrottleManager throttleManager();
 
-    DualStateUpdateFacility dualStateUpdateFacility();
+    PlatformStateUpdateFacility platformStateUpdateFacility();
 
     GenesisRecordsConsensusHook genesisRecordsConsensusHook();
 

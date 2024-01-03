@@ -22,6 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -53,9 +54,9 @@ public class EventDeduplicator {
     private static final int INITIAL_CAPACITY = 1024;
 
     /**
-     * The current minimum generation required for an event to be non-ancient.
+     * The current non-ancient event window.
      */
-    private long minimumGenerationNonAncient = 0;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -111,7 +112,7 @@ public class EventDeduplicator {
      */
     @Nullable
     public GossipEvent handleEvent(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -137,14 +138,14 @@ public class EventDeduplicator {
     }
 
     /**
-     * Set the minimum generation required for an event to be non-ancient.
+     * Set the NonAncientEventWindow, defines the minimum threshold for an event to be non-ancient.
      *
-     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        observedEvents.shiftWindow(minimumGenerationNonAncient);
+        observedEvents.shiftWindow(nonAncientEventWindow.getLowerBound());
     }
 
     /**

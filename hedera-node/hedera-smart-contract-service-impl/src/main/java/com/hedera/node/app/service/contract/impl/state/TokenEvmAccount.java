@@ -95,6 +95,14 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
         return UInt256.ZERO;
     }
 
+    /**
+     * Since a token is not actually a native Hedera account, always throws {@link UnsupportedOperationException}.
+     */
+    @Override
+    public com.hedera.hapi.node.state.token.Account toNativeAccount() {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public boolean isEmpty() {
         return false;

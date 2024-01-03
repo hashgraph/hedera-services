@@ -458,13 +458,12 @@ class StartupStateUtilsTests {
 
         assertEquals(targetState.getRound(), loadedState.getRound());
         assertEquals(targetState.getState().getHash(), loadedState.getState().getHash());
-        assertNull(loadedState.getState().getPlatformState().getPlatformData().getEvents());
 
         // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
         // matches then it's a good signal that the correct state was loaded.
         assertEquals(
-                targetState.getState().getPlatformState().getPlatformData().getConsensusTimestamp(),
-                loadedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
+                targetState.getState().getPlatformState().getConsensusTimestamp(),
+                loadedState.getState().getPlatformState().getConsensusTimestamp());
 
         assertFalse(emergencyStateLoaded.get());
     }
@@ -701,12 +700,8 @@ class StartupStateUtilsTests {
             // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
             // matches then it's a good signal that the correct state was loaded.
             assertEquals(
-                    latestUncorruptedState
-                            .getState()
-                            .getPlatformState()
-                            .getPlatformData()
-                            .getConsensusTimestamp(),
-                    loadedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
+                    latestUncorruptedState.getState().getPlatformState().getConsensusTimestamp(),
+                    loadedState.getState().getPlatformState().getConsensusTimestamp());
         } else {
             assertNull(loadedState);
         }

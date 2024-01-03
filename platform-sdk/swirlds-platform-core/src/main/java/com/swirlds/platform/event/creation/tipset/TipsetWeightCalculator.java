@@ -236,7 +236,7 @@ public class TipsetWeightCalculator {
                                     + "Parent ID = {}, parent generation = {}, minimum generation non-ancient = {}",
                             parent.getCreator(),
                             parent.getGeneration(),
-                            tipsetTracker.getMinimumGenerationNonAncient());
+                            tipsetTracker.getNonAncientEventWindow());
                 }
                 continue;
             }

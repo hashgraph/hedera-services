@@ -69,6 +69,25 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(modifiedSignatories);
     }
 
+    @Test
+    void purgesExpiredSchedules() {
+        final ScheduleID idToDelete = scheduleInState.scheduleId();
+        final Schedule actual = writableById.get(idToDelete);
+        final var expirationTime = actual.calculatedExpirationSecond();
+        assertThat(actual).isNotNull();
+        assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
+        writableSchedules.purgeExpiredSchedulesBetween(expirationTime - 1, expirationTime + 1);
+
+        final var purged = writableSchedules.get(idToDelete);
+        assertThat(purged).isNull();
+
+        final var byEquality = writableSchedules.getByEquality(actual);
+        assertThat(byEquality).isNull();
+
+        final var byExpiry = writableSchedules.getByExpirationSecond(expirationTime);
+        assertThat(byExpiry).isNull();
+    }
+
     @NonNull
     static Schedule replaceSignatoriesAndMarkExecuted(
             @NonNull final Schedule schedule,

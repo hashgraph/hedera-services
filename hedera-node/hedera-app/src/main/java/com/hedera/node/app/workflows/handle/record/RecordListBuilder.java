@@ -190,10 +190,7 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        // FUTURE : For some reason, we do not set the exchange rate for preceding transactions in mono-service.
-        // Should be corrected after differential testing.
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
-        //                .exchangeRate(userTxnRecordBuilder.exchangeRate());
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -376,9 +373,11 @@ public final class RecordListBuilder {
                 childRecordBuilders.set(i, null);
                 followingChildRemoved = true;
             } else {
-                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE) {
                     child.nullOutSideEffectFields();
-                    child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    if (SUCCESSES.contains(child.status())) {
+                        child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    }
                 }
 
                 if (into != i) {

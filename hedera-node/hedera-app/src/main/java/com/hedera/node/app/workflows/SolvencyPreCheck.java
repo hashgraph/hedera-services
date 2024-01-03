@@ -142,11 +142,12 @@ public class SolvencyPreCheck {
             return;
         }
 
-        final var totalFee = fees.totalFee();
+        final var totalFee = ingestCheck ? fees.totalWithoutServiceFee() : fees.totalFee();
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txBody.transactionFee();
         final ResponseCodeEnum insufficientFeeResponseCode;
-        if (ingestCheck) { // throw different exception for ingest
+        // Use this response code for either ingest or triggered schedule transaction
+        if (ingestCheck || fees.totalWithoutServiceFee() == 0L) {
             insufficientFeeResponseCode = INSUFFICIENT_PAYER_BALANCE;
         } else {
             insufficientFeeResponseCode = INSUFFICIENT_ACCOUNT_BALANCE;

@@ -21,13 +21,13 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.PlatformConstructionException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.util.Objects;
 
 /**
  * An instance capable of signing data with the platforms private signing key. This class is not thread safe.
@@ -63,7 +63,7 @@ public class PlatformSigner implements Signer, HashSigner {
 
     @Override
     public com.swirlds.common.crypto.Signature sign(final Hash hash) {
-        CommonUtils.throwArgNull(hash, "hash");
+        Objects.requireNonNull(hash, "hash must not be null");
         return sign(hash.getValue());
     }
 }

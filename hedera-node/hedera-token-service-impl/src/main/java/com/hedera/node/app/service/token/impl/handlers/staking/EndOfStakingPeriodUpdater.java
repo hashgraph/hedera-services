@@ -21,11 +21,11 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.NodeStake;
@@ -241,9 +241,7 @@ public class EndOfStakingPeriodUpdater {
         final var nodeStakeUpdateBuilder =
                 context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
         nodeStakeUpdateBuilder
-                .transaction(Transaction.newBuilder()
-                        .body(syntheticNodeStakeUpdateTxn.build())
-                        .build())
+                .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo("End of staking period calculation record");
     }
 

@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.T
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -54,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  * shuts one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
  * submits the same burst of mixed operations again.
  */
-@HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes
+// @HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes
 public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsNodeDeathReconnectTest.class);
 

@@ -83,6 +83,7 @@ public interface BasicCustomCallOperation {
         requireNonNull(frame);
         try {
             final var address = to(frame);
+
             if (addressChecks().isNeitherSystemNorPresent(address, frame)) {
                 return new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
             }

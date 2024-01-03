@@ -31,6 +31,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -252,7 +254,8 @@ class EventSignatureValidatorTests {
         assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event));
         assertEquals(0, exitedIntakePipelineCount.get());
 
-        validatorWithTrueVerifier.setMinimumGenerationNonAncient(100L);
+        validatorWithTrueVerifier.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 100L));
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());

@@ -172,11 +172,11 @@ class DefaultMetricsTest {
         assertThatCode(() -> new DefaultMetrics(null, registry, executor, factory, metricsConfig))
                 .doesNotThrowAnyException();
         assertThatThrownBy(() -> new DefaultMetrics(NODE_ID, null, executor, factory, metricsConfig))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new DefaultMetrics(NODE_ID, registry, null, factory, metricsConfig))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new DefaultMetrics(NODE_ID, registry, executor, null, metricsConfig))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -199,8 +199,8 @@ class DefaultMetricsTest {
 
     @Test
     void testGetSingleMetricWithNullParameter() {
-        assertThatThrownBy(() -> metrics.getMetric(null, NAME_1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> metrics.getMetric(CATEGORY_1, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> metrics.getMetric(null, NAME_1)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> metrics.getMetric(CATEGORY_1, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -249,7 +249,7 @@ class DefaultMetricsTest {
 
     @Test
     void testGetMetricsOfCategoryWithNullParameter() {
-        assertThatThrownBy(() -> metrics.findMetricsByCategory(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> metrics.findMetricsByCategory(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -420,7 +420,7 @@ class DefaultMetricsTest {
     @Test
     void testCreateMetricWithNullParameter() {
         // then
-        assertThatThrownBy(() -> metrics.getOrCreate(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> metrics.getOrCreate(null)).isInstanceOf(NullPointerException.class);
         verify(subscriber, never()).accept(any());
     }
 
@@ -463,8 +463,8 @@ class DefaultMetricsTest {
 
     @Test
     void testRemoveByNameAndCategoryWithNullParameter() {
-        assertThatThrownBy(() -> metrics.remove(null, NAME_1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> metrics.remove(CATEGORY_1, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> metrics.remove(null, NAME_1)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> metrics.remove(CATEGORY_1, null)).isInstanceOf(NullPointerException.class);
         verify(subscriber, never()).accept(any());
     }
 
@@ -513,7 +513,7 @@ class DefaultMetricsTest {
 
     @Test
     void testRemoveByMetricWithNullParameter() {
-        assertThatThrownBy(() -> metrics.remove((Metric) null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> metrics.remove((Metric) null)).isInstanceOf(NullPointerException.class);
         verify(subscriber, never()).accept(any());
     }
 
@@ -554,8 +554,7 @@ class DefaultMetricsTest {
 
     @Test
     void testRemoveByConfigWithNullParameter() {
-        assertThatThrownBy(() -> metrics.remove((MetricConfig<?, ?>) null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> metrics.remove((MetricConfig<?, ?>) null)).isInstanceOf(NullPointerException.class);
         verify(subscriber, never()).accept(any());
     }
 
@@ -593,7 +592,7 @@ class DefaultMetricsTest {
 
     @Test
     void testUpdaterWithNullParameter() {
-        assertThatThrownBy(() -> metrics.addUpdater(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> metrics.addUpdater(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

@@ -163,7 +163,7 @@ public final class SignedStateFileWriter {
                     platformContext,
                     selfId,
                     directory,
-                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient(),
+                    signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
                     signedState.getRound());
         }
     }

@@ -21,6 +21,7 @@ import static com.swirlds.platform.state.editor.StateEditorUtils.formatFile;
 import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -74,8 +75,8 @@ public class StateEditorSave extends StateEditorOperation {
 
             final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
 
-            final PlatformContext platformContext =
-                    new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
+            final PlatformContext platformContext = new DefaultPlatformContext(
+                    configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
                 writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, directory, signedState.get());

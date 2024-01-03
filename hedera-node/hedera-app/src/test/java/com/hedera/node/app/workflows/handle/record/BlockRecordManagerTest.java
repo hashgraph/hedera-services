@@ -169,6 +169,8 @@ final class BlockRecordManagerTest extends AppTestBase {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
+            assertThat(blockRecordManager.currentBlockTimestamp()).isNotNull();
+            assertThat(blockRecordManager.blockNo()).isEqualTo(blockRecordManager.lastBlockNo() + 1);
             // write a blocks & record files
             int transactionCount = 0;
             final List<Bytes> endOfBlockHashes = new ArrayList<>();

@@ -23,6 +23,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -89,6 +90,7 @@ public final class TransactionHandlingTestUtils {
                 events,
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
+                mock(NonAncientEventWindow.class),
                 mock(ConsensusSnapshot.class));
     }
 }

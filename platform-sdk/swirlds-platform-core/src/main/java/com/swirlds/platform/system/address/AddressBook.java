@@ -42,6 +42,11 @@ import java.util.Set;
  */
 public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>, MerkleLeaf {
 
+    /**
+     * The index of a node ID that does not exist in the address book.
+     */
+    public static final int NOT_IN_ADDRESS_BOOK_INDEX = -1;
+
     public static final long CLASS_ID = 0x4ee5498ef623fbe0L;
 
     private static class ClassVersion {
@@ -269,10 +274,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      */
     public int getIndexOfNodeId(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "nodeId is null");
-        if (!addresses.containsKey(id)) {
-            throw new NoSuchElementException("no address with id " + id + " exists");
-        }
-        return nodeIndices.getOrDefault(id, -1);
+        return nodeIndices.getOrDefault(id, NOT_IN_ADDRESS_BOOK_INDEX);
     }
 
     /**

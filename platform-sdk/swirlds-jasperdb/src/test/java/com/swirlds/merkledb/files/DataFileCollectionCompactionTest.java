@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -474,7 +474,8 @@ class DataFileCollectionCompactionTest {
         final Future<?> f = exec.submit(() -> {
             try {
                 final List<DataFileReader<long[]>> filesToMerge = getFilesToMerge(store);
-                assertEquals(numFiles, filesToMerge.size());
+                // Data file collection may create a new file before the compaction starts
+                assertTrue(filesToMerge.size() == numFiles || filesToMerge.size() == numFiles + 1);
                 compactor.compactFiles(index, filesToMerge, 1);
                 // Wait for the new file to be available. Without this wait, there
                 // may be 1 or 2

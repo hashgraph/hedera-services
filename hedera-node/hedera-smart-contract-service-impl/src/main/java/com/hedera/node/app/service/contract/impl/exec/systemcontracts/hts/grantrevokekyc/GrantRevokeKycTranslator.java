@@ -25,7 +25,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.*;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -60,10 +59,9 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall<>(
+        return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),
-                SingleTransactionRecordBuilder.class,
                 Arrays.equals(attempt.selector(), GRANT_KYC.selector())
                         ? GrantRevokeKycTranslator::grantGasRequirement
                         : GrantRevokeKycTranslator::revokeGasRequirement,

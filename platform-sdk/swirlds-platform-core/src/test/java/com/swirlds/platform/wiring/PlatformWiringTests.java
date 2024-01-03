@@ -30,7 +30,9 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -76,7 +78,9 @@ class PlatformWiringTests {
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
-                mock(EventCreationManager.class));
+                mock(EventCreationManager.class),
+                mock(SwirldStateManager.class),
+                mock(SignedStateManager.class));
         wiring.bind(mock(SignedStateFileManager.class), mock(StateSigner.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());

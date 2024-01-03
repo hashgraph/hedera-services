@@ -109,9 +109,9 @@ class PrometheusEndpointTest {
         final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer);
 
         // then
-        assertThatThrownBy(() -> new PrometheusEndpoint(null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> endpoint.handleMetricsChange(null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> endpoint.handleSnapshots(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new PrometheusEndpoint(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> endpoint.handleMetricsChange(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> endpoint.handleSnapshots(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

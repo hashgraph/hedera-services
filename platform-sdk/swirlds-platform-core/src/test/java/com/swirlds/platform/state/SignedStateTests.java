@@ -69,9 +69,7 @@ class SignedStateTests {
         final State state = spy(new State());
         final SwirldState swirldState = mock(SwirldState.class);
 
-        final PlatformData platformData = new PlatformData();
         final PlatformState platformState = new PlatformState();
-        platformState.setPlatformData(platformData);
         platformState.setAddressBook(mock(AddressBook.class));
         when(state.getPlatformState()).thenReturn(platformState);
 
@@ -279,9 +277,7 @@ class SignedStateTests {
         final State state = spy(new State());
         final PlatformState platformState = mock(PlatformState.class);
         when(state.getPlatformState()).thenReturn(platformState);
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
-        when(platformData.getRound()).thenReturn(0L);
+        when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState =
                 new SignedState(TestPlatformContextBuilder.create().build(), state, "test", false);
 

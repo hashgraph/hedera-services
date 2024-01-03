@@ -36,7 +36,6 @@ testModuleInfo {
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
-    runtimeOnly("org.mockito.inline")
     requires("com.google.protobuf")
     requires("com.swirlds.common")
 }

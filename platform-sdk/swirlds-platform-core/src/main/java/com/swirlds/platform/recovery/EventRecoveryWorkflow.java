@@ -47,6 +47,7 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -54,7 +55,6 @@ import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -65,7 +65,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -288,14 +290,9 @@ public final class EventRecoveryWorkflow {
                 .getSwirldState()
                 .init(
                         platform,
-                        initialState.get().getState().getSwirldDualState(),
+                        initialState.get().getState().getPlatformState(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
-                        initialState
-                                .get()
-                                .getState()
-                                .getPlatformState()
-                                .getPlatformData()
-                                .getCreationSoftwareVersion());
+                        initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
         appMain.init(platform, platform.getSelfId());
 
@@ -342,10 +339,10 @@ public final class EventRecoveryWorkflow {
     /**
      * Apply a single round and generate a new state. The previous state is released.
      *
-     * @param platformContext  the current context
-     * @param previousState    the previous round's signed state
-     * @param round            the next round
-     * @param config           the consensus configuration
+     * @param platformContext the current context
+     * @param previousState   the previous round's signed state
+     * @param round           the next round
+     * @param config          the consensus configuration
      * @return the resulting signed state
      */
     private static ReservedSignedState handleNextRound(
@@ -359,36 +356,34 @@ public final class EventRecoveryWorkflow {
         final State newState = previousState.get().getState().copy();
         final EventImpl lastEvent = (EventImpl) getLastEvent(round);
         CryptographyHolder.get().digestSync(lastEvent.getBaseEvent().getHashedData());
-        newState.getPlatformState()
-                .getPlatformData()
-                .setRound(round.getRoundNum())
-                .setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round))
-                .setConsensusTimestamp(currentRoundTimestamp)
-                .setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
-                        round.getRoundNum(),
-                        lastEvent.getConsensusOrder(),
-                        currentRoundTimestamp,
-                        config,
-                        lastEvent.getBaseEvent()))
-                .setCreationSoftwareVersion(previousState
-                        .get()
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getCreationSoftwareVersion());
+
+        final PlatformState platformState = newState.getPlatformState();
+
+        platformState.setRound(round.getRoundNum());
+        platformState.setRunningEventHash(getHashEventsCons(previousState.get().getHashEventsCons(), round));
+        platformState.setConsensusTimestamp(currentRoundTimestamp);
+        platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
+                round.getRoundNum(),
+                lastEvent.getConsensusOrder(),
+                currentRoundTimestamp,
+                config,
+                lastEvent.getBaseEvent()));
+        platformState.setCreationSoftwareVersion(
+                previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
                 newState.getSwirldState().cast(),
-                newState.getSwirldDualState(),
+                newState.getPlatformState(),
                 round);
 
         final boolean isFreezeState = isFreezeState(
                 previousState.get().getConsensusTimestamp(),
                 currentRoundTimestamp,
-                newState.getPlatformDualState().getFreezeTime());
+                newState.getPlatformState().getFreezeTime());
         if (isFreezeState) {
-            newState.getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
+            newState.getPlatformState()
+                    .setLastFrozenTime(newState.getPlatformState().getFreezeTime());
         }
 
         final ReservedSignedState signedState = new SignedState(
@@ -449,13 +444,13 @@ public final class EventRecoveryWorkflow {
      *
      * @param immutableState the immutable swirld state for the previous round
      * @param mutableState   the swirld state for the current round
-     * @param dualState      the dual state for the current round
+     * @param platformState  the platform state for the current round
      * @param round          the current round
      */
     static void applyTransactions(
             final SwirldState immutableState,
             final SwirldState mutableState,
-            final SwirldDualState dualState,
+            final PlatformState platformState,
             final Round round) {
 
         mutableState.throwIfImmutable();
@@ -464,7 +459,7 @@ public final class EventRecoveryWorkflow {
             immutableState.preHandle(event);
         }
 
-        mutableState.handleConsensusRound(round, dualState);
+        mutableState.handleConsensusRound(round, platformState);
 
         // FUTURE WORK: there are currently no system transactions that are capable of modifying
         //  the state. If/when system transactions capable of modifying state are added, this workflow

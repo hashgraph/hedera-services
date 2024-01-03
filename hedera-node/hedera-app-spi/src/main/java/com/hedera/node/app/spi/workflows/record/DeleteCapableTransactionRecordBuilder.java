@@ -51,11 +51,10 @@ public interface DeleteCapableTransactionRecordBuilder extends SingleTransaction
 
     /**
      * Adds a beneficiary for a deleted account.
+     *
      * @param deletedAccountID the deleted account ID
      * @param beneficiaryForDeletedAccount the beneficiary account ID
-     * @return the builder
      */
-    @NonNull
-    SingleTransactionRecordBuilder addBeneficiaryForDeletedAccount(
+    void addBeneficiaryForDeletedAccount(
             @NonNull AccountID deletedAccountID, @NonNull AccountID beneficiaryForDeletedAccount);
 }

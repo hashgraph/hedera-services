@@ -33,6 +33,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -202,13 +203,21 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             builder.declineReward(op.declineReward().booleanValue());
         }
         if (op.hasStakedAccountId()) {
+            // 0.0.0 is used a sentinel value for removing staked account id
+            // Once https://github.com/hashgraph/pbj/issues/160 this is closed, reset stakedId to UNSET
             if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
                 builder.stakedAccountId((AccountID) null);
             } else {
                 builder.stakedAccountId(op.stakedAccountId());
             }
         } else if (op.hasStakedNodeId()) {
-            builder.stakedNodeId(op.stakedNodeId());
+            // -1 is used a sentinel value for removing staked node id
+            // Once https://github.com/hashgraph/pbj/issues/160 this is closed, reset stakedId to UNSET
+            if (SENTINEL_NODE_ID == op.stakedNodeId()) {
+                builder.stakedNodeId(SENTINEL_NODE_ID);
+            } else {
+                builder.stakedNodeId(op.stakedNodeId());
+            }
         }
         return builder;
     }

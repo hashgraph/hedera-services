@@ -16,8 +16,7 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractMetricAdapter implements MetricAdapter {
@@ -25,8 +24,11 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
     protected final PrometheusEndpoint.AdapterType adapterType;
     private final AtomicInteger referenceCount = new AtomicInteger();
 
+    /**
+     * @throws NullPointerException in case {@code adapterType} parameter is {@code null}
+     */
     protected AbstractMetricAdapter(final PrometheusEndpoint.AdapterType adapterType) {
-        this.adapterType = throwArgNull(adapterType, "adapterType");
+        this.adapterType = Objects.requireNonNull(adapterType, "adapterType must not be null");
     }
 
     @Override

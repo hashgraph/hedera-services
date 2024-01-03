@@ -29,7 +29,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.stats.AverageAndMax;
 import java.time.Instant;
@@ -128,11 +127,15 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      *
      * @param selfId  the {@link NodeId} of this node
      * @param metrics a reference to the metrics-system
-     * @throws IllegalArgumentException if one of the parameters is {@code null}
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code selfId}</li>
+     *       <li>{@code metrics}</li>
+     *     </ul>
      */
     public ConsensusMetricsImpl(final NodeId selfId, final Metrics metrics) {
-        this.selfId = CommonUtils.throwArgNull(selfId, "selfId");
-        CommonUtils.throwArgNull(metrics, "metrics");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(metrics, "metrics must not be null");
 
         avgFirstEventInRoundReceivedTime = metrics.getOrCreate(AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG);
         numCoinRounds = metrics.getOrCreate(NUM_COIN_ROUNDS_CONFIG);

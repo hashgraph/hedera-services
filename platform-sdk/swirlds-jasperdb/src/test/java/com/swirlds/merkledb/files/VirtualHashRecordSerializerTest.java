@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.swirlds.merkledb.files;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -61,7 +60,7 @@ class VirtualHashRecordSerializerTest {
 
     @Test
     void serializeEnforcesDefaultDigest() {
-        final ByteBuffer bbuf = mock(ByteBuffer.class);
+        final ByteBuffer bbuf = ByteBuffer.allocate(128);
         final WritableSequentialData out = BufferedData.wrap(bbuf);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);

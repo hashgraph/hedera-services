@@ -103,11 +103,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             manager.addState(signedState);
 
             if (round == 0) {
-                firstTimestamp = signedState
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getConsensusTimestamp();
+                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
             }
             assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
             assertEquals(firstRound, manager.getFirstStateRound());

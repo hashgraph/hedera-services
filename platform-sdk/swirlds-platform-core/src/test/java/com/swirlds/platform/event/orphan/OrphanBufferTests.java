@@ -27,6 +27,8 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -281,7 +283,12 @@ class OrphanBufferTests {
             final int stepRandomness = Math.round(random.nextFloat() * MAX_GENERATION_STEP);
             if (random.nextFloat() < averageGenerationAdvancement / stepRandomness) {
                 minimumGenerationNonAncient += stepRandomness;
-                unorphanedEvents.addAll(orphanBuffer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+                // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+                final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
+                        ConsensusConstants.ROUND_FIRST,
+                        ConsensusConstants.ROUND_NEGATIVE_INFINITY,
+                        minimumGenerationNonAncient);
+                unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
             }
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {

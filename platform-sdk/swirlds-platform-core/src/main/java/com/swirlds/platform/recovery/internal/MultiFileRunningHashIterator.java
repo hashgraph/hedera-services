@@ -18,9 +18,9 @@ package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * A wrapper around {@link EventStreamMultiFileIterator}
@@ -33,10 +33,10 @@ public class MultiFileRunningHashIterator implements IOIterator<DetailedConsensu
     /**
      * @param iterator
      * 		the iterator that reads event stream files
+     * @throws NullPointerException in case {@code iterator} parameter is {@code null}
      */
     public MultiFileRunningHashIterator(final EventStreamMultiFileIterator iterator) {
-        CommonUtils.throwArgNull(iterator, "iterator");
-        this.iterator = iterator;
+        this.iterator = Objects.requireNonNull(iterator, "iterator must not be null");
         this.runningHashCalculator = new RunningHashCalculatorForStream<>();
 
         runningHashCalculator.setRunningHash(iterator.getStartHash());

@@ -18,7 +18,6 @@ package com.swirlds.platform.system.address;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -48,7 +47,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("AddressBook Tests")
@@ -329,9 +327,8 @@ class AddressBookTests {
 
     @Test
     @DisplayName("Serialization Test")
-    @Tag(TIME_CONSUMING)
     void serializationTest() throws IOException, ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common.system");
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final AddressBook original = new RandomAddressBookGenerator(getRandomPrintSeed())
                 .setSize(100)

@@ -207,7 +207,7 @@ public class NetworkAdminHandlerTestBase {
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
-        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
+        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);
         lenient().when(versionedConfig.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         lenient().when(ledgerConfig.recordsMaxQueryableByAccount()).thenReturn(MAX_QUERYABLE_PER_ACCOUNT);
         givenRecordCacheState();

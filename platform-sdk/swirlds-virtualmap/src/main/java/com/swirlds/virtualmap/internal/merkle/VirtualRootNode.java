@@ -317,6 +317,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private VirtualMapStatistics statistics;
 
     /**
+     * This reference is used to assert that there is only one thread modifying the VM at a time.
+     * NOTE: This field is used *only* if assertions are enabled, otherwise it always has null value.
+     */
+    private final AtomicReference<Thread> currentModifyingThreadRef = new AtomicReference<>(null);
+
+    /**
      * Creates a new empty root node. This constructor is used for deserialization and
      * reconnects, not for normal use.
      */
@@ -791,9 +797,14 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public V getForModify(final K key) {
         throwIfImmutable();
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
-        final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, true);
-        statistics.countUpdatedEntities();
-        return rec == null ? null : rec.getValue();
+        assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
+        try {
+            final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, true);
+            statistics.countUpdatedEntities();
+            return rec == null ? null : rec.getValue();
+        } finally {
+            assert currentModifyingThreadRef.compareAndSet(Thread.currentThread(), null);
+        }
     }
 
     /**
@@ -826,20 +837,25 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public void put(final K key, final V value) {
         throwIfImmutable();
         assert !isHashed() : "Cannot modify already hashed node";
-        Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
+        assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
+        try {
+            Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
 
-        final long path = records.findKey(key);
-        if (path == INVALID_PATH) {
-            // The key is not stored. So add a new entry and return.
-            add(key, value);
-            statistics.countAddedEntities();
-            statistics.setSize(state.size());
-            return;
+            final long path = records.findKey(key);
+            if (path == INVALID_PATH) {
+                // The key is not stored. So add a new entry and return.
+                add(key, value);
+                statistics.countAddedEntities();
+                statistics.setSize(state.size());
+                return;
+            }
+
+            final VirtualLeafRecord<K, V> leaf = new VirtualLeafRecord<>(path, key, value);
+            cache.putLeaf(leaf);
+            statistics.countUpdatedEntities();
+        } finally {
+            assert currentModifyingThreadRef.compareAndSet(Thread.currentThread(), null);
         }
-
-        final VirtualLeafRecord<K, V> leaf = new VirtualLeafRecord<>(path, key, value);
-        cache.putLeaf(leaf);
-        statistics.countUpdatedEntities();
     }
 
     /**
@@ -859,16 +875,20 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public V replace(final K key, final V value) {
         throwIfImmutable();
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
+        assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
+        try {
+            // Attempt to replace the existing leaf
+            final boolean success = replaceImpl(key, value);
+            statistics.countUpdatedEntities();
+            if (success) {
+                return value;
+            }
 
-        // Attempt to replace the existing leaf
-        final boolean success = replaceImpl(key, value);
-        statistics.countUpdatedEntities();
-        if (success) {
-            return value;
+            // We failed to find an existing leaf (dirty or clean). So throw an ISE.
+            throw new IllegalStateException("Can not replace value that is not in the map");
+        } finally {
+            assert currentModifyingThreadRef.compareAndSet(Thread.currentThread(), null);
         }
-
-        // We failed to find an existing leaf (dirty or clean). So throw an ISE.
-        throw new IllegalStateException("Can not replace value that is not in the map");
     }
 
     /**
@@ -882,67 +902,71 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public V remove(final K key) {
         throwIfImmutable();
         Objects.requireNonNull(key);
-
-        // Verify whether the current leaf exists. If not, we can just return null.
-        VirtualLeafRecord<K, V> leafToDelete = records.findLeafRecord(key, true);
-        if (leafToDelete == null) {
-            return null;
-        }
-
-        // Mark the leaf as being deleted.
-        cache.deleteLeaf(leafToDelete);
-        statistics.countRemovedEntities();
-
-        // We're going to need these
-        final long lastLeafPath = state.getLastLeafPath();
-        final long firstLeafPath = state.getFirstLeafPath();
-        final long leafToDeletePath = leafToDelete.getPath();
-
-        // If the leaf was not the last leaf, then move the last leaf to take this spot
-        if (leafToDeletePath != lastLeafPath) {
-            final VirtualLeafRecord<K, V> lastLeaf = records.findLeafRecord(lastLeafPath, true);
-            assert lastLeaf != null;
-            cache.clearLeafPath(lastLeafPath);
-            lastLeaf.setPath(leafToDeletePath);
-            cache.putLeaf(lastLeaf);
-            // NOTE: at this point, if leafToDelete was in the cache at some "path" index, it isn't anymore!
-            // The lastLeaf has taken its place in the path index.
-        }
-
-        // If the parent of the last leaf is root, then we can simply do some bookkeeping.
-        // Otherwise, we replace the parent of the last leaf with the sibling of the last leaf,
-        // and mark it dirty. This covers all cases.
-        final long lastLeafParent = getParentPath(lastLeafPath);
-        if (lastLeafParent == ROOT_PATH) {
-            if (firstLeafPath == lastLeafPath) {
-                // We just removed the very last leaf, so set these paths to be invalid
-                state.setFirstLeafPath(INVALID_PATH);
-                state.setLastLeafPath(INVALID_PATH);
-            } else {
-                // We removed the second to last leaf, so the first & last leaf paths are now the same.
-                state.setLastLeafPath(FIRST_LEFT_PATH);
+        assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
+        try {
+            // Verify whether the current leaf exists. If not, we can just return null.
+            VirtualLeafRecord<K, V> leafToDelete = records.findLeafRecord(key, true);
+            if (leafToDelete == null) {
+                return null;
             }
-        } else {
-            final long lastLeafSibling = getSiblingPath(lastLeafPath);
-            final VirtualLeafRecord<K, V> sibling = records.findLeafRecord(lastLeafSibling, true);
-            assert sibling != null;
-            cache.clearLeafPath(lastLeafSibling);
-            cache.deleteHash(lastLeafParent);
-            sibling.setPath(lastLeafParent);
-            cache.putLeaf(sibling);
 
-            // Update the first & last leaf paths
-            state.setFirstLeafPath(lastLeafParent); // replaced by the sibling, it is now first
-            state.setLastLeafPath(lastLeafSibling - 1); // One left of the last leaf sibling
-        }
-        if (statistics != null) {
-            statistics.setSize(state.size());
-        }
+            // Mark the leaf as being deleted.
+            cache.deleteLeaf(leafToDelete);
+            statistics.countRemovedEntities();
 
-        // Get the value and return it (as read only).
-        final V value = leafToDelete.getValue();
-        //noinspection unchecked
-        return value == null ? null : (V) value.asReadOnly();
+            // We're going to need these
+            final long lastLeafPath = state.getLastLeafPath();
+            final long firstLeafPath = state.getFirstLeafPath();
+            final long leafToDeletePath = leafToDelete.getPath();
+
+            // If the leaf was not the last leaf, then move the last leaf to take this spot
+            if (leafToDeletePath != lastLeafPath) {
+                final VirtualLeafRecord<K, V> lastLeaf = records.findLeafRecord(lastLeafPath, true);
+                assert lastLeaf != null;
+                cache.clearLeafPath(lastLeafPath);
+                lastLeaf.setPath(leafToDeletePath);
+                cache.putLeaf(lastLeaf);
+                // NOTE: at this point, if leafToDelete was in the cache at some "path" index, it isn't anymore!
+                // The lastLeaf has taken its place in the path index.
+            }
+
+            // If the parent of the last leaf is root, then we can simply do some bookkeeping.
+            // Otherwise, we replace the parent of the last leaf with the sibling of the last leaf,
+            // and mark it dirty. This covers all cases.
+            final long lastLeafParent = getParentPath(lastLeafPath);
+            if (lastLeafParent == ROOT_PATH) {
+                if (firstLeafPath == lastLeafPath) {
+                    // We just removed the very last leaf, so set these paths to be invalid
+                    state.setFirstLeafPath(INVALID_PATH);
+                    state.setLastLeafPath(INVALID_PATH);
+                } else {
+                    // We removed the second to last leaf, so the first & last leaf paths are now the same.
+                    state.setLastLeafPath(FIRST_LEFT_PATH);
+                }
+            } else {
+                final long lastLeafSibling = getSiblingPath(lastLeafPath);
+                final VirtualLeafRecord<K, V> sibling = records.findLeafRecord(lastLeafSibling, true);
+                assert sibling != null;
+                cache.clearLeafPath(lastLeafSibling);
+                cache.deleteHash(lastLeafParent);
+                sibling.setPath(lastLeafParent);
+                cache.putLeaf(sibling);
+
+                // Update the first & last leaf paths
+                state.setFirstLeafPath(lastLeafParent); // replaced by the sibling, it is now first
+                state.setLastLeafPath(lastLeafSibling - 1); // One left of the last leaf sibling
+            }
+            if (statistics != null) {
+                statistics.setSize(state.size());
+            }
+
+            // Get the value and return it (as read only).
+            final V value = leafToDelete.getValue();
+            //noinspection unchecked
+            return value == null ? null : (V) value.asReadOnly();
+        } finally {
+            assert currentModifyingThreadRef.compareAndSet(Thread.currentThread(), null);
+        }
     }
 
     /*

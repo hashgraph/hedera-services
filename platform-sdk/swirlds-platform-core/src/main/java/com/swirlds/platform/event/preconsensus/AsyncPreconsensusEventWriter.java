@@ -33,6 +33,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * An object capable of writing preconsensus events to disk. Work is done asynchronously on a background thread.
+ * <p>
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
 

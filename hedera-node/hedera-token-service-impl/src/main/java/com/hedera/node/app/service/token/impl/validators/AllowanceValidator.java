@@ -70,13 +70,10 @@ public class AllowanceValidator {
      */
     public static int aggregateApproveNftAllowances(final List<NftAllowance> nftAllowances) {
         int nftAllowancesTotal = 0;
-        final var setOfSerials = new HashSet<Long>();
-
         for (final var allowances : nftAllowances) {
-            setOfSerials.addAll(allowances.serialNumbers());
-            if (!setOfSerials.isEmpty()) {
-                nftAllowancesTotal += setOfSerials.size();
-                setOfSerials.clear();
+            // each serial is counted as an allowance
+            if (!allowances.serialNumbers().isEmpty()) {
+                nftAllowancesTotal += allowances.serialNumbers().size();
             } else {
                 nftAllowancesTotal++;
             }

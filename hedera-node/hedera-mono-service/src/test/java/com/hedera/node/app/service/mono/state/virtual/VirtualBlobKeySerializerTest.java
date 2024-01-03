@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -41,7 +40,7 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(DATA_VERSION, subject.getCurrentDataVersion());
@@ -58,23 +57,22 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void deserializeWorks() throws IOException {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
         final var expectedKey = new VirtualBlobKey(FILE_DATA, entityNum);
-        given(bin.get()).willReturn((byte) FILE_DATA.ordinal());
-        given(bin.getInt()).willReturn(entityNum);
+        bin.put((byte) FILE_DATA.ordinal());
+        bin.putInt(entityNum);
+        bin.rewind();
 
         assertEquals(expectedKey, subject.deserialize(bin, 1));
     }
 
     @Test
     void serializeWorks() throws IOException {
-        final var out = ByteBuffer.allocate(5);
+        final ByteBuffer out = ByteBuffer.allocate(subject.getSerializedSize());
         final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
 
         subject.serialize(virtualBlobKey, out);
         assertEquals(BYTES_IN_SERIALIZED_FORM, out.position());
-        assertEquals((byte) FILE_DATA.ordinal(), out.get(0));
-        assertEquals(entityNum, out.getInt(1));
     }
 
     @Test
@@ -83,12 +81,15 @@ class VirtualBlobKeySerializerTest {
         final var sameTypeDiffNum = new VirtualBlobKey(FILE_DATA, otherEntityNum);
         final var diffTypeSameNum = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
 
-        final var bin = mock(ByteBuffer.class);
-        given(bin.get()).willReturn((byte) someKey.getType().ordinal());
-        given(bin.getInt()).willReturn(someKey.getEntityNumCode());
+        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
+        bin.put((byte) someKey.getType().ordinal());
+        bin.putInt(someKey.getEntityNumCode());
+        bin.rewind();
 
         assertTrue(subject.equals(bin, 1, someKey));
+        bin.rewind();
         assertFalse(subject.equals(bin, 1, sameTypeDiffNum));
+        bin.rewind();
         assertFalse(subject.equals(bin, 1, diffTypeSameNum));
     }
 

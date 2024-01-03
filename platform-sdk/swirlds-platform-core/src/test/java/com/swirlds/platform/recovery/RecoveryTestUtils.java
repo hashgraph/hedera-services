@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
@@ -193,6 +194,7 @@ public final class RecoveryTestUtils {
 
         final EventStreamManager<EventImpl> eventEventStreamManager = new EventStreamManager<>(
                 TestPlatformContextBuilder.create().build(),
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 new NodeId(0L),
                 x -> randomSignature(random),

@@ -57,11 +57,14 @@ class EntityNumValueTest {
 
     @Test
     void deserializeWorksWithBuffer() throws IOException {
-        final var bin = mock(ByteBuffer.class);
+        final ByteBuffer bin = ByteBuffer.allocate(8);
+        bin.putLong(2L);
+        bin.rewind();
+
         final var expectedKey = new EntityNumValue();
-        given(bin.getLong()).willReturn(2L);
 
         expectedKey.deserialize(bin, 1);
+        bin.rewind();
 
         assertEquals(2L, expectedKey.num());
     }
@@ -79,11 +82,15 @@ class EntityNumValueTest {
 
     @Test
     void serializeWorksWithBuffer() throws IOException {
-        final var out = mock(ByteBuffer.class);
+        final ByteBuffer out = ByteBuffer.allocate(8);
+        final ByteBuffer verify = ByteBuffer.allocate(8);
+        verify.putLong(2L);
+        verify.rewind();
 
         subject.serialize(out);
+        out.rewind();
 
-        verify(out).putLong(2L);
+        assertEquals(verify, out);
     }
 
     @Test

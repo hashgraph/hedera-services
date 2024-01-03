@@ -17,6 +17,7 @@
 package com.swirlds.demo.migration;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueueStatistics;
@@ -31,8 +32,6 @@ import com.swirlds.platform.system.SwirldState;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
 /**
  * An application designed for testing migration from version to version.
@@ -42,8 +41,6 @@ import org.apache.logging.log4j.MarkerManager;
 public class MigrationTestingToolMain implements SwirldMain {
 
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolMain.class);
-
-    static final Marker MARKER = MarkerManager.getMarker("MIGRATION");
 
     private long seed;
     private int maximumTransactionsPerNode;
@@ -71,7 +68,7 @@ public class MigrationTestingToolMain implements SwirldMain {
         this.platform = platform;
 
         final String[] parameters = ParameterProvider.getInstance().getParameters();
-        logger.info(MARKER, "Parsing arguments {}", (Object) parameters);
+        logger.info(STARTUP.getMarker(), "Parsing arguments {}", (Object) parameters);
         seed = Long.parseLong(parameters[0]) + selfId.id();
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
@@ -89,7 +86,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     public void run() {
         try {
             logger.info(
-                    MARKER,
+                    STARTUP.getMarker(),
                     "MigrationTestingApp started handling {} transactions with seed {}",
                     maximumTransactionsPerNode,
                     seed);
@@ -107,7 +104,8 @@ public class MigrationTestingToolMain implements SwirldMain {
             }
 
             logger.info(
-                    MARKER, () -> new ApplicationFinishedPayload("MigrationTestingApp finished handling transactions"));
+                    STARTUP.getMarker(),
+                    () -> new ApplicationFinishedPayload("MigrationTestingApp finished handling transactions"));
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }

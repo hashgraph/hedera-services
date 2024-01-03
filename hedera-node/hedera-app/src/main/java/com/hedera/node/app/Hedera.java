@@ -53,6 +53,8 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
@@ -81,16 +83,18 @@ import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -352,7 +356,8 @@ public final class Hedera implements SwirldMain {
     @Override
     @NonNull
     public SwirldState newState() {
-        return new MerkleHederaState(this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized);
+        return new MerkleHederaState(
+                this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized, this::onUpdateWeight);
     }
 
     /*==================================================================================================================
@@ -370,7 +375,7 @@ public final class Hedera implements SwirldMain {
     private void onStateInitialized(
             @NonNull final MerkleHederaState state,
             @NonNull final Platform platform,
-            @NonNull final SwirldDualState dualState,
+            @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousVersion) {
         // Initialize the configuration from disk. We must do this BEFORE we run migration, because the various
@@ -407,7 +412,7 @@ public final class Hedera implements SwirldMain {
         }
 
         //noinspection ConstantValue
-        assert dualState != null : "Platform should never pass a null dual state";
+        assert platformState != null : "Platform should never pass a null platform state";
         logger.info(
                 "Initializing Hedera state with trigger {} and previous version {}",
                 () -> trigger,
@@ -449,11 +454,11 @@ public final class Hedera implements SwirldMain {
         // assertion will hold true.
         assert configProvider != null : "Config Provider *must* have been set by now!";
 
-        // Some logging on what we found about freeze in the dual state
+        // Some logging on what we found about freeze in the platform state
         logger.info(
-                "Dual state includes freeze time={} and last frozen={}",
-                dualState.getFreezeTime(),
-                dualState.getLastFrozenTime());
+                "Platform state includes freeze time={} and last frozen={}",
+                platformState.getFreezeTime(),
+                platformState.getLastFrozenTime());
     }
     /**
      * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
@@ -720,9 +725,43 @@ public final class Hedera implements SwirldMain {
      * called.
      */
     private void onHandleConsensusRound(
-            @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
+            @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
-        daggerApp.handleWorkflow().handleRound(state, dualState, round);
+        daggerApp.handleWorkflow().handleRound(state, platformState, round);
+    }
+
+    /**
+     * Invoked by the platform to update weights of all nodes, to be used in consensus.
+     * This only happens during upgrade.
+     * @param state current state
+     * @param configAddressBook address book from config.txt
+     * @param context platform context
+     */
+    public void onUpdateWeight(
+            @NonNull final MerkleHederaState state,
+            @NonNull AddressBook configAddressBook,
+            @NonNull final PlatformContext context) {
+        final var tokenServiceState = state.createReadableStates(TokenService.NAME);
+        if (!tokenServiceState.isEmpty()) {
+            final var readableStoreFactory = new ReadableStoreFactory(state);
+            // Get all nodeIds added in the config.txt
+            Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
+            final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
+            final var allNodeIds = stakingInfoStore.getAll();
+            for (final var nodeId : allNodeIds) {
+                final var stakingInfo = stakingInfoStore.get(nodeId);
+                NodeId id = new NodeId(nodeId.longValue());
+                // ste weight for the nodes that exist in state and remove from
+                // nodes given in config.txt. This is needed to recognize newly added nodes
+                configAddressBook.updateWeight(id, stakingInfo.weight());
+                configNodeIds.remove(id);
+            }
+            // for any newly added nodes that doesn't exist in state, weight should be set to 0
+            // irrespective of the weight provided in config.txt
+            configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
+        } else {
+            logger.warn("Token service state is empty to update weights from StakingInfo Map");
+        }
     }
 
     /*==================================================================================================================

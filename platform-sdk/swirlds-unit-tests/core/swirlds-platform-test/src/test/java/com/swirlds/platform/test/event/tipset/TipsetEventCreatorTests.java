@@ -38,6 +38,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
@@ -889,7 +890,7 @@ class TipsetEventCreatorTests {
         final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
-        eventCreator.setMinimumGenerationNonAncient(100);
+        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(1, 0, 100));
 
         // Since there are no other parents available, the next event created would have a generation of 0
         // (if event creation were permitted). Since the current minimum generation non ancient is 100,

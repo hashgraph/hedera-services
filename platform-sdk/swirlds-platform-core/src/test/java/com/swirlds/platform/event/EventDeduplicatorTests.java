@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -181,7 +183,11 @@ class EventDeduplicatorTests {
 
             if (random.nextBoolean()) {
                 minimumGenerationNonAncient++;
-                deduplicator.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+                // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+                deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
+                        ConsensusConstants.ROUND_FIRST,
+                        ConsensusConstants.ROUND_NEGATIVE_INFINITY,
+                        minimumGenerationNonAncient));
             }
         }
 

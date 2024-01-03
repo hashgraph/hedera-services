@@ -29,6 +29,7 @@ import com.swirlds.common.threading.framework.config.MultiQueueThreadConfigurati
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -60,9 +61,9 @@ public class AsyncEventCreationManager implements Lifecycle {
     private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
-     * The object used to enqueue updates to the minimum generation non-ancient onto the work queue.
+     * The object used to enqueue updates to the non-ancient event window onto the work queue.
      */
-    private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
+    private final BlockingQueueInserter<NonAncientEventWindow> nonAncientEventWindowInserter;
 
     /**
      * Used to signal a desired pause.
@@ -102,7 +103,7 @@ public class AsyncEventCreationManager implements Lifecycle {
                 .setCapacity(eventCreationConfig.creationQueueSize())
                 .setMaxBufferSize(eventCreationConfig.creationQueueBufferSize())
                 .addHandler(EventImpl.class, this::handleEvent)
-                .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
+                .addHandler(NonAncientEventWindow.class, this::handleNonAncientEventWindow)
                 .addHandler(PauseRequest.class, this::handlePauseStatusChange)
                 .setIdleCallback(eventCreator::maybeCreateEvent)
                 .setBatchHandledCallback(eventCreator::maybeCreateEvent)
@@ -113,7 +114,7 @@ public class AsyncEventCreationManager implements Lifecycle {
                 .build();
 
         eventInserter = workQueue.getInserter(EventImpl.class);
-        minimumGenerationNonAncientInserter = workQueue.getInserter(Long.class);
+        nonAncientEventWindowInserter = workQueue.getInserter(NonAncientEventWindow.class);
         setPauseStatusInserter = workQueue.getInserter(PauseRequest.class);
     }
 
@@ -128,12 +129,13 @@ public class AsyncEventCreationManager implements Lifecycle {
     }
 
     /**
-     * Update the minimum generation non-ancient
+     * Update the non-ancient event window
      *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     * @param nonAncientEventWindow the new minimum generation non-ancient
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) throws InterruptedException {
-        minimumGenerationNonAncientInserter.put(minimumGenerationNonAncient);
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow)
+            throws InterruptedException {
+        nonAncientEventWindowInserter.put(nonAncientEventWindow);
     }
 
     /**
@@ -146,12 +148,12 @@ public class AsyncEventCreationManager implements Lifecycle {
     }
 
     /**
-     * Pass a new minimum generation non-ancient into the event creator.
+     * Pass a new non-ancient event window into the event creator.
      *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     * @param nonAncientEventWindow the new non-ancient event window
      */
-    private void handleMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        eventCreator.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+    private void handleNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        eventCreator.setNonAncientEventWindow(nonAncientEventWindow);
     }
 
     /**

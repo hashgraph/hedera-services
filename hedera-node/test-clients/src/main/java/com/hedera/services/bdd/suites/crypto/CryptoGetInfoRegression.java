@@ -265,12 +265,15 @@ public class CryptoGetInfoRegression extends HapiSuite {
                         .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
-    // this test failed on mono code too, don't need to enable it
+    @HapiTest
     final HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
-                .given()
+                .given(cryptoCreate(CIVILIAN_PAYER))
                 .when()
-                .then(getAccountInfo(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+                .then(getAccountInfo(GENESIS)
+                        .payingWith(CIVILIAN_PAYER)
+                        .nodePayment(1L)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
     @HapiTest // this test needs to be updated for both mono and module code.

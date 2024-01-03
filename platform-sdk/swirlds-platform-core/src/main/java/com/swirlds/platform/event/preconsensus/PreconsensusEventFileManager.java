@@ -53,6 +53,8 @@ import org.apache.logging.log4j.Logger;
  * <p>
  * This object is not thread safe.
  * </p>
+ *
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public class PreconsensusEventFileManager {
 

@@ -23,7 +23,6 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
@@ -63,18 +62,6 @@ public abstract class ConsensusUtils {
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
         return new ConsensusImpl(
                 ConfigurationHolder.getConfigData(ConsensusConfig.class), NOOP_CONSENSUS_METRICS, addressBook);
-    }
-
-    /**
-     * Load events from a signed state into a generator, so that they can be used as other parents
-     *
-     * @param signedState the source of events
-     * @param generator the generator to load into to
-     * @param random a source of randomness
-     */
-    public static void loadEventsIntoGenerator(
-            final SignedState signedState, final GraphGenerator<?> generator, final Random random) {
-        loadEventsIntoGenerator(signedState.getEvents(), generator, random);
     }
 
     public static void loadEventsIntoGenerator(

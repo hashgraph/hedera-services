@@ -699,9 +699,10 @@ public final class JrsTestReportGenerator {
                 data.reportTime().atZone(ZoneId.systemDefault()).toLocalTime();
         final ZonedDateTime zonedDateTime = ZonedDateTime.of(localDate, localTime, ZoneId.systemDefault());
 
-        final String date =
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).format(zonedDateTime);
-        final String[] dateParts = date.split(" at ");
+        final String date = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).format(zonedDateTime);
+        final String time = DateTimeFormatter.ofLocalizedTime(FormatStyle.FULL)
+                .format(zonedDateTime)
+                .replace("\u202f", " ");
 
         final int percentPassing;
         if (testCount.uniqueTests() == 0) {
@@ -762,8 +763,8 @@ public final class JrsTestReportGenerator {
                                 owner,
                                 hidden ? "none" : "block",
                                 formattedDirectory,
-                                dateParts[0],
-                                dateParts[1],
+                                date,
+                                time,
                                 data.reportSpan(),
                                 percentPassing == -1 ? "--" : percentPassing,
                                 testCount.uniqueTests(),

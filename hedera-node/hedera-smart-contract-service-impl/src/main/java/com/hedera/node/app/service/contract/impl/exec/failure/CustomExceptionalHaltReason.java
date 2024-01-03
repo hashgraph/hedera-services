@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
@@ -76,6 +77,11 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
 
     public static String errorMessageFor(@NonNull final ExceptionalHaltReason reason) {
         requireNonNull(reason);
+        // #10568 - We add this check to match mono behavior
+        if (reason == CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS) {
+            return Bytes.of(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED.name().getBytes())
+                    .toHexString();
+        }
         return reason.toString();
     }
 }

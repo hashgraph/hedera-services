@@ -79,7 +79,7 @@ public class HtmlTagFactory {
         if (attributeMap.containsKey(attributeName)) {
             attributeMap.get(attributeName).addAll(values);
         } else {
-            attributeMap.put(attributeName, values);
+            attributeMap.put(attributeName, new ArrayList<>(values));
         }
 
         return this;

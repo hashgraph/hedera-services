@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -173,10 +174,11 @@ public class NftTransferSuite extends HapiSuite {
                                         .between(
                                                 userAccountName(2 * accountId + fromOffset),
                                                 userAccountName(2 * accountId + toOffset)))
+                        .noLogging()
                         .payingWith(GENESIS)))
                 .flatMap(List::stream)
                 .toArray(HapiSpecOperation[]::new);
-        return inParallel(ops);
+        return blockingOrder(logIt("----- Beginning round #" + roundNum + " -----"), inParallel(ops));
     }
 
     private static HapiSpecOperation setupNftTest() {
