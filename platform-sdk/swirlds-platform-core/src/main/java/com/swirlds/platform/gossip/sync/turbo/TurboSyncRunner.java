@@ -87,32 +87,6 @@ public class TurboSyncRunner {
      */
     private final boolean hashOnSyncThread;
 
-    /*
-
-    3 phases:
-      - A: send/receive tips and generations
-      - B: send/receive booleans
-      - C: send/receive events
-
-    In each iteration, perform all three phases in the order C -> B -> A.
-
-    Phase C:
-      - Copy data in current phase B into current phase C
-      - use data to determine which events to send
-      - send and receive events
-
-    Phase B:
-      - Copy data in current phase A into current phase B
-      - use data to determine which booleans to send
-      - send and receive booleans
-
-    Phase A:
-      - compute tips and generations
-      - Send/receive tips and generations
-      - abort protocol if one node is behind
-
-     */
-
     private TurboSyncDataReceived dataReceivedA;
     private TurboSyncDataReceived dataReceivedB;
     private TurboSyncDataReceived dataReceivedC;
@@ -120,27 +94,6 @@ public class TurboSyncRunner {
     private TurboSyncDataSent dataSentA;
     private TurboSyncDataSent dataSentB;
     private TurboSyncDataSent dataSentC;
-
-    //    /**
-    //     * Data that was received during the previous cycle. Is used in conjunction with {@link }to determine what
-    // data is sent during the current
-    //     * cycle.
-    //     */
-    //    private TurboSyncDataReceived dataPreviouslyReceived;
-    //
-    //    /**
-    //     * Data received during the current cycle is written here. Will be used during the next cycle to determine
-    // what
-    //     * data to send.
-    //     */
-    //    private TurboSyncDataReceived dataBeingReceived;
-    //
-    //    /**
-    //     * Data that was sent during the previous cycle. Is used to determine what data is sent during the current
-    //     * cycle.
-    //     */
-    //    private TurboSyncDataSent dataPreviouslySent;
-    //    private TurboSyncDataSent dataBeingSent;
 
     private boolean continueProtocol = true;
 
