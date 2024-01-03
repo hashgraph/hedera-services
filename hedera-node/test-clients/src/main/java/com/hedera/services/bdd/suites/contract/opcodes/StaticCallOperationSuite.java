@@ -24,7 +24,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.TAKE_FROM_MONO_STREAMS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -38,7 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class StaticCallOperationSuite extends HapiSuite {
 
@@ -65,7 +69,9 @@ public class StaticCallOperationSuite extends HapiSuite {
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
         return defaultHapiSpec("VerifiesExistence")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(
+//                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, STATIC_CALL, asHeadlongAddress(INVALID_ADDRESS))
