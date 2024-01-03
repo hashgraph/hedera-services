@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,6 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.linking;
+package com.swirlds.platform.test.event.preconsensus;
 
-import com.swirlds.common.crypto.Hash;
-
-/**
- * Identifies a parent of an event
- *
- * @param generation
- * 		the generation of the parent
- * @param hash
- * 		the hash of the parent
- */
-public record ParentDescriptor(long generation, Hash hash) {}
+public class PcesReplayerTests {}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,6 @@ import java.util.function.Supplier;
 /**
  * This class is responsible for adding events to {@link Consensus} and notifying event observers, including
  * {@link ConsensusRoundHandler} and {@link com.swirlds.platform.eventhandling.PreConsensusEventHandler}.
- * <p>
- * This class differs from {@link EventIntake} in that it accepts events that have already been linked with their
- * parents. This version of event intake was written to be compatible with the new intake pipeline, whereas
- * {@link EventIntake} works with the legacy intake monolith.
  */
 public class LinkedEventIntake {
     /**
