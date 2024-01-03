@@ -20,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-class ExtantFeeScheduleContextTest {
+class TokenExtantFeeScheduleContextTest {
     @Test
     void assertEqualsWork() {
         // when:
-        final var subject = new ExtantFeeScheduleContext(1234L, 22);
-        final var subject2 = new ExtantFeeScheduleContext(1234L, 22);
+        final var subject = new TokenExtantFeeScheduleContext(1234L, 22);
+        final var subject2 = new TokenExtantFeeScheduleContext(1234L, 22);
 
         // then:
         assertEquals(subject, subject2);
@@ -35,7 +35,7 @@ class ExtantFeeScheduleContextTest {
     @Test
     void assertGetters() {
         // when:
-        final var subject = new ExtantFeeScheduleContext(1234L, 22);
+        final var subject = new TokenExtantFeeScheduleContext(1234L, 22);
 
         // then:
         assertEquals(1234L, subject.expiry());

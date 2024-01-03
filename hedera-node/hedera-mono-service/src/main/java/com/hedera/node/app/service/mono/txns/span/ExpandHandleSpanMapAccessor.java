@@ -20,7 +20,7 @@ import com.hedera.node.app.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFeeScheduleUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenBurnMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFreezeMeta;
@@ -66,12 +66,12 @@ public class ExpandHandleSpanMapAccessor {
     }
 
     public void setFeeScheduleUpdateMeta(
-            final TxnAccessor accessor, final FeeScheduleUpdateMeta feeScheduleUpdateMeta) {
-        accessor.getSpanMap().put(FEE_SCHEDULE_UPDATE_META_KEY, feeScheduleUpdateMeta);
+            final TxnAccessor accessor, final TokenFeeScheduleUpdateMeta tokenFeeScheduleUpdateMeta) {
+        accessor.getSpanMap().put(FEE_SCHEDULE_UPDATE_META_KEY, tokenFeeScheduleUpdateMeta);
     }
 
-    public FeeScheduleUpdateMeta getFeeScheduleUpdateMeta(final TxnAccessor accessor) {
-        return (FeeScheduleUpdateMeta) accessor.getSpanMap().get(FEE_SCHEDULE_UPDATE_META_KEY);
+    public TokenFeeScheduleUpdateMeta getFeeScheduleUpdateMeta(final TxnAccessor accessor) {
+        return (TokenFeeScheduleUpdateMeta) accessor.getSpanMap().get(FEE_SCHEDULE_UPDATE_META_KEY);
     }
 
     public void setImpliedTransfers(final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {

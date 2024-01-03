@@ -25,8 +25,8 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
-import com.hedera.node.app.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenExtantFeeScheduleContext;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFeeScheduleUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenBurnMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFreezeMeta;
@@ -60,8 +60,8 @@ public final class TokenOpsUsage {
     public void feeScheduleUpdateUsage(
             final SigUsage sigUsage,
             final BaseTransactionMeta baseMeta,
-            final FeeScheduleUpdateMeta opMeta,
-            final ExtantFeeScheduleContext ctx,
+            final TokenFeeScheduleUpdateMeta opMeta,
+            final TokenExtantFeeScheduleContext ctx,
             final UsageAccumulator accumulator) {
         accumulator.resetForTransaction(baseMeta, sigUsage);
 

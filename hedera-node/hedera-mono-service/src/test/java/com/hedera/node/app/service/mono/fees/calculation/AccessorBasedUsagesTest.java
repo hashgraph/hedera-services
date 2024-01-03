@@ -61,8 +61,8 @@ import com.hedera.node.app.hapi.fees.usage.file.FileAppendMeta;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenExtantFeeScheduleContext;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFeeScheduleUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenBurnMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFreezeMeta;
@@ -208,9 +208,9 @@ class AccessorBasedUsagesTest {
         final var realAccessor = uncheckedFrom(signedFeeScheduleUpdateTxn());
 
         final var op = feeScheduleUpdateTxn().getTokenFeeScheduleUpdate();
-        final var opMeta = new FeeScheduleUpdateMeta(now, 234);
+        final var opMeta = new TokenFeeScheduleUpdateMeta(now, 234);
         final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
-        final var feeScheduleCtx = new ExtantFeeScheduleContext(now, 123);
+        final var feeScheduleCtx = new TokenExtantFeeScheduleContext(now, 123);
 
         given(opUsageCtxHelper.ctxForFeeScheduleUpdate(op)).willReturn(feeScheduleCtx);
         spanMapAccessor.setFeeScheduleUpdateMeta(realAccessor, opMeta);

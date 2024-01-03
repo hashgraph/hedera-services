@@ -24,8 +24,8 @@ import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenExtantFeeScheduleContext;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFeeScheduleUpdateMeta;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -141,9 +141,9 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
         final var bytesToReprNew = TOKEN_OPS_USAGE.bytesNeededToRepr(op.getCustomFeesList());
         final var bytesToReprOld = TOKEN_OPS_USAGE.bytesNeededToRepr(info.getCustomFeesList());
 
-        final var ctx = new ExtantFeeScheduleContext(info.getExpiry().getSeconds(), bytesToReprOld);
+        final var ctx = new TokenExtantFeeScheduleContext(info.getExpiry().getSeconds(), bytesToReprOld);
         final var accumulator = new UsageAccumulator();
-        final var opMeta = new FeeScheduleUpdateMeta(effectiveNow, bytesToReprNew);
+        final var opMeta = new TokenFeeScheduleUpdateMeta(effectiveNow, bytesToReprNew);
         TOKEN_OPS_USAGE.feeScheduleUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
 
         return AdapterUtils.feeDataFrom(accumulator);
