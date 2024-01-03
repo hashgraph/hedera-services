@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
+import com.swirlds.platform.event.preconsensus.PcesFile;
+import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -180,14 +180,14 @@ public final class EventRecoveryWorkflow {
 
             logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
-            final PreconsensusEventFile preconsensusEventFile = PreconsensusEventFile.of(
+            final PcesFile preconsensusEventFile = PcesFile.of(
                     Instant.now(),
                     0,
                     recoveredState.judge().getGeneration(),
                     recoveredState.judge().getGeneration(),
                     recoveredState.state().get().getRound(),
                     resultingStateDirectory);
-            final PreconsensusEventMutableFile mutableFile = preconsensusEventFile.getMutableFile();
+            final PcesMutableFile mutableFile = preconsensusEventFile.getMutableFile();
             mutableFile.writeEvent(recoveredState.judge());
             mutableFile.close();
 

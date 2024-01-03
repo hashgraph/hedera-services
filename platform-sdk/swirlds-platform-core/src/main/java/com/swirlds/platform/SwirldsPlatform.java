@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,10 +94,10 @@ import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.NoOpPreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -496,7 +496,7 @@ public class SwirldsPlatform implements Platform {
 
         final boolean forceIgnorePcesSignatures = platformContext
                 .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
+                .getConfigData(PcesConfig.class)
                 .forceIgnorePcesSignatures();
 
         final boolean ignorePreconsensusSignatures;
@@ -689,7 +689,7 @@ public class SwirldsPlatform implements Platform {
                 appVersion));
 
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph, latestEventTipsetTracker),
@@ -1267,8 +1267,8 @@ public class SwirldsPlatform implements Platform {
     private PreconsensusEventWriter buildPreconsensusEventWriter(
             @NonNull final PreconsensusEventFileManager fileManager) {
 
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         if (!preconsensusEventStreamConfig.enableStorage()) {
             return new NoOpPreconsensusEventWriter();
@@ -1342,7 +1342,7 @@ public class SwirldsPlatform implements Platform {
 
         final boolean enableReplay = platformContext
                 .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
+                .getConfigData(PcesConfig.class)
                 .enableReplay();
         final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
 
