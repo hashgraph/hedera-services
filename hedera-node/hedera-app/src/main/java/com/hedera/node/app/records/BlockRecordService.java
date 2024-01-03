@@ -66,7 +66,8 @@ public final class BlockRecordService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new Schema(version) {
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        registry.register(new Schema(RELEASE_045_VERSION) {
             /** {@inheritDoc} */
             @NonNull
             @Override

@@ -311,7 +311,7 @@ public final class Hedera implements SwirldMain {
 
         ENTITY_SERVICE = new EntityIdService();
         CONSENSUS_SERVICE = new ConsensusServiceImpl();
-        FILE_SERVICE = new FileServiceImpl(configProvider);
+        FILE_SERVICE = new FileServiceImpl(bootstrapConfigProvider);
         SCHEDULE_SERVICE = new ScheduleServiceImpl();
         TOKEN_SERVICE = new TokenServiceImpl(
                 recordsGenerator::sysAcctRecords,
@@ -329,7 +329,7 @@ public final class Hedera implements SwirldMain {
                         ENTITY_SERVICE,
                         CONSENSUS_SERVICE,
                         CONTRACT_SERVICE,
-                        new FileServiceImpl(bootstrapConfigProvider),
+                        FILE_SERVICE,
                         new FreezeServiceImpl(),
                         SCHEDULE_SERVICE,
                         TOKEN_SERVICE,
@@ -490,7 +490,9 @@ public final class Hedera implements SwirldMain {
         CONSENSUS_SERVICE.setFromState(c);
 
         // --------------------- STORAGE (3)     // only "non-special" files
-        VirtualMap<VirtualBlobKey, VirtualBlobValue> d = state.getChild(STORAGE);
+        // There's no 'd' variable here because we don't want this reference to state hanging around
+        // because it seems to contribute to the node hanging. I could be wrong though; can revisit
+        // if needed
         FILE_SERVICE.setFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
         // Note: some files have no metadata; these are contract bytecode files
 
@@ -683,7 +685,7 @@ public final class Hedera implements SwirldMain {
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
 
-        // Now that the BBM (big bang migration) is commpleted, remove the old state children
+        // Now that the BBM (big bang migration) is completed, remove the old state children
         var test = state.getChild(UNIQUE_TOKENS);
         if (test != null) {
             System.out.println("BBM: old state still exists. deleting...");
@@ -950,7 +952,7 @@ public final class Hedera implements SwirldMain {
 
                     System.out.println("DIFF-TEST: file round: " + nextRound.getRoundNum() + "; counter: "
                             + differentialEventTestCounter++);
-                    daggerApp.handleWorkflow().handleRound(state, platformState, round);
+                    daggerApp.handleWorkflow().handleRound(state, platformState, nextRound);
                     System.out.println("DIFF-TEST: file round " + nextRound.getRoundNum() + " processed");
                 }
             } else if (normalHandleCounter < 100) {

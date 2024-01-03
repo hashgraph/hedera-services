@@ -44,10 +44,12 @@ public final class ConsensusServiceImpl implements ConsensusService {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(consensusSchema(version));
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        registry.register(consensusSchema(RELEASE_045_VERSION));
 
         //        if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
+
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 System.out.println("BBM: running consensus migration...");

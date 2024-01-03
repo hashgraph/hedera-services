@@ -50,7 +50,8 @@ public class FeeService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
         // BBM: reducing version just for testing
-        registry.register(new Schema(version) {
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        registry.register(new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

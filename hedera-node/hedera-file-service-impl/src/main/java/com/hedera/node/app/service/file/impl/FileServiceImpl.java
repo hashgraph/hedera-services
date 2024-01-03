@@ -67,15 +67,16 @@ public final class FileServiceImpl implements FileService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new FileGenesisSchema(version, configProvider));
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        registry.register(new FileGenesisSchema(RELEASE_045_VERSION, configProvider));
 
         //        if(true)return;
-        registry.register(new Schema(version) {
+        registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
 
-                System.out.println("BBM:running file migration...");
+                System.out.println("BBM: running file migration...");
                 List<com.hederahashgraph.api.proto.java.FileID> fileIds = new ArrayList<>();
                 try {
                     fss.get()

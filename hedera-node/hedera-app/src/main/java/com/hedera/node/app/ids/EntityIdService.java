@@ -53,7 +53,8 @@ public class EntityIdService implements Service {
     /** {@inheritDoc} */
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new Schema(version) {
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        registry.register(new Schema(RELEASE_045_VERSION) {
             /**
              * Gets a {@link Set} of state definitions for states to create in this schema. For example,
              * perhaps in this version of the schema, you need to create a new state FOO. The set will have

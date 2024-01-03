@@ -72,7 +72,7 @@ public class ConsensusServiceStateTranslator {
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
         topicBuilder.deleted(monoTopic.isDeleted());
         topicBuilder.topicId(TopicID.newBuilder()
-                .topicNum(monoTopic.getAutoRenewAccountId().num())
+                .topicNum(monoTopic.getKey().longValue())
                 .build());
 
         return topicBuilder.build();

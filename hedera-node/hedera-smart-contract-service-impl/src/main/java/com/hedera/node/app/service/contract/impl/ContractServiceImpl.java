@@ -61,7 +61,8 @@ public enum ContractServiceImpl implements ContractService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        var cs = new ContractSchema(version);
+        // We intentionally ignore the given (i.e. passed-in) version in this method
+        var cs = new ContractSchema(RELEASE_045_VERSION);
         registry.register(cs);
 
         //        if(true)return;
