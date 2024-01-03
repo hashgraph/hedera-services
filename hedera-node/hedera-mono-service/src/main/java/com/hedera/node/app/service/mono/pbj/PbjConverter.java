@@ -352,6 +352,11 @@ public final class PbjConverter {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
+            case TokenCreatePartition -> HederaFunctionality.TOKEN_CREATE_PARTITION;  // Added by VVAIRAVA for CreatePartitionToken
+            case TokenDeletePartition -> HederaFunctionality.TOKEN_DELETE_PARTITION; // Added by VVAIRAVA for CreatePartitionToken
+            case TokenUpdatePartition -> HederaFunctionality.TOKEN_UPDATE_PARTITION;  // Added by VVAIRAVA for CreatePartitionToken
+            case TokenLockUserAssets -> HederaFunctionality.TOKEN_LOCK_USER_ASSETS;  // Added by VVAIRAVA for CreatePartitionToken
+            case TokenUnlockUserAssets -> HederaFunctionality.TOKEN_UNLOCK_USER_ASSETS;  // Added by VVAIRAVA for CreatePartitionToken
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -447,6 +452,12 @@ public final class PbjConverter {
             case TRANSACTION_GET_RECEIPT -> com.hederahashgraph.api.proto.java.HederaFunctionality
                     .TransactionGetReceipt;
             case TRANSACTION_GET_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
+            case TOKEN_CREATE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreatePartition;  // Added by VVAIRAVA for CreatePartitionToken
+            case TOKEN_DELETE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDeletePartition;  // Added by VVAIRAVA for CreatePartitionToken
+            case TOKEN_UPDATE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdatePartition;  // Added by VVAIRAVA for CreatePartitionToken
+            case TOKEN_LOCK_USER_ASSETS -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenLockUserAssets;  // Added by VVAIRAVA for CreatePartitionToken
+            case TOKEN_UNLOCK_USER_ASSETS -> com.hederahashgraph.api.proto.java.HederaFunctionality
+                    .TokenUnlockUserAssets;  // Added by VVAIRAVA for CreatePartitionToken
             case TRANSACTION_GET_FAST_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality
                     .TransactionGetFastRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
