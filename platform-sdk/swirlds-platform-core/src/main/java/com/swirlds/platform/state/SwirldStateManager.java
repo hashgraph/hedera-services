@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,11 +151,14 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         while (!immutableState.tryReserve()) {
             immutableState = latestImmutableState.get();
         }
-        transactionHandler.preHandle(event, immutableState.getSwirldState());
-        event.getBaseEvent().signalPrehandleCompletion();
-        immutableState.release();
+        try {
+            transactionHandler.preHandle(event, immutableState.getSwirldState());
+        } finally {
+            event.getBaseEvent().signalPrehandleCompletion();
+            immutableState.release();
 
-        stats.preHandleTime(startTime, System.nanoTime());
+            stats.preHandleTime(startTime, System.nanoTime());
+        }
     }
 
     /**

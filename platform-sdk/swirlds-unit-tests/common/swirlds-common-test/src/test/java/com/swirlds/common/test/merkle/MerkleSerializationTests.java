@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@ package com.swirlds.common.test.merkle;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.areTreesEqual;
+import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.isFullyInitialized;
 import static com.swirlds.test.framework.ResourceLoader.getFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,6 +63,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -219,22 +222,22 @@ class MerkleSerializationTests {
         final List<MerkleNode> trees = new LinkedList<>();
 
         // Too low of a version on a leaf
-        DummyMerkleInternal root = MerkleTestUtils.buildLessSimpleTree();
+        DummyMerkleInternal root = buildLessSimpleTree();
         ((DummyMerkleLeaf) root.asInternal().getChild(0)).setVersion(0);
         trees.add(root);
 
         // Too high of a version on a leaf
-        root = MerkleTestUtils.buildLessSimpleTree();
+        root = buildLessSimpleTree();
         ((DummyMerkleLeaf) root.asInternal().getChild(0)).setVersion(1234);
         trees.add(root);
 
         // Too low of a version on an internal node
-        root = MerkleTestUtils.buildLessSimpleTree();
+        root = buildLessSimpleTree();
         root.setVersion(0);
         trees.add(root);
 
         // Too high of a version on an internal node
-        root = MerkleTestUtils.buildLessSimpleTree();
+        root = buildLessSimpleTree();
         root.setVersion(1234);
         trees.add(root);
 
@@ -245,9 +248,9 @@ class MerkleSerializationTests {
 
     /**
      * This test asserts that the hash of a tree does not change due to future code changes.
-     *
-     * Although there is no contractual requirement not to change the hash between versions,
-     * we should at least be aware if a change occurs.
+     * <p>
+     * Although there is no contractual requirement not to change the hash between versions, we should at least be aware
+     * if a change occurs.
      */
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -259,7 +262,7 @@ class MerkleSerializationTests {
                 new DataInputStream(ResourceLoader.loadFileAsStream("merkle/hashed-tree-merkle-v1.dat"));
 
         final Hash oldHash = new Hash(dataStream.readAllBytes(), DigestType.SHA_384);
-        final MerkleNode tree = MerkleTestUtils.buildLessSimpleTree();
+        final MerkleNode tree = buildLessSimpleTree();
 
         assertEquals(
                 oldHash,
@@ -394,6 +397,42 @@ class MerkleSerializationTests {
         });
 
         DummyMerkleLeaf.resetMigrationMapper();
+        DummyMerkleInternal.resetMigrationMapper();
+    }
+
+    @Test
+    void migrateRootTest() throws IOException {
+
+        // In this test, we will attempt to swap out originalRoot with newRoot
+
+        final MerkleNode originalRoot = buildLessSimpleTreeExtended();
+        final MerkleNode newRoot = buildLessSimpleTree();
+
+        final AtomicReference<MerkleNode> deserializedRootBeforeMigration = new AtomicReference<>();
+        DummyMerkleInternal.setMigrationMapper((node, version) -> {
+            if (node.getDepth() == 0) {
+                assertNull(deserializedRootBeforeMigration.get(), "deserialized root should not have been set yet");
+                deserializedRootBeforeMigration.set(node);
+                return newRoot;
+            }
+            return node;
+        });
+
+        final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+        final MerkleDataOutputStream out = new MerkleDataOutputStream(byteOut);
+
+        out.writeMerkleTree(testDirectory, originalRoot);
+        out.flush();
+
+        final MerkleDataInputStream in =
+                new DebuggableMerkleDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));
+
+        final MerkleInternal deserializedRoot = in.readMerkleTree(testDirectory, Integer.MAX_VALUE);
+
+        assertTrue(areTreesEqual(newRoot, deserializedRoot), "deserialized tree should match new root");
+        assertNotNull(deserializedRootBeforeMigration.get(), "deserialized root should have been set");
+        assertTrue(deserializedRootBeforeMigration.get().isDestroyed(), "deserialized root should have been destroyed");
+
         DummyMerkleInternal.resetMigrationMapper();
     }
 

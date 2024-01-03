@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.ReadableQueueState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.TruePredicate;
@@ -360,7 +359,7 @@ public class RecordCacheImpl implements HederaRecordCache {
 
     /** Utility method that get the readable queue from the working state */
     private ReadableQueueState<TransactionRecordEntry> getReadableQueue() {
-        final ReadableStates states = getWritableState();
+        final var states = requireNonNull(workingStateAccessor.getHederaState()).createReadableStates(NAME);
         return states.getQueue(TXN_RECORD_QUEUE);
     }
 }
