@@ -155,7 +155,7 @@ class UpdateTranslatorTest extends HtsCallTestBase {
 
     @Test
     void matchesUpdateV1Test() {
-        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.selector());
+        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }
@@ -177,9 +177,9 @@ class UpdateTranslatorTest extends HtsCallTestBase {
     @Test
     void callFromUpdateTest() {
         Tuple tuple = new Tuple(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, hederaToken);
-        Bytes inputBytes = Bytes.wrapByteBuffer(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.encodeCall(tuple));
+        Bytes inputBytes = Bytes.wrapByteBuffer(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
-        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.selector());
+        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.selector());
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convertSender(any())).willReturn(NON_SYSTEM_ACCOUNT_ID);

@@ -49,7 +49,7 @@ public class ValidateAppPropertiesStateAfterReconnect extends HapiSuite {
         return List.of(validateAppPropertiesStateAfterReconnect());
     }
 
-    private HapiSpec validateAppPropertiesStateAfterReconnect() {
+    final HapiSpec validateAppPropertiesStateAfterReconnect() {
         return customHapiSpec("validateAppPropertiesStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

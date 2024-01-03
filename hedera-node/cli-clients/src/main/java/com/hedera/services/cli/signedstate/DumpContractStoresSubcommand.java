@@ -16,16 +16,33 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Map.Entry.comparingByKey;
 
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.node.app.state.merkle.memory.InMemoryKey;
+import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
+import com.hedera.services.cli.signedstate.DumpStateCommand.WithMigration;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithSlots;
+import com.hedera.services.cli.signedstate.DumpStateCommand.WithValidation;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
+import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -37,20 +54,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpContractStoresSubcommand {
+
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path storePath,
             @NonNull final EmitSummary emitSummary,
             @NonNull final WithSlots withSlots,
+            @NonNull final WithMigration withMigration,
+            @NonNull final WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
-        new DumpContractStoresSubcommand(state, storePath, emitSummary, withSlots, verbosity).doit();
+        new DumpContractStoresSubcommand(
+                        state, storePath, emitSummary, withSlots, withMigration, withValidation, verbosity)
+                .doit();
     }
 
     @NonNull
@@ -66,6 +90,12 @@ public class DumpContractStoresSubcommand {
     final WithSlots withSlots;
 
     @NonNull
+    final WithMigration withMigration;
+
+    @NonNull
+    final WithValidation withValidation;
+
+    @NonNull
     final Verbosity verbosity;
 
     DumpContractStoresSubcommand(
@@ -73,12 +103,22 @@ public class DumpContractStoresSubcommand {
             @NonNull final Path storePath,
             @NonNull final EmitSummary emitSummary,
             @NonNull final WithSlots withSlots,
+            @NonNull final WithMigration withMigration,
+            @NonNull final WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
         this.state = state;
         this.storePath = storePath;
         this.emitSummary = emitSummary;
         this.withSlots = withSlots;
+        this.withMigration = withMigration;
+        this.withValidation = withValidation;
         this.verbosity = verbosity;
+    }
+
+    record ContractKeyLocal(long contractId, UInt256 key) {
+        public static ContractKeyLocal from(@NonNull final ContractKey ckey) {
+            return new ContractKeyLocal(ckey.getContractId(), toUint256FromPackedIntArray(ckey.getKey()));
+        }
     }
 
     @SuppressWarnings(
@@ -87,31 +127,24 @@ public class DumpContractStoresSubcommand {
     // _am in fact_ being properly cautious, thank you Sonar
     void doit() {
 
-        record ContractKeyLocal(long contractId, UInt256 key) {
-            public static ContractKeyLocal from(ContractKey ckey) {
-                return new ContractKeyLocal(ckey.getContractId(), toUint256FromPackedIntArray(ckey.getKey()));
-            }
-        }
-
         // First grab all slot pairs from all contracts from the signed state
-        final var contractKeys = new ConcurrentLinkedQueue<ContractKeyLocal>();
         final var contractState = new ConcurrentHashMap<Long, ConcurrentLinkedQueue<Pair<UInt256, UInt256>>>(5000);
-        final var traversalOk = iterateThroughContractStorage((ckey, iter) -> {
-            final var contractId = ckey.getContractId();
-            final var ckeyLocal = ContractKeyLocal.from(ckey);
 
-            contractKeys.add(ckeyLocal);
+        // We only handle mono-service state, but we can choose to handle it "native" _or_ migrate it to
+        // modular-service's
+        // representation first.
+        final Predicate<BiConsumer<ContractKeyLocal, UInt256>> contractStoreIterator = withMigration == WithMigration.NO
+                ? this::iterateThroughContractStorage
+                : this::iterateThroughMigratedContractStorage;
 
-            contractState.computeIfAbsent(contractId, k -> new ConcurrentLinkedQueue<>());
-            contractState.get(contractId).add(Pair.of(ckeyLocal.key(), iter.asUInt256()));
+        final var traversalOk = contractStoreIterator.test((ckey, value) -> {
+            contractState.computeIfAbsent(ckey.contractId(), k -> new ConcurrentLinkedQueue<>());
+            contractState.get(ckey.contractId()).add(Pair.of(ckey.key(), value));
         });
 
         if (traversalOk) {
 
-            final var nDistinctContractIds = contractKeys.stream()
-                    .map(ContractKeyLocal::contractId)
-                    .distinct()
-                    .count();
+            final var nDistinctContractIds = contractState.size();
 
             final var nContractStateValues = contractState.values().stream()
                     .mapToInt(ConcurrentLinkedQueue::size)
@@ -120,7 +153,7 @@ public class DumpContractStoresSubcommand {
             // I can't seriously be intending to cons up the _entire_ store of all contracts as a single string, can I?
             // Well, Toto, this isn't the 1990s anymore ...
 
-            long reportSizeEstimate = (nDistinctContractIds * 20)
+            long reportSizeEstimate = (nDistinctContractIds * 20L)
                     + (nContractStateValues * 2 /*K/V*/ * (32 /*bytes*/ * 2 /*hexits/byte*/ + 3 /*whitespace+slop*/));
             final var sb = new StringBuilder((int) reportSizeEstimate);
 
@@ -141,13 +174,13 @@ public class DumpContractStoresSubcommand {
                     .toList();
 
             if (emitSummary == EmitSummary.YES) {
-                sb.append("%s%n%d contractKeys found, %d distinct; %d contract state entries, totalling %d values %n"
-                        .formatted(
-                                "=".repeat(80),
-                                contractKeys.size(),
-                                nDistinctContractIds,
-                                contractState.size(),
-                                nContractStateValues));
+
+                final var validationSummary = withValidation == WithValidation.NO ? "" : "validated ";
+                final var migrationSummary =
+                        withMigration == WithMigration.NO ? "" : "(with %smigration)".formatted(validationSummary);
+
+                sb.append("%s%n%d contractKeys found, %d total slots %s%n"
+                        .formatted("=".repeat(80), nDistinctContractIds, nContractStateValues, migrationSummary));
                 appendContractStoreSummary(sb, contractStates);
             }
 
@@ -167,18 +200,22 @@ public class DumpContractStoresSubcommand {
      * virtual merkle tree and it does the traversal on multiple threads.  (So the visitor needs to be able to handle
      * multiple concurrent calls.)
      */
-    boolean iterateThroughContractStorage(BiConsumer<ContractKey, IterableContractValue> visitor) {
+    boolean iterateThroughContractStorage(BiConsumer<ContractKeyLocal, UInt256> visitor) {
+
         final int THREAD_COUNT = 8; // size it for a laptop, why not?
         final var contractStorageVMap = state.getRawContractStorage();
+
+        final var nSlotsSeen = new AtomicLong();
 
         boolean didRunToCompletion = true;
         try {
             contractStorageVMap.extractVirtualMapData(
                     getStaticThreadManager(),
                     entry -> {
-                        final var contractKey = entry.left();
+                        final var contractKey = ContractKeyLocal.from(entry.left());
                         final var iterableContractValue = entry.right();
-                        visitor.accept(contractKey, iterableContractValue);
+                        nSlotsSeen.incrementAndGet();
+                        visitor.accept(contractKey, iterableContractValue.asUInt256());
                     },
                     THREAD_COUNT);
         } catch (final InterruptedException ex) {
@@ -187,6 +224,85 @@ public class DumpContractStoresSubcommand {
         }
 
         return didRunToCompletion;
+    }
+
+    /** Iterate through a _migrated_ contract store that is in modular-service's representation */
+    boolean iterateThroughMigratedContractStorage(BiConsumer<ContractKeyLocal, UInt256> visitor) {
+        final var contractStorageStore = getMigratedContractStore();
+
+        final var nSlotsSeen = new AtomicLong();
+
+        if (contractStorageStore == null) return false;
+        contractStorageStore.keys().forEachRemaining(key -> {
+            // (Not sure how many temporary _copies_ of a byte arrays are made here ... best not to ask ...)
+            final var contractKeyLocal = ContractKeyLocal.from(
+                    new ContractKey(key.contractNumber(), key.key().toByteArray()));
+            final var slotValue = contractStorageStore.get(key);
+            assert (slotValue != null);
+            final var value = uint256FromByteArray(slotValue.value().toByteArray());
+            nSlotsSeen.incrementAndGet();
+            visitor.accept(contractKeyLocal, value);
+        });
+
+        return true;
+    }
+
+    /** First migrates the contract store from the mono-service representation to the modular-service representations,
+     *  and then returns all contracts with bytecodes from the migrated contract store, plus the ids of contracts with
+     *  0-length bytecodes.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable
+    WritableKVState<SlotKey, SlotValue> getMigratedContractStore() {
+
+        final var fromStore = state.getRawContractStorage();
+        final var expectedNumberOfSlots = Math.toIntExact(fromStore.size());
+
+        // Start the migration with a clean, writable KV store.  Using the in-memory store here.
+
+        final var contractSchema = new ContractSchema(RELEASE_045_VERSION);
+        final var contractSchemas = contractSchema.statesToCreate();
+        final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
+                .filter(sd -> sd.stateKey().equals(ContractSchema.STORAGE_KEY))
+                .findFirst()
+                .orElseThrow();
+        final var contractStoreSchemaMetadata =
+                new StateMetadata<>(ContractService.NAME, contractSchema, contractStoreStateDefinition);
+        final var contractMerkleMap =
+                new NonAtomicReference<MerkleMap<InMemoryKey<SlotKey>, InMemoryValue<SlotKey, SlotValue>>>(
+                        new MerkleMap<>(expectedNumberOfSlots));
+        final var toStore = new NonAtomicReference<WritableKVState<SlotKey, SlotValue>>(
+                new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
+
+        final var flushCounter = new AtomicInteger();
+
+        final ContractStateMigrator.StateFlusher stateFlusher = ignored -> {
+            // Commit all the new leafs to the underlying map
+            ((WritableKVStateBase<SlotKey, SlotValue>) (toStore.get())).commit();
+            // Copy the underlying map, which does the flush
+            contractMerkleMap.set(contractMerkleMap.get().copy());
+            // Create a new store to go on with
+            toStore.set(new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
+
+            flushCounter.incrementAndGet();
+
+            return toStore.get();
+        };
+
+        final var validationFailures = new ArrayList<String>();
+        try {
+            final var migrationStatus = ContractStateMigrator.migrateFromContractStorageVirtualMap(
+                    fromStore, toStore.get(), stateFlusher, validationFailures);
+            assert (migrationStatus == ContractStateMigrator.Status.SUCCESS);
+        } catch (final RuntimeException ex) {
+            System.err.printf("*** Error(s) transforming mono-state to modular state: %n%s", ex);
+            if (!validationFailures.isEmpty()) {
+                validationFailures.forEach(s -> System.err.printf("   %s%n", s));
+            }
+            return null;
+        }
+
+        return toStore.get();
     }
 
     // Produce a report, one line per contract, summarizing the #slot pairs and the min/max slot#
@@ -273,6 +389,11 @@ public class DumpContractStoresSubcommand {
     static UInt256 toUint256FromPackedIntArray(@NonNull final int[] packed) {
         final var buf = ByteBuffer.allocate(32);
         buf.asIntBuffer().put(packed);
-        return UInt256.fromBytes(Bytes.wrap(buf.array()));
+        return uint256FromByteArray(buf.array());
+    }
+
+    @NonNull
+    static UInt256 uint256FromByteArray(@NonNull final byte[] bytes) {
+        return UInt256.fromBytes(org.apache.tuweni.bytes.Bytes.wrap(bytes));
     }
 }

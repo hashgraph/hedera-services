@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPropagatedCallFailure;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.maybeNext;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.successFrom;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.NONE;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -31,11 +39,12 @@ import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
@@ -80,7 +89,7 @@ public class FrameRunner {
         final var recipientAddress = frame.getRecipientAddress();
         // We compute the called contract's Hedera id up front because it could
         // selfdestruct, preventing us from looking up its id after the fact
-        final var recipientId = resolvedHederaId(frame, recipientAddress);
+        final var recipientMetadata = computeRecipientMetadata(frame, recipientAddress);
 
         // Now run the transaction implied by the frame
         tracer.traceOriginAction(frame);
@@ -93,16 +102,31 @@ public class FrameRunner {
         // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
         if (frame.getState() == COMPLETED_SUCCESS) {
-            return successFrom(gasUsed, senderId, recipientId, asEvmContractId(recipientAddress), frame);
+            return successFrom(
+                    gasUsed, senderId, recipientMetadata.hederaId(), asEvmContractId(recipientAddress), frame, tracer);
         } else {
-            return failureFrom(gasUsed, senderId, frame);
+            return failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId(), tracer);
         }
     }
 
-    private ContractID resolvedHederaId(@NonNull final MessageFrame frame, @NonNull final Address address) {
-        return isLongZero(address)
-                ? asNumberedContractId(address)
-                : ((ProxyWorldUpdater) frame.getWorldUpdater()).getHederaContractId(address);
+    private record RecipientMetadata(boolean isPendingCreation, @NonNull ContractID hederaId) {
+        private RecipientMetadata {
+            requireNonNull(hederaId);
+        }
+
+        public @Nullable ContractID postFailureHederaId() {
+            return isPendingCreation ? null : hederaId;
+        }
+    }
+
+    private RecipientMetadata computeRecipientMetadata(
+            @NonNull final MessageFrame frame, @NonNull final Address address) {
+        if (isLongZero(address)) {
+            return new RecipientMetadata(false, asNumberedContractId(address));
+        } else {
+            final var updater = proxyUpdaterFor(frame);
+            return new RecipientMetadata(updater.getPendingCreation() != null, updater.getHederaContractId(address));
+        }
     }
 
     private void runToCompletion(
@@ -116,6 +140,18 @@ public class FrameRunner {
                     case CONTRACT_CREATION -> contractCreation;
                 };
         executor.process(frame, tracer);
+
+        frame.getExceptionalHaltReason().ifPresent(haltReason -> propagateHaltException(frame, haltReason));
+        // For mono-service compatibility, we need to also halt the frame on the stack that
+        // executed the CALL operation whose dispatched frame failed due to a missing receiver
+        // signature; since mono-service did that check as part of the CALL operation itself
+        final var maybeFailureToPropagate = getAndClearPropagatedCallFailure(frame);
+        if (maybeFailureToPropagate != NONE) {
+            maybeNext(frame).ifPresent(f -> {
+                f.setState(EXCEPTIONAL_HALT);
+                f.setExceptionalHaltReason(maybeFailureToPropagate.exceptionalHaltReason());
+            });
+        }
     }
 
     private long effectiveGasUsed(final long gasLimit, @NonNull final MessageFrame frame) {
@@ -125,5 +161,12 @@ public class FrameRunner {
         nominalUsed -= (selfDestructRefund + frame.getGasRefund());
         final var maxRefundPercent = contractsConfigOf(frame).maxRefundPercentOfGasLimit();
         return Math.max(nominalUsed, gasLimit - gasLimit * maxRefundPercent / 100);
+    }
+
+    // potentially other cases could be handled here if necessary
+    private void propagateHaltException(MessageFrame frame, ExceptionalHaltReason haltReason) {
+        if (haltReason.equals(INSUFFICIENT_CHILD_RECORDS)) {
+            setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
+        }
     }
 }

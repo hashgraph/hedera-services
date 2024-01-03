@@ -46,7 +46,7 @@ public class ValidatePermissionStateAfterReconnect extends HapiSuite {
         return List.of(validateApiPermissionStateAfterReconnect());
     }
 
-    private HapiSpec validateApiPermissionStateAfterReconnect() {
+    final HapiSpec validateApiPermissionStateAfterReconnect() {
         return customHapiSpec("validateApiPermissionStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

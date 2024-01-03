@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
@@ -102,7 +103,7 @@ public class EntityManager {
             parentEntitiesDir += File.separator;
         }
 
-        var yamlIn = new Yaml(new Constructor(Entity.class));
+        var yamlIn = new Yaml(new Constructor(Entity.class, new LoaderOptions()));
         List<Entity> candEntities = new ArrayList<>();
         for (String subDir : ALL_SUBDIRS) {
             String entitiesDir = parentEntitiesDir + subDir;

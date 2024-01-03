@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static java.util.Objects.requireNonNull;
 
@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,24 +49,26 @@ public class OwnerOfCall extends AbstractNftViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(
-            @NonNull final Token token, @NonNull final Nft nft) {
+    protected @NonNull FullResult resultOfViewingNft(@NonNull final Token token, @NonNull final Nft nft) {
         requireNonNull(token);
         requireNonNull(nft);
-        final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
-        final long ownerNum;
-        if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
-            ownerNum = token.treasuryAccountIdOrThrow().accountNumOrThrow();
-        } else {
-            ownerNum = explicitId.accountNumOrThrow();
-        }
+        final long ownerNum = getOwnerAccountNum(nft, token);
         final var gasRequirement = gasCalculator.viewGasRequirement();
         final var owner = nativeOperations().getAccount(ownerNum);
         if (owner == null) {
             return revertResult(INVALID_ACCOUNT_ID, gasRequirement);
         } else {
             final var output = OwnerOfTranslator.OWNER_OF.getOutputs().encodeElements(headlongAddressOf(owner));
-            return HederaSystemContract.FullResult.successResult(output, gasRequirement);
+            return FullResult.successResult(output, gasRequirement);
+        }
+    }
+
+    private long getOwnerAccountNum(@NonNull final Nft nft, @NonNull final Token token) {
+        final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
+        if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
+            return token.treasuryAccountIdOrThrow().accountNumOrThrow();
+        } else {
+            return explicitId.accountNumOrThrow();
         }
     }
 }

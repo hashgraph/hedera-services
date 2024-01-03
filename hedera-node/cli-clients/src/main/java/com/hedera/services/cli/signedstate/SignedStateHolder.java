@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -303,7 +304,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         registerConstructables();
 
         final var platformContext = new DefaultPlatformContext(
-                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get());
+                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         ReservedSignedState rss;
         try {
@@ -346,7 +347,10 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     /** register all applicable classes on classpath before deserializing signed state */
     private void registerConstructables() {
         try {
-            ConstructableRegistry.getInstance().registerConstructables("*");
+            final var registry = ConstructableRegistry.getInstance();
+            registry.registerConstructables("com.hedera.node.app.service.mono");
+            registry.registerConstructables("com.hedera.node.app.service.mono.*");
+            registry.registerConstructables("com.swirlds.*");
         } catch (final ConstructableRegistryException ex) {
             throw new UncheckedConstructableRegistryException(ex);
         }

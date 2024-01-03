@@ -125,7 +125,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-001
-    private HapiSpec fungibleTokenCreateHappyPath() {
+    final HapiSpec fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("fungibleTokenCreateHappyPath")
@@ -232,7 +232,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
 
     // TEST-002
 
-    private HapiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
+    final HapiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
         final var createdNftTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -298,7 +298,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
+    final HapiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -368,7 +368,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-003 & TEST-019
-    private HapiSpec nonFungibleTokenCreateHappyPath() {
+    final HapiSpec nonFungibleTokenCreateHappyPath() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("nonFungibleTokenCreateHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -460,7 +460,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-005
-    private HapiSpec fungibleTokenCreateThenQueryAndTransfer() {
+    final HapiSpec fungibleTokenCreateThenQueryAndTransfer() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -542,7 +542,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // TEST-006
-    private HapiSpec nonFungibleTokenCreateThenQuery() {
+    final HapiSpec nonFungibleTokenCreateThenQuery() {
         final var createdTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("nonFungibleTokenCreateThenQuery")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -609,7 +609,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .logged()));
     }
 
-    private HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
+    final HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createTokenNum = new AtomicLong();
         return propertyPreservingHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")

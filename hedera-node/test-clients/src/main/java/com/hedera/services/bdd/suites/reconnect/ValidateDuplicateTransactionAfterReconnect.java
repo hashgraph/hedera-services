@@ -45,7 +45,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
         return List.of(runTransfersBeforeReconnect(), validateDuplicateTransactionAfterReconnect());
     }
 
-    private HapiSpec validateDuplicateTransactionAfterReconnect() {
+    final HapiSpec validateDuplicateTransactionAfterReconnect() {
         final String transactionId = "specialTransactionId";
         return customHapiSpec("validateDuplicateTransactionAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))

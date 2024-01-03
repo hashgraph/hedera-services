@@ -18,19 +18,19 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
@@ -74,9 +74,9 @@ public class EventSignatureValidator {
     private final SoftwareVersion currentSoftwareVersion;
 
     /**
-     * The current minimum generation required for an event to be non-ancient.
+     * The current non-ancient event window.
      */
-    private long minimumGenerationNonAncient = 0;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -204,7 +204,7 @@ public class EventSignatureValidator {
 
         if (!isSignatureValid) {
             rateLimitedLogger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Event failed signature check. Event: {}, Signature: {}, Hash: {}",
                     event,
                     CommonUtils.hex(event.getUnhashedData().getSignature()),
@@ -222,7 +222,7 @@ public class EventSignatureValidator {
      */
     @Nullable
     public GossipEvent validateSignature(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             // ancient events can be safely ignored
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -239,12 +239,12 @@ public class EventSignatureValidator {
     }
 
     /**
-     * Set the minimum generation required for an event to be non-ancient.
+     * Set the non-ancient event window that defines the minimum threshold required for an event to be non-ancient
      *
-     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
     }
 
     /**

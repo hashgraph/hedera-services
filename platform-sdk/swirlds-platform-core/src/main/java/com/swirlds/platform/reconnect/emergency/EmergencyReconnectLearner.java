@@ -19,12 +19,12 @@ package com.swirlds.platform.reconnect.emergency;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;

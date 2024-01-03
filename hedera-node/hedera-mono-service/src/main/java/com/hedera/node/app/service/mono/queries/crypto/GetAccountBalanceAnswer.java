@@ -46,6 +46,10 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Implements the {@link HederaFunctionality#CryptoGetAccountBalance} query handler.
+ * The token balances field is deprecated and is no more returned by this query.
+ */
 @Singleton
 public class GetAccountBalanceAnswer implements AnswerService {
     private final AliasManager aliasManager;
@@ -94,18 +98,20 @@ public class GetAccountBalanceAnswer implements AnswerService {
             final var key = EntityNum.fromAccountId(id);
             final var account = accounts.get(key);
             opAnswer.setBalance(account.getBalance());
-            final var maxRels = dynamicProperties.maxTokensRelsPerInfoQuery();
-            final var firstRel = account.getLatestAssociation();
-            doBoundedIteration(
-                    view.tokenAssociations(),
-                    view.tokens(),
-                    firstRel,
-                    maxRels,
-                    (token, rel) -> opAnswer.addTokenBalances(TokenBalance.newBuilder()
-                            .setTokenId(token.grpcId())
-                            .setDecimals(token.decimals())
-                            .setBalance(rel.getBalance())
-                            .build()));
+            if (dynamicProperties.areTokenBalancesEnabledInQueries()) {
+                final var maxRels = dynamicProperties.maxTokensRelsPerInfoQuery();
+                final var firstRel = account.getLatestAssociation();
+                doBoundedIteration(
+                        view.tokenAssociations(),
+                        view.tokens(),
+                        firstRel,
+                        maxRels,
+                        (token, rel) -> opAnswer.addTokenBalances(TokenBalance.newBuilder()
+                                .setTokenId(token.grpcId())
+                                .setDecimals(token.decimals())
+                                .setBalance(rel.getBalance())
+                                .build()));
+            }
         }
 
         return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_PRECOMPILE_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,7 +48,7 @@ class ProcessorModuleTest {
         assertThat(hederaSystemContracts)
                 .isNotNull()
                 .hasSize(3)
-                .containsKey(Address.fromHexString(HTS_PRECOMPILE_ADDRESS))
+                .containsKey(Address.fromHexString(HTS_EVM_ADDRESS))
                 .containsKey(Address.fromHexString(ExchangeRateSystemContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS))
                 .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
     }

@@ -237,6 +237,7 @@ class GetAccountBalanceAnswerTest {
         accountV.setKey(EntityNum.fromAccountId(asAccount(accountIdLit)));
         given(accounts.get(wellKnownId)).willReturn(accountV);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenRels);
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
 
         final CryptoGetAccountBalanceQuery op =
                 CryptoGetAccountBalanceQuery.newBuilder().setAccountID(aliasId).build();
@@ -270,6 +271,7 @@ class GetAccountBalanceAnswerTest {
         accountV.setKey(EntityNum.fromAccountId(asAccount(accountIdLit)));
         given(accounts.get(wellKnownId)).willReturn(accountV);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenRels);
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
 
         // when:
         final Response response = subject.responseGiven(query, wellKnownView(), OK);
@@ -300,6 +302,7 @@ class GetAccountBalanceAnswerTest {
         final var view = wellKnownView();
         given(accounts.get(EntityNum.fromContractId(id))).willReturn(accountV);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenRels);
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
 
         // when:
         final Response response = subject.responseGiven(query, view, OK);

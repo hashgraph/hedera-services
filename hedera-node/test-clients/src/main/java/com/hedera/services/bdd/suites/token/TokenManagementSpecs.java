@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -76,8 +77,10 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TOKEN)
 public class TokenManagementSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -120,7 +123,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
+    final HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
         final var civilian = "civilian";
         final var adminKey = "adminKey";
         final var fungible = "fungible";
@@ -178,7 +181,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
+    final HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -199,7 +202,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
+    final HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -220,7 +223,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
+    final HapiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
         final String BURN_TOKEN = "burn";
         final int TOTAL_SUPPLY = 100;
         final int TRANSFER_AMOUNT = 50;
@@ -445,7 +448,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec fungibleCommonMaxSupplyReachWork() {
+    final HapiSpec fungibleCommonMaxSupplyReachWork() {
         return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -472,7 +475,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec mintingMaxLongValueWorks() {
+    final HapiSpec mintingMaxLongValueWorks() {
         return defaultHapiSpec("MintingMaxLongValueWorks")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -488,7 +491,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
+    final HapiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
         final var multiKey = "multi";
         final var token = "non-fungible";
         final var txn = "mint";

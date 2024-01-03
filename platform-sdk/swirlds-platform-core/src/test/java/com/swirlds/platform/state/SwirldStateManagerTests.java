@@ -21,16 +21,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,9 +118,6 @@ class SwirldStateManagerTests {
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
         when(platformState.copy()).thenReturn(platformState);
-
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
 
         state.setPlatformState(platformState);
 

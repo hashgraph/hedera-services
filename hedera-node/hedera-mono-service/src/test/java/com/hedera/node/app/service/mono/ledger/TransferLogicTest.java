@@ -24,6 +24,7 @@ import static com.hedera.test.utils.TxnUtils.aaOf;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -216,11 +218,32 @@ class TransferLogicTest {
         accountsLedger.begin();
         accountsLedger.create(mockCreation);
         given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
+        given(recordsHistorian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         assertFailsWith(() -> subject.doZeroSum(changes), INSUFFICIENT_ACCOUNT_BALANCE);
 
         verify(autoCreationLogic).reclaimPendingAliases();
         assertTrue(accountsLedger.getCreatedKeys().isEmpty());
+    }
+
+    @Test
+    void behavesAsExpectedOnAutoCreationWithInsufficientChildRecords() {
+        final var mockCreation = IdUtils.asAccount("0.0.1234");
+        final var firstAmount = 1_000L;
+        final var firstAlias = ByteString.copyFromUtf8("fake");
+        final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+        final var changes = List.of(failingTrigger);
+        given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+
+        accountsLedger.begin();
+        accountsLedger.create(mockCreation);
+        given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
+
+        assertFailsWith(() -> subject.doZeroSum(changes), MAX_CHILD_RECORDS_EXCEEDED);
+
+        verify(autoCreationLogic).reclaimPendingAliases();
+        assertTrue(accountsLedger.getCreatedKeys().isEmpty());
+        verify(recordsHistorian, never()).trackPrecedingChildRecord(anyInt(), any(), any());
     }
 
     @Test
@@ -247,6 +270,7 @@ class TransferLogicTest {
         given(tokenStore.tryTokenChange(any())).willReturn(OK);
         given(txnCtx.activePayer()).willReturn(payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(recordsHistorian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         subject.doZeroSum(changes);
 
@@ -278,6 +302,7 @@ class TransferLogicTest {
         given(tokenStore.tryTokenChange(any())).willReturn(OK);
         given(txnCtx.activePayer()).willReturn(payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(recordsHistorian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         subject.doZeroSum(changes);
 
@@ -358,6 +383,7 @@ class TransferLogicTest {
         given(txnCtx.activePayer()).willReturn(payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
         given(aliasManager.lookupIdBy(secondAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(recordsHistorian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
         subject.doZeroSum(changes);
 
         assertEquals(2 * autoFee, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
@@ -406,6 +432,7 @@ class TransferLogicTest {
         given(txnCtx.activePayer()).willReturn(payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
         given(aliasManager.lookupIdBy(secondAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(recordsHistorian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
         final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doZeroSum(changes));
         assertEquals(INSUFFICIENT_PAYER_BALANCE, ex.getResponseCode());
 
@@ -442,6 +469,7 @@ class TransferLogicTest {
         given(txnCtx.activePayer()).willReturn(payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
         given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
+        given(recordsHistorian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doZeroSum(changes));
 

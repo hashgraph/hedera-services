@@ -20,14 +20,13 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
@@ -42,13 +41,14 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 
@@ -91,13 +91,14 @@ public class TestIntake implements LoadableFromSignedState {
             @NonNull final AddressBook ab, @NonNull final Time time, @NonNull final ConsensusConfig consensusConfig) {
         output = new ConsensusOutput(time);
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
         linker = new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
 
         final EventObserverDispatcher dispatcher =
-                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
+                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph, null), output);
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
@@ -114,6 +115,7 @@ public class TestIntake implements LoadableFromSignedState {
                 dispatcher,
                 mock(PhaseTimer.class),
                 shadowGraph,
+                null,
                 e -> {},
                 mock(IntakeEventCounter.class));
     }
@@ -132,7 +134,7 @@ public class TestIntake implements LoadableFromSignedState {
      * Same as {@link #addEvent(GossipEvent)}
      *
      * <p>Note: this event won't be the one inserted, intake will create a new instance that will
-     * wrap the {@link com.swirlds.common.system.events.BaseEvent}
+     * wrap the {@link BaseEvent}
      */
     public void addEvent(@NonNull final EventImpl event) {
         intake.addUnlinkedEvent(event.getBaseEvent());
@@ -181,7 +183,6 @@ public class TestIntake implements LoadableFromSignedState {
     public void loadFromSignedState(@NonNull final SignedState signedState) {
         consensus.loadFromSignedState(signedState);
         shadowGraph.clear();
-        shadowGraph.initFromEvents(Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
     }
 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {

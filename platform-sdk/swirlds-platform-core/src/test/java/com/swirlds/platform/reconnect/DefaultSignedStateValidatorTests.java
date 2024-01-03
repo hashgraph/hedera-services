@@ -27,14 +27,14 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -247,8 +247,8 @@ class DefaultSignedStateValidatorTests {
         validator = new DefaultSignedStateValidator(platformContext);
 
         final SignedState signedState = stateSignedByNodes(signingNodes);
-        final SignedStateValidationData originalData = new SignedStateValidationData(
-                signedState.getState().getPlatformState().getPlatformData(), addressBook);
+        final SignedStateValidationData originalData =
+                new SignedStateValidationData(signedState.getState().getPlatformState(), addressBook);
 
         final boolean shouldSucceed = stateHasEnoughWeight(nodes, signingNodes);
         if (shouldSucceed) {

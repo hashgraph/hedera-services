@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.InProcessHapiTestNode.START_PORT;
+import static com.hedera.services.bdd.junit.InProcessHapiTestNode.STOP_PORT;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -38,9 +41,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link HapiTestNode} that will shell-out to a sub-process for running the node. The advantage
@@ -52,6 +59,7 @@ import java.util.stream.Collectors;
  * The {@code stdout} and {@code stderr} files will be written into the working directory.
  */
 final class SubProcessHapiTestNode implements HapiTestNode {
+    private static final Logger logger = LogManager.getLogger(SubProcessHapiTestNode.class);
     private static final Pattern PROM_PLATFORM_STATUS_HELP_PATTERN =
             Pattern.compile("# HELP platform_PlatformStatus (.*)");
     private static final Pattern PROM_PLATFORM_STATUS_PATTERN =
@@ -169,13 +177,15 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (nodeId == 0 ? "n" : "n")
                                     + ",address=*:" + (5005 + nodeId),
                             "-Dhedera.recordStream.logDir=data/recordStreams",
+                            "-Dhedera.profiles.active=DEV",
                             "-classpath",
                             classPath,
                             "-Dfile.encoding=UTF-8",
                             "-Dhedera.workflows.enabled=true",
                             "-Dprometheus.endpointPortNumber=" + (10000 + nodeId),
                             "com.hedera.node.app.ServicesMain",
-                            "" + nodeId)
+                            "-local",
+                            Long.toString(nodeId))
                     .directory(workingDir.toFile())
                     .redirectOutput(stdout.toFile())
                     .redirectError(stderr.toFile());
@@ -228,6 +238,79 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     }
 
     @Override
+    public void blockNetworkPort() {
+        if (handle != null && handle.isAlive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Blocking Network port {} for node {}", grpcPort, nodeId);
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void unblockNetworkPort() {
+        if (handle != null && handle.isAlive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", START_PORT, STOP_PORT),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Unblocking Network port {} for node {}", grpcPort, nodeId);
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
     public void waitForShutdown(long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
         while (handle != null && handle.isAlive()) {
@@ -248,14 +331,18 @@ final class SubProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void waitForFreeze(long seconds) throws TimeoutException {
+        waitFor("FREEZE_COMPLETE", seconds);
+    }
+
+    private void waitFor(String status, long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
         while (handle != null && handle.isAlive()) {
             if (System.currentTimeMillis() > waitUntil) {
                 throw new TimeoutException(
-                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not freeze!");
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not reach status " + status);
             }
 
-            if ("FREEZE_COMPLETE".equals(getPlatformStatus())) {
+            if (status.equals(getPlatformStatus())) {
                 return;
             }
 
@@ -267,6 +354,16 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                         "node " + nodeId + ": Interrupted while sleeping in waitForFreeze busy loop", e);
             }
         }
+    }
+
+    @Override
+    public void waitForBehind(final long seconds) throws TimeoutException {
+        waitFor("BEHIND", seconds);
+    }
+
+    @Override
+    public void waitForReconnectComplete(final long seconds) throws TimeoutException {
+        waitFor("RECONNECT_COMPLETE", seconds);
     }
 
     public void terminate() {
@@ -283,15 +380,12 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         }
 
         final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
-        try {
-            if (Files.exists(saved)) {
-                Files.walk(saved)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
+        if (Files.exists(saved)) {
+            try (Stream<Path> paths = Files.walk(saved)) {
+                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not delete saved state " + saved, e);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not delete saved state " + saved, e);
         }
     }
 
@@ -331,6 +425,8 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 .collect(Collectors.joining(":"));
     }
 
+    @SuppressWarnings("java:S2142")
+    // sonar doesn't like the fact that we are catching and ignoring an exception
     private String getPlatformStatus() {
         Map<String, String> statusMap = new HashMap();
         String statusKey = "";

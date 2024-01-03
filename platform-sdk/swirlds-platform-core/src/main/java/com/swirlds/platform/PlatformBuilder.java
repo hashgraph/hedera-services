@@ -34,12 +34,9 @@ import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
@@ -51,7 +48,11 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Shutdown;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -203,7 +204,11 @@ public final class PlatformBuilder {
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(selfId, getMetricsProvider(), configuration);
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration,
+                getMetricsProvider().createPlatformMetrics(selfId),
+                CryptographyHolder.get(),
+                Time.getCurrent());
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);

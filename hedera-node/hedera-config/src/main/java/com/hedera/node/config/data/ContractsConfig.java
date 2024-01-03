@@ -25,14 +25,14 @@ import java.util.Set;
 @ConfigData("contracts")
 public record ContractsConfig(
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean itemizeStorageFees,
-        // @ConfigProperty(defaultValue = "1062787,1461860") Set<Address> permittedDelegateCallers,
+        @ConfigProperty(defaultValue = "1062787,1461860") Set<Long> permittedDelegateCallers,
         @ConfigProperty(defaultValue = "31536000") @NetworkProperty long referenceSlotLifetime,
         @ConfigProperty(defaultValue = "100") @NetworkProperty int freeStorageTierLimit,
         @ConfigProperty(defaultValue = "0til100M,2000til450M") @NetworkProperty String storageSlotPriceTiers,
         @ConfigProperty(defaultValue = "7890000") @NetworkProperty long defaultLifetime,
         // @ConfigProperty(defaultValue = "") KnownBlockValues knownBlockHash,
-        // @ConfigProperty(value = "keys.legacyActivations", defaultValue="1058134by[1062784]")
-        // LegacyContractIdActivations keysLegacyActivations,
+        @ConfigProperty(value = "keys.legacyActivations", defaultValue = "1058134by[1062784]")
+                String keysLegacyActivations,
         @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "32") @NetworkProperty int localCallEstRetBytes,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean allowCreate2,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean allowAutoAssociations,

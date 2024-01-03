@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -28,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
@@ -38,12 +40,14 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 import org.apache.logging.log4j.*;
+import org.junit.jupiter.api.Tag;
 
 // Some of the test cases cannot be converted to use eth calls,
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class SigningReqsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SigningReqsSuite.class);
 
@@ -70,7 +74,8 @@ public class SigningReqsSuite extends HapiSuite {
         return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
     }
 
-    private HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
+    @HapiTest
+    final HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewMirrorAddr = new AtomicReference<>();
         final AtomicLong contractId = new AtomicLong();
@@ -112,7 +117,7 @@ public class SigningReqsSuite extends HapiSuite {
                             final var propertyUpdate = overriding(LEGACY_ACTIVATIONS_PROP, overrideValue);
                             CustomSpecAssert.allRunFor(spec, propertyUpdate);
                         }),
-                        // Succeeds with the full-prefix signature
+                        // Succeeds now because the called contract received legacy activation privilege
                         sourcing(() -> contractCall(
                                         MINIMAL_CREATIONS_CONTRACT,
                                         "makeRenewableTokenIndirectly",

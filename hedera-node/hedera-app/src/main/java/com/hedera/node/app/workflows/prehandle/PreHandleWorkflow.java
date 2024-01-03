@@ -19,9 +19,10 @@ package com.hedera.node.app.workflows.prehandle;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.swirlds.common.system.events.Event;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.stream.Stream;
 
 /** A workflow to pre-handle transactions. */
@@ -41,9 +42,8 @@ public interface PreHandleWorkflow {
             @NonNull final Stream<Transaction> transactions);
 
     /**
-     * Starts the pre-handle transaction workflow for a single event.
-     *
-     * <p>If this method is called directly, pre-handle is done on the current thread.
+     * A convenience method to start the pre-handle transaction workflow for a single
+     * user transaction without a reusable result.
      *
      * @param creator The {@link AccountID} of the node that created these transactions
      * @param storeFactory The {@link ReadableStoreFactory} based on the current state
@@ -51,10 +51,32 @@ public interface PreHandleWorkflow {
      * @param platformTx The {@link Transaction} to pre-handle
      * @return The {@link PreHandleResult} of running pre-handle
      */
+    default @NonNull PreHandleResult preHandleTransaction(
+            @NonNull AccountID creator,
+            @NonNull ReadableStoreFactory storeFactory,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull Transaction platformTx) {
+        return preHandleTransaction(creator, storeFactory, accountStore, platformTx, null);
+    }
+
+    /**
+     * Starts the pre-handle transaction workflow for a single transaction.
+     *
+     * <p>If this method is called directly, pre-handle is done on the current thread.
+     *
+     * @param creator The {@link AccountID} of the node that created these transactions
+     * @param storeFactory The {@link ReadableStoreFactory} based on the current state
+     * @param accountStore The {@link ReadableAccountStore} based on the current state
+     * @param platformTx The {@link Transaction} to pre-handle
+     * @param maybeReusableResult The result of a previous call to the same method that may,
+     * depending on changes in state, be reusable for this call
+     * @return The {@link PreHandleResult} of running pre-handle
+     */
     @NonNull
     PreHandleResult preHandleTransaction(
             @NonNull AccountID creator,
             @NonNull ReadableStoreFactory storeFactory,
             @NonNull ReadableAccountStore accountStore,
-            @NonNull Transaction platformTx);
+            @NonNull Transaction platformTx,
+            @Nullable PreHandleResult maybeReusableResult);
 }

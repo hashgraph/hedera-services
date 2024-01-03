@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -35,6 +36,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asChainIdBytes;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -54,6 +56,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -78,7 +81,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @TransactionScope
 public class HevmTransactionFactory {
-    private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
 
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
@@ -167,7 +169,7 @@ public class HevmTransactionFactory {
         return new HederaEvmTransaction(
                 payer,
                 null,
-                body.contractIDOrThrow(),
+                asPriorityId(body.contractIDOrThrow(), accountStore),
                 NOT_APPLICABLE,
                 body.functionParameters(),
                 null,
@@ -197,7 +199,11 @@ public class HevmTransactionFactory {
         return new HederaEvmTransaction(
                 senderId,
                 relayerId,
-                ContractID.newBuilder().evmAddress(Bytes.wrap(ethTxData.to())).build(),
+                asPriorityId(
+                        ContractID.newBuilder()
+                                .evmAddress(Bytes.wrap(ethTxData.to()))
+                                .build(),
+                        accountStore),
                 ethTxData.nonce(),
                 ethTxData.hasCallData() ? Bytes.wrap(ethTxData.callData()) : Bytes.EMPTY,
                 Bytes.wrap(ethTxData.chainId()),
@@ -239,8 +245,8 @@ public class HevmTransactionFactory {
     }
 
     private void assertValidCall(@NonNull final ContractCallTransactionBody body) {
-        final var minGasLimit =
-                Math.max(INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
+        final var minGasLimit = Math.max(
+                ContractServiceImpl.INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
         validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
         validateTrue(body.amount() >= 0, CONTRACT_NEGATIVE_VALUE);
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
@@ -295,6 +301,7 @@ public class HevmTransactionFactory {
 
     private Bytes initcodeFor(@NonNull final ContractCreateTransactionBody body) {
         if (body.hasInitcode()) {
+            validateTrue(body.initcode().length() > 0, CONTRACT_BYTECODE_EMPTY);
             return body.initcode();
         } else {
             final var initcode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));
@@ -302,8 +309,16 @@ public class HevmTransactionFactory {
             validateFalse(initcode.deleted(), FILE_DELETED);
             validateTrue(initcode.contents().length() > 0, CONTRACT_FILE_EMPTY);
             try {
-                return Bytes.fromHex(new String(initcode.contents().toByteArray())
-                        + body.constructorParameters().toHex());
+                final var initcodeBytes = initcode.contents().toByteArray();
+                // Bytes.fromHex() doesn't appreciate a leading '0x' but we supported it in mono-service
+                final String hexedInitcode;
+                if (initcodeBytes[0] == (byte) '0' && initcodeBytes[1] == (byte) 'x') {
+                    hexedInitcode = new String(initcodeBytes, 2, initcodeBytes.length - 2);
+                } else {
+                    hexedInitcode = new String(initcodeBytes);
+                }
+                return Bytes.fromHex(
+                        hexedInitcode + body.constructorParameters().toHex());
             } catch (IllegalArgumentException | NullPointerException ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }

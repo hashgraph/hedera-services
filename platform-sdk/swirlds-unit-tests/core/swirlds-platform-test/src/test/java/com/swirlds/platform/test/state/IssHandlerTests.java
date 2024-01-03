@@ -17,31 +17,23 @@
 package com.swirlds.platform.test.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
-import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
-import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
-import com.swirlds.platform.state.signed.StateToDiskReason;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.SimpleScratchpad;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,24 +46,14 @@ class IssHandlerTests {
     @Test
     @DisplayName("Hash Disagreement From Self")
     void hashDisagreementFromSelf() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", true)
-                .withValue("state.dumpStateOnAnyISS", true)
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("state.haltOnAnyIss", true).getOrCreateConfig();
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
-                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -79,8 +61,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -89,11 +69,8 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.stateHashValidityObserver(1234L, new NodeId(selfId), randomHash(), randomHash());
 
-        assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
         assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
@@ -102,27 +79,13 @@ class IssHandlerTests {
     @Test
     @DisplayName("Hash Disagreement Always Freeze")
     void hashDisagreementAlwaysFreeze() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", true)
-                .withValue("state.dumpStateOnAnyISS", false)
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("state.haltOnAnyIss", true).getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block if we are going to freeze");
-                    dumpCount.getAndIncrement();
-                });
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -130,8 +93,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -140,78 +101,15 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
         handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        // Another node ISSed, we will not record that on the scratchpad.
-        assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
-    }
-
-    @Test
-    @DisplayName("Hash Disagreement Always Freeze")
-    void hashDisagreementAlwaysDump() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", true)
-                .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final long selfId = 0;
-
-        final AtomicInteger dumpCount = new AtomicInteger();
-        final AtomicInteger freezeCount = new AtomicInteger();
-        final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block");
-                    dumpCount.getAndIncrement();
-                });
-
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
-
-        final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
-
-        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
-                stateConfig,
-                new NodeId(selfId),
-                mock(StatusActionSubmitter.class),
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                (r, type, otherId) -> {},
-                simpleScratchpad);
-
-        dispatchBuilder.start();
-
-        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(0, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        // Throttle should prevent double dumping
-        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Another node ISSed, we will not record that on the scratchpad.
@@ -221,23 +119,13 @@ class IssHandlerTests {
     @Test
     @DisplayName("Hash Disagreement No Action")
     void hashDisagreementNoAction() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", false)
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("state.haltOnAnyIss", false).getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
-                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -245,8 +133,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -255,11 +141,8 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
-        assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
@@ -267,88 +150,17 @@ class IssHandlerTests {
     }
 
     @Test
-    @DisplayName("Hash Disagreement Always Freeze")
-    void hashDisagreementFreezeAndDump() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", true)
-                .withValue("state.dumpStateOnAnyISS", true)
-                .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final long selfId = 0;
-
-        final AtomicInteger dumpCount = new AtomicInteger();
-        final AtomicInteger freezeCount = new AtomicInteger();
-        final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block if we are going to freeze");
-                    dumpCount.getAndIncrement();
-                });
-
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
-
-        final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
-
-        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
-                stateConfig,
-                new NodeId(selfId),
-                mock(StatusActionSubmitter.class),
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                (r, type, otherId) -> {},
-                simpleScratchpad);
-
-        dispatchBuilder.start();
-
-        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(1, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        // Once frozen, this should become a no-op
-        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(1, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        // Another node ISSed, we will not record that on the scratchpad.
-        assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
-    }
-
-    @Test
     @DisplayName("Self ISS Automated Recovery")
     void selfIssAutomatedRecovery() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", false)
                 .withValue("state.automatedSelfIssRecovery", true)
                 .getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertTrue(blocking, "should block before shutdown");
-                    dumpCount.getAndIncrement();
-                });
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -356,8 +168,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -366,11 +176,8 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.selfIssObserver(1234L, randomHash(), randomHash());
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(1, shutdownCount.get(), "unexpected shutdown count");
 
@@ -382,24 +189,15 @@ class IssHandlerTests {
     @Test
     @DisplayName("Self ISS No Action")
     void selfIssNoAction() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", false)
                 .withValue("state.automatedSelfIssRecovery", false)
                 .getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
-                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -407,8 +205,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -417,11 +213,8 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.selfIssObserver(1234L, randomHash(), randomHash());
 
-        assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
@@ -433,27 +226,15 @@ class IssHandlerTests {
     @Test
     @DisplayName("Self ISS Always Freeze")
     void selfIssAlwaysFreeze() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("state.haltOnAnyIss", true)
-                .withValue("state.dumpStateOnAnyISS", false)
                 .withValue("state.automatedSelfIssRecovery", false)
                 .getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block if we are going to freeze");
-                    dumpCount.getAndIncrement();
-                });
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -461,8 +242,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -471,80 +250,15 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.selfIssObserver(1234L, randomHash(), randomHash());
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
         handler.selfIssObserver(1234L, randomHash(), randomHash());
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
-        assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
-    }
-
-    @Test
-    @DisplayName("Self ISS Always Dump")
-    void selfIssAlwaysDump() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", true)
-                .withValue("state.automatedSelfIssRecovery", false)
-                .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final long selfId = 0;
-
-        final AtomicInteger dumpCount = new AtomicInteger();
-        final AtomicInteger freezeCount = new AtomicInteger();
-        final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block");
-                    dumpCount.getAndIncrement();
-                });
-
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
-
-        final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
-
-        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
-                stateConfig,
-                new NodeId(selfId),
-                mock(StatusActionSubmitter.class),
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                (r, type, otherId) -> {},
-                simpleScratchpad);
-
-        dispatchBuilder.start();
-
-        handler.selfIssObserver(1234L, randomHash(), randomHash());
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(0, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        // Rate limiter should prevent double dump
-        handler.selfIssObserver(1234L, randomHash(), randomHash());
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
@@ -555,24 +269,15 @@ class IssHandlerTests {
     @Test
     @DisplayName("Catastrophic ISS No Action")
     void catastrophicIssNoAction() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", false)
                 .withValue("state.haltOnCatastrophicIss", false)
                 .getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
-                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -580,8 +285,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -590,11 +293,8 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
-        assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
@@ -606,27 +306,15 @@ class IssHandlerTests {
     @Test
     @DisplayName("Catastrophic ISS Always Freeze")
     void catastrophicIssAlwaysFreeze() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("state.haltOnAnyIss", true)
-                .withValue("state.dumpStateOnAnyISS", false)
                 .withValue("state.haltOnCatastrophicIss", false)
                 .getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block if we are going to freeze");
-                    dumpCount.getAndIncrement();
-                });
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -634,8 +322,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -644,18 +330,14 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
         handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
@@ -667,27 +349,15 @@ class IssHandlerTests {
     @Test
     @DisplayName("Catastrophic ISS Freeze On Catastrophic")
     void catastrophicIssFreezeOnCatastrophic() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", false)
                 .withValue("state.haltOnCatastrophicIss", true)
                 .getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
-        final AtomicInteger dumpCount = new AtomicInteger();
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block if we are going to freeze");
-                    dumpCount.getAndIncrement();
-                });
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -695,8 +365,6 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
                 mock(StatusActionSubmitter.class),
@@ -705,80 +373,15 @@ class IssHandlerTests {
                 (r, type, otherId) -> {},
                 simpleScratchpad);
 
-        dispatchBuilder.start();
-
         handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
         handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
-        assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
-    }
-
-    @Test
-    @DisplayName("Catastrophic ISS Always Dump")
-    void catastrophicIssAlwaysDump() {
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.dumpStateOnAnyISS", true)
-                .withValue("state.haltOnCatastrophicIss", false)
-                .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final long selfId = 0;
-
-        final AtomicInteger dumpCount = new AtomicInteger();
-        final AtomicInteger freezeCount = new AtomicInteger();
-        final AtomicInteger shutdownCount = new AtomicInteger();
-
-        dispatchBuilder.registerObserver(
-                this,
-                StateDumpRequestedTrigger.class,
-                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
-                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
-                    assertFalse(blocking, "no need to block");
-                    dumpCount.getAndIncrement();
-                });
-
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
-
-        final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
-
-        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-        final IssHandler handler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
-                stateConfig,
-                new NodeId(selfId),
-                mock(StatusActionSubmitter.class),
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                (r, type, otherId) -> {},
-                simpleScratchpad);
-
-        dispatchBuilder.start();
-
-        handler.catastrophicIssObserver(1234L, mock(Hash.class));
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(0, freezeCount.get(), "unexpected freeze count");
-        assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
-
-        // Throttle should prevent double dump
-        handler.catastrophicIssObserver(1234L, mock(Hash.class));
-
-        assertEquals(1, dumpCount.get(), "unexpected dump count");
-        assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
@@ -800,12 +403,9 @@ class IssHandlerTests {
             }
         };
 
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final IssHandler issHandler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 new NodeId(0L),
                 mock(StatusActionSubmitter.class),

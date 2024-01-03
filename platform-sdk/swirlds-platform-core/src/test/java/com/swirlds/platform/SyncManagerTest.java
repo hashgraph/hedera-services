@@ -23,17 +23,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.List;
@@ -74,9 +76,9 @@ class SyncManagerTest {
 
             connectionGraph = new RandomGraph(size, 40, 0);
             configuration = new TestConfigBuilder()
-                    .withValue("reconnect.fallenBehindThreshold", "0.25")
-                    .withValue("event.eventIntakeQueueThrottleSize", "100")
-                    .withValue("event.staleEventPreventionThreshold", "10")
+                    .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, "0.25")
+                    .withValue(EventConfig_.EVENT_INTAKE_QUEUE_THROTTLE_SIZE, "100")
+                    .withValue(EventConfig_.STALE_EVENT_PREVENTION_THRESHOLD, "10")
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);

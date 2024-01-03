@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -51,8 +52,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class TokenAndTypeCheckSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenAndTypeCheckSuite.class);
@@ -82,7 +85,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec checkTokenAndTypeStandardCases() {
+    final HapiSpec checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("checkTokenAndTypeStandardCases")
@@ -122,8 +125,9 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                 .then();
     }
 
+    // Should just return false on isToken() check for missing token type
     @HapiTest
-    private HapiSpec checkTokenAndTypeNegativeCases() {
+    final HapiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 

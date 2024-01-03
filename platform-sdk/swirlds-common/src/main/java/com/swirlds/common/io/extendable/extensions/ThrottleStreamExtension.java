@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.extendable.extensions;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

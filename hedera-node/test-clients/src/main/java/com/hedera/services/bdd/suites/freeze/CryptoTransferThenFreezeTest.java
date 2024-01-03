@@ -44,7 +44,7 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
         return List.of(runCryptoTransfers(), freezeAfterTransfers());
     }
 
-    private HapiSpec freezeAfterTransfers() {
+    final HapiSpec freezeAfterTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("FreezeAfterTransfers")
                 .given(

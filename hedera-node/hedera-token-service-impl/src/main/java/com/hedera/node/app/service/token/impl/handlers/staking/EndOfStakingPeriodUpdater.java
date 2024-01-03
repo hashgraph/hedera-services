@@ -21,11 +21,11 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.NodeStake;
@@ -236,13 +236,13 @@ public class EndOfStakingPeriodUpdater {
                 stakingConfig.maxStakeRewarded());
         log.info("Exporting:\n{}", finalNodeStakes);
         // We don't want to fail adding the preceding child record for the node stake update that happens every
-        // midnight.
-        // So, we add the preceding child record builder as unchecked, that doesn't fail with MAX_CHILD_RECORDS_EXCEEDED
+        // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
+        // MAX_CHILD_RECORDS_EXCEEDED
         final var nodeStakeUpdateBuilder =
                 context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
-        nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
-                .body(syntheticNodeStakeUpdateTxn.build())
-                .build());
+        nodeStakeUpdateBuilder
+                .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
+                .memo("End of staking period calculation record");
     }
 
     /**

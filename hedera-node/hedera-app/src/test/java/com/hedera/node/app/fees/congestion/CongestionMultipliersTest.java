@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,14 +44,14 @@ class CongestionMultipliersTest {
     private TransactionInfo txnInfo;
 
     @Mock
-    private SavepointStackImpl savepointStack;
+    private ReadableStoreFactory storeFactory;
 
     @BeforeEach
     void setUp() {
         entityUtilizationMultiplier = mock(EntityUtilizationMultiplier.class);
         throttleMultiplier = mock(ThrottleMultiplier.class);
         txnInfo = mock(TransactionInfo.class);
-        savepointStack = mock(SavepointStackImpl.class);
+        storeFactory = mock(ReadableStoreFactory.class);
 
         congestionMultipliers = new CongestionMultipliers(entityUtilizationMultiplier, throttleMultiplier);
     }
@@ -68,10 +68,10 @@ class CongestionMultipliersTest {
     @Test
     void testMaxCurrentMultiplier() {
         when(throttleMultiplier.currentMultiplier()).thenReturn(2L);
-        when(entityUtilizationMultiplier.currentMultiplier(txnInfo, savepointStack))
+        when(entityUtilizationMultiplier.currentMultiplier(txnInfo.txBody(), txnInfo.functionality(), storeFactory))
                 .thenReturn(3L);
 
-        long maxMultiplier = congestionMultipliers.maxCurrentMultiplier(txnInfo, savepointStack);
+        long maxMultiplier = congestionMultipliers.maxCurrentMultiplier(txnInfo, storeFactory);
 
         assertEquals(3L, maxMultiplier);
     }
@@ -81,7 +81,7 @@ class CongestionMultipliersTest {
         Instant[] congestionStarts = {Instant.now(), Instant.now().plusSeconds(10)};
         when(entityUtilizationMultiplier.congestionLevelStarts()).thenReturn(congestionStarts);
 
-        Instant[] starts = congestionMultipliers.genericCongestionStarts();
+        Instant[] starts = congestionMultipliers.entityUtilizationCongestionStarts();
 
         assertEquals(congestionStarts, starts);
     }

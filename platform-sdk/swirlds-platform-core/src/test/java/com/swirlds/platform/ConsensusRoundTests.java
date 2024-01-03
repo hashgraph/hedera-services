@@ -21,12 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.address.AddressBook;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -48,8 +49,8 @@ class ConsensusRoundTests {
 
         final List<EventImpl> events = List.of(e1, e2, e3);
 
-        final ConsensusRound round =
-                new ConsensusRound(mock(AddressBook.class), events, mock(EventImpl.class), g, snapshot);
+        final ConsensusRound round = new ConsensusRound(
+                mock(AddressBook.class), events, mock(EventImpl.class), g, mock(NonAncientEventWindow.class), snapshot);
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
@@ -76,6 +77,7 @@ class ConsensusRoundTests {
                 events,
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
+                mock(NonAncientEventWindow.class),
                 mock(ConsensusSnapshot.class));
 
         assertEquals(

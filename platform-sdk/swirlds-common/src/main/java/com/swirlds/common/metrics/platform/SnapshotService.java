@@ -17,7 +17,6 @@
 package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
@@ -27,6 +26,7 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -78,8 +78,13 @@ public class SnapshotService implements Startable {
      * 		the {@link ScheduledExecutorService} that will be used to schedule the writer-tasks
      * @param interval
      * 		interval between snapshot generations
-     * @throws IllegalArgumentException
-     * 		if any of the arguments is {@code null} or {@code globalMetrics} is not global
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code globalMetrics}</li>
+     *       <li>{@code executor}</li>
+     *       <li>{@code interval}</li>
+     *     </ul>
+     *
      */
     public SnapshotService(
             final DefaultMetrics globalMetrics, final ScheduledExecutorService executor, final Duration interval) {
@@ -92,13 +97,14 @@ public class SnapshotService implements Startable {
             final ScheduledExecutorService executor,
             final Duration interval,
             final Time time) {
-        this.globalMetrics = throwArgNull(globalMetrics, "globalMetrics");
+        this.globalMetrics = Objects.requireNonNull(globalMetrics, "globalMetrics must not be null");
         if (!globalMetrics.isGlobalMetrics()) {
             throw new IllegalArgumentException("Trying to create SnapshotService with non-global Metrics");
         }
-        this.executor = throwArgNull(executor, "executor");
-        this.delayNanos = throwArgNull(interval, "interval").toNanos();
-        this.time = throwArgNull(time, "time");
+        this.executor = Objects.requireNonNull(executor, "executor must not be null");
+        this.delayNanos =
+                Objects.requireNonNull(interval, "interval must not be null").toNanos();
+        this.time = Objects.requireNonNull(time, "time must not be null");
 
         logger.debug("SnapshotService initialized");
     }
@@ -112,7 +118,7 @@ public class SnapshotService implements Startable {
      * 		if {@code platformMetrics} is {@code null} or not platform-specific
      */
     public void addPlatformMetric(final DefaultMetrics platformMetrics) {
-        throwArgNull(platformMetrics, "platformMetric");
+        Objects.requireNonNull(platformMetrics, "platformMetric must not be null");
         if (!platformMetrics.isPlatformMetrics()) {
             throw new IllegalArgumentException("Trying to add non-platform Metrics");
         }
@@ -130,7 +136,7 @@ public class SnapshotService implements Startable {
      * 		if {@code platformMetrics} is {@code null} or not platform-specific
      */
     public void removePlatformMetric(final DefaultMetrics platformMetrics) {
-        throwArgNull(platformMetrics, "platformMetric");
+        Objects.requireNonNull(platformMetrics, "platformMetric must not be null");
         if (!platformMetrics.isPlatformMetrics()) {
             throw new IllegalArgumentException("Trying to remove non-platform Metrics");
         }

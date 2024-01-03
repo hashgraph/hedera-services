@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -76,9 +78,14 @@ public final class FeeManager {
     /** The exchange rate manager to use for the current rate */
     private final ExchangeRateManager exchangeRateManager;
 
+    private final CongestionMultipliers congestionMultipliers;
+
     @Inject
-    public FeeManager(@NonNull final ExchangeRateManager exchangeRateManager) {
+    public FeeManager(
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull CongestionMultipliers congestionMultipliers) {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.congestionMultipliers = requireNonNull(congestionMultipliers);
     }
 
     /**
@@ -161,7 +168,8 @@ public final class FeeManager {
             final int signatureMapSize,
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType,
-            final boolean isInternalDispatch) {
+            final boolean isInternalDispatch,
+            final ReadableStoreFactory storeFactory) {
 
         if (txBody == null || payerKey == null || functionality == null) {
             return NoOpFeeCalculator.INSTANCE;
@@ -171,9 +179,6 @@ public final class FeeManager {
         // If it is not known, that is, if we have no fee data for that transaction, then we MUST NOT execute that
         // transaction! We will not be able to charge appropriately for it.
         final var feeData = getFeeData(functionality, consensusTime, subType);
-        if (feeData == null) {
-            throw new IllegalStateException("No fee data found for transaction type " + functionality);
-        }
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
@@ -183,17 +188,34 @@ public final class FeeManager {
                 signatureMapSize,
                 feeData,
                 exchangeRateManager.activeRate(consensusTime),
-                isInternalDispatch);
+                isInternalDispatch,
+                congestionMultipliers,
+                storeFactory);
+    }
+
+    public long congestionMultiplierFor(
+            @NonNull final TransactionBody body,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final ReadableStoreFactory storeFactory) {
+
+        return congestionMultipliers.maxCurrentMultiplier(body, functionality, storeFactory);
     }
 
     @NonNull
     public FeeCalculator createFeeCalculator(
-            @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Instant consensusTime,
+            @NonNull final ReadableStoreFactory storeFactory) {
         // Determine which fee schedule to use, based on the consensus time
         final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
 
         // Create the fee calculator
-        return new FeeCalculatorImpl(feeData, exchangeRateManager.activeRate(consensusTime));
+        return new FeeCalculatorImpl(
+                feeData,
+                exchangeRateManager.activeRate(consensusTime),
+                congestionMultipliers,
+                storeFactory,
+                functionality);
     }
 
     /**

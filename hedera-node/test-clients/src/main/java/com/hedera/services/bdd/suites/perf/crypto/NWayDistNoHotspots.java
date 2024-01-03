@@ -77,7 +77,7 @@ public class NWayDistNoHotspots extends HapiSuite {
         });
     }
 
-    private HapiSpec runDistributions() {
+    final HapiSpec runDistributions() {
         return customHapiSpec("runCreations")
                 .withProperties(Map.of("default.keyAlgorithm", "ED25519"))
                 .given(logIt("Creating at least "

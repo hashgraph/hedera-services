@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.transaction;
 
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

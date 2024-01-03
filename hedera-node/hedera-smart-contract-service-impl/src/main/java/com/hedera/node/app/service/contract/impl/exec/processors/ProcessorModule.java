@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_PRECOMPILE_ADDRESS;
 import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
@@ -65,7 +65,7 @@ public interface ProcessorModule {
             @NonNull final ExchangeRateSystemContract exchangeRateSystemContract,
             @NonNull final PrngSystemContract prngSystemContract) {
         return Map.ofEntries(
-                entry(Address.fromHexString(HTS_PRECOMPILE_ADDRESS), requireNonNull(htsSystemContract)),
+                entry(Address.fromHexString(HTS_EVM_ADDRESS), requireNonNull(htsSystemContract)),
                 entry(
                         Address.fromHexString(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS),
                         requireNonNull(exchangeRateSystemContract)),

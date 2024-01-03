@@ -143,7 +143,7 @@ public class StartStaking extends HapiSuite {
         return List.of(startStakingAndExportCreatedStakers());
     }
 
-    private HapiSpec startStakingAndExportCreatedStakers() {
+    final HapiSpec startStakingAndExportCreatedStakers() {
         final var baseStakerName = "baseStaker";
         return customHapiSpec("StartStakingAndExportCreatedStakers")
                 .withProperties(Map.of(

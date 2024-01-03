@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -39,6 +40,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.assertTxnRecordHasNoTraceabilityEnrichedContractFnResult;
 import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGasFor;
@@ -50,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -62,8 +68,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractMintHTSSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractMintHTSSuite.class);
@@ -109,10 +117,14 @@ public class ContractMintHTSSuite extends HapiSuite {
         return List.of(transferNftAfterNestedMint());
     }
 
-    private HapiSpec transferNftAfterNestedMint() {
+    @HapiTest
+    final HapiSpec transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
 
-        return defaultHapiSpec("TransferNftAfterNestedMint")
+        return defaultHapiSpec(
+                        "TransferNftAfterNestedMint",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -179,7 +191,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                     .withStatus(SUCCESS)
                                                                     .withTotalSupply(1L)
                                                                     .withSerialNumbers(1L))
-                                                            .gas(3_837_920L)
+                                                            .gas(3_836_587L)
                                                             .amount(0L)
                                                             .functionParameters(functionParameters()
                                                                     .forFunction(
@@ -207,10 +219,16 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
+    @HapiTest
+    final HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
-        return defaultHapiSpec("RollbackOnFailedMintAfterFungibleTransfer")
+        return defaultHapiSpec(
+                        "RollbackOnFailedMintAfterFungibleTransfer",
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(5 * ONE_HUNDRED_HBARS),

@@ -16,33 +16,30 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
-import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
-import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
-import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
-import static com.swirlds.platform.event.creation.tipset.TipsetUtils.buildDescriptor;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
+import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
+import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -72,7 +69,7 @@ public class TipsetEventCreator implements EventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    private long minimumGenerationNonAncient = FIRST_GENERATION;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * The address book for the current network.
@@ -158,7 +155,10 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final EventImpl event) {
+    public void registerEvent(@NonNull final GossipEvent event) {
+        if (nonAncientEventWindow.isAncient(event)) {
+            return;
+        }
 
         final NodeId eventCreator = event.getHashedData().getCreatorId();
         if (!addressBook.contains(eventCreator)) {
@@ -170,25 +170,20 @@ public class TipsetEventCreator implements EventCreator {
             if (lastSelfEvent == null || lastSelfEvent.getGeneration() < event.getGeneration()) {
                 // Normally we will ingest self events before we get to this point, but it's possible
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
-                lastSelfEvent = buildDescriptor(event);
+                lastSelfEvent = event.getDescriptor();
                 lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
-                lastSelfEventTransactionCount = event.getTransactions() == null ? 0 : event.getTransactions().length;
-
-                if (event.getBaseEventUnhashedData().getOtherId() != UNDEFINED_NODE_ID) {
-                    final EventDescriptor parentDescriptor = new EventDescriptor(
-                            event.getBaseEventHashedData().getOtherParentHash(),
-                            event.getBaseEventUnhashedData().getOtherId(),
-                            event.getBaseEventHashedData().getOtherParentGen());
-
-                    childlessOtherEventTracker.registerSelfEventParents(List.of(parentDescriptor));
-                }
+                lastSelfEventTransactionCount = event.getHashedData().getTransactions() == null
+                        ? 0
+                        : event.getHashedData().getTransactions().length;
+                childlessOtherEventTracker.registerSelfEventParents(
+                        event.getHashedData().getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
                 return;
             }
         }
 
-        final EventDescriptor descriptor = buildDescriptor(event);
+        final EventDescriptor descriptor = event.getDescriptor();
         final List<EventDescriptor> parentDescriptors = getParentDescriptors(event);
 
         tipsetTracker.addEvent(descriptor, parentDescriptors);
@@ -202,10 +197,10 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
-        tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
-        childlessOtherEventTracker.pruneOldEvents(minimumGenerationNonAncient);
+    public void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+        tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
+        childlessOtherEventTracker.pruneOldEvents(nonAncientEventWindow);
     }
 
     /**
@@ -279,8 +274,8 @@ public class TipsetEventCreator implements EventCreator {
         if (bestOtherParent == null) {
             // If there are no available other parents, it is only legal to create a new event if we are
             // creating a genesis event. In order to create a genesis event, we must have never created
-            // an event before and the current minimum generation non ancient must have never been advanced.
-            if (minimumGenerationNonAncient > GENERATION_UNDEFINED + 1 || lastSelfEvent != null) {
+            // an event before and the current non-ancient event window must have never been advanced.
+            if (nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW || lastSelfEvent != null) {
                 // event creation isn't legal
                 return null;
             }
@@ -383,7 +378,7 @@ public class TipsetEventCreator implements EventCreator {
 
         final GossipEvent event = assembleEventObject(otherParent);
 
-        final EventDescriptor descriptor = buildDescriptor(event);
+        final EventDescriptor descriptor = event.getDescriptor();
         tipsetTracker.addEvent(descriptor, parentDescriptors);
         final TipsetAdvancementWeight advancementWeight =
                 tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
@@ -410,12 +405,6 @@ public class TipsetEventCreator implements EventCreator {
      */
     @NonNull
     private GossipEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
-
-        final long selfParentGeneration = getGeneration(lastSelfEvent);
-        final Hash selfParentHash = getHash(lastSelfEvent);
-
-        final long otherParentGeneration = getGeneration(otherParent);
-        final Hash otherParentHash = getHash(otherParent);
         final NodeId otherParentId = getCreator(otherParent);
 
         final Instant now = time.now();
@@ -430,10 +419,9 @@ public class TipsetEventCreator implements EventCreator {
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
                 selfId,
-                selfParentGeneration,
-                otherParentGeneration,
-                selfParentHash,
-                otherParentHash,
+                lastSelfEvent,
+                otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
+                addressBook.getRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
@@ -486,7 +474,7 @@ public class TipsetEventCreator implements EventCreator {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("Minimum generation non-ancient: ")
-                .append(tipsetTracker.getMinimumGenerationNonAncient())
+                .append(tipsetTracker.getNonAncientEventWindow())
                 .append("\n");
         sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
         sb.append(tipsetWeightCalculator);

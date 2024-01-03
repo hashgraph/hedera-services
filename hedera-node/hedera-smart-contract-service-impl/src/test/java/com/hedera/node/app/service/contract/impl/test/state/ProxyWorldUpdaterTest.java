@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_ADDRESS_CALLER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
@@ -57,7 +58,6 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import java.util.List;
 import java.util.Optional;
@@ -157,6 +157,7 @@ class ProxyWorldUpdaterTest {
     void getsHederaContractByNumber() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
+        given(hederaOperations.shardAndRealmValidated(numericId)).willReturn(numericId);
         given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(numericId));
@@ -174,6 +175,7 @@ class ProxyWorldUpdaterTest {
     void returnsNullHederaContractIfMissing() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
+        given(hederaOperations.shardAndRealmValidated(numericId)).willReturn(numericId);
         doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(num);
         assertNull(subject.getHederaAccount(numericId));
     }
@@ -194,6 +196,7 @@ class ProxyWorldUpdaterTest {
                 .evmAddress(tuweniToPbjBytes(
                         asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
+        given(hederaOperations.shardAndRealmValidated(aliasId)).willReturn(aliasId);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
     }
@@ -214,8 +217,12 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesHollowFinalization() {
+        given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
+        given(evmFrameState.getAccount(PERMITTED_ADDRESS_CALLER)).willReturn(proxyEvmAccount);
+        given(proxyEvmAccount.hederaContractId())
+                .willReturn(ContractID.newBuilder().contractNum(999L).build());
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
-        subject.finalizeHollowAccount(EIP_1014_ADDRESS);
+        subject.finalizeHollowAccount(EIP_1014_ADDRESS, PERMITTED_ADDRESS_CALLER);
         verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
     }
 
@@ -434,7 +441,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void abortsLazyCreationIfRemainingGasInsufficient() {
         final var pretendCost = 1_234L;
-        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas(SOME_EVM_ADDRESS)).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost - 1);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
         assertTrue(maybeHaltReason.isPresent());
@@ -444,7 +451,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesLazyCreationAndDecrementsGasCostOnSuccess() {
         final var pretendCost = 1_234L;
-        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas(SOME_EVM_ADDRESS)).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(Optional.empty());
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -456,7 +463,7 @@ class ProxyWorldUpdaterTest {
     void doesntBothDecrementingGasOnLazyCreationFailureSinceAboutToHalt() {
         final var pretendCost = 1_234L;
         final var haltReason = Optional.<ExceptionalHaltReason>of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
-        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas(SOME_EVM_ADDRESS)).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(haltReason);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -486,9 +493,9 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesDeletionTrackingAttempt() {
         final var haltReason = Optional.<ExceptionalHaltReason>of(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
-        given(evmFrameState.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS))
+        given(evmFrameState.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame))
                 .willReturn(haltReason);
-        assertSame(haltReason, subject.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS));
+        assertSame(haltReason, subject.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame));
     }
 
     @Test
@@ -500,12 +507,14 @@ class ProxyWorldUpdaterTest {
     @Test
     void externalizeSystemContractResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
-        subject.externalizeSystemContractResults(
-                contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
-        verify(systemContractOperations)
-                .externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
+        subject.externalizeSystemContractResults(contractFunctionResult, ResponseCodeEnum.SUCCESS);
+        verify(systemContractOperations).externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
     }
 
     @Test

@@ -32,15 +32,14 @@ public final class FreezeServiceImpl implements FreezeService {
     public static final String UPGRADE_FILE_HASH_KEY = "UPGRADE_FILE_HASH";
     public static final String FREEZE_TIME_KEY = "FREEZE_TIME";
     public static final String LAST_FROZEN_TIME_KEY = "LAST_FROZEN_TIME";
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(networkAdminSchema());
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(networkAdminSchema(version));
     }
 
-    private Schema networkAdminSchema() {
-        return new Schema(GENESIS_VERSION) {
+    private Schema networkAdminSchema(final SemanticVersion version) {
+        return new Schema(version) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
@@ -56,12 +55,17 @@ public final class FreezeServiceImpl implements FreezeService {
                 // Reset the upgrade file hash to empty
                 // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
                 // Nothing in state can ever be null, so use Type.DEFAULT to indicate an empty hash
+                final var isGenesis = ctx.previousStates().isEmpty();
+
                 final var upgradeFileHashKeyState = ctx.newStates().<ProtoBytes>getSingleton(UPGRADE_FILE_HASH_KEY);
-                upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
                 final var freezeTimeKeyState = ctx.newStates().<Timestamp>getSingleton(FREEZE_TIME_KEY);
-                freezeTimeKeyState.put(Timestamp.DEFAULT);
                 final var lastFrozenTimeKeyState = ctx.newStates().<Timestamp>getSingleton(LAST_FROZEN_TIME_KEY);
-                lastFrozenTimeKeyState.put(Timestamp.DEFAULT);
+
+                if (isGenesis) {
+                    upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
+                    freezeTimeKeyState.put(Timestamp.DEFAULT);
+                    lastFrozenTimeKeyState.put(Timestamp.DEFAULT);
+                }
             }
         };
     }

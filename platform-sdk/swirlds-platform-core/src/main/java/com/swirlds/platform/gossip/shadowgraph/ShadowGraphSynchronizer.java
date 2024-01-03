@@ -31,7 +31,7 @@ import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIH
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -80,6 +80,10 @@ public class ShadowGraphSynchronizer {
      * The shadow graph manager to use for this sync
      */
     private final ShadowGraph shadowGraph;
+    /**
+     * Tracks the tipset of the latest self event. Null if feature is not enabled.
+     */
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
     /**
      * Number of member nodes in the network for this sync
      */
@@ -140,6 +144,7 @@ public class ShadowGraphSynchronizer {
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ShadowGraph shadowGraph,
+            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
@@ -166,8 +171,13 @@ public class ShadowGraphSynchronizer {
         this.eventHandler = buildEventHandler(platformContext, intakeQueue);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-        this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
+
+        this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
+        this.latestEventTipsetTracker = latestEventTipsetTracker;
+        if (filterLikelyDuplicates) {
+            Objects.requireNonNull(latestEventTipsetTracker);
+        }
     }
 
     /**
@@ -408,8 +418,15 @@ public class ShadowGraphSynchronizer {
 
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
+            final long startFilterTime = time.nanoTime();
             sendList = filterLikelyDuplicates(
-                    shadowGraph, selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
+                    selfId,
+                    nonAncestorFilterThreshold,
+                    time.now(),
+                    eventsTheyMayNeed,
+                    latestEventTipsetTracker.getLatestSelfEventTipset());
+            final long endFilterTime = time.nanoTime();
+            syncMetrics.recordSyncFilterTime(endFilterTime - startFilterTime);
         } else {
             sendList = eventsTheyMayNeed;
         }

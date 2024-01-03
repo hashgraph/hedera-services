@@ -69,8 +69,17 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      *                      adjusted consensus time, not the platform assigned consensus time. Assuming the two are
      *                      different.
      * @param state         The state to read BlockInfo from and update when new blocks are created
+     * @return               true if a new block was created, false otherwise
      */
-    void startUserTransaction(@NonNull Instant consensusTime, @NonNull HederaState state);
+    boolean startUserTransaction(@NonNull Instant consensusTime, @NonNull HederaState state);
+
+    /**
+     * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
+     * be called early on in the transaction handling process in order to avoid assigning the same consensus timestamp
+     * to multiple transactions.
+     * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
+     */
+    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
 
     /**
      * Add a user transaction's records to the record stream. They must be in exact consensus time order! This must only

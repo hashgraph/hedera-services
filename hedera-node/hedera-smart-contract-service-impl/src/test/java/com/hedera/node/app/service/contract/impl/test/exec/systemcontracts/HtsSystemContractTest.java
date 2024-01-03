@@ -16,19 +16,26 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -49,7 +56,19 @@ class HtsSystemContractTest {
     private HtsCall call;
 
     @Mock
+    private HtsCallAttempt attempt;
+
+    @Mock
     private MessageFrame frame;
+
+    @Mock
+    private ProxyWorldUpdater updater;
+
+    @Mock
+    private HederaWorldUpdater.Enhancement enhancement;
+
+    @Mock
+    private SystemContractOperations systemOperations;
 
     @Mock
     private HtsCallFactory attemptFactory;
@@ -74,9 +93,10 @@ class HtsSystemContractTest {
 
     @Test
     void returnsResultFromImpliedCall() {
+        commonMocks();
         givenValidCallAttempt();
 
-        final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L));
+        final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
@@ -84,7 +104,7 @@ class HtsSystemContractTest {
 
     @Test
     void invalidCallAttemptHaltsAndConsumesRemainingGas() {
-        given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
+        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
@@ -101,17 +121,18 @@ class HtsSystemContractTest {
         assertSamePrecompileResult(expected, result);
     }
 
-    @Test
-    void callWithNonGasCostNotImplemented() {
-        givenValidCallAttempt();
-        final var pricedResult = new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L);
-        given(call.execute(frame)).willReturn(pricedResult);
-
-        assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
-    }
-
     private void givenValidCallAttempt() {
         frameUtils.when(() -> isDelegateCall(frame)).thenReturn(false);
-        given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willReturn(call);
+        frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
+        lenient().when(updater.enhancement()).thenReturn(enhancement);
+        lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
+        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willReturn(attempt);
+        given(attempt.asExecutableCall()).willReturn(call);
+    }
+
+    private void commonMocks() {
+        final var remainingGas = 10000L;
+        when(frame.getRemainingGas()).thenReturn(remainingGas);
+        when(frame.getInputData()).thenReturn(org.apache.tuweni.bytes.Bytes.EMPTY);
     }
 }

@@ -24,8 +24,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatNames;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -39,6 +38,7 @@ import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
+import com.swirlds.platform.system.PlatformStatNames;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
@@ -101,7 +101,7 @@ public class PreConsensusEventHandler implements Clearable, Startable {
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-curr")
                 .setStopBehavior(Stoppable.StopBehavior.BLOCKING)
-                .setHandler(swirldStateManager::handlePreConsensusEvent)
+                .setHandler(swirldStateManager::prehandleSystemTransactions)
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
@@ -148,7 +148,7 @@ public class PreConsensusEventHandler implements Clearable, Startable {
         }
 
         // All events are supplied for preHandle
-        swirldStateManager.preHandle(event);
+        swirldStateManager.prehandleApplicationTransactions(event);
 
         try {
             // update the estimate now, so the queue can sort on it

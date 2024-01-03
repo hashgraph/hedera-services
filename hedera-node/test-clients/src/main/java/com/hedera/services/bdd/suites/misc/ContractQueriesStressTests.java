@@ -72,7 +72,7 @@ public class ContractQueriesStressTests extends HapiSuite {
         });
     }
 
-    private HapiSpec getContractInfoStress() {
+    final HapiSpec getContractInfoStress() {
         return defaultHapiSpec("GetContractInfoStress")
                 .given()
                 .when()
@@ -83,7 +83,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiSpec getContractBytecodeStress() {
+    final HapiSpec getContractBytecodeStress() {
         return defaultHapiSpec("GetAccountRecordsStress")
                 .given()
                 .when()
@@ -94,7 +94,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiSpec contractCallLocalStress() {
+    final HapiSpec contractCallLocalStress() {
         return defaultHapiSpec("ContractCallLocalStress")
                 .given()
                 .when()
@@ -105,7 +105,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiSpec getContractRecordsStress() {
+    final HapiSpec getContractRecordsStress() {
         return defaultHapiSpec("GetContractRecordsStress")
                 .given()
                 .when()

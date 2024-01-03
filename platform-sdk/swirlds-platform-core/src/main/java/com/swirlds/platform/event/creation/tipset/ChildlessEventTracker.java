@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,11 +81,11 @@ public class ChildlessEventTracker {
     /**
      * Remove ancient events.
      *
-     * @param minimumGenerationNonAncient the minimum generation of non-ancient events
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void pruneOldEvents(final long minimumGenerationNonAncient) {
+    public void pruneOldEvents(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         for (final EventDescriptor event : getChildlessEvents()) {
-            if (event.getGeneration() < minimumGenerationNonAncient) {
+            if (nonAncientEventWindow.isAncient(event)) {
                 removeEvent(event);
             }
         }

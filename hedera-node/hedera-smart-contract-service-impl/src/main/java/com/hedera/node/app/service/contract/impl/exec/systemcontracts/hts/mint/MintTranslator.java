@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintDecoder.MINT_OUTPUT_FN;
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -25,9 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -38,8 +38,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MintTranslator extends AbstractHtsCallTranslator {
-    public static final Function MINT = new Function("mintToken(address,uint64,bytes[])", ReturnTypes.INT);
-    public static final Function MINT_V2 = new Function("mintToken(address,int64,bytes[])", ReturnTypes.INT);
+    public static final Function MINT = new Function("mintToken(address,uint64,bytes[])", "(int64,int64,int64[])");
+    public static final Function MINT_V2 = new Function("mintToken(address,int64,bytes[])", "(int64,int64,int64[])");
     private final MintDecoder decoder;
 
     @Inject
@@ -60,11 +60,11 @@ public class MintTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleMint = body.tokenMintOrThrow().metadata().isEmpty();
-        return new DispatchForResponseCodeHtsCall<>(
+        return new DispatchForResponseCodeHtsCall(
                 attempt,
                 body,
-                SingleTransactionRecordBuilder.class,
-                isFungibleMint ? MintTranslator::fungibleMintGasRequirement : MintTranslator::nftMintGasRequirement);
+                isFungibleMint ? MintTranslator::fungibleMintGasRequirement : MintTranslator::nftMintGasRequirement,
+                MINT_OUTPUT_FN);
     }
 
     public static long nftMintGasRequirement(

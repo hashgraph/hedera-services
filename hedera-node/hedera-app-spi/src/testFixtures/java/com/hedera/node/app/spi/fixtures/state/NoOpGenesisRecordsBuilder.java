@@ -33,34 +33,33 @@ package com.hedera.node.app.spi.fixtures.state;
  */
 
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
+import java.util.SortedSet;
 
 public class NoOpGenesisRecordsBuilder implements GenesisRecordsBuilder {
     @Override
-    public void systemAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+    public void systemAccounts(@NonNull final SortedSet<Account> accounts) {
         // Intentional no-op
     }
 
     @Override
-    public void stakingAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+    public void stakingAccounts(@NonNull final SortedSet<Account> accounts) {
         // Intentional no-op
     }
 
     @Override
-    public void miscAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+    public void miscAccounts(@NonNull final SortedSet<Account> accounts) {
         // Intentional no-op
     }
 
     @Override
-    public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+    public void treasuryClones(@NonNull final SortedSet<Account> accounts) {
         // Intentional no-op
     }
 
     @Override
-    public void blocklistAccounts(@NonNull Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+    public void blocklistAccounts(@NonNull SortedSet<Account> accounts) {
         // Intentional no-op
     }
 }

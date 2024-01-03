@@ -16,17 +16,19 @@
 
 package com.swirlds.platform.event.linking;
 
-import com.swirlds.common.config.ConsensusConfig;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.HashSet;
@@ -117,7 +119,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
 
         if (orphanMap.put(event.getDescriptor(), childEvent) != null) {
             // this should never happen
-            logger.error(LogMarker.INVALID_EVENT_ERROR.getMarker(), "duplicate orphan: {}", event);
+            logger.error(EXCEPTION.getMarker(), "duplicate orphan: {}", event);
         }
 
         if (childEvent.isMissingSelfParent()) {
@@ -134,7 +136,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         final Set<ChildEvent> childSet = missingParents.computeIfAbsent(parentDescriptor, d -> new HashSet<>());
         if (childSet == null) {
             logger.error(
-                    LogMarker.INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Orphan event {} is missing {} parent outside of missing parent window ({}-{})",
                     () -> childEvent.getChild().toMediumString(),
                     () -> missingSelfParent ? "self" : "other",

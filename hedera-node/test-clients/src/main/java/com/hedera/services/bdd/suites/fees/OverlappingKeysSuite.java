@@ -61,7 +61,7 @@ public class OverlappingKeysSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec feeCalcUsesNumPayerKeys() {
+    final HapiSpec feeCalcUsesNumPayerKeys() {
         SigControl SHAPE = threshSigs(2, threshSigs(2, ANY, ANY, ANY), threshSigs(2, ANY, ANY, ANY));
         KeyLabel ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));
         SigControl SIGN_ONCE = threshSigs(2, threshSigs(3, ON, OFF, OFF), threshSigs(3, OFF, OFF, OFF));

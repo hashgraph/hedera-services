@@ -60,7 +60,7 @@ public class Issue2319Spec extends HapiSuite {
 
     @HapiTest
     @Disabled("Failing or intermittently failing HAPI Test")
-    private HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
+    final HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         var pemLoc = "<PEM>";
 
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
@@ -88,7 +88,7 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
+    final HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
@@ -113,7 +113,7 @@ public class Issue2319Spec extends HapiSuite {
 
     @HapiTest
     @Disabled("Failing or intermittently failing HAPI Test")
-    private HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
+    final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
 
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
@@ -141,7 +141,7 @@ public class Issue2319Spec extends HapiSuite {
 
     @HapiTest
     @Disabled("Failing or intermittently failing HAPI Test")
-    private HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
+    final HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
         var validRates = new AtomicReference<ByteString>();
 

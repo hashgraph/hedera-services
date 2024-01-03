@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -42,8 +43,10 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ERC1155ContractInteractions extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
@@ -66,7 +69,7 @@ public class ERC1155ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec erc1155() {
+    final HapiSpec erc1155() {
         return defaultHapiSpec("erc1155")
                 .given(
                         newKeyNamed("ec").shape(SECP_256K1_SHAPE),
@@ -83,7 +86,10 @@ public class ERC1155ContractInteractions extends HapiSuite {
                         uploadInitCode(CONTRACT))
                 .when()
                 .then(
-                        contractCreate(CONTRACT).via("contractCreate").payingWith(ACCOUNT2),
+                        contractCreate(CONTRACT)
+                                .gas(500_000L)
+                                .via("contractCreate")
+                                .payingWith(ACCOUNT2),
                         getTxnRecord("contractCreate").logged(),
                         getAccountBalance(ACCOUNT2).logged(),
                         getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),

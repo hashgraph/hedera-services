@@ -18,7 +18,7 @@ package com.swirlds.merkle.map.test.benchmark.operations;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomByteArray;
 
-import com.swirlds.common.test.benchmark.AbstractBenchmarkOperation;
+import com.swirlds.common.test.fixtures.benchmark.AbstractBenchmarkOperation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.benchmark.AccountFactory;
 import com.swirlds.merkle.map.test.benchmark.BenchmarkAccount;

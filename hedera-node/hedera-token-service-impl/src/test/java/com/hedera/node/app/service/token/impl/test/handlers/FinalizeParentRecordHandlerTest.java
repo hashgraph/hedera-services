@@ -252,6 +252,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .amount(childRecordTransfer)
                                         .build())
                         .build());
+        given(context.hasChildRecords()).willReturn(true);
         doAnswer(invocation -> {
                     final var consumer = invocation.getArgument(1, Consumer.class);
                     consumer.accept(childRecord);
@@ -418,6 +419,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         writableNftStore.remove(
                 NftID.newBuilder().tokenId(TOKEN_321).serialNumber(1).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -698,6 +700,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .alias(Bytes.wrap("00000000000000000003"))
                 .build());
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -734,6 +737,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .ownerId(ACCOUNT_1212_ID)
                 .build();
         writableNftStore.put(newNft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
@@ -773,6 +777,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         // Set up NFTs for token ID 246 (serials 222, 223)
         final var token246Id = asToken(246);
+        final var token264 = Token.newBuilder().tokenId(token246Id).build();
         final var nftId222 =
                 NftID.newBuilder().tokenId(token246Id).serialNumber(222).build();
         final var nft222 =
@@ -802,6 +807,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft112.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         writableNftStore.put(nft222.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         writableNftStore.put(nft223.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE, token264);
         context = mockContext();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("staking.isEnabled", String.valueOf(false))
@@ -859,6 +865,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .balance(50)
                 .build();
         final var token654Id = asToken(654);
+        final var token654 = Token.newBuilder().tokenId(token654Id).build();
         final var token654Rel = givenNonFungibleTokenRelation()
                 .copyBuilder()
                 .tokenId(token654Id)
@@ -892,8 +899,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
-        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
-        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE, token654);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE, token654);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 

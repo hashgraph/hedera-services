@@ -86,7 +86,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec vanillaAppendSucceeds() {
+    final HapiSpec vanillaAppendSucceeds() {
         final byte[] first4K = randomUtf8Bytes(BYTES_4K);
         final byte[] next4k = randomUtf8Bytes(BYTES_4K);
         final byte[] all8k = new byte[2 * BYTES_4K];

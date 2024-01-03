@@ -17,3 +17,5 @@
 plugins { id("com.hedera.hashgraph.application") }
 
 application.mainClass.set("com.swirlds.demo.stress.StressTestingToolMain")
+
+mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }

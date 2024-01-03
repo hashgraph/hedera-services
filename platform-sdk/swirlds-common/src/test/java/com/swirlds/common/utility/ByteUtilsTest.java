@@ -16,10 +16,10 @@
 
 package com.swirlds.common.utility;
 
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_INT;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_LONG;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_SHORT;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_SHORT;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToInt;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToShort;

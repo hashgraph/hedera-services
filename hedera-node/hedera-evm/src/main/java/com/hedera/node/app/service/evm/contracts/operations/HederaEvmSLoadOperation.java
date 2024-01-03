@@ -25,7 +25,8 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 
 public class HederaEvmSLoadOperation extends AbstractOperation {
@@ -49,7 +50,7 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
     public OperationResult execute(MessageFrame frame, EVM evm) {
         try {
             final var addressOrAlias = frame.getRecipientAddress();
-            final var worldUpdater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
+            final var worldUpdater = (AbstractLedgerEvmWorldUpdater<?, ?>) frame.getWorldUpdater();
             final Account account = worldUpdater.get(addressOrAlias);
             final Address address = account.getAddress();
             final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
@@ -65,9 +66,9 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
                 frame.pushStackItem(storageValue);
                 return slotIsWarm ? warmSuccess : coldSuccess;
             }
-        } catch (final FixedStack.UnderflowException ufe) {
+        } catch (final UnderflowException ufe) {
             return new OperationResult(warmCost, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
-        } catch (final FixedStack.OverflowException ofe) {
+        } catch (final OverflowException ofe) {
             return new OperationResult(warmCost, ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }
     }

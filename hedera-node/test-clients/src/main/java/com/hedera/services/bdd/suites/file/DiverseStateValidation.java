@@ -91,7 +91,7 @@ public final class DiverseStateValidation extends HapiSuite {
     }
 
     @SuppressWarnings("unchecked")
-    private HapiSpec validateDiverseState() {
+    final HapiSpec validateDiverseState() {
         return defaultHapiSpec("ValidateDiverseState")
                 .given(withOpContext((spec, opLog) -> {
                     final var om = new ObjectMapper();

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.stream;
 
-import static com.swirlds.common.units.UnitConstants.MB_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.MB_TO_BYTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,10 +43,10 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import java.io.File;
 import java.util.Queue;
 import org.apache.commons.lang3.RandomUtils;

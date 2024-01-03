@@ -131,7 +131,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
             File countFile = new File(expectationsDir + "/n.txt");
             CharSource charSource = Files.asCharSource(countFile, Charset.forName("UTF-8"));
             int n = Integer.parseInt(charSource.readFirstLine());
-            Assertions.assertEquals(n, records.size(), "Bad number of records!");
+            Assertions.assertEquals(n, records.size(), "Bad number of records - got " + records);
             for (int i = 0; i < n; i++) {
                 File recordFile = new File(expectationsDir + "/record" + i + ".bin");
                 ByteSource byteSource = Files.asByteSource(recordFile);

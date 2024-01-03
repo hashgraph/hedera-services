@@ -31,11 +31,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.expiration.ExpirationUtils;
@@ -43,7 +39,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
-import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -87,7 +87,7 @@ public class MapValueFCQTests {
         AddressBook addressBook = Mockito.spy(AddressBook.class);
         when(addressBook.getNumberWithWeight()).thenReturn(4);
         when(platform.getAddressBook()).thenReturn(addressBook);
-        state.init(platform, new DualStateImpl(), InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
+        state.init(platform, new PlatformState(), InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
         state.initChildren();
     }
 

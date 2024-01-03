@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.merkle;
 
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_SECONDS;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.fail;
 

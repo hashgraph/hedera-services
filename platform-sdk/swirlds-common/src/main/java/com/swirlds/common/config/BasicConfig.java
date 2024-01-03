@@ -29,7 +29,7 @@ import java.time.Duration;
  *
  * <p>
  * Do not add new settings to this record unless you have a very good reason. New settings should go
- * into config records with a prefix defined by a {@link ConfigData @ConfigData("prefix")} tag. Adding
+ * into config records with a prefix defined by a {@link ConfigData} tag. Adding
  * settings to this record pollutes the top level namespace.
  *
  * @param showInternalStats
@@ -47,7 +47,7 @@ import java.time.Duration;
  * @param freezeSecondsAfterStartup
  * 		do not create events for this many seconds after the platform has started (0 or less to not freeze at startup)
  * @param loadKeysFromPfxFiles
- * 		When enabled, the platform will try to load node keys from .pfx files located in the {@link PathsConfig keysDirPath}. If even a
+ * 		When enabled, the platform will try to load node keys from .pfx files located in the {@code PathsConfig.keysDirPath}. If even a
  * 		single key is missing, the platform will warn and exit. If disabled, the platform will generate keys
  * 		deterministically.
  * @param jvmPauseDetectorSleepMs

@@ -30,11 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.lang.reflect.Field;

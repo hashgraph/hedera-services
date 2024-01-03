@@ -22,18 +22,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -52,13 +54,13 @@ class TransactionHandlerTest {
 
     private final State state = mock(State.class);
     private final SwirldState swirldState = mock(SwirldState.class);
-    private final SwirldDualState dualState = mock(SwirldDualState.class);
+    private final PlatformState platformState = mock(PlatformState.class);
 
     private TransactionHandler handler;
 
     @BeforeEach
     void setup() {
-        when(state.getSwirldDualState()).thenReturn(dualState);
+        when(state.getPlatformState()).thenReturn(platformState);
 
         handler = new TransactionHandler(selfId, mock(SwirldStateMetrics.class));
     }
@@ -76,14 +78,18 @@ class TransactionHandlerTest {
     }
 
     private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
+
+        final EventDescriptor selfDescriptor = new EventDescriptor(
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherDescriptor = new EventDescriptor(
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
                         new NodeId(0L),
-                        0L,
-                        0L,
-                        CryptographyHolder.get().getNullHash(),
-                        CryptographyHolder.get().getNullHash(),
+                        selfDescriptor,
+                        Collections.singletonList(otherDescriptor),
+                        EventConstants.BIRTH_ROUND_UNDEFINED,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));

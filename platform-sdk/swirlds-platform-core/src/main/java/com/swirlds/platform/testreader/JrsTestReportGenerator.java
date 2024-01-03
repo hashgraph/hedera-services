@@ -699,9 +699,10 @@ public final class JrsTestReportGenerator {
                 data.reportTime().atZone(ZoneId.systemDefault()).toLocalTime();
         final ZonedDateTime zonedDateTime = ZonedDateTime.of(localDate, localTime, ZoneId.systemDefault());
 
-        final String date =
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).format(zonedDateTime);
-        final String[] dateParts = date.split(" at ");
+        final String date = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).format(zonedDateTime);
+        final String time = DateTimeFormatter.ofLocalizedTime(FormatStyle.FULL)
+                .format(zonedDateTime)
+                .replace("\u202f", " ");
 
         final int percentPassing;
         if (testCount.uniqueTests() == 0) {
@@ -709,6 +710,13 @@ public final class JrsTestReportGenerator {
         } else {
             percentPassing = (int) (100.0 * testCount.passingTests() / testCount.uniqueTests());
         }
+
+        // Color the last element in the list red.
+        final String[] directoryParts = data.directory().split("/");
+        final String lastDirectory = directoryParts[directoryParts.length - 1];
+        final String formattedLastDirectory = "<font color=\"#f0524f\">" + lastDirectory + "</font>";
+        directoryParts[directoryParts.length - 1] = formattedLastDirectory;
+        final String formattedDirectory = String.join("/", directoryParts);
 
         sb.append(
                 """
@@ -754,9 +762,9 @@ public final class JrsTestReportGenerator {
                         .formatted(
                                 owner,
                                 hidden ? "none" : "block",
-                                data.directory(),
-                                dateParts[0],
-                                dateParts[1],
+                                formattedDirectory,
+                                date,
+                                time,
                                 data.reportSpan(),
                                 percentPassing == -1 ? "--" : percentPassing,
                                 testCount.uniqueTests(),

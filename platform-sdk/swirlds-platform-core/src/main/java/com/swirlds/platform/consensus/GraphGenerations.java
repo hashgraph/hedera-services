@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.system.events.PlatformEvent;
 
 public interface GraphGenerations {
     // FUTURE WORK: move this to EventConstants.java

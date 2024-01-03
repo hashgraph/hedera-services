@@ -16,15 +16,19 @@
 
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -33,8 +37,10 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ERC721ContractInteractions extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ERC721ContractInteractions.class);
@@ -58,7 +64,8 @@ public class ERC721ContractInteractions extends HapiSuite {
         return true;
     }
 
-    private HapiSpec callsERC721ContractInteractions() {
+    @HapiTest
+    final HapiSpec callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
         final var nftId = BigInteger.ONE;
         final var CREATE_TX = "create";
@@ -73,7 +80,12 @@ public class ERC721ContractInteractions extends HapiSuite {
                         contractCreate(CONTRACT)
                                 .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
-                                .via(CREATE_TX))
+                                .gas(500_000L)
+                                .via(CREATE_TX),
+                        cryptoTransfer(tinyBarsFromTo(
+                                        DEFAULT_CONTRACT_SENDER, DEFAULT_CONTRACT_RECEIVER, 10 * ONE_HBAR))
+                                .payingWith(DEFAULT_CONTRACT_SENDER),
+                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_RECEIVER).logged())
                 .then(
                         QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
                         QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER),

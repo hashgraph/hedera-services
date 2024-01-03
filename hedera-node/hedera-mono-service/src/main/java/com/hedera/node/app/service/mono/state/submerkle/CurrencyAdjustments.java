@@ -43,6 +43,8 @@ public class CurrencyAdjustments implements SelfSerializable {
     long[] hbars = NO_ADJUSTMENTS;
     long[] accountNums = NO_ADJUSTMENTS;
 
+    public static final CurrencyAdjustments EMPTY = new CurrencyAdjustments(NO_ADJUSTMENTS, NO_ADJUSTMENTS);
+
     public CurrencyAdjustments() {
         /* For RuntimeConstructable */
     }

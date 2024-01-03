@@ -454,7 +454,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
             keyUpdates.forEachKeyValue(bucket::putValue);
             queue.offer(new ReadBucketResult<>(bucket, null));
         } catch (final Exception e) {
-            logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
+            logger.error(EXCEPTION.getMarker(), "Failed to read / update bucket", e);
             queue.offer(new ReadBucketResult<>(null, e));
         }
     }

@@ -204,7 +204,7 @@ public class IdFuzzingProviderFactory {
                     .exposingCreatedIdTo(id ->
                             tokenAddr.set(HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
             uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-            contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+            contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT).gas(500_000L),
             tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
             cryptoTransfer(moving(INITIAL_SUPPLY, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER))
         };

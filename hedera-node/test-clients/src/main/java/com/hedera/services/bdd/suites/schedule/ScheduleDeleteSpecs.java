@@ -70,7 +70,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deleteWithNoAdminKeyFails() {
+    final HapiSpec deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -82,7 +82,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec unauthorizedDeletionFails() {
+    final HapiSpec unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -99,7 +99,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletingAlreadyDeletedIsObvious() {
+    final HapiSpec deletingAlreadyDeletedIsObvious() {
         return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -117,7 +117,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletingNonExistingFails() {
+    final HapiSpec deletingNonExistingFails() {
         return defaultHapiSpec("DeletingNonExistingFails")
                 .given()
                 .when()
@@ -126,7 +126,8 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         scheduleDelete("0.0.0").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
-    private HapiSpec deletingExecutedIsPointless() {
+    @HapiTest
+    final HapiSpec deletingExecutedIsPointless() {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate,ConsensusSubmitMessage"),

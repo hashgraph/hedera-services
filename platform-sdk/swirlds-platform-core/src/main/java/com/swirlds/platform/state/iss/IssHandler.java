@@ -16,39 +16,31 @@
 
 package com.swirlds.platform.state.iss;
 
-import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
-
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.state.notifications.IssNotification;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
-import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
-import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
+import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.util.Objects;
 
 /**
  * This class is responsible for handling the response to an ISS event.
  */
 public class IssHandler {
-    private final RateLimiter issDumpRateLimiter;
     private final StateConfig stateConfig;
-    private final StateDumpRequestedTrigger stateDumpRequestedDispatcher;
     private final HaltRequestedConsumer haltRequestedConsumer;
     private final IssConsumer issConsumer;
     private final FatalErrorConsumer fatalErrorConsumer;
@@ -60,14 +52,13 @@ public class IssHandler {
 
     /**
      * Allows for submitting
-     * {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusActions}
+     * {@link PlatformStatusAction PlatformStatusActions}
      */
     private final StatusActionSubmitter statusActionSubmitter;
 
     /**
      * Create an object responsible for handling ISS events.
      *
-     * @param dispatchBuilder       builds dispatchers
      * @param stateConfig           settings for the state
      * @param selfId                the self ID of this node
      * @param statusActionSubmitter the object to use to submit status actions
@@ -77,8 +68,6 @@ public class IssHandler {
      * @param issScratchpad         scratchpad for ISS data, is persistent across restarts
      */
     public IssHandler(
-            @NonNull final Time time,
-            @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final StateConfig stateConfig,
             @NonNull final NodeId selfId,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -91,11 +80,8 @@ public class IssHandler {
         this.haltRequestedConsumer =
                 Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer must not be null");
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
-        this.stateDumpRequestedDispatcher =
-                dispatchBuilder.getDispatcher(this, StateDumpRequestedTrigger.class)::dispatch;
 
         this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig must not be null");
-        this.issDumpRateLimiter = new RateLimiter(time, Duration.ofSeconds(stateConfig.secondsBetweenISSDumps()));
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
 
@@ -137,13 +123,8 @@ public class IssHandler {
         issConsumer.iss(round, IssNotification.IssType.OTHER_ISS, nodeId);
 
         if (stateConfig.haltOnAnyIss()) {
-            // If we are halting then we always should dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
-
             haltRequestedConsumer.haltRequested("other node observed with ISS");
             halted = true;
-        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
-            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
         }
     }
 
@@ -171,13 +152,12 @@ public class IssHandler {
     /**
      * This method is called when there is a self ISS.
      *
-     * @param round         the round of the ISS
-     * @param selfStateHash the incorrect hash computed by this node
-     * @param consensusHash the correct hash computed by the network
+     * @param round    the round of the ISS
+     * @param ignored1 the incorrect hash computed by this node
+     * @param ignored2 the correct hash computed by the network
      */
     @Observer(SelfIssTrigger.class)
-    public void selfIssObserver(
-            @NonNull final Long round, @NonNull final Hash selfStateHash, @NonNull final Hash consensusHash) {
+    public void selfIssObserver(@NonNull final Long round, @NonNull final Hash ignored1, @NonNull final Hash ignored2) {
 
         if (halted) {
             // don't take any action once halted
@@ -190,17 +170,11 @@ public class IssHandler {
         issConsumer.iss(round, IssNotification.IssType.SELF_ISS, selfId);
 
         if (stateConfig.haltOnAnyIss()) {
-            // If configured to halt then always do a dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
             haltRequestedConsumer.haltRequested("self ISS observed");
             halted = true;
         } else if (stateConfig.automatedSelfIssRecovery()) {
             // Automated recovery is a fancy way of saying "turn it off and on again".
-            // If we are powering down, always do a state dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS, true);
             fatalErrorConsumer.fatalError("Self ISS", null, SystemExitCode.ISS);
-        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
-            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
         }
     }
 
@@ -259,11 +233,11 @@ public class IssHandler {
     /**
      * This method is called when there is a catastrophic ISS.
      *
-     * @param round         the round of the ISS
-     * @param selfStateHash the hash computed by this node
+     * @param round   the round of the ISS
+     * @param ignored the hash computed by this node
      */
     @Observer(CatastrophicIssTrigger.class)
-    public void catastrophicIssObserver(@NonNull final Long round, @NonNull final Hash selfStateHash) {
+    public void catastrophicIssObserver(@NonNull final Long round, @NonNull final Hash ignored) {
 
         if (halted) {
             // don't take any action once halted
@@ -276,12 +250,8 @@ public class IssHandler {
         issConsumer.iss(round, IssNotification.IssType.CATASTROPHIC_ISS, null);
 
         if (stateConfig.haltOnAnyIss() || stateConfig.haltOnCatastrophicIss()) {
-            // If configured to halt then always do a dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
             haltRequestedConsumer.haltRequested("catastrophic ISS observed");
             halted = true;
-        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
-            stateDumpRequestedDispatcher.dispatch(round, ISS, stateConfig.automatedSelfIssRecovery());
         }
     }
 }

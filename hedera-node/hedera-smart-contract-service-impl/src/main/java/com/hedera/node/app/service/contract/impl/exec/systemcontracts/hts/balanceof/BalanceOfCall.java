@@ -17,26 +17,17 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -56,43 +47,11 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
         this.owner = requireNonNull(owner);
     }
 
-    @Override
-    public @NonNull PricedResult execute() {
-        PricedResult result;
-        long gasRequirement;
-        ContractID contractID =
-                asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
-
-        if (token == null) {
-            result = gasOnly(revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
-
-            gasRequirement = result.fullResult().gasRequirement();
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultFailedFor(gasRequirement, INVALID_TOKEN_ID.toString(), contractID),
-                            SystemContractUtils.ResultStatus.IS_ERROR,
-                            INVALID_TOKEN_ID);
-        } else {
-            result = gasOnly(resultOfViewingToken(token));
-
-            gasRequirement = result.fullResult().gasRequirement();
-            final var output = result.fullResult().result().getOutput();
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultSuccessFor(gasRequirement, output, contractID),
-                            SystemContractUtils.ResultStatus.IS_SUCCESS,
-                            SUCCESS);
-        }
-        return result;
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
+    protected @NonNull FullResult resultOfViewingToken(@NonNull Token token) {
         final var ownerNum = accountNumberForEvmReference(owner, nativeOperations());
         if (ownerNum < 0) {
             return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());

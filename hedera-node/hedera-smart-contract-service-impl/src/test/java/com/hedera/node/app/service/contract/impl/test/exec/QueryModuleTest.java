@@ -17,8 +17,11 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -36,6 +39,8 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -65,6 +70,9 @@ class QueryModuleTest {
     private TinybarValues tinybarValues;
 
     @Mock
+    private QueryContext queryContext;
+
+    @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
 
     @Test
@@ -72,6 +80,12 @@ class QueryModuleTest {
         final var enhancement =
                 new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
         assertInstanceOf(ProxyWorldUpdater.class, QueryModule.provideProxyWorldUpdater(enhancement, factory));
+    }
+
+    @Test
+    void getsHederaConfig() {
+        given(queryContext.configuration()).willReturn(TestHelpers.DEFAULT_CONFIG);
+        assertSame(DEFAULT_HEDERA_CONFIG, QueryModule.provideHederaConfig(queryContext));
     }
 
     @Test

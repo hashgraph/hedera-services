@@ -19,6 +19,7 @@ package com.swirlds.platform.recovery.internal;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -27,10 +28,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -38,6 +36,9 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -87,7 +88,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
-        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get());
+        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
 
         setLatestState(initialState);
     }
@@ -152,20 +153,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     @Override
     public synchronized <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
             @NonNull final String reason) {
-        final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);
-        return new AutoCloseableWrapper<>(
-                reservedSignedState.isNull()
-                        ? null
-                        : (T) reservedSignedState.get().getSwirldState(),
-                reservedSignedState::close);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull final String reason) {
         final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);
         return new AutoCloseableWrapper<>(
                 reservedSignedState.isNull()

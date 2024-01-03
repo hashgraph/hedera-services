@@ -21,21 +21,19 @@ plugins {
 }
 
 dependencies {
-    implementation("com.adarshr:gradle-test-logger-plugin:3.2.0")
-    implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.25.0")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.22.0")
+    implementation("com.adarshr:gradle-test-logger-plugin:4.0.0")
+    implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.26.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.23.3")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
-    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation(
         "gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.2.1"
     )
-    implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")
-    implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.1")
+    implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.2")
     implementation("net.swiftzer.semver:semver:1.3.0")
-    implementation("org.gradlex:extra-java-module-info:1.5")
+    implementation("org.gradlex:extra-java-module-info:1.6.1")
     implementation("org.gradlex:java-ecosystem-capabilities:1.3.1")
-    implementation("org.gradlex:java-module-dependencies:1.4.1")
+    implementation("org.gradlex:java-module-dependencies:1.5")
     implementation("org.owasp:dependency-check-gradle:8.4.2")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")
 }

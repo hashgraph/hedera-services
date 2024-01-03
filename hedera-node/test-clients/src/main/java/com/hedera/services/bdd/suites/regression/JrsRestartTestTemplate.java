@@ -99,7 +99,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
         });
     }
 
-    private HapiSpec enableHSS() {
+    final HapiSpec enableHSS() {
         return defaultHapiSpec("enableHSS")
                 .given(
                         // Directly puting this request in the customHapiSpec before
@@ -109,7 +109,7 @@ public class JrsRestartTestTemplate extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec jrsRestartTemplate() {
+    final HapiSpec jrsRestartTemplate() {
         return customHapiSpec("JrsRestartTemplate")
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())

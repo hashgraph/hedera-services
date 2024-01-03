@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.POPPED_FROM_STACK;
-import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.READ_FROM_LIST_END;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionSidecarsEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionValidationEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasValidatedActionSidecarsEnabled;
@@ -26,6 +24,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,7 +86,7 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         if (state == CODE_SUSPENDED) {
             actionStack.pushActionOfIntermediate(frame);
         } else if (state != CODE_EXECUTING) {
-            actionStack.finalizeLastAction(POPPED_FROM_STACK, frame, stackValidationChoice(frame));
+            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
         }
     }
 
@@ -95,12 +94,17 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
      * {@inheritDoc}
      */
     @Override
-    public void tracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
+    public void tracePrecompileResult(@NonNull final MessageFrame frame, @NonNull final ContractActionType type) {
         requireNonNull(type);
         requireNonNull(frame);
         if (hasActionSidecarsEnabled(frame)) {
             actionStack.finalizeLastStackActionAsPrecompile(frame, type, stackValidationChoice(frame));
         }
+    }
+
+    @Override
+    public @NonNull ContractActions contractActions() {
+        return actionStack.asContractActions();
     }
 
     /**
@@ -111,8 +115,16 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
             @NonNull final MessageFrame frame, @NonNull final Optional<ExceptionalHaltReason> haltReason) {
         requireNonNull(frame);
         requireNonNull(haltReason);
-        if (hasActionSidecarsEnabled(frame)) {
-            actionStack.finalizeLastAction(READ_FROM_LIST_END, frame, stackValidationChoice(frame));
+        // It is important NOT to finalize the last action on the stack unless a halt reason
+        // is present, as otherwise the same action could be finalized twice depending on the
+        // value returned from this tracer's isExtendedTracing()---c.f. the call in Besu's
+        // ContractCreationProcessor given both the deposit fee and passing validation rules.
+        // It is equally important that we DO finalize the last action here when a halt
+        // reason is present, since that means creation failed before executing the frame's
+        // code, and tracePostExecution() will never be called; so this is our only chance
+        // to keep the action stack in sync with the message frame stack.
+        if (hasActionSidecarsEnabled(frame) && haltReason.isPresent()) {
+            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
         }
     }
 

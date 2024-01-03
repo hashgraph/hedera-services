@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
@@ -25,6 +28,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_RE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.errorMessageFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionSidecarsEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
@@ -36,6 +40,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
@@ -62,7 +67,9 @@ public record HederaEvmTransactionResult(
         @Nullable ExceptionalHaltReason haltReason,
         @Nullable Bytes revertReason,
         @NonNull List<Log> logs,
-        @Nullable ContractStateChanges stateChanges) {
+        @Nullable ContractStateChanges stateChanges,
+        @Nullable ResponseCodeEnum finalStatus,
+        @Nullable ContractActions actions) {
     public HederaEvmTransactionResult {
         requireNonNull(senderId);
         requireNonNull(output);
@@ -75,6 +82,9 @@ public record HederaEvmTransactionResult(
     private static final Bytes INSUFFICIENT_GAS_REASON = Bytes.wrap(INSUFFICIENT_GAS.name());
     private static final Bytes INVALID_CONTRACT_REASON = Bytes.wrap(INVALID_CONTRACT_ID.name());
     private static final Bytes MAX_CHILD_RECORDS_EXCEEDED_REASON = Bytes.wrap(MAX_CHILD_RECORDS_EXCEEDED.name());
+    private static final Bytes INSUFFICIENT_TX_FEE_REASON = Bytes.wrap(INSUFFICIENT_TX_FEE.name());
+    private static final Bytes INSUFFICIENT_PAYER_BALANCE_REASON = Bytes.wrap(INSUFFICIENT_PAYER_BALANCE.name());
+    private static final Bytes CONTRACT_EXECUTION_EXCEPTION_REASON = Bytes.wrap(CONTRACT_EXECUTION_EXCEPTION.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -128,7 +138,9 @@ public record HederaEvmTransactionResult(
      * @return the status
      */
     public ResponseCodeEnum finalStatus() {
-        if (haltReason != null) {
+        if (finalStatus != null) {
+            return finalStatus;
+        } else if (haltReason != null) {
             return CustomExceptionalHaltReason.statusFor(haltReason);
         } else if (revertReason != null) {
             if (revertReason.equals(MAX_STORAGE_EXCEEDED_REASON)) {
@@ -141,6 +153,12 @@ public record HederaEvmTransactionResult(
                 return INVALID_CONTRACT_ID;
             } else if (revertReason.equals(MAX_CHILD_RECORDS_EXCEEDED_REASON)) {
                 return MAX_CHILD_RECORDS_EXCEEDED;
+            } else if (revertReason.equals(INSUFFICIENT_TX_FEE_REASON)) {
+                return INSUFFICIENT_TX_FEE;
+            } else if (revertReason.equals(INSUFFICIENT_PAYER_BALANCE_REASON)) {
+                return INSUFFICIENT_PAYER_BALANCE;
+            } else if (revertReason.equals(CONTRACT_EXECUTION_EXCEPTION_REASON)) {
+                return CONTRACT_EXECUTION_EXCEPTION;
             } else {
                 return CONTRACT_REVERT_EXECUTED;
             }
@@ -153,6 +171,12 @@ public record HederaEvmTransactionResult(
      * Create a result for a transaction that succeeded.
      *
      * @param gasUsed the gas used by the transaction
+     * @param senderId the Hedera id of the sender
+     * @param recipientId the Hedera numbered id of the receiving or created contract
+     * @param recipientEvmAddress the Hedera aliased id of the receiving or created contract
+     * @param frame the root frame for the transaction
+     * @param tracer the Hedera-specific tracer for the EVM transaction's actions
+     *
      * @return the result
      */
     public static HederaEvmTransactionResult successFrom(
@@ -160,8 +184,10 @@ public record HederaEvmTransactionResult(
             @NonNull final AccountID senderId,
             @NonNull final ContractID recipientId,
             @NonNull final ContractID recipientEvmAddress,
-            @NonNull final MessageFrame frame) {
+            @NonNull final MessageFrame frame,
+            @NonNull final ActionSidecarContentTracer tracer) {
         requireNonNull(frame);
+        requireNonNull(tracer);
         return successFrom(
                 gasUsed,
                 frame.getGasPrice(),
@@ -170,7 +196,8 @@ public record HederaEvmTransactionResult(
                 recipientEvmAddress,
                 frame.getOutputData(),
                 frame.getLogs(),
-                allStateAccessesFrom(frame));
+                maybeAllStateChangesFrom(frame),
+                maybeActionsFrom(frame, tracer));
     }
 
     public static HederaEvmTransactionResult successFrom(
@@ -181,7 +208,8 @@ public record HederaEvmTransactionResult(
             @NonNull final ContractID recipientEvmAddress,
             @NonNull final org.apache.tuweni.bytes.Bytes output,
             @NonNull final List<Log> logs,
-            @Nullable final ContractStateChanges stateChanges) {
+            @Nullable final ContractStateChanges stateChanges,
+            @Nullable ContractActions actions) {
         return new HederaEvmTransactionResult(
                 gasUsed,
                 requireNonNull(gasPrice).toLong(),
@@ -192,29 +220,43 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 requireNonNull(logs),
-                stateChanges);
+                stateChanges,
+                null,
+                actions);
     }
 
     /**
      * Create a result for a transaction that failed.
      *
      * @param gasUsed the gas used by the transaction
+     * @param senderId the Hedera id of the transaction sender
+     * @param frame the initial frame of the transaction
+     * @param recipientId if known, the Hedera id of the receiving contract
+     * @param tracer the Hedera-specific tracer for the EVM transaction's actions
+     *
      * @return the result
      */
     public static HederaEvmTransactionResult failureFrom(
-            final long gasUsed, @NonNull final AccountID senderId, @NonNull final MessageFrame frame) {
+            final long gasUsed,
+            @NonNull final AccountID senderId,
+            @NonNull final MessageFrame frame,
+            @Nullable final ContractID recipientId,
+            @NonNull final ActionSidecarContentTracer tracer) {
         requireNonNull(frame);
+        requireNonNull(tracer);
         return new HederaEvmTransactionResult(
                 gasUsed,
                 frame.getGasPrice().toLong(),
                 requireNonNull(senderId),
-                null,
+                recipientId,
                 null,
                 Bytes.EMPTY,
                 frame.getExceptionalHaltReason().orElse(null),
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
-                stateReadsFrom(frame));
+                maybeReadOnlyStateChangesFrom(frame),
+                null,
+                maybeActionsFrom(frame, tracer));
     }
 
     /**
@@ -241,6 +283,8 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.wrap(reason.name()),
                 Collections.emptyList(),
+                null,
+                null,
                 null);
     }
 
@@ -269,6 +313,8 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.wrap(reason.name().getBytes()),
                 List.of(),
+                null,
+                reason,
                 null);
     }
 
@@ -323,11 +369,16 @@ public record HederaEvmTransactionResult(
         return revertReason == null && haltReason == null;
     }
 
-    private static @Nullable ContractStateChanges allStateAccessesFrom(@NonNull final MessageFrame frame) {
+    private static @Nullable ContractStateChanges maybeAllStateChangesFrom(@NonNull final MessageFrame frame) {
         return stateChangesFrom(frame, true);
     }
 
-    private static @Nullable ContractStateChanges stateReadsFrom(@NonNull final MessageFrame frame) {
+    private static @Nullable ContractActions maybeActionsFrom(
+            @NonNull final MessageFrame frame, @NonNull final ActionSidecarContentTracer tracer) {
+        return hasActionSidecarsEnabled(frame) ? tracer.contractActions() : null;
+    }
+
+    private static @Nullable ContractStateChanges maybeReadOnlyStateChangesFrom(@NonNull final MessageFrame frame) {
         return stateChangesFrom(frame, false);
     }
 

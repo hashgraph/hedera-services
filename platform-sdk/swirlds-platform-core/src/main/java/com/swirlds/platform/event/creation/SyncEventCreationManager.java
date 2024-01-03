@@ -26,9 +26,9 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Function;
@@ -175,16 +175,16 @@ public class SyncEventCreationManager {
      *
      * @param event the event to add
      */
-    public void registerEvent(@NonNull final EventImpl event) {
+    public void registerEvent(@NonNull final GossipEvent event) {
         creator.registerEvent(event);
     }
 
     /**
-     * Update the minimum generation non-ancient.
+     * Update the non-ancient event window
      *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     * @param nonAncientEventWindow the new non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        creator.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        creator.setNonAncientEventWindow(nonAncientEventWindow);
     }
 }

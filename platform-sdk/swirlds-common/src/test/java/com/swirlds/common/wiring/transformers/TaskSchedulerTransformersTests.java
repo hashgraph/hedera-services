@@ -22,8 +22,8 @@ import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
@@ -62,7 +62,8 @@ class TaskSchedulerTransformersTests {
                 model.schedulerBuilder("D").build().cast();
         final BindableInputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
 
-        final OutputWire<Integer> splitter = taskSchedulerA.getOutputWire().buildSplitter();
+        final OutputWire<Integer> splitter =
+                taskSchedulerA.getOutputWire().buildSplitter("testSplitter", "test splitter input");
         splitter.solderTo(wireBIn);
         splitter.solderTo(wireCIn);
         taskSchedulerA.getOutputWire().solderTo(wireDIn);
@@ -135,7 +136,8 @@ class TaskSchedulerTransformersTests {
         final AtomicInteger countLambda = new AtomicInteger(0);
 
         taskSchedulerA.getOutputWire().solderTo(inB);
-        final OutputWire<Integer> filter = taskSchedulerA.getOutputWire().buildFilter("onlyEven", x -> x % 2 == 0);
+        final OutputWire<Integer> filter =
+                taskSchedulerA.getOutputWire().buildFilter("onlyEven", "onlyEvenInput", x -> x % 2 == 0);
         filter.solderTo(inC);
         filter.solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
 
@@ -198,11 +200,11 @@ class TaskSchedulerTransformersTests {
         taskSchedulerA.getOutputWire().solderTo(inB);
         taskSchedulerA
                 .getOutputWire()
-                .buildTransformer("getValue", TestData::value)
+                .buildTransformer("getValue", "getValueInput", TestData::value)
                 .solderTo(inC);
         taskSchedulerA
                 .getOutputWire()
-                .buildTransformer("getInvert", TestData::invert)
+                .buildTransformer("getInvert", "getInvertInput", TestData::invert)
                 .solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);
@@ -475,7 +477,7 @@ class TaskSchedulerTransformersTests {
         model.stop();
     }
 
-    private static class FooBarTransformer implements AdvancedTransformation<FooBar, FooBar> {
+    private record FooBarTransformer(String name) implements AdvancedTransformation<FooBar, FooBar> {
         @Nullable
         @Override
         public FooBar transform(@NonNull final FooBar fooBar) {
@@ -485,6 +487,12 @@ class TaskSchedulerTransformersTests {
         @Override
         public void cleanup(@NonNull final FooBar fooBar) {
             fooBar.release();
+        }
+
+        @NonNull
+        @Override
+        public String getName() {
+            return name;
         }
     }
 
@@ -506,8 +514,7 @@ class TaskSchedulerTransformersTests {
                 .cast();
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
-        final OutputWire<FooBar> outAReserved =
-                outA.buildAdvancedTransformer("reserve FooBar", new FooBarTransformer());
+        final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new FooBarTransformer("reserve FooBar"));
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)

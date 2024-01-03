@@ -94,7 +94,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec contractCallRestrictionsNotEnforced() {
+    final HapiSpec contractCallRestrictionsNotEnforced() {
         final var civilian = "misc";
         final var notDetachedAccount = "gone";
         final var contract = "DoubleSend";
@@ -125,7 +125,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getAccountBalance(notDetachedAccount).hasTinyBars(1L));
     }
 
-    private HapiSpec cryptoUpdateRestrictionsNotEnforced() {
+    final HapiSpec cryptoUpdateRestrictionsNotEnforced() {
         final var notDetachedAccount = "gone";
         final long certainlyPast = Instant.now().getEpochSecond() - THREE_MONTHS_IN_SECONDS;
         final long certainlyDistant = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -158,7 +158,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                                 .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
-    private HapiSpec payerRestrictionsNotEnforced() {
+    final HapiSpec payerRestrictionsNotEnforced() {
         final var notDetachedAccount = "gone";
 
         return defaultHapiSpec("PayerRestrictionsEnforced")
@@ -187,7 +187,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                                 .hasPriority(recordWith().status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
-    private HapiSpec topicAutoRenewOpsNotEnforced() {
+    final HapiSpec topicAutoRenewOpsNotEnforced() {
         final var topicWithDetachedAsAutoRenew = "c";
         final var topicSansDetachedAsAutoRenew = "d";
         final var notDetachedAccount = "gone";
@@ -214,7 +214,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getTopicInfo(topicWithDetachedAsAutoRenew).hasAutoRenewAccount(civilian));
     }
 
-    private HapiSpec tokenAutoRenewOpsNotEnforced() {
+    final HapiSpec tokenAutoRenewOpsNotEnforced() {
         final var tokenWithDetachedAsAutoRenew = "c";
         final var tokenSansDetachedAsAutoRenew = "d";
         final var notDetachedAccount = "gone";
@@ -241,7 +241,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getTokenInfo(tokenWithDetachedAsAutoRenew).hasAutoRenewAccount(civilian));
     }
 
-    private HapiSpec treasuryOpsRestrictionNotEnforced() {
+    final HapiSpec treasuryOpsRestrictionNotEnforced() {
         final var aToken = "c";
         final var notDetachedAccount = "gone";
         final var tokenMultiKey = "tak";
@@ -267,7 +267,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         getAccountBalance(notDetachedAccount).hasTokenBalance(aToken, 0L));
     }
 
-    private HapiSpec tokenMgmtRestrictionsNotEnforced() {
+    final HapiSpec tokenMgmtRestrictionsNotEnforced() {
         final var onTheFly = "a";
         final var tokenNotYetAssociated = "b";
         final var tokenAlreadyAssociated = "c";
@@ -299,7 +299,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
-    private HapiSpec cryptoDeleteRestrictionsNotEnforced() {
+    final HapiSpec cryptoDeleteRestrictionsNotEnforced() {
         final var notDetachedAccount = "gone";
         final var civilian = "misc";
 
@@ -313,7 +313,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         cryptoDelete(civilian).transfer(notDetachedAccount).hasKnownStatus(ACCOUNT_DELETED));
     }
 
-    private HapiSpec cryptoTransferRestrictionsNotEnforced() {
+    final HapiSpec cryptoTransferRestrictionsNotEnforced() {
         final var aToken = "c";
         final var notDetachedAccount = "gone";
         final var civilian = "misc";
@@ -330,14 +330,14 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         cryptoTransfer(moving(1, aToken).between(notDetachedAccount, civilian)));
     }
 
-    private HapiSpec noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup() {
+    final HapiSpec noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup() {
         return defaultHapiSpec("NoGracePeriodRestrictionsIfNoAutoRenewSuiteSetup")
                 .given()
                 .when()
                 .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(leavingAutoRenewDisabledWith(1)));
     }
 
-    private HapiSpec noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup() {
+    final HapiSpec noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup() {
         return defaultHapiSpec("NoGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup")
                 .given()
                 .when()

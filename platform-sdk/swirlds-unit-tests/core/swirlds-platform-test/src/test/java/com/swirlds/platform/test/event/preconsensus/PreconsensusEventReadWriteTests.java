@@ -18,7 +18,6 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.io.FileManipulation.corruptFile;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.truncateFile;
-import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.assertEventsAreEqual;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -34,7 +33,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.io.IOException;
@@ -96,13 +94,13 @@ class PreconsensusEventReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         long maximumGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
@@ -112,8 +110,8 @@ class PreconsensusEventReadWriteTests {
                 RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
-        for (final EventImpl event : events) {
-            mutableFile.writeEvent(event.getBaseEvent());
+        for (final GossipEvent event : events) {
+            mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
@@ -123,7 +121,7 @@ class PreconsensusEventReadWriteTests {
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
-            assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
+            assertEquals(events.get(i), deserializedEvents.get(i));
         }
     }
 
@@ -141,13 +139,13 @@ class PreconsensusEventReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         long maximumGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
@@ -164,8 +162,8 @@ class PreconsensusEventReadWriteTests {
                 testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
-        for (final EventImpl event : events) {
-            mutableFile.writeEvent(event.getBaseEvent());
+        for (final GossipEvent event : events) {
+            mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
@@ -175,9 +173,9 @@ class PreconsensusEventReadWriteTests {
         iterator.forEachRemaining(deserializedEvents::add);
 
         // We don't want any events with a generation less than the middle
-        final Iterator<EventImpl> it = events.iterator();
+        final Iterator<GossipEvent> it = events.iterator();
         while (it.hasNext()) {
-            final EventImpl event = it.next();
+            final GossipEvent event = it.next();
             if (event.getGeneration() < middle) {
                 it.remove();
             }
@@ -185,7 +183,7 @@ class PreconsensusEventReadWriteTests {
 
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
-            assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
+            assertEquals(events.get(i), deserializedEvents.get(i));
         }
     }
 
@@ -224,13 +222,13 @@ class PreconsensusEventReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         long maximumGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
@@ -248,8 +246,8 @@ class PreconsensusEventReadWriteTests {
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (int i = 0; i < events.size(); i++) {
-            final EventImpl event = events.get(i);
-            mutableFile.writeEvent(event.getBaseEvent());
+            final GossipEvent event = events.get(i);
+            mutableFile.writeEvent(event);
             byteBoundaries.put(i, (int) mutableFile.fileSize());
         }
 
@@ -271,7 +269,7 @@ class PreconsensusEventReadWriteTests {
         assertEquals(lastEventIndex + 1, deserializedEvents.size());
 
         for (int i = 0; i < deserializedEvents.size(); i++) {
-            assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
+            assertEquals(events.get(i), deserializedEvents.get(i));
         }
     }
 
@@ -289,13 +287,13 @@ class PreconsensusEventReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         long maximumGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
@@ -308,8 +306,8 @@ class PreconsensusEventReadWriteTests {
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (int i = 0; i < events.size(); i++) {
-            final EventImpl event = events.get(i);
-            mutableFile.writeEvent(event.getBaseEvent());
+            final GossipEvent event = events.get(i);
+            mutableFile.writeEvent(event);
             byteBoundaries.put(i, (int) mutableFile.fileSize());
         }
 
@@ -325,7 +323,7 @@ class PreconsensusEventReadWriteTests {
         final PreconsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
 
         for (int i = 0; i <= lastEventIndex; i++) {
-            assertEventsAreEqual(events.get(i), iterator.next());
+            assertEquals(events.get(i), iterator.next());
         }
 
         assertThrows(IOException.class, iterator::next);
@@ -345,14 +343,14 @@ class PreconsensusEventReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
@@ -370,23 +368,23 @@ class PreconsensusEventReadWriteTests {
                 testDirectory);
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
 
-        final List<EventImpl> validEvents = new ArrayList<>();
-        for (final EventImpl event : events) {
+        final List<GossipEvent> validEvents = new ArrayList<>();
+        for (final GossipEvent event : events) {
             if (event.getGeneration() >= restrictedMinimumGeneration
                     && event.getGeneration() <= restrictedMaximumGeneration) {
-                mutableFile.writeEvent(event.getBaseEvent());
+                mutableFile.writeEvent(event);
                 validEvents.add(event);
             } else {
-                assertThrows(IllegalStateException.class, () -> mutableFile.writeEvent(event.getBaseEvent()));
+                assertThrows(IllegalStateException.class, () -> mutableFile.writeEvent(event));
             }
         }
 
         mutableFile.close();
 
         final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
-        for (final EventImpl event : validEvents) {
+        for (final GossipEvent event : validEvents) {
             assertTrue(iterator.hasNext());
-            assertEventsAreEqual(event, iterator.next());
+            assertEquals(event, iterator.next());
         }
         assertFalse(iterator.hasNext());
     }
@@ -405,14 +403,14 @@ class PreconsensusEventReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
@@ -428,8 +426,8 @@ class PreconsensusEventReadWriteTests {
                 testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
-        for (final EventImpl event : events) {
-            mutableFile.writeEvent(event.getBaseEvent());
+        for (final GossipEvent event : events) {
+            mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
@@ -452,7 +450,7 @@ class PreconsensusEventReadWriteTests {
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
-            assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
+            assertEquals(events.get(i), deserializedEvents.get(i));
         }
     }
 
@@ -470,14 +468,14 @@ class PreconsensusEventReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent());
+            events.add(generator.generateEvent().getBaseEvent());
         }
 
         long minimumEventGeneration = Long.MAX_VALUE;
         long maximumEventGeneration = Long.MIN_VALUE;
-        for (final EventImpl event : events) {
+        for (final GossipEvent event : events) {
             minimumEventGeneration = Math.min(minimumEventGeneration, event.getGeneration());
             maximumEventGeneration = Math.max(maximumEventGeneration, event.getGeneration());
         }
@@ -494,8 +492,8 @@ class PreconsensusEventReadWriteTests {
                 testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
-        for (final EventImpl event : events) {
-            mutableFile.writeEvent(event.getBaseEvent());
+        for (final GossipEvent event : events) {
+            mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
@@ -519,7 +517,7 @@ class PreconsensusEventReadWriteTests {
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
-            assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
+            assertEquals(events.get(i), deserializedEvents.get(i));
         }
     }
 

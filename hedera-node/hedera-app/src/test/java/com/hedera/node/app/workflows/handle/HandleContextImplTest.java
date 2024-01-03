@@ -60,6 +60,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -84,6 +85,7 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
@@ -174,6 +176,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock
+    private ChildRecordFinalizer childRecordFinalizer;
+
+    @Mock
     private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
@@ -184,6 +189,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private static TransactionBody defaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                .build();
+    }
+
+    private static TransactionBody transactionBodyWithoutId() {
+        return TransactionBody.newBuilder()
                 .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                 .build();
     }
@@ -218,7 +229,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 exchangeRateManager,
                 DEFAULT_CONSENSUS_NOW,
                 authorizer,
-                solvencyPreCheck);
+                solvencyPreCheck,
+                childRecordFinalizer);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -246,7 +258,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             exchangeRateManager,
             DEFAULT_CONSENSUS_NOW,
             authorizer,
-            solvencyPreCheck
+            solvencyPreCheck,
+            childRecordFinalizer
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -263,6 +276,68 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     })
                     .isInstanceOf(InvocationTargetException.class)
                     .hasCauseInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Handling of record list checkpoint creation")
+    final class RevertRecordFromCheckPointTest {
+
+        private HandleContextImpl subject;
+
+        @BeforeEach
+        void setUp() {
+            when(stack.createWritableStates(TokenService.NAME))
+                    .thenReturn(MapWritableStates.builder()
+                            .state(MapWritableKVState.builder("ACCOUNTS").build())
+                            .state(MapWritableKVState.builder("ALIASES").build())
+                            .build());
+            subject = createContext(defaultTransactionBody());
+        }
+
+        @Test
+        void success_createRecordListCheckPoint() {
+            // given
+            var precedingRecord = createRecordBuilder();
+            var childRecord = createRecordBuilder();
+            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord));
+            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord));
+
+            // when
+            final var actual = subject.createRecordListCheckPoint();
+
+            // then
+            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord, childRecord));
+        }
+
+        @Test
+        void success_createRecordListCheckPoint_MultipleRecords() {
+            // given
+            var precedingRecord = createRecordBuilder();
+            var precedingRecord1 = createRecordBuilder();
+            var childRecord = createRecordBuilder();
+            var childRecord1 = createRecordBuilder();
+
+            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord, precedingRecord1));
+            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord, childRecord1));
+
+            // when
+            final var actual = subject.createRecordListCheckPoint();
+
+            // then
+            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord1, childRecord1));
+        }
+
+        @Test
+        void success_createRecordListCheckPoint_null_values() {
+            // when
+            final var actual = subject.createRecordListCheckPoint();
+            // then
+            assertThat(actual).isEqualTo(new RecordListCheckPoint(null, null));
+        }
+
+        private static SingleTransactionRecordBuilderImpl createRecordBuilder() {
+            return new SingleTransactionRecordBuilderImpl(Instant.EPOCH);
         }
     }
 
@@ -311,7 +386,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         }
 
         @Test
@@ -640,6 +716,20 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
             assertSame(fees, result);
         }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void invokesComputeFeesDispatchWithNoTransactionId() {
+            given(recordBuilder.consensusNow()).willReturn(DEFAULT_CONSENSUS_NOW);
+            final var fees = new Fees(1L, 2L, 3L);
+            given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
+            final var captor = ArgumentCaptor.forClass(FeeContext.class);
+            final var result = context.dispatchComputeFees(transactionBodyWithoutId(), account1002);
+            verify(dispatcher).dispatchComputeFees(captor.capture());
+            final var feeContext = captor.getValue();
+            assertInstanceOf(ChildFeeContextImpl.class, feeContext);
+            assertSame(fees, result);
+        }
     }
 
     @Nested
@@ -713,7 +803,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testAddChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
-            when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -789,7 +879,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addPreceding(any(), eq(LIMITED_CHILD_RECORDS)))
                     .thenReturn(childRecordBuilder);
             when(recordListBuilder.addReversiblePreceding(any())).thenReturn(childRecordBuilder);
-            when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChildWithExternalizationCustomizer(any(), any()))
                     .thenReturn(childRecordBuilder);
@@ -827,7 +917,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         }
 
         @SuppressWarnings("ConstantConditions")
@@ -1019,23 +1110,25 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testDispatchPrecedingWithNonEmptyStackDoesntFail() {
             // given
+            given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
+            given(selfNodeInfo.nodeId()).willReturn(0L);
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.createSavepoint();
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
+                            AccountID.DEFAULT));
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
+                            AccountID.DEFAULT));
+            verify(recordListBuilder, never()).addRemovablePreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)

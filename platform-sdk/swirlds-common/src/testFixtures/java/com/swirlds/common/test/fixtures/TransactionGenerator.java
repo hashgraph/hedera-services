@@ -16,8 +16,8 @@
 
 package com.swirlds.common.test.fixtures;
 
-import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Random;
 
 /**

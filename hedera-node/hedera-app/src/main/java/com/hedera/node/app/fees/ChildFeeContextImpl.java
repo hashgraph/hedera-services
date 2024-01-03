@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,7 +49,7 @@ public class ChildFeeContextImpl implements FeeContext {
             @NonNull final FeeManager feeManager,
             @NonNull final HandleContextImpl context,
             @NonNull final TransactionBody body,
-            AccountID payerId) {
+            @NonNull final AccountID payerId) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
@@ -72,8 +74,9 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public @NonNull FeeCalculator feeCalculator(@NonNull final SubType subType) {
         try {
+            var storeFactory = new ReadableStoreFactory((HederaState) context.savepointStack());
             return feeManager.createFeeCalculator(
-                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true);
+                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true, storeFactory);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);

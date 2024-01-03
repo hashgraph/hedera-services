@@ -88,15 +88,22 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         // Every owner whose allowances are being removed should sign (or the payer, if there is no owner)
         for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
             if (allowance.hasOwner()) {
-                context.requireKeyOrThrow(allowance.ownerOrThrow(), INVALID_ALLOWANCE_OWNER_ID);
+                final var store = context.createStore(ReadableAccountStore.class);
+                final var ownerId = allowance.ownerOrThrow();
+                final var owner = store.getAccountById(ownerId);
+                final var approvedForAll = owner.approveForAllNftAllowancesOrElse(emptyList()).stream()
+                        .anyMatch(approveForAll -> approveForAll.tokenId().equals(allowance.tokenId())
+                                && approveForAll.spenderId().equals(context.payer()));
+                if (!context.payer().equals(ownerId) && !approvedForAll) {
+                    context.requireKeyOrThrow(ownerId, INVALID_ALLOWANCE_OWNER_ID);
+                }
             }
         }
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        final var txn = context.body();
-        final var payer = txn.transactionIDOrThrow().accountIDOrThrow();
+        final var payer = context.payer();
 
         final var accountStore = context.writableStore(WritableAccountStore.class);
         // validate payer account exists
@@ -172,10 +179,8 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
                 final AccountID accountOwner = owner.accountId();
                 validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
-                // Clear spender on the nft
-                // sets account number to AccountIDProtoCodec.ACCOUNT_UNSET
-                final var copy = nft.copyBuilder().spenderId(AccountID.DEFAULT).build();
-                nftStore.put(copy);
+                // Null out spender on the nft
+                nftStore.put(nft.copyBuilder().spenderId((AccountID) null).build());
             }
         }
     }

@@ -26,7 +26,7 @@ import com.swirlds.common.formatting.HorizontalAlignment;
 import com.swirlds.common.formatting.TextHistogram;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.formatting.UnitFormatter;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.time.Duration;
 import java.util.List;
 

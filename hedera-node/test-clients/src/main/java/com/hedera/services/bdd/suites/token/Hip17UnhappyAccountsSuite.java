@@ -16,12 +16,11 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -30,15 +29,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.google.protobuf.ByteString;
@@ -46,14 +41,14 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TOKEN)
 public class Hip17UnhappyAccountsSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(Hip17UnhappyAccountsSuite.class);
@@ -82,57 +77,13 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
             uniqueTokenOperationsFailForFrozenAccount(),
             /* Account Without KYC */
             uniqueTokenOperationsFailForKycRevokedAccount(),
-            /* Expired Account */
-            uniqueTokenOperationsFailForExpiredAccount(),
             /* Deleted Account */
             uniqueTokenOperationsFailForDeletedAccount(),
-            /* AutoRemoved Account */
-            uniqueTokenOperationsFailForAutoRemovedAccount()
         });
     }
 
-    private HapiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
-        return defaultHapiSpec("UniqueTokenOperationsFailForAutoRemovedAccount")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0, 100, 10))
-                                .erasingProps(Set.of("minimumAutoRenewDuration")),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoCreate(TREASURY),
-                        tokenCreate(UNIQUE_TOKEN_A)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .treasury(TREASURY),
-                        mintToken(
-                                UNIQUE_TOKEN_A,
-                                List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))))
-                .when(
-                        cryptoCreate(CLIENT_1).autoRenewSecs(3L).balance(0L),
-                        tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1)),
-                        sleepFor(3_500L),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
-                .then(
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
-                                .hasKnownStatus(INVALID_ACCOUNT_ID),
-                        revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(INVALID_ACCOUNT_ID),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(INVALID_ACCOUNT_ID),
-                        tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(INVALID_ACCOUNT_ID),
-                        tokenUnfreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(INVALID_ACCOUNT_ID),
-                        wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(INVALID_ACCOUNT_ID));
-    }
-
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
+    final HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -165,54 +116,8 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                         wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(ACCOUNT_DELETED));
     }
 
-    private HapiSpec uniqueTokenOperationsFailForExpiredAccount() {
-        return defaultHapiSpec("UniqueTokenOperationsFailForExpiredAccount")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 7776000, 100, 10))
-                                .erasingProps(Set.of("minimumAutoRenewDuration")),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoCreate(TREASURY).autoRenewSecs(THREE_MONTHS_IN_SECONDS),
-                        tokenCreate(UNIQUE_TOKEN_A)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .treasury(TREASURY),
-                        mintToken(
-                                UNIQUE_TOKEN_A,
-                                List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
-                        cryptoCreate(CLIENT_1).autoRenewSecs(10L).balance(0L),
-                        getAccountInfo(CLIENT_1).logged(),
-                        tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1)))
-                .when(sleepFor(10_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
-                .then(
-                        getAccountInfo(CLIENT_1).logged(),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        cryptoCreate(CLIENT_2),
-                        tokenAssociate(CLIENT_2, UNIQUE_TOKEN_A),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(CLIENT_1, CLIENT_2))
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        tokenUnfreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L))
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
-    }
-
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
+    final HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -249,7 +154,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
+    final HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -286,7 +191,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
+    final HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),

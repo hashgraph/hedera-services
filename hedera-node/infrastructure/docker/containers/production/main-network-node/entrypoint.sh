@@ -25,6 +25,7 @@ if [[ -z "${JAVA_OPTS}" ]]; then
   JAVA_OPTS=""
 fi
 
+# Setup Heap Options
 JAVA_HEAP_OPTS=""
 
 if [[ -n "${JAVA_HEAP_MIN}" ]]; then
@@ -35,8 +36,22 @@ if [[ -n "${JAVA_HEAP_MAX}" ]]; then
   JAVA_HEAP_OPTS="${JAVA_HEAP_OPTS} -Xmx${JAVA_HEAP_MAX}"
 fi
 
+# Setup Main Class
+[[ -z "${JAVA_MAIN_CLASS}" ]] && JAVA_MAIN_CLASS="com.swirlds.platform.Browser"
 
+# Setup Classpath
+JCP_OVERRIDDEN="false"
+if [[ -z "${JAVA_CLASS_PATH}" ]]; then
+  JAVA_CLASS_PATH="data/lib/*"
+else
+  JCP_OVERRIDDEN="true"
+fi
 
+if [[ "${JCP_OVERRIDDEN}" != true && "${JAVA_MAIN_CLASS}" != "com.swirlds.platform.Browser" ]]; then
+  JAVA_CLASS_PATH="${JAVA_CLASS_PATH}:data/apps/*"
+fi
+
+# Ensure the log directory exists
 if [[ ! -d "${SCRIPT_PATH}/output" ]]; then
  mkdir -p "${SCRIPT_PATH}/output"
 fi
@@ -46,5 +61,5 @@ id
 echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< END USER IDENT   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
 echo
 
-/usr/bin/env java ${JAVA_HEAP_OPTS} ${JAVA_OPTS} -cp "data/lib/*" com.swirlds.platform.Browser
+/usr/bin/env java ${JAVA_HEAP_OPTS} ${JAVA_OPTS} -cp "${JAVA_CLASS_PATH}" "${JAVA_MAIN_CLASS}"
 printf "java exit code %s" "${?}\n"

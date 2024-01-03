@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,24 +20,28 @@ import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -70,11 +74,14 @@ public class EventIntake {
     /** Stores events, expires them, provides event lookup methods */
     private final ShadowGraph shadowGraph;
 
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
+
     private final ExecutorService prehandlePool;
     private final Consumer<EventImpl> prehandleEvent;
 
     private final EventIntakeMetrics metrics;
     private final Time time;
+    private final Long roundsNonAncient;
 
     /**
      * Measures the time spent in each phase of event intake
@@ -89,19 +96,21 @@ public class EventIntake {
     /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param threadManager      creates new threading resources
-     * @param time               provides the wall clock time
-     * @param selfId             the ID of this node
-     * @param eventLinker        links events together, holding orphaned events until their parents are found (if
-     *                           operating with the orphan buffer enabled)
-     * @param consensusSupplier  provides the current consensus instance
-     * @param addressBook        the current address book
-     * @param dispatcher         invokes event related callbacks
-     * @param phaseTimer         measures the time spent in each phase of intake
-     * @param shadowGraph        tracks events in the hashgraph
-     * @param prehandleEvent     prehandles transactions in an event
-     * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
+     * @param platformContext          the platform context
+     * @param threadManager            creates new threading resources
+     * @param time                     provides the wall clock time
+     * @param selfId                   the ID of this node
+     * @param eventLinker              links events together, holding orphaned events until their parents are found (if
+     *                                 operating with the orphan buffer enabled)
+     * @param consensusSupplier        provides the current consensus instance
+     * @param addressBook              the current address book
+     * @param dispatcher               invokes event related callbacks
+     * @param phaseTimer               measures the time spent in each phase of intake
+     * @param shadowGraph              tracks events in the hashgraph
+     * @param latestEventTipsetTracker tracks the tipset of the latest self event, null if feature is not enabled
+     * @param prehandleEvent           prehandles transactions in an event
+     * @param intakeEventCounter       tracks the number of events from each peer that are currently in the intake
+     *                                 pipeline
      */
     public EventIntake(
             @NonNull final PlatformContext platformContext,
@@ -114,6 +123,7 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final PhaseTimer<EventIntakePhase> phaseTimer,
             @NonNull final ShadowGraph shadowGraph,
+            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final Consumer<EventImpl> prehandleEvent,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
@@ -125,10 +135,15 @@ public class EventIntake {
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.phaseTimer = Objects.requireNonNull(phaseTimer);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
+        this.latestEventTipsetTracker = latestEventTipsetTracker;
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+        this.roundsNonAncient = (long) platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
 
         final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
         prehandlePool = new ThreadPoolExecutor(
@@ -168,6 +183,7 @@ public class EventIntake {
         try {
             // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
             if (consensus().isExpired(event)) {
+                event.clear();
                 return;
             }
 
@@ -197,11 +213,19 @@ public class EventIntake {
                 consRounds.forEach(this::handleConsensus);
             }
 
-            if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+            final long minimumGenerationNonAncient = consensus().getMinGenerationNonAncient();
+
+            if (minimumGenerationNonAncient > minGenNonAncientBeforeAdding) {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
                 phaseTimer.activatePhase(EventIntakePhase.HANDLING_STALE_EVENTS);
                 handleStale(minGenNonAncientBeforeAdding);
+                if (latestEventTipsetTracker != null) {
+                    // FUTURE WORK: When this class is refactored, it should not be constructing the
+                    // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
+                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                            consensus().getLastRoundDecided(), minimumGenerationNonAncient, roundsNonAncient));
+                }
             }
         } finally {
             phaseTimer.activatePhase(EventIntakePhase.IDLE);
@@ -216,7 +240,7 @@ public class EventIntake {
     private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
         return () -> {
             prehandleEvent.accept(event);
-            event.signalPrehandleCompletion();
+            event.getBaseEvent().signalPrehandleCompletion();
         };
     }
 
@@ -250,7 +274,7 @@ public class EventIntake {
             // It is critically important that prehandle is always called prior to handleConsensusRound().
 
             final long start = time.nanoTime();
-            consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+            consensusRound.forEach(e -> ((EventImpl) e).getBaseEvent().awaitPrehandleCompletion());
             final long end = time.nanoTime();
             metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 

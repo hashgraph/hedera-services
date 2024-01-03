@@ -18,13 +18,14 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities.compactPreconsensusEventFile;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
 import com.swirlds.common.utility.ValueReference;
@@ -52,6 +53,8 @@ import org.apache.logging.log4j.Logger;
  * <p>
  * This object is not thread safe.
  * </p>
+ *
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public class PreconsensusEventFileManager {
 
@@ -107,6 +110,11 @@ public class PreconsensusEventFileManager {
     private final Duration minimumRetentionPeriod;
 
     /**
+     * If true then attempt generational compaction on the last file at startup time.
+     */
+    private final boolean doInitialGenerationalCompaction;
+
+    /**
      * The size of all tracked files, in bytes.
      */
     private long totalFileByteCount = 0;
@@ -142,6 +150,7 @@ public class PreconsensusEventFileManager {
         this.time = time;
         this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
         minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
+        doInitialGenerationalCompaction = preconsensusEventStreamConfig.compactLastFileOnStartup();
         databaseDirectory = getDatabaseDirectory(platformContext, selfId);
         this.recycleBin = Objects.requireNonNull(recycleBin);
 
@@ -195,6 +204,31 @@ public class PreconsensusEventFileManager {
                     .sorted()
                     .forEachOrdered(buildFileHandler(permitGaps));
         }
+
+        compactGenerationalSpanOfLastFile();
+    }
+
+    /**
+     * It's possible (if not probable) that the node was shut down prior to the last file being closed and having its
+     * generational span compaction. This method performs that compaction if necessary.
+     */
+    private void compactGenerationalSpanOfLastFile() {
+        if (files.size() == 0 || !doInitialGenerationalCompaction) {
+            return;
+        }
+
+        final PreconsensusEventFile lastFile = files.getLast();
+
+        final long previousMaximumGeneration;
+        if (files.size() > 1) {
+            final PreconsensusEventFile secondToLastFile = files.get(files.size() - 2);
+            previousMaximumGeneration = secondToLastFile.getMaximumGeneration();
+        } else {
+            previousMaximumGeneration = 0;
+        }
+
+        final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(lastFile, previousMaximumGeneration);
+        files.set(files.size() - 1, compactedFile);
     }
 
     /**
@@ -308,7 +342,7 @@ public class PreconsensusEventFileManager {
      * @param path the path to the file
      * @return the wrapper object, or null if the file can't be parsed
      */
-    private static @Nullable PreconsensusEventFile parseFile(@NonNull final Path path) {
+    static @Nullable PreconsensusEventFile parseFile(@NonNull final Path path) {
         try {
             return PreconsensusEventFile.of(path);
         } catch (final IOException exception) {

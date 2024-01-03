@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.hedera.node.app.service.contract.impl.state;
+
+import static com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState.HOLLOW_ACCOUNT_KEY;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -55,6 +57,11 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public Address getAddress() {
         return state.getAddress(number);
+    }
+
+    @Override
+    public com.hedera.hapi.node.state.token.Account toNativeAccount() {
+        return state.getNativeAccount(number);
     }
 
     @Override
@@ -156,5 +163,15 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
      */
     public boolean isContract() {
         return state.isContract(number);
+    }
+
+    /**
+     * Returns whether this account is a "hollow" account; i.e. an account created by sending
+     * value to an EVM address that did not already have a corresponding Hedera account.
+     *
+     * @return whether this account is hollow
+     */
+    public boolean isHollow() {
+        return HOLLOW_ACCOUNT_KEY.equals(toNativeAccount().key());
     }
 }

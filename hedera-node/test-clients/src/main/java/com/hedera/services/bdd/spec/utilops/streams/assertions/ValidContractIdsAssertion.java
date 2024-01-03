@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -65,6 +67,9 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
             } else if (action.hasRecipientContract()) {
                 assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidId);
             }
+
+            final var isMissingResult = !action.hasOutput() && !action.hasError() && !action.hasRevertReason();
+            assertFalse(isMissingResult, "action is missing result (output, error, or revertReason)");
         }
     }
 

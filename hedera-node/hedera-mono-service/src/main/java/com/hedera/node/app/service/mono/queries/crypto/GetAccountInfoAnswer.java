@@ -44,12 +44,16 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Implements the {@link HederaFunctionality#CryptoGetInfo} query handler.
+ * This does not return token relationships anymore, since the field is deprecated.
+ */
 @Singleton
 public class GetAccountInfoAnswer implements AnswerService {
     private final OptionValidator optionValidator;
     private final AliasManager aliasManager;
-    private final GlobalDynamicProperties dynamicProperties;
     private final RewardCalculator rewardCalculator;
+    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public GetAccountInfoAnswer(
@@ -87,7 +91,11 @@ public class GetAccountInfoAnswer implements AnswerService {
                 final AccountID id = op.getAccountID();
                 final var optionalInfo = Objects.requireNonNull(view)
                         .infoForAccount(
-                                id, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
+                                id,
+                                aliasManager,
+                                dynamicProperties.maxTokensRelsPerInfoQuery(),
+                                rewardCalculator,
+                                dynamicProperties.areTokenBalancesEnabledInQueries());
                 if (optionalInfo.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setAccountInfo(optionalInfo.get());

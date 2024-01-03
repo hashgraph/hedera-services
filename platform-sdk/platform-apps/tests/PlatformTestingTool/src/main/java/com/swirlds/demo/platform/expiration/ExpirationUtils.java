@@ -16,9 +16,10 @@
 
 package com.swirlds.demo.platform.expiration;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.demo.merkle.map.FCMFamily;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.merkle.map.internal.DummyExpectedFCMFamily;
@@ -116,7 +117,7 @@ public class ExpirationUtils {
             FCMFamily fcmFamily,
             ExpectedFCMFamily expectedFCMFamily) {
         if (fcmFamily == null || fcmFamily.getAccountFCQMap() == null) {
-            logger.error(ERROR, "FCMFamily is null, so could not rebuild Expiration Queue");
+            logger.error(EXCEPTION.getMarker(), "FCMFamily is null, so could not rebuild Expiration Queue");
             return 0;
         }
 

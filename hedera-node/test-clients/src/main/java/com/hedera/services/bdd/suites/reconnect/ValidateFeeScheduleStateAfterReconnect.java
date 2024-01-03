@@ -47,7 +47,7 @@ public class ValidateFeeScheduleStateAfterReconnect extends HapiSuite {
         return List.of(validateFeeScheduleStateAfterReconnect());
     }
 
-    private HapiSpec validateFeeScheduleStateAfterReconnect() {
+    final HapiSpec validateFeeScheduleStateAfterReconnect() {
         return customHapiSpec("validateFeeScheduleStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.FailureCustomizer.NOOP_CUSTOMIZER;
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -27,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -60,13 +61,13 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall<>(
+        return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),
-                SingleTransactionRecordBuilder.class,
                 Arrays.equals(attempt.selector(), FREEZE.selector())
                         ? FreezeUnfreezeTranslator::freezeGasRequirement
-                        : FreezeUnfreezeTranslator::unfreezeGasRequirement);
+                        : FreezeUnfreezeTranslator::unfreezeGasRequirement,
+                NOOP_CUSTOMIZER);
     }
 
     public static long freezeGasRequirement(

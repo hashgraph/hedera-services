@@ -17,9 +17,9 @@
 package com.swirlds.platform.gossip.chatter;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 
 /**
  * Prepares a {@link GossipEvent} received from a peer for further handling

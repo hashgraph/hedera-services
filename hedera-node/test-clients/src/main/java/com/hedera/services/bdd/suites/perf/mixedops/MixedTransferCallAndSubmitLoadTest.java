@@ -60,7 +60,7 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiSuite {
         return List.of(runMixedTransferCallAndSubmits());
     }
 
-    private HapiSpec runMixedTransferCallAndSubmits() {
+    final HapiSpec runMixedTransferCallAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
 

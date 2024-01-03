@@ -16,13 +16,12 @@
 
 package com.swirlds.platform.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusGetter;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.config.api.Configuration;
@@ -33,6 +32,8 @@ import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -176,7 +177,7 @@ public class ReconnectProtocol implements Protocol {
         // Check if we have a state that is legal to send to a learner.
         teacherState = lastCompleteSignedState.get();
 
-        if (teacherState.isNull()) {
+        if (teacherState == null || teacherState.isNull()) {
             stateNullLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state",
@@ -188,7 +189,7 @@ public class ReconnectProtocol implements Protocol {
         if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
             stateIncompleteLogger.error(
-                    RECONNECT.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state."
                             + " The signed state manager attempted to provide a state that was not"
                             + " fully signed, which should not be possible.",

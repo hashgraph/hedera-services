@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
@@ -130,6 +131,13 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     @Override
+    public void traceAccountCreationResult(MessageFrame frame, Optional<ExceptionalHaltReason> haltReason) {
+        if (areActionSidecarsEnabled() && haltReason.isPresent()) {
+            popActionStack(frame).ifPresent(action -> finalizeActionFor(action, frame, frame.getState()));
+        }
+    }
+
+    @Override
     public void tracePostExecution(final MessageFrame currentFrame, final OperationResult operationResult) {
         if (areActionSidecarsEnabled()) {
             final var frameState = currentFrame.getState();
@@ -174,7 +182,7 @@ public class HederaTracer implements HederaOperationTracer {
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
             action.setTargetedAddress(contractAddress.toArray());
         } else {
-            final var recipient = EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
+            final var recipient = getEntityIdOrNullByAddressAndMessageFrame(contractAddress, messageFrame, action);
             if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
                 // code can be empty when calling precompiles too, but we handle
                 // that in tracePrecompileCall, after precompile execution is completed
@@ -203,8 +211,10 @@ public class HederaTracer implements HederaOperationTracer {
                     action.setOutput(frame.getOutputData().toArrayUnsafe());
                     if (action.getInvalidSolidityAddress() != null) {
                         // we had a successful lazy create, replace targeted address with its new Hedera id
-                        final var recipientAsHederaId = EntityId.fromAddress(
-                                asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
+                        // or set it to null if it's noop for non existing account
+                        Address recipientAddress = Address.wrap(Bytes.of(action.getInvalidSolidityAddress()));
+                        final var recipientAsHederaId =
+                                getEntityIdOrNullByAddressAndMessageFrame(recipientAddress, frame, action);
                         action.setTargetedAddress(null);
                         action.setRecipientAccount(recipientAsHederaId);
                     }
@@ -362,5 +372,15 @@ public class HederaTracer implements HederaOperationTracer {
     private static <E, I> String get(
             final E subject, final Function<E, I> getter, final Function<I, String> processor) {
         return null != subject ? processor.compose(getter).apply(subject) : "null";
+    }
+
+    private EntityId getEntityIdOrNullByAddressAndMessageFrame(
+            Address address, MessageFrame frame, SolidityAction action) {
+        try {
+            return EntityId.fromAddress(asMirrorAddress(address, frame));
+        } catch (IllegalArgumentException e) {
+            action.setTargetedAddress(address.toArray());
+            return null;
+        }
     }
 }

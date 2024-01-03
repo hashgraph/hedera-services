@@ -83,7 +83,7 @@ public final class MemoValidation extends HapiSuite {
                 contractOps());
     }
 
-    private HapiSpec contractOps() {
+    final HapiSpec contractOps() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("MemoValidationsOnContractOps")
                 .given(uploadInitCode(contract), contractCreate(contract).omitAdminKey())
@@ -109,7 +109,7 @@ public final class MemoValidation extends HapiSuite {
                                 .hasPrecheck(MEMO_TOO_LONG));
     }
 
-    private HapiSpec tokenOps() {
+    final HapiSpec tokenOps() {
         return defaultHapiSpec("MemoValidationsOnTokenOps")
                 .given(
                         cryptoCreate("firstUser"),
@@ -140,7 +140,7 @@ public final class MemoValidation extends HapiSuite {
                                 .hasPrecheck(MEMO_TOO_LONG));
     }
 
-    private HapiSpec scheduleOps() {
+    final HapiSpec scheduleOps() {
         final String defaultWhitelist = HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
         final var toScheduleOp1 = cryptoCreate("test");
         final var toScheduleOp2 = cryptoCreate("test").balance(1L);
@@ -179,7 +179,7 @@ public final class MemoValidation extends HapiSuite {
                         overriding(SCHEDULING_WHITELIST, defaultWhitelist));
     }
 
-    private HapiSpec topicOps() {
+    final HapiSpec topicOps() {
         return defaultHapiSpec("MemoValidationsOnTopicOps")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -209,7 +209,7 @@ public final class MemoValidation extends HapiSuite {
                                 .hasKnownStatus(MEMO_TOO_LONG));
     }
 
-    private HapiSpec cryptoOps() {
+    final HapiSpec cryptoOps() {
         return defaultHapiSpec("MemoValidationsOnCryptoOps")
                 .given(cryptoCreate(primary).blankMemo())
                 .when(

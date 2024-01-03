@@ -17,63 +17,19 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
+import org.apache.tuweni.bytes.Bytes;
 
 public interface SystemContractOperations {
-    /**
-     * Returns the {@link Nft} with the given id, and also externalizes the result of the state read via a record whose
-     * (1) origin is a given contract number and (2) result is derived from the read state via a given
-     * {@link ResultTranslator}.
-     *
-     * @param id                    the NFT id
-     * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
-     * @return the NFT, or {@code null} if no such NFT exists
-     */
-    @Nullable
-    Nft getNftAndExternalizeResult(
-            @NonNull NftID id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
-
-    /**
-     * Returns the {@link Token} with the given number, and also externalizes the result of the state read via a record
-     * whose (1) origin is a given contract number and (2) result is derived from the read state via a given
-     * {@link ResultTranslator}.
-     *
-     * @param number                the token number
-     * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
-     * @return the token, or {@code null} if no such token exists
-     */
-    @Nullable
-    Token getTokenAndExternalizeResult(
-            long number, long callingContractNumber, @NonNull ResultTranslator<Token> translator);
-
-    /**
-     * Returns the {@link Account} with the given number, and also externalizes the result of the state read via a
-     * record whose (1) origin is a given contract number and (2) result is derived from the read state via a given
-     * {@link ResultTranslator}.
-     *
-     * @param number                the account number
-     * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
-     * @return the account, or {@code null} if no such account exists
-     */
-    @Nullable
-    Account getAccountAndExternalizeResult(
-            long number, long callingContractNumber, @NonNull ResultTranslator<Account> translator);
-
     /**
      * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
      * {@link HandleHederaOperations}, performing signature verification with priority given to the included
@@ -96,6 +52,17 @@ public interface SystemContractOperations {
             @NonNull Class<T> recordBuilderClass);
 
     /**
+     * Externalizes the preemption of the given {@code syntheticTransaction} hat would have otherwise been
+     * dispatched in the context of the current {@link HandleHederaOperations}.
+     *
+     * @param syntheticBody the preempted dispatch
+     * @param preemptingStatus the status code causing the preemption
+     * @return the record of the preemption
+     */
+    ContractCallRecordBuilder externalizePreemptedDispatch(
+            @NonNull TransactionBody syntheticBody, @NonNull ResponseCodeEnum preemptingStatus);
+
+    /**
      * Returns a {@link Predicate} that tests whether the given {@link Key} is active based on the
      * given verification strategy.
      *
@@ -109,12 +76,29 @@ public interface SystemContractOperations {
      * Attempts to create a child record of the current record, with the given {@code result}
      *
      * @param result    contract function result
-     * @param status    whether the result is success or an error
      */
     void externalizeResult(
-            @NonNull final ContractFunctionResult result,
-            @NonNull final ResultStatus status,
-            @NonNull final ResponseCodeEnum responseStatus);
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus);
+
+    /**
+     * Attempts to create a child record of the current record, with the given {@code result}
+     *
+     * @param result    contract function result
+     */
+    void externalizeResult(
+            @NonNull ContractFunctionResult result,
+            @NonNull ResponseCodeEnum responseStatus,
+            @NonNull Transaction transaction);
+
+    /**
+     * Generate synthetic transaction for child hts call
+     *
+     * @param input
+     * @param contractID
+     * @param isViewCall
+     * @return
+     */
+    Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall);
 
     /**
      * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars

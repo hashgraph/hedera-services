@@ -30,17 +30,17 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -199,7 +199,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(final Round round, final PlatformState swirldDualState) {
         throwIfImmutable();
         round.forEachEventTransaction(
                 (event, transaction) -> handleTransaction(event.getCreatorId(), true, transaction));
@@ -377,7 +377,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState swirldDualState,
+            final PlatformState swirldDualState,
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
         this.platform = (SwirldsPlatform) platform;

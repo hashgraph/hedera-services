@@ -50,7 +50,7 @@ public class AutoAccountCreationsBeforeReconnect extends HapiSuite {
         new AutoAccountCreationsBeforeReconnect().runSuiteSync();
     }
 
-    private HapiSpec createAccountsUsingAlias() {
+    final HapiSpec createAccountsUsingAlias() {
         return defaultHapiSpec("createAccountsUsingAlias").given().when().then(withOpContext((spec, opLog) -> {
             List<HapiSpecOperation> ops = new ArrayList<>();
             for (int i = 0; i < TOTAL_ACCOUNTS; i++) {

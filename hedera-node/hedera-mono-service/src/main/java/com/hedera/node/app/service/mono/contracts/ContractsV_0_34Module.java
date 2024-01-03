@@ -255,12 +255,13 @@ public interface ContractsV_0_34Module {
     @Provides
     @Singleton
     @V_0_34
-    static EVM provideV_0_34EVM(@V_0_34 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+    static EVM provideV_0_34EVM(
+            @V_0_34 Set<Operation> hederaOperations, GasCalculator gasCalculator, EvmConfiguration evmConfiguration) {
         var operationRegistry = new OperationRegistry();
         // ChainID will be overridden
         registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
+        return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.PARIS);
     }
 
     @Provides

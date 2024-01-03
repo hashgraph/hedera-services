@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -41,6 +42,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -61,8 +63,14 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
+@TestMethodOrder(OrderAnnotation.class)
+@Tag(TIME_CONSUMING)
 public class SteadyStateThrottlingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(SteadyStateThrottlingCheck.class);
@@ -120,7 +128,9 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 restoreDevLimits());
     }
 
-    private HapiSpec setArtificialLimits() {
+    @HapiTest
+    @Order(1)
+    final HapiSpec setArtificialLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
 
         return defaultHapiSpec("SetArtificialLimits")
@@ -131,7 +141,39 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                         .contents(artificialLimits.toByteArray()));
     }
 
-    private HapiSpec restoreDevLimits() {
+    @HapiTest
+    @Order(2)
+    final HapiSpec checkXfersTps() {
+        return checkTps("Xfers", EXPECTED_XFER_TPS, xferOps());
+    }
+
+    @HapiTest
+    @Order(3)
+    final HapiSpec checkFungibleMintsTps() {
+        return checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps());
+    }
+
+    //    @HapiTest - This test fails
+    @Order(4)
+    final HapiSpec checkContractCallsTps() {
+        return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
+    }
+
+    //    @HapiTest - This test fails
+    @Order(5)
+    final HapiSpec checkCryptoCreatesTps() {
+        return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
+    }
+
+    //    @HapiTest - This test hangs
+    @Order(6)
+    final HapiSpec checkBalanceQps() {
+        return checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS);
+    }
+
+    @HapiTest
+    @Order(7)
+    final HapiSpec restoreDevLimits() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("RestoreDevLimits")
                 .given()
@@ -145,7 +187,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
-    private HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
+    @HapiTest
+    final HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
 
@@ -162,8 +205,9 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
      *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
+    @HapiTest
     @SuppressWarnings("java:S5960")
-    private HapiSpec checkCustomNetworkTps(
+    final HapiSpec checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
         final var name = "Throttles" + txn + "AsExpected";
         final var baseSpec =
@@ -187,7 +231,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 }));
     }
 
-    private HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
+    @HapiTest
+    final HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))
                 .when()

@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
@@ -27,9 +31,13 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
+import com.hedera.node.app.service.mono.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -52,7 +60,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
-
     @Inject
     public ScheduleCreateHandler() {
         super();
@@ -128,16 +135,29 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final Instant currentConsensusTime = context.consensusNow();
         final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
+        final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         // Note: We must store the original ScheduleCreate transaction body in the Schedule so that we can compare
         //       those bytes to any new ScheduleCreate transaction for detecting duplicate ScheduleCreate
         //       transactions.  SchedulesByEquality is the virtual map for that task
         final TransactionBody currentTransaction = context.body();
         if (currentTransaction.hasScheduleCreate()) {
+            final var expirationSeconds = isLongTermEnabled
+                    ? schedulingConfig.maxExpirationFutureSeconds()
+                    : ledgerConfig.scheduleTxExpiryTimeSecs();
             final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
-                    currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
+                    currentTransaction, currentConsensusTime, expirationSeconds);
             checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
+            context.attributeValidator()
+                    .validateMemo(provisionalSchedule.scheduledTransaction().memo());
+            if (provisionalSchedule.hasAdminKey()) {
+                try {
+                    context.attributeValidator().validateKey(provisionalSchedule.adminKeyOrThrow());
+                } catch (HandleException e) {
+                    throw new HandleException(ResponseCodeEnum.INVALID_ADMIN_KEY);
+                }
+            }
             final ResponseCodeEnum validationResult =
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
@@ -164,8 +184,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 }
                 scheduleStore.put(finalSchedule);
                 final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
-                scheduleRecords.scheduleID(finalSchedule.scheduleId());
-                scheduleRecords.scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
+                scheduleRecords
+                        .scheduleID(finalSchedule.scheduleId())
+                        .scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
             } else {
                 throw new HandleException(validationResult);
             }
@@ -182,7 +203,15 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             for (final Schedule candidate : possibleDuplicates) {
                 if (compareForDuplicates(candidate, provisionalSchedule)) {
                     // Do not forget to set the ID of the existing duplicate in the receipt...
-                    context.recordBuilder(ScheduleRecordBuilder.class).scheduleID(candidate.scheduleId());
+                    TransactionID scheduledTransactionID = candidate
+                            .originalCreateTransaction()
+                            .transactionID()
+                            .copyBuilder()
+                            .scheduled(true)
+                            .build();
+                    context.recordBuilder(ScheduleRecordBuilder.class)
+                            .scheduleID(candidate.scheduleId())
+                            .scheduledTransactionID(scheduledTransactionID);
                     return true;
                 }
             }
@@ -308,5 +337,27 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         } else {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+        final var config = feeContext.configuration();
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
+        final var subType = (op.scheduleCreateOrThrow().hasScheduledTransactionBody()
+                        && op.scheduleCreateOrThrow().scheduledTransactionBody().hasContractCall())
+                ? SubType.SCHEDULE_CREATE_CONTRACT_CALL
+                : SubType.DEFAULT;
+
+        return feeContext.feeCalculator(subType).legacyCalculate(sigValueObj -> new ScheduleCreateResourceUsage(
+                        new ScheduleOpsUsage(), null)
+                .usageGiven(
+                        fromPbj(op),
+                        sigValueObj,
+                        schedulingConfig.longTermEnabled(),
+                        ledgerConfig.scheduleTxExpiryTimeSecs()));
     }
 }

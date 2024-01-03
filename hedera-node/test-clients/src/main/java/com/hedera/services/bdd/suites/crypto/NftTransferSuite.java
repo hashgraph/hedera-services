@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -25,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -40,8 +42,10 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class NftTransferSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(NftTransferSuite.class);
 
@@ -170,17 +174,18 @@ public class NftTransferSuite extends HapiSuite {
                                         .between(
                                                 userAccountName(2 * accountId + fromOffset),
                                                 userAccountName(2 * accountId + toOffset)))
+                        .noLogging()
                         .payingWith(GENESIS)))
                 .flatMap(List::stream)
                 .toArray(HapiSpecOperation[]::new);
-        return inParallel(ops);
+        return blockingOrder(logIt("----- Beginning round #" + roundNum + " -----"), inParallel(ops));
     }
 
     private static HapiSpecOperation setupNftTest() {
         return blockingOrder(createBasicAccounts(), createAccountsAndNfts());
     }
 
-    private HapiSpec transferNfts() {
+    final HapiSpec transferNfts() {
         return defaultHapiSpec("TransferNfts")
                 .given(setupNftTest(), transferInitial())
                 .when(seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound))

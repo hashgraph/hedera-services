@@ -29,7 +29,6 @@ module com.swirlds.demo.platform {
     requires com.google.protobuf;
     requires com.swirlds.base;
     requires com.swirlds.common.test.fixtures;
-    requires com.swirlds.common.testing;
     requires com.swirlds.common;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
@@ -38,7 +37,6 @@ module com.swirlds.demo.platform {
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
-    requires com.swirlds.platform.gui;
     requires com.swirlds.virtualmap;
     requires java.logging;
     requires java.management;

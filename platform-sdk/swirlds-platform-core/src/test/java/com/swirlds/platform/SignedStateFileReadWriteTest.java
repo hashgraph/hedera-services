@@ -38,13 +38,14 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
@@ -66,10 +67,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("SignedState Read/Write Test")
 class SignedStateFileReadWriteTest {
-
-    private static final NodeId SELF_ID = new NodeId(1234);
-    private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
-    private static final String SWIRLD_NAME = "mySwirld";
     /**
      * Temporary directory provided by JUnit
      */
@@ -259,7 +256,7 @@ class SignedStateFileReadWriteTest {
 
     private Configuration changeConfigAndConfigHolder(String directory) {
         return new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", directory)
+                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, directory)
                 .getOrCreateConfig();
     }
 }

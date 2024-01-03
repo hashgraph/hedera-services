@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
@@ -58,10 +57,6 @@ public class ConsensusTestOrchestrator {
     public void runGui() {
         final ConsensusTestNode node = nodes.stream().findAny().orElseThrow();
         new TestGuiSource(node.getEventEmitter().getGraphGenerator(), node.getIntake()).runGui();
-    }
-
-    public void loadSignedState(final SignedState signedState) {
-        nodes.forEach(node -> node.loadSignedState(signedState));
     }
 
     /** Generates all events defined in the input */

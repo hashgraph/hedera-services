@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package com.hedera.node.app.fees.congestion;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.state.HederaState;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -53,13 +55,22 @@ public class CongestionMultipliers {
      * Returns the maximum congestion multiplier of the gas and entity utilization based multipliers.
      *
      * @param txnInfo transaction info needed for entity utilization based multiplier
-     * @param state  the state needed for entity utilization based multiplier
+     * @param storeFactory  provide the stores needed for entity utilization based multiplier
      *
      * @return the max congestion multiplier
      */
-    public long maxCurrentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final HederaState state) {
+    public long maxCurrentMultiplier(
+            @NonNull final TransactionInfo txnInfo, @NonNull final ReadableStoreFactory storeFactory) {
+        return maxCurrentMultiplier(txnInfo.txBody(), txnInfo.functionality(), storeFactory);
+    }
+
+    public long maxCurrentMultiplier(
+            @NonNull final TransactionBody body,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final ReadableStoreFactory storeFactory) {
         return Math.max(
-                throttleMultiplier.currentMultiplier(), entityUtilizationMultiplier.currentMultiplier(txnInfo, state));
+                throttleMultiplier.currentMultiplier(),
+                entityUtilizationMultiplier.currentMultiplier(body, functionality, storeFactory));
     }
 
     /**
@@ -68,7 +79,7 @@ public class CongestionMultipliers {
      * @return the  congestion level starts
      */
     @NonNull
-    public Instant[] genericCongestionStarts() {
+    public Instant[] entityUtilizationCongestionStarts() {
         return entityUtilizationMultiplier.congestionLevelStarts();
     }
 

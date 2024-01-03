@@ -19,7 +19,6 @@ package com.swirlds.platform.health;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.config.OSHealthCheckConfig;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

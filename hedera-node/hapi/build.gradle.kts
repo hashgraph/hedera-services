@@ -23,6 +23,48 @@ plugins {
 
 description = "Hedera API"
 
+val hapiProtoBranchOrTag = "add-first-cons-of-current-block-to-info"
+val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
+
+if (!gradle.startParameter.isOffline) {
+    @Suppress("UnstableApiUsage")
+    providers
+        .exec {
+            if (!hederaProtoDir.dir(".git").asFile.exists()) {
+                workingDir = layout.projectDirectory.asFile
+                commandLine(
+                    "git",
+                    "clone",
+                    "https://github.com/hashgraph/hedera-protobufs.git",
+                    "-q"
+                )
+            } else {
+                workingDir = hederaProtoDir.asFile
+                commandLine("git", "fetch", "-q")
+            }
+        }
+        .result
+        .get()
+}
+
+@Suppress("UnstableApiUsage")
+providers
+    .exec {
+        workingDir = hederaProtoDir.asFile
+        commandLine("git", "checkout", hapiProtoBranchOrTag, "-q")
+    }
+    .result
+    .get()
+
+@Suppress("UnstableApiUsage")
+providers
+    .exec {
+        workingDir = hederaProtoDir.asFile
+        commandLine("git", "reset", "--hard", "origin/$hapiProtoBranchOrTag", "-q")
+    }
+    .result
+    .get()
+
 testModuleInfo {
     requires("com.hedera.node.hapi")
     // we depend on the protoc compiled hapi during test as we test our pbj generated code
@@ -61,20 +103,3 @@ tasks.test {
     minHeapSize = "512m"
     maxHeapSize = "4096m"
 }
-
-// ----
-// TODO move the following things to 'hashgraph/pbj' plugin
-tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask> {
-    doFirst {
-        // Clean output directories before generating new code. Belongs into:
-        // 'pbj-core/pbj-compiler/src/main/java/com/hedera/pbj/compiler/PbjCompilerTask.java'
-        delete(javaMainOutputDirectory)
-        delete(javaTestOutputDirectory)
-    }
-}
-
-tasks.withType<com.autonomousapps.tasks.CodeSourceExploderTask>().configureEach {
-    // Wire the source generation so that the source sets know which tasks
-    // generate code for them. Then this additional 'dependsOn' is not necessary.
-    dependsOn(tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask>())
-} // ----

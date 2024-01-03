@@ -40,21 +40,21 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.address.AddressBookUtils;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -109,8 +109,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     /**
      * The number of rounds handled by this app. Is incremented each time
-     * {@link #handleConsensusRound(Round, SwirldDualState)} is called. Note that this may not actually equal the round
-     * number, since we don't call {@link #handleConsensusRound(Round, SwirldDualState)} for rounds with no events.
+     * {@link #handleConsensusRound(Round, PlatformState)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, PlatformState)} for rounds with no events.
      *
      * <p>
      * Affects the hash of this node.
@@ -161,11 +161,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void init(
             @NonNull final Platform platform,
-            @NonNull final SwirldDualState swirldDualState,
+            @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
         Objects.requireNonNull(platform, "the platform cannot be null");
-        Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
+        Objects.requireNonNull(platformState, "the platform state cannot be null");
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
         addressBookConfig = platform.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
         testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
@@ -184,9 +184,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         Objects.requireNonNull(round, "the round cannot be null");
-        Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
+        Objects.requireNonNull(platformState, "the platform state cannot be null");
         throwIfImmutable();
 
         if (roundsHandled == 0 && !freezeAfterGenesis.equals(Duration.ZERO)) {
@@ -195,7 +195,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     STARTUP.getMarker(),
                     "Setting freeze time to {} seconds after genesis.",
                     freezeAfterGenesis.getSeconds());
-            swirldDualState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
+            platformState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
         }
 
         roundsHandled++;

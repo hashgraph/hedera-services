@@ -101,7 +101,6 @@ public class FileCreateHandler implements TransactionHandler {
 
         final var fileCreateTransactionBody = handleContext.body().fileCreateOrThrow();
 
-        // TODO: skip at least the mutability check for privileged "payer" accounts
         if (fileCreateTransactionBody.hasKeys()) {
             KeyList transactionKeyList = fileCreateTransactionBody.keys();
             builder.keys(transactionKeyList);

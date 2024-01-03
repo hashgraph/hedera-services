@@ -18,15 +18,21 @@ package com.hedera.node.app.service.contract.impl.hevm;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
-public record HevmBlockValues(long gasLimit, long blockNo, @NonNull Instant blockTime) implements BlockValues {
+public record HevmBlockValues(long gasLimit, long blockNo, @NonNull Timestamp blockTime) implements BlockValues {
     private static final Optional<Wei> ZERO_BASE_FEE = Optional.of(Wei.ZERO);
+
+    public static HevmBlockValues from(@NonNull final BlockRecordInfo blockRecordInfo, final long gasLimit) {
+        requireNonNull(blockRecordInfo);
+        return new HevmBlockValues(gasLimit, blockRecordInfo.blockNo(), blockRecordInfo.currentBlockTimestamp());
+    }
 
     public HevmBlockValues {
         requireNonNull(blockTime);
@@ -39,7 +45,7 @@ public record HevmBlockValues(long gasLimit, long blockNo, @NonNull Instant bloc
 
     @Override
     public long getTimestamp() {
-        return blockTime.getEpochSecond();
+        return blockTime.seconds();
     }
 
     @Override

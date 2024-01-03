@@ -31,14 +31,14 @@ public class GlobalContextTest {
         GlobalContext context = GlobalContext.getInstance();
 
         // then
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, "value"));
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1));
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1L));
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1.0D));
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1.0F));
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, true));
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose("foo", null));
-        Assertions.assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, null));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, "value"));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1L));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1.0D));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1.0F));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, true));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add("foo", null));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, null));
     }
 
     @Test
@@ -47,12 +47,12 @@ public class GlobalContextTest {
         GlobalContext context = GlobalContext.getInstance();
 
         // when
-        context.addWithRemovalOnClose("key-string", "value");
-        context.addWithRemovalOnClose("key-int", 1);
-        context.addWithRemovalOnClose("key-long", 1L);
-        context.addWithRemovalOnClose("key-double", 1.0D);
-        context.addWithRemovalOnClose("key-float", 1.0F);
-        context.addWithRemovalOnClose("key-boolean", true);
+        context.add("key-string", "value");
+        context.add("key-int", 1);
+        context.add("key-long", 1L);
+        context.add("key-double", 1.0D);
+        context.add("key-float", 1.0F);
+        context.add("key-boolean", true);
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
@@ -71,9 +71,9 @@ public class GlobalContextTest {
         GlobalContext context = GlobalContext.getInstance();
 
         // when
-        context.addWithRemovalOnClose("key", "a");
-        context.addWithRemovalOnClose("key", "b");
-        context.addWithRemovalOnClose("key", "c");
+        context.add("key", "a");
+        context.add("key", "b");
+        context.add("key", "c");
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
@@ -87,7 +87,7 @@ public class GlobalContextTest {
         GlobalContext context = GlobalContext.getInstance();
 
         // when
-        context.addWithRemovalOnClose("key", "a");
+        context.add("key", "a");
         context.remove("key");
 
         // then
@@ -108,8 +108,8 @@ public class GlobalContextTest {
     void testClear() {
         // given
         GlobalContext context = GlobalContext.getInstance();
-        context.addWithRemovalOnClose("key", "a");
-        context.addWithRemovalOnClose("key-2", "a");
+        context.add("key", "a");
+        context.add("key-2", "a");
 
         // when
         context.clear();
@@ -123,7 +123,7 @@ public class GlobalContextTest {
     void testAutocloseable() {
         // given
         GlobalContext context = GlobalContext.getInstance();
-        AutoCloseable closeable = context.addWithRemovalOnClose("key", "a");
+        AutoCloseable closeable = context.add("key", "a");
 
         // when
         Assertions.assertDoesNotThrow(() -> closeable.close());

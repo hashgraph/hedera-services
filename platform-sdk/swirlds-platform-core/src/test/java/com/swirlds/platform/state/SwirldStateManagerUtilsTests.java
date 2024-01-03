@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.SwirldState;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,14 +43,8 @@ public class SwirldStateManagerUtilsTests {
         when(platformState.copy()).thenReturn(platformState);
         state.setPlatformState(platformState);
 
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
-
         final SwirldState swirldState = new DummySwirldState();
         state.setSwirldState(swirldState);
-
-        final DualStateImpl dualState = new DualStateImpl();
-        state.setDualState(dualState);
 
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);

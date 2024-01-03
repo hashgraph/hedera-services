@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;

@@ -30,8 +30,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -42,17 +40,10 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 public class AutoAccountCreator {
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
-    // checks tokenAliasMap if the change consists an alias that is already used in previous
-    // iteration of the token transfer list. This map is used to count number of
-    // maxAutoAssociations needed on auto created account
-    protected final Map<ProtoBytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
     private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());

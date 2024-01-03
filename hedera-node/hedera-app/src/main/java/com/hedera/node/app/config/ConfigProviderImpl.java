@@ -27,20 +27,15 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
-import com.hedera.node.config.converter.EntityTypeConverter;
 import com.hedera.node.config.converter.FileIDConverter;
 import com.hedera.node.config.converter.FunctionalitySetConverter;
-import com.hedera.node.config.converter.HederaFunctionalityConverter;
 import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.LongPairConverter;
-import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
-import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
-import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -195,18 +190,13 @@ public class ConfigProviderImpl extends ConfigProviderBase {
                 .withConfigDataType(VersionConfig.class)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
-                .withConverter(new EntityTypeConverter())
                 .withConverter(new KnownBlockValuesConverter())
                 .withConverter(new LegacyContractIdActivationsConverter())
-                .withConverter(new MapAccessTypeConverter())
-                .withConverter(new RecomputeTypeConverter())
                 .withConverter(new ScaleFactorConverter())
                 .withConverter(new AccountIDConverter())
                 .withConverter(new ContractIDConverter())
                 .withConverter(new FileIDConverter())
-                .withConverter(new HederaFunctionalityConverter())
                 .withConverter(new PermissionedAccountsRangeConverter())
-                .withConverter(new SidecarTypeConverter())
                 .withConverter(new SemanticVersionConverter())
                 .withConverter(new LongPairConverter())
                 .withConverter(new KeyValuePairConverter())

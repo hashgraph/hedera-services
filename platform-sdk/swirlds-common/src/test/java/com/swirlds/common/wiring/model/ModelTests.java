@@ -17,21 +17,19 @@
 package com.swirlds.common.wiring.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.utility.ModelGroup;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ModelTests {
@@ -59,10 +57,8 @@ class ModelTests {
         final boolean illegalDirectSchedulerUseDetected = model.checkForIllegalDirectSchedulerUsage();
         assertEquals(illegalDirectSchedulerUseExpected, illegalDirectSchedulerUseDetected);
 
-        final Set<ModelGroup> groups = new HashSet<>();
-
         // Should not throw.
-        final String diagram = model.generateWiringDiagram(groups);
+        final String diagram = model.generateWiringDiagram(List.of(), List.of(), List.of());
         if (printMermaidDiagram) {
             System.out.println(diagram);
         }
@@ -1003,7 +999,10 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().buildFilter("onlyEven", x -> x % 2 == 0).solderTo(inputE);
+        taskSchedulerD
+                .getOutputWire()
+                .buildFilter("onlyEven", "onlyEvenInput", x -> x % 2 == 0)
+                .solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
         taskSchedulerG.getOutputWire().solderTo(inputD);
@@ -1083,7 +1082,10 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().buildTransformer("inverter", x -> -x).solderTo(inputE);
+        taskSchedulerD
+                .getOutputWire()
+                .buildTransformer("inverter", "inverterInput", x -> -x)
+                .solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
         taskSchedulerG.getOutputWire().solderTo(inputD);
@@ -1163,7 +1165,7 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        final OutputWire<Integer> splitter = taskSchedulerD.getOutputWire().buildSplitter();
+        final OutputWire<Integer> splitter = taskSchedulerD.getOutputWire().buildSplitter("splitter", "splitterInput");
         splitter.solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
@@ -1291,7 +1293,7 @@ class ModelTests {
         final TaskScheduler<Integer> taskSchedulerB =
                 model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        final InputWire<Instant> heartbeatInputB = taskSchedulerB.buildInputWire("heartbeatInputB");
+        taskSchedulerB.buildHeartbeatInputWire("heartbeat", 100);
 
         final TaskScheduler<Integer> taskSchedulerC =
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
@@ -1301,14 +1303,10 @@ class ModelTests {
                 model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        final OutputWire<Instant> heartbeatWire = model.buildHeartbeatWire(100);
-
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
         taskSchedulerD.getOutputWire().solderTo(inputA);
-
-        heartbeatWire.solderTo(heartbeatInputB);
 
         validateModel(model, true, false);
     }
@@ -1676,5 +1674,21 @@ class ModelTests {
         taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, false, true);
+    }
+
+    @Test
+    void unboundInputWireTest() {
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.schedulerBuilder("A").build().cast();
+        final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+
+        assertTrue(model.checkForUnboundInputWires());
+
+        inputA.bind(x -> {});
+
+        assertFalse(model.checkForUnboundInputWires());
     }
 }

@@ -64,7 +64,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
         });
     }
 
-    private HapiSpec setNewLimits() {
+    final HapiSpec setNewLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/split-throttles.json");
 
         return defaultHapiSpec("SetNewLimits")
@@ -75,7 +75,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
                         .contents(artificialLimits.toByteArray()));
     }
 
-    private HapiSpec tryCreations() {
+    final HapiSpec tryCreations() {
         return defaultHapiSpec("TryCreations")
                 .given()
                 .when(runWithProvider(cryptoCreateOps())

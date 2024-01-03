@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -52,8 +53,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
@@ -87,7 +90,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec noTokenIdReverts() {
+    final HapiSpec noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
@@ -138,7 +141,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec isFrozenHappyPathWithAliasLocalCall() {
+    final HapiSpec isFrozenHappyPathWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
         final String accountAlias = "accountAlias";

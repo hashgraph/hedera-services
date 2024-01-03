@@ -24,7 +24,8 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
@@ -75,9 +76,9 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
 
                 return new OperationResult(localCost, null);
             }
-        } catch (final FixedStack.UnderflowException ufe) {
+        } catch (final UnderflowException ufe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
-        } catch (final FixedStack.OverflowException ofe) {
+        } catch (final OverflowException ofe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }
     }

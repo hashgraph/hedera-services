@@ -20,10 +20,10 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_1_3;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.PlatformStatNames;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.SwirldTransactionSubmitter;
 import com.swirlds.platform.stats.AverageStat;
+import com.swirlds.platform.system.PlatformStatNames;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 
 /**
  * Provides access to statistics relevant to transactions.

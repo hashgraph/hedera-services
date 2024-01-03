@@ -39,7 +39,7 @@ import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
 import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
 import java.math.MathContext;

@@ -17,10 +17,24 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
+    id("com.hedera.hashgraph.benchmark-conventions")
     id("java-test-fixtures")
 }
 
-mainModuleInfo { runtimeOnly("com.swirlds.config.impl") }
+mainModuleInfo {
+    annotationProcessor("com.swirlds.config.processor")
+    runtimeOnly("com.swirlds.config.impl")
+}
+
+jmhModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.test")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("jmh.core")
+}
 
 testModuleInfo {
     requires("com.swirlds.base.test.fixtures")

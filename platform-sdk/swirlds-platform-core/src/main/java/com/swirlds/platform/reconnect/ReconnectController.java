@@ -20,8 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.threading.BlockingResourceProvider;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
@@ -30,6 +28,8 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -93,7 +93,7 @@ public class ReconnectController implements Runnable {
             // the ReconnectHelper uses a ReconnectLearnerThrottle to exit if there are too many failed attempts
             // so in this thread we can just try until it succeeds or the throttle kicks in
             while (!executeReconnect()) {
-                logger.error(LogMarker.RECONNECT.getMarker(), "Reconnect failed, retrying");
+                logger.error(EXCEPTION.getMarker(), "Reconnect failed, retrying");
                 Thread.sleep(minTimeBetweenReconnects.toMillis());
             }
         } catch (final RuntimeException | InterruptedException e) {

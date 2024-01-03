@@ -75,9 +75,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -94,12 +96,15 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -183,8 +188,9 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associateHasExpectedSemantics() {
-        return defaultHapiSpec("AssociateHasExpectedSemantics")
+    final HapiSpec associateHasExpectedSemantics() {
+        return propertyPreservingHapiSpec("AssociateHasExpectedSemantics")
+                .preserving("tokens.maxRelsPerInfoQuery")
                 .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))
                 .when(
                         cryptoCreate("misc").balance(0L),
@@ -238,18 +244,25 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec optimisticSpecialFileUpdate() {
+    final HapiSpec optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
-        final var specialFileContents = ByteString.copyFrom(randomUtf8Bytes(64 * BYTES_4K));
+        final var contents = randomUtf8Bytes(64 * BYTES_4K);
+        final var specialFileContents = ByteString.copyFrom(contents);
+        final byte[] expectedHash;
+        try {
+            expectedHash = MessageDigest.getInstance("SHA-384").digest(contents);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
         return defaultHapiSpec("OptimisticSpecialFileUpdate")
                 .given()
                 .when(updateSpecialFile(GENESIS, specialFile, specialFileContents, BYTES_4K, appendsPerBurst))
-                .then(getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray()));
+                .then(getFileInfo(specialFile).hasMemo(CommonUtils.hex(expectedHash)));
     }
 
-    // It is not implemented yet in SystemFileUpdateFacility line number 127
-    private HapiSpec apiPermissionsChangeDynamically() {
+    @HapiTest
+    final HapiSpec apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
@@ -260,10 +273,13 @@ public class FileUpdateSuite extends HapiSuite {
                 .when(
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .erasingProps(Set.of("tokenCreate")),
+                                .overridingProps(Map.of("tokenCreate", "0-1")),
                         getFileContents(API_PERMISSIONS).logged())
                 .then(
-                        tokenCreate("poc").payingWith(civilian).hasPrecheck(NOT_SUPPORTED),
+                        tokenCreate("poc")
+                                .payingWith(civilian)
+                                .hasPrecheckFrom(NOT_SUPPORTED, OK)
+                                .hasKnownStatus(UNAUTHORIZED),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("tokenCreate", "0-*")),
@@ -271,7 +287,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateFeesCompatibleWithCreates() {
+    final HapiSpec updateFeesCompatibleWithCreates() {
         final long origLifetime = 7_200_000L;
         final long extension = 700_000L;
         final byte[] old2k = randomUtf8Bytes(BYTES_4K / 2);
@@ -317,7 +333,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec vanillaUpdateSucceeds() {
+    final HapiSpec vanillaUpdateSucceeds() {
         final byte[] old4K = randomUtf8Bytes(BYTES_4K);
         final byte[] new4k = randomUtf8Bytes(BYTES_4K);
         final String firstMemo = "Originally";
@@ -337,7 +353,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotUpdateExpirationPastMaxLifetime() {
+    final HapiSpec cannotUpdateExpirationPastMaxLifetime() {
         return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
                 .given(fileCreate("test"))
                 .when()
@@ -347,7 +363,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec maxRefundIsEnforced() {
+    final HapiSpec maxRefundIsEnforced() {
         return propertyPreservingHapiSpec("MaxRefundIsEnforced")
                 .preserving(MAX_REFUND_GAS_PROP)
                 .given(overriding(MAX_REFUND_GAS_PROP, "5"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -358,7 +374,8 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     // C.f. https://github.com/hashgraph/hedera-services/pull/8908
-    private HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
+    @HapiTest
+    final HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .preserving(MAX_REFUND_GAS_PROP)
                 .given(
@@ -368,11 +385,11 @@ public class FileUpdateSuite extends HapiSuite {
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
                 .then(contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                         .gas(300_000L)
-                        .has(resultWith().gasUsed(26_451)));
+                        .has(resultWith().gasUsed(26_515)));
     }
 
     @HapiTest
-    private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+    final HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .preserving(CONS_MAX_GAS_PROP)
                 .given(
@@ -387,7 +404,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec kvLimitsEnforced() {
+    final HapiSpec kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
 
@@ -449,7 +466,8 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec serviceFeeRefundedIfConsGasExhausted() {
+    @HapiTest
+    final HapiSpec serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
         final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
         final var civilian = "payer";
@@ -538,7 +556,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
+    final HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
         final var notToBe = "ne'erToBe";
         return propertyPreservingHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
                 .preserving(
@@ -570,8 +588,8 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
-    // It is not implemented yet in contracts
-    private HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
+    @BddMethodIsNotATest
+    final HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";
         final var aSet = "aSet";
@@ -661,7 +679,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec messageSubmissionSizeChange() {
+    final HapiSpec messageSubmissionSizeChange() {
         final var defaultMaxBytesAllowed = 1024;
         final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
 

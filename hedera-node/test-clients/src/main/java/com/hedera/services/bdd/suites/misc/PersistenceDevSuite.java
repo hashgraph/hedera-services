@@ -42,7 +42,7 @@ public class PersistenceDevSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec testEntityLoading() {
+    final HapiSpec testEntityLoading() {
         return customHapiSpec("TestEntityLoading")
                 .withProperties(Map.of("persistentEntities.dir.path", "persistent-entities/"))
                 .given(

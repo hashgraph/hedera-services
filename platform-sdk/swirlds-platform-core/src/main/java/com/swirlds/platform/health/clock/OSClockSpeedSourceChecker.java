@@ -19,7 +19,7 @@ package com.swirlds.platform.health.clock;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
-import com.swirlds.common.config.OSHealthCheckConfig;
+import com.swirlds.platform.health.OSHealthCheckConfig;
 
 /**
  * Utility class that performs OS clock source speed checks and writes the report to a {@link StringBuilder}.

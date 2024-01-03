@@ -77,9 +77,6 @@ public class FileAppendHandler implements TransactionHandler {
         if (transactionBody.fileID() == null) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
-        if (transactionBody.contents() == null || transactionBody.contents().length() == 0) {
-            throw new PreCheckException(FILE_CONTENT_EMPTY);
-        }
     }
 
     /**
@@ -120,7 +117,8 @@ public class FileAppendHandler implements TransactionHandler {
         }
 
         // the update file always will be for the node, not a particular ledger that's why we just compare the num
-        if (target.fileNum() == fileServiceConfig.upgradeFileNumber()) {
+        if (target.fileNum() >= fileServiceConfig.softwareUpdateRange().left()
+                && target.fileNum() <= fileServiceConfig.softwareUpdateRange().right()) {
             handleAppendUpgradeFile(fileAppend, handleContext);
             return;
         }
@@ -132,8 +130,6 @@ public class FileAppendHandler implements TransactionHandler {
             throw new HandleException(INVALID_FILE_ID);
         }
         final var file = optionalFile.get();
-
-        // TODO: skip at least the mutability check for privileged "payer" accounts
 
         // First validate this file is mutable; and the pending mutations are allowed
         validateFalse(file.keys() == null, UNAUTHORIZED);
@@ -218,10 +214,11 @@ public class FileAppendHandler implements TransactionHandler {
 
     private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
         final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
-        File file = fileStore.peek();
-        if (file == null) {
+        File file = fileStore.peek(fileAppend.fileID());
+        if (file == null || fileAppend.fileID() == null) {
             throw new HandleException(INVALID_FILE_ID);
         }
-        fileStore.append(fileAppend.contents());
+
+        fileStore.append(fileAppend.contents(), fileAppend.fileID());
     }
 }

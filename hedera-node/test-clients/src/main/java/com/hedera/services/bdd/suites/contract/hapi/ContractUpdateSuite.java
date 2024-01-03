@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -60,8 +61,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractUpdateSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
@@ -103,7 +106,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateStakingFieldsWorks() {
+    final HapiSpec updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks")
                 .given(
                         uploadInitCode(CONTRACT),
@@ -152,7 +155,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2877
     @HapiTest
-    private HapiSpec eip1014AddressAlwaysHasPriority() {
+    final HapiSpec eip1014AddressAlwaysHasPriority() {
         final var contract = "VariousCreate2Calls";
         final var creationTxn = "creationTxn";
         final var callTxn = "callTxn";
@@ -210,7 +213,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateWithBothMemoSettersWorks() {
+    final HapiSpec updateWithBothMemoSettersWorks() {
         final var firstMemo = "First";
         final var secondMemo = "Second";
         final var thirdMemo = "Third";
@@ -230,7 +233,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updatingExpiryWorks() {
+    final HapiSpec updatingExpiryWorks() {
         final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
         return defaultHapiSpec("UpdatingExpiryWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -239,7 +242,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec rejectsExpiryTooFarInTheFuture() {
+    final HapiSpec rejectsExpiryTooFarInTheFuture() {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
 
@@ -250,7 +253,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateAutoRenewWorks() {
+    final HapiSpec updateAutoRenewWorks() {
         return defaultHapiSpec("UpdateAutoRenewWorks")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -261,7 +264,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateAutoRenewAccountWorks() {
+    final HapiSpec updateAutoRenewAccountWorks() {
         final var autoRenewAccount = "autoRenewAccount";
         final var newAutoRenewAccount = "newAutoRenewAccount";
         return defaultHapiSpec("UpdateAutoRenewAccountWorks")
@@ -288,7 +291,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateAdminKeyWorks() {
+    final HapiSpec updateAdminKeyWorks() {
         return defaultHapiSpec("UpdateAdminKeyWorks")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -304,14 +307,15 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/3037
     @HapiTest
-    private HapiSpec immutableContractKeyFormIsStandard() {
+    final HapiSpec immutableContractKeyFormIsStandard() {
         return defaultHapiSpec("ImmutableContractKeyFormIsStandard")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).immutable())
                 .when()
                 .then(getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
     }
 
-    private HapiSpec canMakeContractImmutableWithEmptyKeyList() {
+    @HapiTest
+    final HapiSpec canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -325,7 +329,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec givenAdminKeyMustBeValid() {
+    final HapiSpec givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid")
                 .given(uploadInitCode(contract), contractCreate(contract))
@@ -336,6 +340,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     HapiSpec fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
@@ -429,7 +434,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateDoesNotChangeBytecode() {
+    final HapiSpec updateDoesNotChangeBytecode() {
         // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";
         final var emptyConstructorContract = "EmptyConstructor";

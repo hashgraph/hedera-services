@@ -41,7 +41,7 @@ abstract class RandomOperationSignedBy<T extends HapiTxnOp<T>> implements OpProv
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
     private final ResponseCodeEnum[] permissiblePrechecks =
-            standardPrechecksAnd(PAYER_ACCOUNT_NOT_FOUND, ACCOUNT_DELETED);
+            standardPrechecksAnd(PAYER_ACCOUNT_NOT_FOUND, ACCOUNT_DELETED, PAYER_ACCOUNT_DELETED);
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, ACCOUNT_DELETED, PAYER_ACCOUNT_DELETED);
 

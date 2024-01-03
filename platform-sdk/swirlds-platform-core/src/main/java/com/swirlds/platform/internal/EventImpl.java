@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.internal;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
-
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -26,25 +24,25 @@ import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.OptionalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
-import com.swirlds.common.system.events.EventSerializationOptions;
-import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.EventSerializationOptions;
+import com.swirlds.platform.system.events.PlatformEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.SystemTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,7 +56,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -111,27 +108,6 @@ public class EventImpl extends EventMetadata
 
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
-
-    /**
-     * The sequence number of an event before it is added to the write queue.
-     */
-    public static final long NO_STREAM_SEQUENCE_NUMBER = -1;
-
-    /**
-     * The sequence number of an event that will never be written to disk because it is stale.
-     */
-    public static final long STALE_EVENT_STREAM_SEQUENCE_NUMBER = -2;
-
-    /**
-     * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
-     * signal when events have been made durable.
-     */
-    private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
-
-    /**
-     * This latch counts down when prehandle has been called on all application transactions contained in this event.
-     */
-    private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
 
     public EventImpl() {}
 
@@ -189,52 +165,10 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Set the sequence number in the preconsenus event stream for this event.
-     *
-     * @param streamSequenceNumber the sequence number
-     */
-    public void setStreamSequenceNumber(final long streamSequenceNumber) {
-        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
-                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("sequence number already set");
-        }
-        this.streamSequenceNumber = streamSequenceNumber;
-    }
-
-    /**
-     * Get the sequence number in the preconsensus event stream for this event.
-     *
-     * @return the sequence number
-     */
-    public long getStreamSequenceNumber() {
-        if (streamSequenceNumber == NO_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("sequence number not set");
-        }
-        return streamSequenceNumber;
-    }
-
-    /**
-     * Signal that all transactions have been prehandled for this event.
-     */
-    public void signalPrehandleCompletion() {
-        prehandleCompleted.countDown();
-    }
-
-    /**
-     * Wait until all transactions have been prehandled for this event.
-     */
-    public void awaitPrehandleCompletion() {
-        abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
-    }
-
-    /**
      * initialize RunningHash instance
      */
     private void setDefaultValues() {
         runningHash = new RunningHash();
-        if (baseEvent.getHashedData().getHash() != null) {
-            baseEvent.buildDescriptor();
-        }
     }
 
     /**

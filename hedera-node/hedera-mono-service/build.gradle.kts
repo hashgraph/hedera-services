@@ -67,19 +67,14 @@ jmhModuleInfo {
     requires("tuweni.units")
 }
 
-// Replace variables in semantic-version.properties with build variables
-tasks.processResources {
-    inputs.property("protoVersion", libs.versions.hapi.proto.get())
-    inputs.property("hederaServicesVersion", project.version)
-    filesMatching("semantic-version.properties") {
-        filter { line: String ->
-            if (line.contains("hapi-proto.version")) {
-                "hapi.proto.version=${inputs.properties["protoVersion"]}"
-            } else if (line.contains("project.version")) {
-                "hedera.services.version=${inputs.properties["hederaServicesVersion"]}"
-            } else {
-                line
-            }
-        }
+val writeSemanticVersionProperties =
+    tasks.register<WriteProperties>("writeSemanticVersionProperties") {
+        property("hapi.proto.version", libs.versions.hapi.proto.get())
+        property("hedera.services.version", project.version)
+
+        destinationFile.set(
+            layout.buildDirectory.file("generated/version/semantic-version.properties")
+        )
     }
-}
+
+tasks.processResources { from(writeSemanticVersionProperties) }

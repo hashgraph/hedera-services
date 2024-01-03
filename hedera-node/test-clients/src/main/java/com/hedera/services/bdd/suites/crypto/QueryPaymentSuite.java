@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -36,8 +37,10 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class QueryPaymentSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(QueryPaymentSuite.class);
     private static final String NODE = "0.0.3";
@@ -71,7 +74,7 @@ public class QueryPaymentSuite extends HapiSuite {
      * 3. Transaction payer is not involved in transfers for query payment to node and one or more have less balance
      */
     @HapiTest
-    private HapiSpec queryPaymentsFailsWithInsufficientFunds() {
+    final HapiSpec queryPaymentsFailsWithInsufficientFunds() {
         return defaultHapiSpec("queryPaymentsFailsWithInsufficientFunds")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),
@@ -107,7 +110,7 @@ public class QueryPaymentSuite extends HapiSuite {
      * 3. Transaction payer is not involved in transfers for query payment to node and all payers have enough balance
      */
     @HapiTest
-    private HapiSpec queryPaymentsMultiBeneficiarySucceeds() {
+    final HapiSpec queryPaymentsMultiBeneficiarySucceeds() {
         return defaultHapiSpec("queryPaymentsMultiBeneficiarySucceeds")
                 .given(
                         cryptoCreate("a").balance(1_234L),
@@ -137,7 +140,7 @@ public class QueryPaymentSuite extends HapiSuite {
 
     // Check if multiple payers or single payer pay amount to node
     @HapiTest
-    private HapiSpec queryPaymentsSingleBeneficiaryChecked() {
+    final HapiSpec queryPaymentsSingleBeneficiaryChecked() {
         return defaultHapiSpec("queryPaymentsSingleBeneficiaryChecked")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),
@@ -159,7 +162,7 @@ public class QueryPaymentSuite extends HapiSuite {
 
     // Check if payment is not done to node
     @HapiTest
-    private HapiSpec queryPaymentsNotToNodeFails() {
+    final HapiSpec queryPaymentsNotToNodeFails() {
         return defaultHapiSpec("queryPaymentsNotToNodeFails")
                 .given(
                         cryptoCreate("a").balance(500_000_000L),

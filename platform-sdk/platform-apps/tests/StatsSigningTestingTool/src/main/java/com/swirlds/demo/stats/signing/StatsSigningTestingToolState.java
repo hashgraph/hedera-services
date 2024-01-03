@@ -37,12 +37,12 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.Event;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
@@ -121,7 +121,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(final Round round, final PlatformState platformState) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

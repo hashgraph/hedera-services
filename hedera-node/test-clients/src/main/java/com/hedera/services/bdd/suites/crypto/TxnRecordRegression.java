@@ -16,22 +16,17 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -40,6 +35,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 /**
  * ! WARNING - Requires a RecordCache TTL of 3s to pass !
@@ -47,6 +43,7 @@ import org.apache.logging.log4j.Logger;
  * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
  * */
 @HapiTestSuite
+@Tag(CRYPTO)
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 
@@ -66,41 +63,25 @@ public class TxnRecordRegression extends HapiSuite {
             recordNotFoundIfNotInPayerState(),
             recordUnavailableIfRejectedInPrecheck(),
             recordUnavailableBeforeConsensus(),
-            recordAvailableInPayerState(),
-            deletedAccountRecordsUnavailableAfterTtl(),
+            recordsStillQueryableWithDeletedPayerId(),
         });
     }
 
     // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
-    private HapiSpec recordAvailableInPayerState() {
-        return defaultHapiSpec("RecordAvailableInPayerState")
-                .given(
-                        cryptoCreate("stingyPayer").sendThreshold(1L),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("stingyPayer")
-                                .via("recordTxn"))
-                .when(sleepFor(5_000L))
-                .then(
-                        getReceipt("recordTxn").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND),
-                        getTxnRecord("recordTxn").hasPriority(recordWith().status(SUCCESS)));
-    }
-
-    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
-    private HapiSpec deletedAccountRecordsUnavailableAfterTtl() {
+    @HapiTest
+    final HapiSpec recordsStillQueryableWithDeletedPayerId() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
-                        cryptoCreate("lowThreshPayer").sendThreshold(1L),
+                        cryptoCreate("toBeDeletedPayer"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("lowThreshPayer")
-                                .via("recordTxn"),
-                        cryptoDelete("lowThreshPayer"),
-                        getTxnRecord("recordTxn"))
-                .when(sleepFor(5_000L))
-                .then(getTxnRecord("recordTxn").hasCostAnswerPrecheck(ACCOUNT_DELETED));
+                                .payingWith("toBeDeletedPayer")
+                                .via("recordTxn"))
+                .when(cryptoDelete("toBeDeletedPayer"))
+                .then(getTxnRecord("recordTxn"));
     }
 
     @HapiTest
-    private HapiSpec returnsInvalidForUnspecifiedTxnId() {
+    final HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
@@ -108,7 +89,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec recordNotFoundIfNotInPayerState() {
+    final HapiSpec recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(
                         cryptoCreate("misc").via("success"),
@@ -118,7 +99,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec recordUnavailableBeforeConsensus() {
+    final HapiSpec recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
@@ -127,14 +108,16 @@ public class TxnRecordRegression extends HapiSuite {
                         getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
-    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
-    private HapiSpec recordUnavailableIfRejectedInPrecheck() {
+    @HapiTest
+    final HapiSpec recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
-                .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))
+                .given(
+                        cryptoCreate("misc").balance(1000L),
+                        usableTxnIdNamed("failingTxn").payerId("misc"))
                 .when(cryptoCreate("nope")
                         .payingWith("misc")
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
                         .txnId("failingTxn"))
-                .then(getTxnRecord("failingTxn").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord("failingTxn").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 }

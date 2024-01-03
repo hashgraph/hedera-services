@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
-
 module com.hedera.node.app.service.file.impl {
     requires com.fasterxml.jackson.databind;
     requires com.swirlds.common;
@@ -18,9 +16,6 @@ module com.hedera.node.app.service.file.impl {
     requires transitive javax.inject;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
-
-    provides com.hedera.node.app.service.file.FileService with
-            FileServiceImpl;
 
     exports com.hedera.node.app.service.file.impl.handlers;
     exports com.hedera.node.app.service.file.impl.codec;

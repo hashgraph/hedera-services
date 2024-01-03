@@ -37,16 +37,11 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
-import com.hedera.node.config.converter.EntityTypeConverter;
 import com.hedera.node.config.converter.FileIDConverter;
-import com.hedera.node.config.converter.HederaFunctionalityConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
-import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
-import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
-import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.sources.PropertySourceBasedConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -96,18 +91,13 @@ class PropertySourceBasedConfigTest {
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
-                .withConverter(new EntityTypeConverter())
                 .withConverter(new KnownBlockValuesConverter())
                 .withConverter(new LegacyContractIdActivationsConverter())
-                .withConverter(new MapAccessTypeConverter())
                 .withConverter(new PermissionedAccountsRangeConverter())
-                .withConverter(new RecomputeTypeConverter())
                 .withConverter(new ScaleFactorConverter())
                 .withConverter(new AccountIDConverter())
                 .withConverter(new ContractIDConverter())
                 .withConverter(new FileIDConverter())
-                .withConverter(new HederaFunctionalityConverter())
-                .withConverter(new SidecarTypeConverter())
                 .withConverter(new BytesConverter())
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .build();

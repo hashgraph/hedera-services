@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -28,6 +29,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -87,7 +89,7 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -107,9 +109,10 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 @SuppressWarnings("java:S5960")
 public class EthereumSuite extends HapiSuite {
 
@@ -163,7 +166,6 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
@@ -189,22 +191,26 @@ public class EthereumSuite extends HapiSuite {
                                 .via("deployTokenCreateContract"),
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
-                .then(withOpContext((spec, opLog) -> {
-                    var call = ethereumCall(
-                                    TOKEN_CREATE_CONTRACT,
-                                    "createNonFungibleTokenPublic",
-                                    tokenCreateContractAddress.get())
-                            .type(EthTxData.EthTransactionType.EIP1559)
-                            .signingWith(SECP_256K1_SOURCE_KEY)
-                            .payingWith(RELAYER)
-                            .nonce(1)
-                            .gasPrice(10L)
-                            .sending(ONE_HUNDRED_HBARS)
-                            .gasLimit(1_000_000L)
-                            .via("createTokenTxn")
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
-                    allRunFor(spec, call);
-                }));
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            var call = ethereumCall(
+                                            TOKEN_CREATE_CONTRACT,
+                                            "createNonFungibleTokenPublic",
+                                            tokenCreateContractAddress.get())
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                    .payingWith(RELAYER)
+                                    .nonce(1)
+                                    .gasPrice(10L)
+                                    .sending(ONE_HUNDRED_HBARS)
+                                    .gasLimit(1_000_000L)
+                                    .via("createTokenTxn")
+                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
+                            allRunFor(spec, call);
+                        }),
+                        // Quick assertion to verify top-level HAPI fees were still charged after aborting
+                        getTxnRecord("createTokenTxn")
+                                .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))));
     }
 
     @HapiTest
@@ -293,7 +299,67 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
-    @BddTestNameDoesNotMatchMethodName
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest1() {
+        return feePaymentMatrix().get(0);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest2() {
+        return feePaymentMatrix().get(1);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest3() {
+        return feePaymentMatrix().get(2);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest4() {
+        return feePaymentMatrix().get(3);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest5() {
+        return feePaymentMatrix().get(4);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest6() {
+        return feePaymentMatrix().get(5);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest7() {
+        return feePaymentMatrix().get(6);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest8() {
+        return feePaymentMatrix().get(7);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest9() {
+        return feePaymentMatrix().get(8);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest10() {
+        return feePaymentMatrix().get(9);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest11() {
+        return feePaymentMatrix().get(10);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest12() {
+        return feePaymentMatrix().get(11);
+    }
+
+    @BddMethodIsNotATest
     HapiSpec matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {
         return defaultHapiSpec("feePaymentMatrix "
@@ -346,6 +412,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
@@ -370,6 +437,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     HapiSpec etx014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";
@@ -420,6 +488,7 @@ public class EthereumSuite extends HapiSuite {
                                 .memo(MEMO))));
     }
 
+    @HapiTest
     HapiSpec etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
         final var relayerSnapshot = "relayer";
         final var senderSnapshot = "sender";
@@ -461,6 +530,7 @@ public class EthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(0L)));
     }
 
+    @HapiTest
     HapiSpec etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
@@ -511,6 +581,7 @@ public class EthereumSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
+    @HapiTest
     HapiSpec etx009CallsToTokenAddresses() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
@@ -708,6 +779,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec directTransferWorksForERC20() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
@@ -809,6 +881,7 @@ public class EthereumSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
+    @HapiTest
     HapiSpec callToTokenAddressViaEip2930TxSuccessfully() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
@@ -853,6 +926,7 @@ public class EthereumSuite extends HapiSuite {
                                                 .withTotalSupply(totalSupply)))));
     }
 
+    @HapiTest
     HapiSpec transferTokensViaEip2930TxSuccessfully() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
@@ -905,6 +979,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
+    @HapiTest
     HapiSpec callToNonExistingContractFailsGracefully() {
 
         return defaultHapiSpec("callToNonExistingContractFailsGracefully")

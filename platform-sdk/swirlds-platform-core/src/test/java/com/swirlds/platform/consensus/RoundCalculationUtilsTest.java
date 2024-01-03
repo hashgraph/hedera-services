@@ -18,11 +18,10 @@ package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.events.EventConstants;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -72,16 +71,14 @@ class RoundCalculationUtilsTest {
         final SignedState signedState = Mockito.mock(SignedState.class);
         final State state = Mockito.mock(State.class);
         final PlatformState platformState = Mockito.mock(PlatformState.class);
-        final PlatformData platformData = Mockito.mock(PlatformData.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
-        when(platformState.getPlatformData()).thenReturn(platformData);
 
         final AtomicLong lastRoundDecided = new AtomicLong();
         when(signedState.getRound()).thenAnswer(a -> lastRoundDecided.get());
         when(signedState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
-        when(platformData.getRound()).thenAnswer(a -> lastRoundDecided.get());
-        when(platformData.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
+        when(platformState.getRound()).thenAnswer(a -> lastRoundDecided.get());
+        when(platformState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
 
         lastRoundDecided.set(10);
         Assertions.assertEquals(

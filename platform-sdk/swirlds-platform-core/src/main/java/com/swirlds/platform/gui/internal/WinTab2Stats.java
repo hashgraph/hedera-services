@@ -17,17 +17,17 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.gui.GuiUtils.wrap;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.gui.GuiConstants;
-import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.components.Chart;
-import com.swirlds.gui.components.ChartLabelModel;
-import com.swirlds.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.gui.GuiConstants;
+import com.swirlds.platform.gui.GuiUtils;
+import com.swirlds.platform.gui.components.Chart;
+import com.swirlds.platform.gui.components.ChartLabelModel;
+import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;

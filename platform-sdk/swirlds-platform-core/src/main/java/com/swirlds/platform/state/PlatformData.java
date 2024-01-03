@@ -17,18 +17,18 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
@@ -40,7 +40,10 @@ import java.util.Objects;
 
 /**
  * A collection of miscellaneous platform data.
+ *
+ * @deprecated this class is no longer used and is kept for migration purposes only
  */
+@Deprecated(forRemoval = true)
 public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
 
     private static final long CLASS_ID = 0x1f89d0c43a8c08bdL;
@@ -54,20 +57,19 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         public static final int EPOCH_HASH = 2;
         public static final int ROUNDS_NON_ANCIENT = 3;
         /**
-         * - Events are no longer serialized, the field is kept for migration purposes
-         * - Mingen is no longer stored directly, its part of the snapshot
-         * - restart/reconnect now uses a snapshot
-         * - lastTransactionTimestamp is no longer stored directly, its part of the snapshot
-         * - numEventsCons is no longer stored directly, its part of the snapshot
-         * */
+         * - Events are no longer serialized, the field is kept for migration purposes - Mingen is no longer stored
+         * directly, its part of the snapshot - restart/reconnect now uses a snapshot - lastTransactionTimestamp is no
+         * longer stored directly, its part of the snapshot - numEventsCons is no longer stored directly, its part of
+         * the snapshot
+         */
         public static final int CONSENSUS_SNAPSHOT = 4;
     }
 
     /**
      * The round of this state. This state represents the handling of all transactions that have reached consensus in
      * all previous rounds. All transactions from this round will eventually be applied to this state. The first state
-     * (genesis state) has a round of 0 because the first round is defined as round 1, and the genesis state is
-     * before any transactions are handled.
+     * (genesis state) has a round of 0 because the first round is defined as round 1, and the genesis state is before
+     * any transactions are handled.
      */
     private long round = GENESIS_ROUND;
 

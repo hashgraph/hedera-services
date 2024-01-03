@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_MAX_REFUND_QUOTIENT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
@@ -45,8 +47,10 @@ import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.utils.PropagatedCallFailureRef;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -89,6 +93,8 @@ class FrameRunnerTest {
 
     @Mock
     private CustomGasCalculator gasCalculator;
+
+    private final PropagatedCallFailureRef propagatedCallFailure = new PropagatedCallFailureRef();
 
     private FrameRunner subject;
 
@@ -161,6 +167,26 @@ class FrameRunnerTest {
     }
 
     @Test
+    void failurePathWorksWithMissingReceiverSigHalt() {
+        final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
+
+        givenBaseReceiverSigCheckHaltWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SIGNATURE));
+
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+
+        inOrder.verify(tracer).traceOriginAction(frame);
+        inOrder.verify(contractCreationProcessor).process(frame, tracer);
+        inOrder.verify(messageCallProcessor).process(childFrame, tracer);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
+
+        assertFailureExpectationsWith(frame, result);
+        assertEquals(INVALID_SIGNATURE, result.haltReason());
+        assertNull(result.revertReason());
+    }
+
+    @Test
     void failurePathWorksWithHaltReason() {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
@@ -177,6 +203,28 @@ class FrameRunnerTest {
 
         assertFailureExpectationsWith(frame, result);
         assertEquals(FAILURE_DURING_LAZY_ACCOUNT_CREATION, result.haltReason());
+        assertNull(result.revertReason());
+    }
+
+    @Test
+    void failurePathWorksWithHaltReasonWhenExceedingChildRecords() {
+        final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
+        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
+        messageFrameStack.addFirst(frame);
+
+        givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INSUFFICIENT_CHILD_RECORDS));
+
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+
+        inOrder.verify(tracer).traceOriginAction(frame);
+        inOrder.verify(contractCreationProcessor).process(frame, tracer);
+        inOrder.verify(messageCallProcessor).process(childFrame, tracer);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
+
+        assertFailureExpectationsWith(frame, result);
+        assertEquals(INSUFFICIENT_CHILD_RECORDS, result.haltReason());
         assertNull(result.revertReason());
     }
 
@@ -201,14 +249,19 @@ class FrameRunnerTest {
     }
 
     private void givenBaseSuccessWith(@NonNull final Address receiver) {
-        givenBaseScenarioWithDetails(receiver, true);
+        givenBaseScenarioWithDetails(receiver, true, false);
     }
 
     private void givenBaseFailureWith(@NonNull final Address receiver) {
-        givenBaseScenarioWithDetails(receiver, false);
+        givenBaseScenarioWithDetails(receiver, false, false);
     }
 
-    private void givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean success) {
+    private void givenBaseReceiverSigCheckHaltWith(@NonNull final Address receiver) {
+        givenBaseScenarioWithDetails(receiver, false, true);
+    }
+
+    private void givenBaseScenarioWithDetails(
+            @NonNull final Address receiver, final boolean success, final boolean receiverSigCheckFailure) {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
         messageFrameStack.addFirst(frame);
         given(frame.getType()).willReturn(MessageFrame.Type.CONTRACT_CREATION);
@@ -216,6 +269,9 @@ class FrameRunnerTest {
         doAnswer(invocation -> {
                     messageFrameStack.pop();
                     messageFrameStack.push(childFrame);
+                    if (receiverSigCheckFailure) {
+                        propagatedCallFailure.set(HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE);
+                    }
                     return null;
                 })
                 .when(contractCreationProcessor)
@@ -235,6 +291,9 @@ class FrameRunnerTest {
                 .withValue("contracts.maxRefundPercentOfGasLimit", HEDERA_MAX_REFUND_PERCENTAGE)
                 .getOrCreateConfig();
         given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
+        given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(null);
+        given(childFrame.getContextVariable(FrameUtils.PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE))
+                .willReturn(propagatedCallFailure);
         given(frame.getGasPrice()).willReturn(Wei.of(NETWORK_GAS_PRICE));
         if (success) {
             given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
@@ -245,6 +304,7 @@ class FrameRunnerTest {
         }
         given(frame.getRecipientAddress()).willReturn(receiver);
         given(frame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(childFrame.getMessageFrameStack()).willReturn(messageFrameStack);
     }
 
     private long expectedGasUsed(@NonNull final MessageFrame frame) {

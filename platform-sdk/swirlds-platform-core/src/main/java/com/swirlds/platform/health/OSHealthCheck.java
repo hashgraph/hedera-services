@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.health;
 
-import com.swirlds.common.config.OSHealthCheckConfig;
-
 /**
  * Performs an OS health check and reports the results
  */

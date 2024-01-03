@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.gui;
 
-import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.consensus.TestIntake;

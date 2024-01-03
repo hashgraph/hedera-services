@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -51,8 +52,10 @@ import java.util.Map;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TOKEN)
 public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateSpecs.class);
@@ -69,7 +72,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec baseOperationIsChargedExpectedFee() {
+    final HapiSpec baseOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
         final var targetToken = "immutableToken";
         final var feeDenom = "denom";
@@ -96,7 +99,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
+    final HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
         final var hbarAmount = 1_234L;
         final var htsAmount = 2_345L;
         final var numerator = 1;

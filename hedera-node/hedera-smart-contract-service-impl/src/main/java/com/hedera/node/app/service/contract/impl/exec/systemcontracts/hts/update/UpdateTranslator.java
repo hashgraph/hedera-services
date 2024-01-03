@@ -32,7 +32,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -45,7 +44,7 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     private static final String HEDERA_TOKEN_STRUCT_V3 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
-    public static final Function TOKEN_UPDATE_INFO_FUNCTION =
+    public static final Function TOKEN_UPDATE_INFO_FUNCTION_V1 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")", ReturnTypes.INT);
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V2 + ")", ReturnTypes.INT);
@@ -62,19 +61,15 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION.selector())
+        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())
                 || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())
                 || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
     }
 
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall<>(
-                attempt,
-                nominalBodyFor(attempt),
-                SingleTransactionRecordBuilder.class,
-                UpdateTranslator::gasRequirement,
-                UpdateDecoder.FAILURE_CUSTOMIZER);
+        return new DispatchForResponseCodeHtsCall(
+                attempt, nominalBodyFor(attempt), UpdateTranslator::gasRequirement, UpdateDecoder.FAILURE_CUSTOMIZER);
     }
 
     public static long gasRequirement(
@@ -86,7 +81,7 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION.selector())) {
+        if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())) {
             return decoder.decodeTokenUpdateV1(attempt);
         } else if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())) {
             return decoder.decodeTokenUpdateV2(attempt);

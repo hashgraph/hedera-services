@@ -23,12 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.SimpleEvent;
 import com.swirlds.platform.test.observers.AddedAndStale;
 import com.swirlds.platform.test.observers.AddedObserver;
@@ -81,6 +82,7 @@ class EventObserverDispatcherTests {
                 List.of(e1, e2),
                 mock(EventImpl.class),
                 Generations.GENESIS_GENERATIONS,
+                mock(NonAncientEventWindow.class),
                 mock(ConsensusSnapshot.class)));
     }
 

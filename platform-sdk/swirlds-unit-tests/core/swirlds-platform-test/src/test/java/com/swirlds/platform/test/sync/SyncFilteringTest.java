@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
@@ -142,7 +142,7 @@ class SyncFilteringTest {
             }
 
             final List<EventImpl> filteredEvents =
-                    SyncUtils.filterLikelyDuplicates(shadowGraph, selfId, nonAncestorThreshold, clock.now(), allEvents);
+                    SyncUtils.filterLikelyDuplicates(selfId, nonAncestorThreshold, clock.now(), allEvents, null);
 
             assertEquals(expectedEvents.size(), filteredEvents.size());
             for (final EventImpl event : filteredEvents) {

@@ -170,8 +170,10 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             if (!isOfEvmAddressSize(account.alias())) {
                 info.alias(account.alias());
             }
-            info.tokenRelationships(
-                    tokenRelationshipsOf(account, tokenStore, tokenRelationStore, tokensConfig.maxRelsPerInfoQuery()));
+            if (tokensConfig.balancesInQueriesEnabled()) {
+                info.tokenRelationships(tokenRelationshipsOf(
+                        account, tokenStore, tokenRelationStore, tokensConfig.maxRelsPerInfoQuery()));
+            }
             info.stakingInfo(AccountSummariesApi.summarizeStakingInfo(
                     stakingConfig.rewardHistoryNumStoredPeriods(),
                     stakingConfig.periodMins(),

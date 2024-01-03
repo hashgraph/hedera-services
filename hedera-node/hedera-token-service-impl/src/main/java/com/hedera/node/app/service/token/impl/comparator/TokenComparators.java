@@ -21,6 +21,7 @@ import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.state.token.Account;
 import java.util.Comparator;
 import java.util.Objects;
 
@@ -28,6 +29,9 @@ public final class TokenComparators {
     private TokenComparators() {
         throw new IllegalStateException("Utility Class");
     }
+
+    public static final Comparator<Account> ACCOUNT_COMPARATOR =
+            Comparator.comparing(Account::accountId, ACCOUNT_ID_COMPARATOR);
 
     public static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR =
             Comparator.comparing(AccountAmount::accountID, ACCOUNT_ID_COMPARATOR);

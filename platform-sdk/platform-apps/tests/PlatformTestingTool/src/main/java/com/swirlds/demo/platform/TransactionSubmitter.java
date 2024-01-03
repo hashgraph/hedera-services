@@ -16,16 +16,16 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.throttle.MultiThrottle;
 import com.swirlds.common.utility.throttle.Throttle;
 import com.swirlds.demo.platform.actions.QuorumTriggeredAction;
 import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
+import com.swirlds.platform.system.Platform;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;

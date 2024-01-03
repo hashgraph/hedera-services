@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.*;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -74,6 +75,7 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Validates the {@code TokenCreate} transaction, including its:
@@ -83,6 +85,7 @@ import org.apache.logging.log4j.Logger;
  * </ul>
  */
 @HapiTestSuite
+@Tag(TOKEN)
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
@@ -159,7 +162,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
     @HapiTest
-    private HapiSpec validateNewTokenAssociations() {
+    final HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
         final String fractionalCollector = "fractionalCollector";
@@ -243,7 +246,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * Validates the default values for a {@code TokenCreate}'s token type (fungible) and supply type (infinite).
      */
     @HapiTest
-    private HapiSpec createsFungibleInfiniteByDefault() {
+    final HapiSpec createsFungibleInfiniteByDefault() {
         return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
                 .given()
                 .when(tokenCreate("DefaultFungible"))
@@ -253,7 +256,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec worksAsExpectedWithDefaultTokenId() {
+    final HapiSpec worksAsExpectedWithDefaultTokenId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
                 .given()
                 .when()
@@ -790,7 +793,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
+    final HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
         return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate")
                 .given(
                         newKeyNamed(customFeesKey),
@@ -971,7 +974,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prechecksWork() {
+    final HapiSpec prechecksWork() {
         return defaultHapiSpec("PrechecksWork")
                 .given(
                         cryptoCreate(TOKEN_TREASURY)

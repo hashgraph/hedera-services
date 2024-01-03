@@ -18,18 +18,21 @@ package com.swirlds.platform.test.fixtures.event;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Random;
 
@@ -203,13 +206,28 @@ public class RandomEventUtils {
             @Nullable final EventImpl selfParent,
             @Nullable final EventImpl otherParent,
             final boolean fakeHash) {
+
+        final EventDescriptor selfDescriptor = selfParent == null
+                ? null
+                : new EventDescriptor(
+                        selfParent.getHash(),
+                        selfParent.getCreatorId(),
+                        selfParent.getGeneration(),
+                        EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherDescriptor = otherParent == null
+                ? null
+                : new EventDescriptor(
+                        otherParent.getHash(),
+                        otherParent.getCreatorId(),
+                        otherParent.getGeneration(),
+                        EventConstants.BIRTH_ROUND_UNDEFINED);
+
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
-                selfParent != null ? selfParent.getGeneration() : -1,
-                otherParent != null ? otherParent.getGeneration() : -1,
-                selfParent != null ? selfParent.getBaseHash() : null,
-                otherParent != null ? otherParent.getBaseHash() : null,
+                selfDescriptor,
+                otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 selfParent != null
                         ? selfParent.getTimeCreated().plusMillis(1 + random.nextInt(DEFAULT_MAX_NEXT_EVENT_MILLIS))
                         : firstTimeCreated,
@@ -236,13 +254,27 @@ public class RandomEventUtils {
             @Nullable final EventImpl otherParent,
             final boolean fakeHash) {
 
+        final EventDescriptor selfDescriptor = (selfParent == null || selfParent.getBaseHash() == null)
+                ? null
+                : new EventDescriptor(
+                        selfParent.getBaseHash(),
+                        selfParent.getCreatorId(),
+                        selfParent.getGeneration(),
+                        EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
+                ? null
+                : new EventDescriptor(
+                        otherParent.getBaseHash(),
+                        otherParent.getCreatorId(),
+                        otherParent.getGeneration(),
+                        EventConstants.BIRTH_ROUND_UNDEFINED);
+
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
-                selfParent != null ? selfParent.getGeneration() : -1,
-                otherParent != null ? otherParent.getGeneration() : -1,
-                selfParent != null ? selfParent.getBaseHash() : null,
-                otherParent != null ? otherParent.getBaseHash() : null,
+                selfDescriptor,
+                otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 timestamp,
                 transactions);
 

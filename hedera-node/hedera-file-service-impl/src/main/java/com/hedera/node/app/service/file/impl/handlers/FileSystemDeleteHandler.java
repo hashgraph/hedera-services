@@ -91,8 +91,6 @@ public class FileSystemDeleteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
-        // TODO: check here that the "payer" is a privileged account.
-        //       a privileged account is always required for this transaction.
 
         final var systemDeleteTransactionBody = handleContext.body().systemDeleteOrThrow();
         if (!systemDeleteTransactionBody.hasFileID()) {

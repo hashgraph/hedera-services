@@ -23,13 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -55,6 +56,7 @@ public class AbstractSignedStateManagerTest {
 
     protected final Map<Long /* round */, SignedState> signedStates = new ConcurrentHashMap<>();
     protected final AtomicLong highestRound = new AtomicLong(-1);
+    protected final AtomicLong highestCompleteRound = new AtomicLong(-1);
     protected final int roundsToKeepForSigning = 5;
     protected final int futureStateSignatureRounds = 16;
     protected int roundsToKeepAfterSigning = 0;
@@ -66,9 +68,9 @@ public class AbstractSignedStateManagerTest {
 
     protected StateConfig buildStateConfig() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
-                .withValue("state.maxAgeOfFutureStateSignatures", futureStateSignatureRounds)
-                .withValue("state.roundsToKeepAfterSigning", roundsToKeepAfterSigning)
+                .withValue(StateConfig_.ROUNDS_TO_KEEP_FOR_SIGNING, roundsToKeepForSigning)
+                .withValue(StateConfig_.MAX_AGE_OF_FUTURE_STATE_SIGNATURES, futureStateSignatureRounds)
+                .withValue(StateConfig_.ROUNDS_TO_KEEP_AFTER_SIGNING, roundsToKeepAfterSigning)
                 .getOrCreateConfig();
 
         return configuration.getConfigData(StateConfig.class);
@@ -134,12 +136,28 @@ public class AbstractSignedStateManagerTest {
             if (shouldRoundBePresent.test(round)) {
                 assertEquals(-1, signedState.getReservationCount(), "state should have no reservations");
             } else {
+                int expectedReservationCount = 1;
                 if (round == highestRound.get()) {
-                    // the most recent state has an extra reservation
-                    assertEquals(2, signedState.getReservationCount(), "unexpected reservation count");
-                } else {
-                    assertEquals(1, signedState.getReservationCount(), "unexpected reservation count");
+                    // the most recent state has an extra reservation inside the SSM
+                    expectedReservationCount++;
                 }
+                if (round == highestCompleteRound.get()) {
+                    // the most recent complete state has an extra reservation held by the nexus
+                    expectedReservationCount++;
+                }
+                assertEquals(
+                        expectedReservationCount,
+                        signedState.getReservationCount(),
+                        ("unexpected reservation count!%n"
+                                        + "round: %d%n"
+                                        + "highestRound: %d%n"
+                                        + "highestCompleteRound: %d%n"
+                                        + "history:%n%s")
+                                .formatted(
+                                        round,
+                                        highestRound.get(),
+                                        highestCompleteRound.get(),
+                                        signedState.getHistory()));
             }
         }
     }

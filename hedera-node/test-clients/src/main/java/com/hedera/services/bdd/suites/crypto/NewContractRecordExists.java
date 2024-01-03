@@ -48,7 +48,7 @@ public class NewContractRecordExists extends HapiSuite {
         return List.of(newContractIsReflectedInRecordStream());
     }
 
-    private HapiSpec newContractIsReflectedInRecordStream() {
+    final HapiSpec newContractIsReflectedInRecordStream() {
         final var creation = "creation";
         final AtomicReference<Instant> consensusTime = new AtomicReference<>();
         return defaultHapiSpec(EMPTY_CONTRACT)

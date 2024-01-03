@@ -46,16 +46,16 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
-import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
+import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
@@ -118,7 +118,7 @@ public interface HederaInjectionComponent {
 
     ThrottleManager throttleManager();
 
-    DualStateUpdateFacility dualStateUpdateFacility();
+    PlatformStateUpdateFacility platformStateUpdateFacility();
 
     GenesisRecordsConsensusHook genesisRecordsConsensusHook();
 

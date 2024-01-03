@@ -1,0 +1,72 @@
+##
+# Copyright (C) 2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: Artifact Determinism
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The branch, tag, or commit to checkout:"
+        type: string
+        required: false
+        default: ""
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "21.0.1"
+  push:
+    branches:
+      - develop
+      - 'release/**'
+    tags:
+      - 'v*.*.*'
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check-gradle:
+    name: Gradle
+    uses: ./.github/workflows/zxc-verify-gradle-build-determinism.yaml
+    with:
+      ref: ${{ github.event.inputs.ref || '' }}
+      java-distribution: ${{ inputs.java-distribution || 'temurin' }}
+      java-version: ${{ inputs.java-version || '21.0.1' }}
+    secrets:
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+
+  check-docker:
+    name: Docker
+    uses: ./.github/workflows/zxc-verify-docker-build-determinism.yaml
+    with:
+      ref: ${{ github.event.inputs.ref || '' }}
+      java-distribution: ${{ inputs.java-distribution || 'temurin' }}
+      java-version: ${{ inputs.java-version || '21.0.1' }}
+    secrets:
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}

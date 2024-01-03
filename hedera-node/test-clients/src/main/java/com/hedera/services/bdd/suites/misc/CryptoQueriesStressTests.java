@@ -67,7 +67,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountBalanceStress() {
+    final HapiSpec getAccountBalanceStress() {
         return defaultHapiSpec("getAccountBalanceStress")
                 .given()
                 .when()
@@ -79,7 +79,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountInfoStress() {
+    final HapiSpec getAccountInfoStress() {
         return defaultHapiSpec("getAccountInfoStress")
                 .given()
                 .when()
@@ -91,7 +91,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountRecordsStress() {
+    final HapiSpec getAccountRecordsStress() {
         return defaultHapiSpec("getAccountRecordsStress")
                 .given()
                 .when()

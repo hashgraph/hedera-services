@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -37,8 +39,10 @@ import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class PushZeroOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(PushZeroOperationSuite.class);
@@ -72,7 +76,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec pushZeroHappyPathWorks() {
+    final HapiSpec pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
@@ -98,10 +102,11 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec pushZeroDisabledInV034() {
+    final HapiSpec pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return defaultHapiSpec("pushZeroDisabledInV034")
+        return propertyPreservingHapiSpec("pushZeroDisabledInV034")
+                .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),

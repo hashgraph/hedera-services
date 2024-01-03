@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.HederaConfig;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -48,6 +49,12 @@ import java.util.function.Supplier;
 
 @Module
 public interface QueryModule {
+    @Provides
+    @QueryScope
+    static HederaConfig provideHederaConfig(@NonNull final QueryContext context) {
+        return requireNonNull(context).configuration().getConfigData(HederaConfig.class);
+    }
+
     @Provides
     @QueryScope
     static TinybarValues provideTinybarValues(@NonNull final ExchangeRate exchangeRate) {
@@ -106,12 +113,16 @@ public interface QueryModule {
             @NonNull final HederaEvmBlocks hederaEvmBlocks,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
+        // Use null for the top-level record builder and reference to pending creation record builder,
+        // as neither is usable by any operation permitted in a static context
         return new HederaEvmContext(
                 hederaOperations.gasPriceInTinybars(),
                 true,
                 hederaEvmBlocks,
                 tinybarValues,
-                systemContractGasCalculator);
+                systemContractGasCalculator,
+                null,
+                null);
     }
 
     @Binds

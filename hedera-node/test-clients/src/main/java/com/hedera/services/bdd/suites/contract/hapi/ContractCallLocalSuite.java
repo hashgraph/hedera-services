@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -68,8 +69,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractCallLocalSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
@@ -107,7 +110,8 @@ public class ContractCallLocalSuite extends HapiSuite {
                 htsOwnershipCheckWorksWithAliasAddress());
     }
 
-    private HapiSpec htsOwnershipCheckWorksWithAliasAddress() {
+    @HapiTest
+    final HapiSpec htsOwnershipCheckWorksWithAliasAddress() {
         final AtomicReference<AccountID> ecdsaAccountId = new AtomicReference<>();
         final AtomicReference<ByteString> ecdsaAccountIdLongZeroAddress = new AtomicReference<>();
         final AtomicReference<ByteString> ecdsaAccountIdAlias = new AtomicReference<>();
@@ -181,7 +185,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec vanillaSuccess() {
+    final HapiSpec vanillaSuccess() {
         return defaultHapiSpec("vanillaSuccess")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
@@ -195,7 +199,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec impureCallFails() {
+    final HapiSpec impureCallFails() {
         return defaultHapiSpec("impureCallFails")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when()
@@ -207,7 +211,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidDeletedContract() {
+    final HapiSpec invalidDeletedContract() {
         return defaultHapiSpec("invalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
@@ -217,7 +221,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractID() {
+    final HapiSpec invalidContractID() {
         final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
         final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
         return defaultHapiSpec("InvalidContractID")
@@ -233,7 +237,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec insufficientFeeFails() {
+    final HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
         return defaultHapiSpec("insufficientFeeFails")
@@ -249,7 +253,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec lowBalanceFails() {
+    final HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
         return defaultHapiSpec("lowBalanceFails")
@@ -272,7 +276,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec erc20Query() {
+    final HapiSpec erc20Query() {
         final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
                 + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
                 + "\"type\": \"function\"}";
@@ -286,7 +290,7 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/pull/5485
     @HapiTest
-    private HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
+    final HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
         return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))

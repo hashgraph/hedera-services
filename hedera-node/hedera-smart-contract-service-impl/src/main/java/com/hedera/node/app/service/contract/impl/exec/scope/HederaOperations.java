@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -25,15 +27,20 @@ import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Provides the Hedera operations that only a {@link ProxyWorldUpdater} needs (but not a {@link DispatchingEvmFrameState}.
  */
 public interface HederaOperations {
+    ContractID MISSING_CONTRACT_ID = ContractID.newBuilder().contractNum(0).build();
+
     /**
      * Creates a new {@link HederaOperations} that is a child of this {@link HederaOperations}.
      *
@@ -60,9 +67,9 @@ public interface HederaOperations {
     void revert();
 
     /**
-     * Revert child records.
+     * Revert child records from the given {@link RecordListCheckPoint}.
      */
-    void revertChildRecords();
+    void revertRecordsFrom(RecordListCheckPoint checkpoint);
 
     /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update
@@ -104,10 +111,11 @@ public interface HederaOperations {
 
     /**
      * Returns the lazy creation cost within this scope.
+     * @param recipient the recipient contract address
      *
      * @return the lazy creation cost in gas
      */
-    long lazyCreationCostInGas();
+    long lazyCreationCostInGas(@NonNull final Address recipient);
 
     /**
      * Returns the gas price in tinybars within this scope.
@@ -241,5 +249,38 @@ public interface HederaOperations {
      * @param contractId    ContractId of hollow account
      * @param evmAddress    Evm address of hollow account
      */
-    void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress);
+    void externalizeHollowAccountMerge(
+            @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress);
+
+    /**
+     * Given a {@link ContractID}, returns it if the shard and realm match for this node; otherwise,
+     * returns {@link #MISSING_CONTRACT_ID}.
+     *
+     * @param contractId the contract ID to validate
+     * @return the validated contract ID
+     */
+    ContractID shardAndRealmValidated(@NonNull ContractID contractId);
+
+    /**
+     * Creates a {@link RecordListCheckPoint} that can be used to revert records from a given point.
+     *
+     * @return a {@link RecordListCheckPoint}
+     */
+    RecordListCheckPoint createRecordListCheckPoint();
+
+    /**
+     * Given a {@link ContractID} and the current Hedera config, returns the given id if its shard and realm
+     * match the config; otherwise, returns {@link #MISSING_CONTRACT_ID}.
+     *
+     * @param contractId the contract ID to validate
+     * @param hederaConfig the current Hedera config
+     * @return the validated contract ID
+     */
+    default ContractID configValidated(@NonNull final ContractID contractId, @NonNull final HederaConfig hederaConfig) {
+        requireNonNull(contractId);
+        requireNonNull(hederaConfig);
+        return contractId.shardNum() == hederaConfig.shard() && contractId.realmNum() == hederaConfig.realm()
+                ? contractId
+                : MISSING_CONTRACT_ID;
+    }
 }

@@ -24,9 +24,8 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.events.Event;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.Event;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -39,7 +38,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *
  * <p>Note that we need to remember these two parameters in order to safely reuse this validation
  * across "span" between the {@link ServicesState#preHandle(Event)} and {@link
- * ServicesState#handleConsensusRound(Round, SwirldDualState)} callbacks.
+ * ServicesState#handleConsensusRound(Round, PlatformState)} callbacks.
  *
  * <p>This is because either parameter <i>could</i> change due to an update of file 0.0.121 between
  * the two callbacks. So we have to double-check that neither <i>did</i> change before reusing the

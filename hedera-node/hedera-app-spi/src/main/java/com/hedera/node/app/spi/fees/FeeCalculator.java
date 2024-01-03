@@ -94,6 +94,8 @@ public interface FeeCalculator {
     @NonNull
     Fees calculate();
 
+    long getCongestionMultiplier();
+
     /**
      * Resets the usage of all components to zero.
      * @return

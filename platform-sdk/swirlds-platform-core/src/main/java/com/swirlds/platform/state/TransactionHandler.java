@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.Event;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.Event;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
@@ -81,7 +81,7 @@ public class TransactionHandler {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            state.getSwirldState().handleConsensusRound(round, state.getSwirldDualState());
+            state.getSwirldState().handleConsensusRound(round, state.getPlatformState());
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 

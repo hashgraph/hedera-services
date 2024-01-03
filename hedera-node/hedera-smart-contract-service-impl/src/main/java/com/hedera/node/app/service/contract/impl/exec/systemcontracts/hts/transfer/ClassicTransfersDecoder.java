@@ -16,21 +16,36 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -197,6 +212,16 @@ public class ClassicTransfersDecoder {
                 IsApproval.TRUE)));
     }
 
+    public ResponseCodeEnum checkForFailureStatus(@NonNull HtsCallAttempt attempt) {
+        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
+            final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
+            if ((long) call.get(3) < 0) {
+                return ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+            }
+        }
+        return null;
+    }
+
     private TokenTransferList[] convertTokenTransfers(
             @NonNull final Tuple[] transfersByToken,
             @NonNull final FungibleAdjustmentConverter fungibleAdjustmentConverter,
@@ -217,9 +242,78 @@ public class ClassicTransfersDecoder {
         return allImpliedTransfers;
     }
 
-    private CryptoTransferTransactionBody.Builder tokenTransfers(
-            @NonNull final TokenTransferList... tokenTransferList) {
-        return CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransferList);
+    private CryptoTransferTransactionBody.Builder tokenTransfers(@NonNull TokenTransferList... tokenTransferLists) {
+        if (repeatsTokenId(tokenTransferLists)) {
+            final Map<TokenID, TokenTransferList> consolidatedTokenTransfers = new LinkedHashMap<>();
+            for (final var tokenTransferList : tokenTransferLists) {
+                consolidatedTokenTransfers.merge(
+                        tokenTransferList.tokenOrThrow(), tokenTransferList, this::mergeTokenTransferLists);
+            }
+            tokenTransferLists = consolidatedTokenTransfers.values().toArray(TokenTransferList[]::new);
+        }
+        return CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransferLists);
+    }
+
+    private TokenTransferList mergeTokenTransferLists(
+            @NonNull final TokenTransferList from, @NonNull final TokenTransferList to) {
+        return from.copyBuilder()
+                .transfers(mergeTransfers(from.transfersOrElse(emptyList()), to.transfersOrElse(emptyList())))
+                .nftTransfers(
+                        mergeNftTransfers(from.nftTransfersOrElse(emptyList()), to.nftTransfersOrElse(emptyList())))
+                .build();
+    }
+
+    private List<AccountAmount> mergeTransfers(
+            @NonNull final List<AccountAmount> from, @NonNull final List<AccountAmount> to) {
+        requireNonNull(from);
+        requireNonNull(to);
+        final Map<AccountID, AccountAmount> consolidated = new LinkedHashMap<>();
+        consolidateInto(consolidated, from);
+        consolidateInto(consolidated, to);
+        return consolidated.values().stream().toList();
+    }
+
+    private void consolidateInto(
+            @NonNull final Map<AccountID, AccountAmount> consolidated, @NonNull final List<AccountAmount> transfers) {
+        for (final var transfer : transfers) {
+            consolidated.merge(transfer.accountID(), transfer, this::mergeAdjusts);
+        }
+    }
+
+    private AccountAmount mergeAdjusts(@NonNull final AccountAmount from, @NonNull final AccountAmount to) {
+        return from.copyBuilder()
+                .amount(from.amount() + to.amount())
+                .isApproval(from.isApproval() || to.isApproval())
+                .build();
+    }
+
+    private List<NftTransfer> mergeNftTransfers(
+            @NonNull final List<NftTransfer> from, @NonNull final List<NftTransfer> to) {
+        final Set<NftTransfer> present = new HashSet<>();
+        final List<NftTransfer> consolidated = new ArrayList<>();
+        consolidateInto(present, consolidated, from);
+        consolidateInto(present, consolidated, to);
+        return consolidated;
+    }
+
+    private void consolidateInto(
+            @NonNull final Set<NftTransfer> present,
+            @NonNull final List<NftTransfer> consolidated,
+            @NonNull final List<NftTransfer> transfers) {
+        for (final var transfer : transfers) {
+            if (present.add(transfer)) {
+                consolidated.add(transfer);
+            }
+        }
+    }
+
+    private boolean repeatsTokenId(@NonNull final TokenTransferList[] tokenTransferList) {
+        return tokenTransferList.length > 1
+                && Arrays.stream(tokenTransferList)
+                                .map(TokenTransferList::token)
+                                .collect(Collectors.toSet())
+                                .size()
+                        < tokenTransferList.length;
     }
 
     private TokenTransferList adjustingUnits(
@@ -236,9 +330,14 @@ public class ClassicTransfersDecoder {
             @NonNull final AccountID to,
             final long amount,
             final IsApproval isApproval) {
+        final var accountAmounts = new ArrayList<AccountAmount>();
+        accountAmounts.add(credit(to, amount));
+        accountAmounts.add(debit(from, amount, isApproval));
+        accountAmounts.sort(Comparator.comparing(AccountAmount::accountID, ACCOUNT_ID_COMPARATOR));
+
         return TokenTransferList.newBuilder()
                 .token(tokenId)
-                .transfers(credit(to, amount), debit(from, amount, isApproval))
+                .transfers(accountAmounts)
                 .build();
     }
 

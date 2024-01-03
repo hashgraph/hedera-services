@@ -21,18 +21,15 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
@@ -44,6 +41,9 @@ import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -129,9 +129,11 @@ public class ConsensusHashManager {
             final DispatchBuilder dispatchBuilder,
             final AddressBook addressBook,
             final Hash currentEpochHash,
-            final SoftwareVersion currentSoftwareVersion,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
+
+        Objects.requireNonNull(currentSoftwareVersion);
 
         final ConsensusConfig consensusConfig =
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
@@ -255,12 +257,17 @@ public class ConsensusHashManager {
         Objects.requireNonNull(signerId);
         Objects.requireNonNull(signatureTransaction);
 
+        if (eventVersion == null) {
+            // Illegal event version, ignore.
+            return;
+        }
+
         if (ignorePreconsensusSignatures && replayingPreconsensusStream) {
             // We are still replaying preconsensus events and we are configured to ignore signatures during replay
             return;
         }
 
-        if (!Objects.equals(currentSoftwareVersion, eventVersion)) {
+        if (currentSoftwareVersion.compareTo(eventVersion) != 0) {
             // this is a signature from a different software version, ignore it
             return;
         }

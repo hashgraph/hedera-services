@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.nftTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO;
@@ -28,7 +28,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.LedgerConfig;
@@ -82,19 +82,17 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         requireNonNull(status);
         requireNonNull(token);
 
-        final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
-        final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
         // @Future remove to revert #9074 after modularization is completed
         if (isStaticCall && (status != SUCCESS || nft == null)) {
             return revertResult(status, gasCalculator.viewGasRequirement());
         }
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
+        final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
+        final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
+        final var nftTokenInfo = nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, nativeOperations());
         return successResult(
-                NON_FUNGIBLE_TOKEN_INFO
-                        .getOutputs()
-                        .encodeElements(
-                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId)),
+                NON_FUNGIBLE_TOKEN_INFO.getOutputs().encodeElements(status.protoOrdinal(), nftTokenInfo),
                 gasRequirement);
     }
 }

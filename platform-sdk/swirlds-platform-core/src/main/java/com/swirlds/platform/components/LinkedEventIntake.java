@@ -17,26 +17,22 @@
 package com.swirlds.platform.components;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -63,11 +59,11 @@ public class LinkedEventIntake {
      */
     private final ShadowGraph shadowGraph;
 
-    private final ExecutorService prehandlePool;
-    private final Consumer<EventImpl> prehandleEvent;
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
 
     private final EventIntakeMetrics metrics;
     private final Time time;
+    private final Long roundsNonAncient;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -75,69 +71,75 @@ public class LinkedEventIntake {
     private final IntakeEventCounter intakeEventCounter;
 
     /**
+     * Whether or not the linked event intake is paused.
+     * <p>
+     * When paused, all received events will be tossed into the void
+     */
+    private boolean paused;
+
+    /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param threadManager      creates new threading resources
-     * @param time               provides the wall clock time
-     * @param consensusSupplier  provides the current consensus instance
-     * @param dispatcher         invokes event related callbacks
-     * @param shadowGraph        tracks events in the hashgraph
-     * @param prehandleEvent     prehandles transactions in an event
-     * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
+     * @param platformContext          the platform context
+     * @param time                     provides the wall clock time
+     * @param consensusSupplier        provides the current consensus instance
+     * @param dispatcher               invokes event related callbacks
+     * @param shadowGraph              tracks events in the hashgraph
+     * @param latestEventTipsetTracker tracks the tipset of the latest self event, null if feature is not enabled
+     * @param intakeEventCounter       tracks the number of events from each peer that are currently in the intake
+     *                                 pipeline
      */
     public LinkedEventIntake(
             @NonNull final PlatformContext platformContext,
-            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> prehandleEvent,
+            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
-        this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+        this.latestEventTipsetTracker = latestEventTipsetTracker;
 
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-
-        final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
-
-        prehandlePool = new ThreadPoolExecutor(
-                eventConfig.prehandlePoolSize(),
-                eventConfig.prehandlePoolSize(),
-                0L,
-                TimeUnit.MILLISECONDS,
-                prehandlePoolQueue,
-                threadManager.createThreadFactory("platform", "txn-prehandle"));
-
-        metrics = new EventIntakeMetrics(platformContext, prehandlePoolQueue::size);
+        this.paused = false;
+        metrics = new EventIntakeMetrics(platformContext, () -> -1);
+        this.roundsNonAncient = (long) platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
     }
 
     /**
      * Add an event to the hashgraph
      *
      * @param event an event to be added
+     * @return a list of rounds that came to consensus as a result of adding the event
      */
-    public void addEvent(@NonNull final EventImpl event) {
+    @NonNull
+    public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         Objects.requireNonNull(event);
+
+        if (paused) {
+            // If paused, throw everything into the void
+            event.clear();
+            return List.of();
+        }
 
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
                 // ancient events *may* be discarded, and stale events *must* be discarded
-                return;
+                event.clear();
+                return List.of();
             }
 
             dispatcher.preConsensusEvent(event);
 
-            final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
-
-            // Prehandle transactions on the thread pool.
-            prehandlePool.submit(buildPrehandleTask(event));
+            final long minimumGenerationNonAncientBeforeAdding =
+                    consensusSupplier.get().getMinGenerationNonAncient();
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
@@ -148,27 +150,35 @@ public class LinkedEventIntake {
                 consensusRounds.forEach(this::handleConsensus);
             }
 
-            if (consensusSupplier.get().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+            final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
+
+            if (minimumGenerationNonAncient > minimumGenerationNonAncientBeforeAdding) {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
-                handleStale(minGenNonAncientBeforeAdding);
+                handleStale(minimumGenerationNonAncientBeforeAdding);
+                if (latestEventTipsetTracker != null) {
+                    // FUTURE WORK: When this class is refactored, it should not be constructing the
+                    // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
+                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                            consensusSupplier.get().getLastRoundDecided(),
+                            minimumGenerationNonAncient,
+                            roundsNonAncient));
+                }
             }
+
+            return Objects.requireNonNullElseGet(consensusRounds, List::of);
         } finally {
             intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
         }
     }
 
     /**
-     * Build a task that will prehandle transactions in an event. Executed on a thread pool.
+     * Pause or unpause this object.
      *
-     * @param event the event to prehandle
+     * @param paused whether or not this object should be paused
      */
-    @NonNull
-    private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
-        return () -> {
-            prehandleEvent.accept(event);
-            event.signalPrehandleCompletion();
-        };
+    public void setPaused(final boolean paused) {
+        this.paused = paused;
     }
 
     /**
@@ -209,7 +219,7 @@ public class LinkedEventIntake {
         // It is critically important that prehandle is always called prior to handleConsensusRound().
 
         final long start = time.nanoTime();
-        consensusRound.forEach(event -> ((EventImpl) event).awaitPrehandleCompletion());
+        consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
         final long end = time.nanoTime();
         metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 

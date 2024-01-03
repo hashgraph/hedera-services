@@ -33,7 +33,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ class CustomExtCodeHashOperationTest {
 
     @Test
     void catchesUnderflowWhenStackIsEmpty() {
-        given(frame.getStackItem(0)).willThrow(FixedStack.UnderflowException.class);
+        given(frame.getStackItem(0)).willThrow(UnderflowException.class);
         final var expected = new Operation.OperationResult(0L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         assertSameResult(expected, subject.execute(frame, evm));
     }

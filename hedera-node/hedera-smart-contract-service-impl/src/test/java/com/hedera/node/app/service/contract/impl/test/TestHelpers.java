@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.typedKeyTupleFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
@@ -30,6 +31,8 @@ import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
@@ -70,13 +73,15 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
+import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.key.KeyUtils;
@@ -95,16 +100,20 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -131,6 +140,9 @@ public class TestHelpers {
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
 
+    public static final Configuration PERMITTED_CALLERS_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.permittedContractCallers", Set.of(1062787L))
+            .getOrCreateConfig();
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
@@ -169,7 +181,7 @@ public class TestHelpers {
     public static final long BESU_MAX_REFUND_QUOTIENT = 2;
     public static final long MAX_GAS_ALLOWANCE = 666_666_666;
     public static final int STACK_DEPTH = 1;
-    public static final Bytes INITCODE = Bytes.wrap("60a06040526000600b55".getBytes());
+    public static final Bytes INITCODE = Bytes.wrap("0060a06040526000600b55".getBytes());
     public static final Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     public static final Bytes CONSTRUCTOR_PARAMS = Bytes.wrap(new byte[] {2, 3, 2, 3, 2, 3, 2, 3, 2, 3});
     public static final Bytecode BYTECODE = new Bytecode(CALL_DATA);
@@ -392,7 +404,8 @@ public class TestHelpers {
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
-
+    public static final Address PERMITTED_ADDRESS_CALLER =
+            Address.wrap((org.apache.tuweni.bytes.Bytes.wrap(asEvmAddress(1062787L))));
     public static final Account OPERATOR =
             Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
 
@@ -484,6 +497,7 @@ public class TestHelpers {
             CALLED_CONTRACT_EVM_ADDRESS,
             pbjToTuweniBytes(CALL_DATA),
             List.of(BESU_LOG),
+            null,
             null);
 
     public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
@@ -496,6 +510,8 @@ public class TestHelpers {
             INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
+            null,
+            null,
             null);
 
     public static final StorageAccesses ONE_STORAGE_ACCESSES =
@@ -568,6 +584,8 @@ public class TestHelpers {
     public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     public static final AccountID UNAUTHORIZED_SPENDER_ID =
             AccountID.newBuilder().accountNum(999999L).build();
+    public static final AccountID REVOKE_APPROVAL_SPENDER_ID =
+            AccountID.newBuilder().accountNum(0L).build();
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
     public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
             asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());
@@ -592,8 +610,11 @@ public class TestHelpers {
         assertEquals(expected.getGasCost(), actual.getGasCost());
     }
 
-    public static void assertSamePrecompileResult(
-            final HederaSystemContract.FullResult expected, final HederaSystemContract.FullResult actual) {
+    public static org.apache.tuweni.bytes.Bytes readableRevertReason(@NonNull final ResponseCodeEnum status) {
+        return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes());
+    }
+
+    public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {
         assertEquals(expected.gasRequirement(), actual.gasRequirement());
         final var expectedResult = expected.result();
         final var actualResult = actual.result();
@@ -687,7 +708,8 @@ public class TestHelpers {
             @NonNull final HederaEvmBlocks blocks,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator);
+        return new HederaEvmContext(
+                NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator, null, null);
     }
 
     public static HederaEvmContext wellKnownContextWith(
@@ -695,7 +717,23 @@ public class TestHelpers {
             final boolean staticCall,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues, systemContractGasCalculator);
+        return new HederaEvmContext(
+                NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues, systemContractGasCalculator, null, null);
+    }
+
+    public static HederaEvmContext wellKnownContextWith(
+            @NonNull final HederaEvmBlocks blocks,
+            @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull ContractOperationRecordBuilder recordBuilder) {
+        return new HederaEvmContext(
+                NETWORK_GAS_PRICE,
+                false,
+                blocks,
+                tinybarValues,
+                systemContractGasCalculator,
+                recordBuilder,
+                new PendingCreationMetadataRef());
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
@@ -751,5 +789,16 @@ public class TestHelpers {
         return ContractID.newBuilder()
                 .contractNum(accountId.accountNumOrThrow())
                 .build();
+    }
+
+    public static void givenDefaultConfigInFrame(@NonNull final MessageFrame frame) {
+        givenConfigInFrame(frame, DEFAULT_CONFIG);
+    }
+
+    public static void givenConfigInFrame(@NonNull final MessageFrame frame, @NonNull final Configuration config) {
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        doReturn(config).when(frame).getContextVariable(CONFIG_CONTEXT_VARIABLE);
+        given(frame.getMessageFrameStack()).willReturn(stack);
     }
 }

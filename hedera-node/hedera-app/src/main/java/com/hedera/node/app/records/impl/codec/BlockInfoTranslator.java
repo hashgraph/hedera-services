@@ -51,6 +51,14 @@ public final class BlockInfoTranslator {
                     .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())
                     .build());
         }
+        if (merkleNetworkContext.consensusTimeOfLastHandledTxn() != null) {
+            final var lastHandledTxn = merkleNetworkContext.consensusTimeOfLastHandledTxn();
+            blockInfoBuilder.consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                    .seconds(lastHandledTxn.getEpochSecond())
+                    .nanos(lastHandledTxn.getNano())
+                    .build());
+        }
+        blockInfoBuilder.migrationRecordsStreamed(merkleNetworkContext.areMigrationRecordsStreamed());
 
         return blockInfoBuilder.build();
     }

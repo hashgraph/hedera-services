@@ -1,4 +1,5 @@
 module com.swirlds.demo.stress {
+    requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.swirlds.config.api;
     requires com.swirlds.logging;

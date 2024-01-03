@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -33,8 +34,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractGetInfoSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractGetInfoSuite.class);
@@ -57,7 +60,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getInfoWorks() {
+    final HapiSpec getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";
         return defaultHapiSpec("GetInfoWorks")
@@ -76,7 +79,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromCostAnswer() {
+    final HapiSpec invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -85,7 +88,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec invalidContractFromAnswerOnly() {
+    final HapiSpec invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

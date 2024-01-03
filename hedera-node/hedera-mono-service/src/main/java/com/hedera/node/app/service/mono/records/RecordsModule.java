@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.stream.RecordStreamManager.effectiveLogDir;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.google.common.cache.Cache;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
@@ -30,8 +30,8 @@ import com.hedera.node.app.service.mono.stream.RecordStreamType;
 import com.hedera.node.app.service.mono.stream.RecoveryRecordsWriter;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

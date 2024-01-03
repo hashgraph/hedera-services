@@ -1,4 +1,35 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.3.0-63137"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,10 +49,10 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 96,
+  "id": null,
   "links": [
     {
-      "asDropdown": false,
+      "asDropdown": true,
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
@@ -29,7 +60,7 @@
         "Platform"
       ],
       "targetBlank": false,
-      "title": "Platform dashboards",
+      "title": "Platform Dashboards",
       "tooltip": "",
       "type": "dashboards",
       "url": ""
@@ -40,7 +71,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -48,11 +79,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -119,10 +150,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "rate(merkle_db_ds_reads_hashes_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}[10m])",
+          "expr": "rate(merkle_db_ds_reads_hashes_$Store{environment=\"$network\", node_id=\"$NodeID\"}[10m])",
           "instant": false,
           "legendFormat": "hashes",
           "range": true,
@@ -131,10 +162,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "rate(merkle_db_ds_reads_leafKeys_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}[10m])",
+          "expr": "rate(merkle_db_ds_reads_leafKeys_$Store{environment=\"$network\", node_id=\"$NodeID\"}[10m])",
           "hide": false,
           "instant": false,
           "legendFormat": "leaf keys",
@@ -144,10 +175,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "rate(merkle_db_ds_reads_leaves_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}[10m])",
+          "expr": "rate(merkle_db_ds_reads_leaves_$Store{environment=\"$network\", node_id=\"$NodeID\"}[10m])",
           "hide": false,
           "instant": false,
           "legendFormat": "leaves",
@@ -161,7 +192,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -169,11 +200,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -240,10 +271,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "rate(merkle_db_ds_flushes_hashesWritten_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}[10m])",
+          "expr": "rate(merkle_db_ds_flushes_hashesWritten_$Store{environment=\"$network\", node_id=\"$NodeID\"}[10m])",
           "instant": false,
           "legendFormat": "hashes written",
           "range": true,
@@ -252,10 +283,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "rate(merkle_db_ds_flushes_leafKeysWritten_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}[10m])",
+          "expr": "rate(merkle_db_ds_flushes_leafKeysWritten_$Store{environment=\"$network\", node_id=\"$NodeID\"}[10m])",
           "hide": false,
           "instant": false,
           "legendFormat": "leaf keys written",
@@ -265,10 +296,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "rate(merkle_db_ds_flushes_leavesDeleted_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}[10m])",
+          "expr": "rate(merkle_db_ds_flushes_leavesDeleted_$Store{environment=\"$network\", node_id=\"$NodeID\"}[10m])",
           "hide": false,
           "instant": false,
           "legendFormat": "leaves deleted",
@@ -278,10 +309,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "rate(merkle_db_ds_flushes_leavesWritten_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}[10m])",
+          "expr": "rate(merkle_db_ds_flushes_leavesWritten_$Store{environment=\"$network\", node_id=\"$NodeID\"}[10m])",
           "hide": false,
           "instant": false,
           "legendFormat": "leaves written",
@@ -295,7 +326,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -303,11 +334,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "bars",
             "fillOpacity": 0,
@@ -375,10 +406,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_files_hashesStoreFileSizeMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_files_hashesStoreFileSizeMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "instant": false,
           "legendFormat": "hashes",
           "range": true,
@@ -387,10 +418,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_files_leafKeysStoreFileSizeMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_files_leafKeysStoreFileSizeMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "leaf keys",
@@ -400,10 +431,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_files_leavesStoreFileSizeMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_files_leavesStoreFileSizeMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "leaves",
@@ -417,7 +448,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -496,10 +527,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_files_hashesStoreFileCount_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_files_hashesStoreFileCount_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "instant": false,
           "legendFormat": "hashes",
           "range": true,
@@ -508,10 +539,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_files_leafKeysStoreFileCount_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_files_leafKeysStoreFileCount_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "leafKeys",
@@ -521,10 +552,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_files_leavesStoreFileCount_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_files_leavesStoreFileCount_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "leaves",
@@ -538,7 +569,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -616,10 +647,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_offheap_hashesIndexMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_offheap_hashesIndexMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "instant": false,
           "legendFormat": "hash store index",
           "range": true,
@@ -628,10 +659,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_offheap_hashesListMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_offheap_hashesListMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "hashes list",
@@ -641,10 +672,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_offheap_leavesIndexMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_offheap_leavesIndexMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "leaves store index",
@@ -654,10 +685,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_offheap_longKeysIndexMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_offheap_longKeysIndexMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "long keys index",
@@ -667,10 +698,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_offheap_objectKeyBucketsIndexMb_$Store{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_offheap_objectKeyBucketsIndexMb_$Store{environment=\"$network\", node_id=\"$NodeID\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "generic key buckets index",
@@ -684,7 +715,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -763,10 +794,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "merkle_db_ds_offheap_dataSourceMb_accountStore{environment=\"$Environment\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_fileStore{environment=\"$Environment\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_tokenRelStore{environment=\"$Environment\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_smartContractIterableKvStore{environment=\"$Environment\", node_id=\"$NodeID\"}",
+          "expr": "merkle_db_ds_offheap_dataSourceMb_accountStore{environment=\"$network\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_fileStore{environment=\"$network\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_tokenRelStore{environment=\"$network\", node_id=\"$NodeID\"} + merkle_db_ds_offheap_dataSourceMb_smartContractIterableKvStore{environment=\"$network\", node_id=\"$NodeID\"}",
           "instant": false,
           "legendFormat": "Total",
           "range": true,
@@ -778,7 +809,7 @@
     }
   ],
   "refresh": "",
-  "schemaVersion": 38,
+  "schemaVersion": 39,
   "tags": [
     "Platform",
     "PlatformData"
@@ -786,21 +817,17 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "integration",
-          "value": "integration"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "grafanacloud-prom"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "definition": "label_values(environment)",
         "hide": 0,
         "includeAll": false,
-        "label": "Environment",
+        "label": "Network",
         "multi": false,
-        "name": "Environment",
+        "name": "network",
         "options": [],
         "query": {
           "qryType": 1,
@@ -814,14 +841,10 @@
         "type": "query"
       },
       {
-        "current": {
-          "selected": false,
-          "text": "0",
-          "value": "0"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "grafanacloud-prom"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "definition": "label_values(node_id)",
         "hide": 0,
@@ -832,7 +855,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values({environment=\"$Environment\"}, node_id)",
+          "query": "label_values({environment=\"$network\"}, node_id)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -842,14 +865,10 @@
         "type": "query"
       },
       {
-        "current": {
-          "selected": false,
-          "text": "accountStore",
-          "value": "accountStore"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "grafanacloud-prom"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "definition": "metrics(virtual_map_vmap_size_.*)",
         "hide": 0,
@@ -872,13 +891,13 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "MerkleDb",
   "uid": "f57651cc-ee35-48d7-bbea-8908f07e3db4",
-  "version": 70,
+  "version": 74,
   "weekStart": ""
 }

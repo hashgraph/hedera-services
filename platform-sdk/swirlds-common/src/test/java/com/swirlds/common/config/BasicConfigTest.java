@@ -37,7 +37,7 @@ class BasicConfigTest {
     void propertiesHasNoPrefix() {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("jvmPauseDetectorSleepMs", "42")
+                .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "42")
                 .getOrCreateConfig();
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
 

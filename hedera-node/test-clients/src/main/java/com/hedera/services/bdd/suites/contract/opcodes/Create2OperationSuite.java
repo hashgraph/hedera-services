@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -60,11 +61,22 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -133,8 +145,10 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class Create2OperationSuite extends HapiSuite {
 
     public static final String GET_BYTECODE = "getBytecode";
@@ -193,14 +207,14 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec allLogOpcodesResolveExpectedContractId() {
+    final HapiSpec allLogOpcodesResolveExpectedContractId() {
         final var contract = "OuterCreator";
 
         final AtomicLong outerCreatorNum = new AtomicLong();
         final var msg = new byte[] {(byte) 0xAB};
         final var noisyTxn = "noisyTxn";
 
-        return defaultHapiSpec("AllLogOpcodesResolveExpectedContractId")
+        return defaultHapiSpec("AllLogOpcodesResolveExpectedContractId", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -227,7 +241,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2868
     @HapiTest
-    private HapiSpec inlineCreate2CanFailSafely() {
+    final HapiSpec inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
         final var contract = "RevertingCreateFactory";
         final var foo = BigInteger.valueOf(22);
@@ -237,7 +251,8 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 
-        return defaultHapiSpec("InlineCreate2CanFailSafely")
+        return defaultHapiSpec(
+                        "InlineCreate2CanFailSafely", NONDETERMINISTIC_FUNCTION_PARAMETERS, ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -274,7 +289,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec inlineCreateCanFailSafely() {
+    final HapiSpec inlineCreateCanFailSafely() {
         final var tcValue = 1_234L;
         final var creation = CREATION;
         final var contract = "RevertingCreateFactory";
@@ -285,7 +300,8 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 
-        return defaultHapiSpec("InlineCreateCanFailSafely")
+        return defaultHapiSpec(
+                        "InlineCreateCanFailSafely", NONDETERMINISTIC_FUNCTION_PARAMETERS, ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract)
@@ -321,12 +337,15 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canAssociateInConstructor() {
+    final HapiSpec canAssociateInConstructor() {
         final var token = "token";
         final var contract = "SelfAssociating";
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("CanAssociateInConstructor")
+        return defaultHapiSpec(
+                        "CanAssociateInConstructor",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         uploadInitCode(contract),
                         tokenCreate(token)
@@ -343,15 +362,13 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec payableCreate2WorksAsExpected() {
+    final HapiSpec payableCreate2WorksAsExpected() {
         final var contract = "PayableCreate2Deploy";
         AtomicReference<String> tcMirrorAddr2 = new AtomicReference<>();
         AtomicReference<String> tcAliasAddr2 = new AtomicReference<>();
 
-        return defaultHapiSpec("PayableCreate2WorksAsExpected")
+        return defaultHapiSpec("PayableCreate2WorksAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        // FUTURE - enable this; current failure is missing transactionFee field
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS).gas(1_000_000))
                 .when(
@@ -368,7 +385,7 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
     @HapiTest
-    private HapiSpec create2FactoryWorksAsExpected() {
+    final HapiSpec create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var testContract = "TestContract";
@@ -385,7 +402,12 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<byte[]> bytecodeFromAlias = new AtomicReference<>();
         final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
 
-        return defaultHapiSpec("Create2FactoryWorksAsExpected")
+        return defaultHapiSpec(
+                        "Create2FactoryWorksAsExpected",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_LOG_DATA)
                 .given(
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
@@ -500,7 +522,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    private HapiSpec canMergeCreate2ChildWithHollowAccount() {
+    final HapiSpec canMergeCreate2ChildWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var creation = CREATION;
@@ -519,19 +541,13 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("CanMergeCreate2ChildWithHollowAccount")
+        return defaultHapiSpec(
+                        "CanMergeCreate2ChildWithHollowAccount",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_LOG_DATA)
                 .given(
-                        //                        // FUTURE - enable this; current failure is missing transactionFee
-                        // field
-                        //                        snapshotMode(
-                        //                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                        //                                // This contract uses entity addresses in its function
-                        // parameters and
-                        //                                // call results, which makes it excessively difficult to
-                        // fuzzy-match
-                        //                                // the "contractCallResult" and "functionParameters" fields
-                        //                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        //                                NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -577,6 +593,7 @@ public class Create2OperationSuite extends HapiSuite {
                         lazyCreateAccount(creation, expectedCreate2Address, ftId, nftId, partyAlias),
                         getTxnRecord(creation)
                                 .andAllChildRecords()
+                                .logged()
                                 .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
                         sourcing(() ->
                                 getAccountInfo(hollowCreationAddress.get()).logged()))
@@ -590,10 +607,11 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .sending(tcValue)
-                                .via(CREATE_2_TXN)),
+                                .via("TEST2")),
+                        getTxnRecord("TEST2").andAllChildRecords().logged(),
                         captureOneChildCreate2MetaFor(
                                 "Merged deployed contract with hollow account",
-                                CREATE_2_TXN,
+                                "TEST2",
                                 mergedMirrorAddr,
                                 mergedAliasAddr),
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
@@ -622,7 +640,8 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec canMergeCreate2MultipleCreatesWithHollowAccount() {
+    @HapiTest
+    final HapiSpec canMergeCreate2MultipleCreatesWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2MultipleCreates";
         final var creation = CREATION;
@@ -641,7 +660,7 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount")
+        return defaultHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
@@ -698,13 +717,22 @@ public class Create2OperationSuite extends HapiSuite {
                                 .gas(10_000_000L)
                                 .sending(tcValue)
                                 .via(CREATE_2_TXN)),
-                        captureChildCreate2MetaFor(
+                        // mod-service externalizes internal creations in order of their initiation,
+                        // while mono-service externalizes them in order of their completion
+                        ifHapiTest(captureChildCreate2MetaFor(
+                                3,
+                                0,
+                                "Merged deployed contract with hollow account",
+                                CREATE_2_TXN,
+                                mergedMirrorAddr,
+                                mergedAliasAddr)),
+                        ifNotHapiTest(captureChildCreate2MetaFor(
                                 3,
                                 2,
                                 "Merged deployed contract with hollow account",
                                 CREATE_2_TXN,
                                 mergedMirrorAddr,
-                                mergedAliasAddr),
+                                mergedAliasAddr)),
                         withOpContext((spec, opLog) -> {
                             final var opExpectedMergedNonce = getTxnRecord(CREATE_2_TXN)
                                     .andAllChildRecords()
@@ -735,7 +763,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canCallFinalizedContractViaHapi() {
+    final HapiSpec canCallFinalizedContractViaHapi() {
         final var contract = "FinalizedDestructible";
         final var salt = BigInteger.valueOf(1_234_567_890L);
         final AtomicReference<Address> childAddress = new AtomicReference<>();
@@ -743,13 +771,16 @@ public class Create2OperationSuite extends HapiSuite {
         final var vacateAddressAbi =
                 "{\"inputs\":[],\"name\":\"vacateAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-        return defaultHapiSpec("CanCallFinalizedContractViaHapi")
+        return defaultHapiSpec(
+                        "CanCallFinalizedContractViaHapi",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                         uploadInitCode(contract),
-                        contractCreate(contract).payingWith(GENESIS),
+                        contractCreate(contract).payingWith(GENESIS).gas(500_000L),
                         contractCallLocal(contract, "computeChildAddress", salt)
                                 .exposingTypedResultsTo(results -> childAddress.set((Address) results[0])),
                         sourcing(() -> ethereumCryptoTransferToAddress(childAddress.get(), ONE_HBAR)
@@ -771,7 +802,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
+    final HapiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
         final var ercContract = "ERC721Contract";
         final var pc2User = "Create2PrecompileUser";
         final var nft = "nonFungibleToken";
@@ -784,7 +815,11 @@ public class Create2OperationSuite extends HapiSuite {
 
         final byte[] salt = unhex(SALT);
 
-        return defaultHapiSpec("Eip1014AliasIsPriorityInErcOwnerPrecompile")
+        return defaultHapiSpec(
+                        "Eip1014AliasIsPriorityInErcOwnerPrecompile",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(SWISS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -833,7 +868,8 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiSpec canUseAliasesInPrecompilesAndContractKeys() {
+    @HapiTest
+    final HapiSpec canUseAliasesInPrecompilesAndContractKeys() {
         final var creation2 = CREATE_2_TXN;
         final var contract = "Create2PrecompileUser";
         final var userContract = "Create2User";
@@ -852,7 +888,11 @@ public class Create2OperationSuite extends HapiSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec("canUseAliasesInPrecompilesAndContractKeys")
+        return defaultHapiSpec(
+                        "canUseAliasesInPrecompilesAndContractKeys",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .given(
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1015,7 +1055,7 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2925
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec cannotSelfDestructToMirrorAddress() {
+    final HapiSpec cannotSelfDestructToMirrorAddress() {
         final var creation2 = CREATE_2_TXN;
         final var messyCreation2 = "messyCreate2Txn";
         final var contract = "CreateDonor";
@@ -1029,7 +1069,10 @@ public class Create2OperationSuite extends HapiSuite {
         final var salt = unhex(SALT);
         final var otherSalt = unhex("aabbccddee880011aabbccddee880011aabbccddee880011aabbccddee880011");
 
-        return defaultHapiSpec("CannotSelfDestructToMirrorAddress")
+        return defaultHapiSpec(
+                        "CannotSelfDestructToMirrorAddress",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
@@ -1065,7 +1108,8 @@ public class Create2OperationSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2874
     @SuppressWarnings("java:S5669")
-    private HapiSpec canDeleteViaAlias() {
+    @HapiTest
+    final HapiSpec canDeleteViaAlias() {
         final var adminKey = ADMIN_KEY;
         final var creation2 = CREATE_2_TXN;
         final var deletion = "deletion";
@@ -1139,7 +1183,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
+    final HapiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
         final var creation2 = CREATE_2_TXN;
         final var innerCreation2 = "innerCreate2Txn";
         final var delegateCreation2 = "delegateCreate2Txn";
@@ -1155,7 +1199,10 @@ public class Create2OperationSuite extends HapiSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec("Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
+        return defaultHapiSpec(
+                        "Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
@@ -1212,7 +1259,8 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
+    @HapiTest
+    final HapiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
         final var contract = "AddressValueRet";
 
         final AtomicReference<String> aliasAddr = new AtomicReference<>();
@@ -1267,7 +1315,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    private HapiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
+    final HapiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
         final var contract = "AddressValueRet";
         final var aliasCall = "aliasCall";
         final var mirrorCall = "mirrorCall";
@@ -1279,7 +1327,10 @@ public class Create2OperationSuite extends HapiSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec("CanInternallyCallAliasedAddressesOnlyViaCreate2Address")
+        return defaultHapiSpec(
+                        "CanInternallyCallAliasedAddressesOnlyViaCreate2Address",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
@@ -1323,7 +1374,7 @@ public class Create2OperationSuite extends HapiSuite {
                 }));
     }
 
-    private HapiContractCallLocal setExpectedCreate2Address(
+    public static HapiContractCallLocal setExpectedCreate2Address(
             String contract,
             BigInteger salt,
             AtomicReference<String> expectedCreate2Address,

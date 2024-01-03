@@ -25,8 +25,8 @@ class TransactionConfigTest {
     @Test
     void testValidation() {
         final TestConfigBuilder builder = new TestConfigBuilder()
-                .withValue("transaction.maxTransactionBytesPerEvent", "1")
-                .withValue("transaction.transactionMaxBytes", "12");
+                .withValue(TransactionConfig_.MAX_TRANSACTION_BYTES_PER_EVENT, "1")
+                .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, "12");
 
         Assertions.assertThrows(
                 ConfigViolationException.class,

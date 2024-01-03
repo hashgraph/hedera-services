@@ -24,14 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.system.address.AddressBook;
 import java.time.Instant;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
@@ -71,6 +71,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
         return ss -> {
             assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
             stateHasEnoughSignaturesCount.getAndIncrement();
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
         };
     }
 
@@ -78,7 +79,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     @DisplayName("Sequential Signatures Test")
     void sequentialSignaturesTest() throws InterruptedException {
         this.roundsToKeepAfterSigning = 4;
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -103,11 +104,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             manager.addState(signedState);
 
             if (round == 0) {
-                firstTimestamp = signedState
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getConsensusTimestamp();
+                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
             }
             assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
             assertEquals(firstRound, manager.getFirstStateRound());
@@ -130,7 +127,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                     assertSame(
                             signedStates.get(roundToSign), lastCompletedState.get(), "unexpected last completed state");
                 } else {
-                    assertNull(lastCompletedState.getNullable(), "no states should be completed yet");
+                    assertNull(lastCompletedState, "no states should be completed yet");
                 }
             }
 

@@ -44,6 +44,10 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Implements the {@link HederaFunctionality#ContractGetInfo} query handler.
+ * The token relationships field is deprecated and is no more returned by this query.
+ */
 @Singleton
 public class GetContractInfoAnswer implements AnswerService {
     public static final String CONTRACT_INFO_CTX_KEY = GetContractInfoAnswer.class.getSimpleName() + "_contractInfo";
@@ -156,7 +160,11 @@ public class GetContractInfoAnswer implements AnswerService {
             }
         } else {
             final var info = view.infoForContract(
-                    op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
+                    op.getContractID(),
+                    aliasManager,
+                    dynamicProperties.maxTokensRelsPerInfoQuery(),
+                    rewardCalculator,
+                    dynamicProperties.areTokenBalancesEnabledInQueries());
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
             } else {

@@ -16,19 +16,24 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 
 /**
  * Minimal implementation support for an {@link HtsCall} that needs an {@link HederaWorldUpdater.Enhancement}
@@ -37,16 +42,27 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public abstract class AbstractHtsCall implements HtsCall {
     protected final SystemContractGasCalculator gasCalculator;
     protected final HederaWorldUpdater.Enhancement enhancement;
+    private final boolean isViewCall;
 
     protected AbstractHtsCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            final boolean isViewCall) {
         this.gasCalculator = requireNonNull(gasCalculator);
         this.enhancement = requireNonNull(enhancement);
+        this.isViewCall = isViewCall;
+    }
+
+    protected HederaOperations operations() {
+        return enhancement.operations();
     }
 
     protected HederaNativeOperations nativeOperations() {
         return enhancement.nativeOperations();
+    }
+
+    protected ReadableAccountStore readableAccountStore() {
+        return nativeOperations().readableAccountStore();
     }
 
     protected SystemContractOperations systemContractOperations() {
@@ -54,14 +70,28 @@ public abstract class AbstractHtsCall implements HtsCall {
     }
 
     protected PricedResult completionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(successResult(ReturnTypes.encodedRc(standardized(status)), gasRequirement));
+        return gasOnly(successResult(encodedRc(standardized(status)), gasRequirement), status, isViewCall);
+    }
+
+    protected PricedResult completionWith(
+            final long gasRequirement,
+            @NonNull final ContractCallRecordBuilder recordBuilder,
+            @NonNull final ByteBuffer output) {
+        requireNonNull(output);
+        requireNonNull(recordBuilder);
+        return gasOnly(successResult(output, gasRequirement, recordBuilder), recordBuilder.status(), isViewCall);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(revertResult(standardized(status), gasRequirement));
+        return gasOnly(revertResult(standardized(status), gasRequirement), status, isViewCall);
     }
 
-    private ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
-        return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
+    protected PricedResult reversionWith(
+            final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+        return gasOnly(revertResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
+    }
+
+    protected PricedResult haltWith(final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+        return gasOnly(haltResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
     }
 }

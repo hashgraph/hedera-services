@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 public class FuseXTest extends AbstractContractXTest {
-    static final long GAS = 300_000L;
+    static final long GAS = 600_000L;
     static final long NEXT_ENTITY_NUM = 1234L;
     private static final FileID FUSE_INITCODE_ID =
             FileID.newBuilder().fileNum(1002L).build();

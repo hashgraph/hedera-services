@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.system;
 
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;

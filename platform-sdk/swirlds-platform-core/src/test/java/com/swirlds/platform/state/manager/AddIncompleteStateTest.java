@@ -25,16 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -75,6 +75,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
         return ss -> {
             assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
             stateHasEnoughSignaturesCount.getAndIncrement();
         };
     }
@@ -83,7 +84,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     @DisplayName("Add Incomplete State Test")
     void addIncompleteStateTest() {
 
-        SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -112,12 +113,10 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         manager.addState(stateFromDisk);
 
         assertEquals(
-                stateFromDisk.getState().getPlatformState().getPlatformData().getConsensusTimestamp(),
-                manager.getFirstStateTimestamp());
-        assertEquals(
-                stateFromDisk.getState().getPlatformState().getPlatformData().getRound(), manager.getFirstStateRound());
+                stateFromDisk.getState().getPlatformState().getConsensusTimestamp(), manager.getFirstStateTimestamp());
+        assertEquals(stateFromDisk.getState().getPlatformState().getRound(), manager.getFirstStateRound());
 
-        assertNull(manager.getLatestSignedState("test").getNullable());
+        assertNull(manager.getLatestSignedState("test"));
         assertEquals(-1, manager.getLastCompleteRound());
 
         try (final ReservedSignedState wrapper =

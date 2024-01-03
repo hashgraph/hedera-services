@@ -86,7 +86,7 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
                 .advertisingCreation();
     }
 
-    private HapiSpec runCreateSchedules() {
+    final HapiSpec runCreateSchedules() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 SCHEDULE_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

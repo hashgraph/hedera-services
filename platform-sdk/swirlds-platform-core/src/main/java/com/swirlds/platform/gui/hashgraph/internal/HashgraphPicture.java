@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import static com.swirlds.gui.hashgraph.HashgraphGuiConstants.HASHGRAPH_PICTURE_FONT;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants.HASHGRAPH_PICTURE_FONT;
 
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.gui.hashgraph.HashgraphGuiConstants;
-import com.swirlds.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.gui.hashgraph.HashgraphPictureOptions;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;

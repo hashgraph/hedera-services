@@ -20,11 +20,11 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 
-import com.swirlds.gui.GuiConstants;
-import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.components.ScrollableJPanel;
-import com.swirlds.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.gui.model.InfoMember;
+import com.swirlds.platform.gui.GuiConstants;
+import com.swirlds.platform.gui.GuiUtils;
+import com.swirlds.platform.gui.components.ScrollableJPanel;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.gui.model.InfoMember;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -261,6 +261,7 @@ public class WinBrowser extends JFrame {
         // add(tabPosts, BorderLayout.CENTER);
         SwirldMenu.addTo(null, this, 40);
         pack();
+        setExtendedState(getExtendedState() | JFrame.MAXIMIZED_BOTH);
         setVisible(true);
 
         updater = new Timer(refreshPeriod, repaintPeriodically);

@@ -54,7 +54,7 @@ public class UtilScalePricingCheck extends HapiSuite {
     }
 
     // Can only be run against an isolated network since it assumes the state begins with 0 NFTs minted
-    private HapiSpec nftPriceScalesWithUtilization() {
+    final HapiSpec nftPriceScalesWithUtilization() {
         final var civilian = "civilian";
         final var maxAllowed = 100;
         final IntFunction<String> mintOp = i -> "mint" + i;

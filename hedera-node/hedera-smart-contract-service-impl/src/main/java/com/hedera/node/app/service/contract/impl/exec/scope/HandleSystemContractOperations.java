@@ -16,29 +16,28 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 import javax.inject.Inject;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Provides the "extended" scope a Hedera system contract needs to perform its operations.
@@ -54,35 +53,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     @Inject
     public HandleSystemContractOperations(@NonNull final HandleContext context) {
         this.context = requireNonNull(context);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @Nullable Nft getNftAndExternalizeResult(
-            @NonNull final NftID id,
-            final long callingContractNumber,
-            @NonNull final ResultTranslator<Nft> translator) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @Nullable Token getTokenAndExternalizeResult(
-            final long number, final long callingContractNumber, @NonNull final ResultTranslator<Token> translator) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @Nullable Account getAccountAndExternalizeResult(
-            final long number, final long callingContractNumber, @NonNull final ResultTranslator<Account> translator) {
-        throw new AssertionError("Not implemented");
     }
 
     /**
@@ -111,20 +81,56 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
     }
 
+    @Override
+    public ContractCallRecordBuilder externalizePreemptedDispatch(
+            @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
+        requireNonNull(syntheticBody);
+        requireNonNull(preemptingStatus);
+
+        return context.addChildRecordBuilder(ContractCallRecordBuilder.class)
+                .transaction(transactionWith(syntheticBody))
+                .status(preemptingStatus);
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void externalizeResult(
-            @NonNull final ContractFunctionResult result,
-            @NonNull final ResultStatus status,
-            @NonNull final ResponseCodeEnum responseStatus) {
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
                 .contractID(result.contractID())
-                .status(status == ResultStatus.IS_ERROR ? responseStatus : SUCCESS)
+                .status(responseStatus)
                 .contractCallResult(result);
+    }
+
+    @Override
+    public void externalizeResult(
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResponseCodeEnum responseStatus,
+            @NonNull Transaction transaction) {
+        requireNonNull(transaction);
+        context.addChildRecordBuilder(ContractCallRecordBuilder.class)
+                .transaction(transaction)
+                .status(responseStatus)
+                .contractCallResult(result);
+    }
+
+    @Override
+    public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
+        var functionParameters = tuweniToPbjBytes(input);
+        var contractCallBodyBuilder =
+                ContractCallTransactionBody.newBuilder().contractID(contractID).functionParameters(functionParameters);
+        if (isViewCall) {
+            contractCallBodyBuilder.gas(1L);
+        }
+        var transactionBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.DEFAULT)
+                .contractCall(contractCallBodyBuilder.build())
+                .build();
+        return transactionWith(transactionBody);
     }
 
     /**

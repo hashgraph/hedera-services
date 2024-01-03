@@ -113,9 +113,10 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
                     ? accountStore.getAccountById(op.accountIDOrThrow())
                     : accountStore.getContractById(op.contractIDOrThrow());
             requireNonNull(account);
-            response.accountID(account.accountIdOrThrow())
-                    .balance(account.tinybarBalance())
-                    .tokenBalances(getTokenBalances(config, account, tokenStore, tokenRelationStore));
+            response.accountID(account.accountIdOrThrow()).balance(account.tinybarBalance());
+            if (config.balancesInQueriesEnabled()) {
+                response.tokenBalances(getTokenBalances(config, account, tokenStore, tokenRelationStore));
+            }
         }
 
         return Response.newBuilder().cryptogetAccountBalance(response).build();

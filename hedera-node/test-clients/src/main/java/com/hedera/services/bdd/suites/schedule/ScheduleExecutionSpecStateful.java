@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.addAllToWhitelist;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -45,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -55,8 +57,12 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleExecutionSpecStateful extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecStateful.class);
 
@@ -95,6 +101,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(() -> List.of(
                 /* Stateful specs from ScheduleExecutionSpecs */
+                suiteSetup(),
                 scheduledUniqueMintFailsWithNftsDisabled(),
                 scheduledUniqueBurnFailsWithNftsDisabled(),
                 scheduledBurnWithInvalidTokenThrowsUnresolvableSigners(),
@@ -103,7 +110,16 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 suiteCleanup()));
     }
 
-    private HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
+    @HapiTest
+    @Order(1)
+    final HapiSpec suiteSetup() {
+        // Managing whitelist for these is error-prone, so just whitelist everything by default.
+        return defaultHapiSpec("suiteSetup").given().when().then(addAllToWhitelist());
+    }
+
+    @HapiTest
+    @Order(4)
+    final HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))
                 .when(scheduleCreate(VALID_SCHEDULE, burnToken("0.0.123231", List.of(1L, 2L)))
@@ -112,7 +128,9 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
+    @HapiTest
+    @Order(2)
+    final HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -142,7 +160,9 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
-    private HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
+    @HapiTest
+    @Order(3)
+    final HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
                 .given(
                         cryptoCreate(TREASURY),
@@ -172,6 +192,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                                 .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
+    @HapiTest
+    @Order(5)
     public HapiSpec executionWithTransferListWrongSizedFails() {
         long transferAmount = 1L;
         long senderBalance = 1000L;
@@ -218,7 +240,9 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         }));
     }
 
-    private HapiSpec executionWithTokenTransferListSizeExceedFails() {
+    @HapiTest
+    @Order(6)
+    final HapiSpec executionWithTokenTransferListSizeExceedFails() {
         String xToken = "XXX";
         String invalidSchedule = "withMaxTokenTransfer";
         String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
@@ -253,7 +277,9 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
-    private HapiSpec suiteCleanup() {
+    @HapiTest
+    @Order(7)
+    final HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()

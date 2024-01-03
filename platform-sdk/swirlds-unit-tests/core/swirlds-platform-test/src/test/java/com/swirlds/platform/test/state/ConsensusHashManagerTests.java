@@ -34,21 +34,21 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -65,8 +65,6 @@ import org.junit.jupiter.api.Test;
 class ConsensusHashManagerTests {
     /** the default epoch hash to use */
     private static final Hash DEFAULT_EPOCH_HASH = null;
-
-    private static final SoftwareVersion DEFAULT_SOFTWARE_VERSION = null;
 
     @Test
     @DisplayName("Valid Signatures After Hash Test")
@@ -89,7 +87,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS);
 
@@ -114,7 +112,7 @@ class ConsensusHashManagerTests {
                 manager.handlePostconsensusSignatureTransaction(
                         address.getNodeId(),
                         new StateSignatureTransaction(round, mock(Signature.class), roundHash),
-                        null);
+                        new BasicSoftwareVersion(1));
             }
         }
 
@@ -203,7 +201,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS);
 
@@ -290,7 +288,7 @@ class ConsensusHashManagerTests {
                     nodeId,
                     new StateSignatureTransaction(
                             nodeHashInfo.round(), mock(Signature.class), nodeHashInfo.nodeStateHash()),
-                    null);
+                    new BasicSoftwareVersion(1));
         }
 
         // Shifting after completion should have no side effects
@@ -360,7 +358,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS);
 
@@ -393,7 +391,7 @@ class ConsensusHashManagerTests {
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    null);
+                    new BasicSoftwareVersion(1));
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -410,7 +408,7 @@ class ConsensusHashManagerTests {
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    null);
+                    new BasicSoftwareVersion(1));
         }
 
         assertEquals(1, issCount.get(), "data should not have been ignored");
@@ -442,7 +440,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS);
 
@@ -475,7 +473,7 @@ class ConsensusHashManagerTests {
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    null);
+                    new BasicSoftwareVersion(1));
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -507,7 +505,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS);
 
@@ -547,7 +545,7 @@ class ConsensusHashManagerTests {
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    null);
+                    new BasicSoftwareVersion(1));
         }
 
         // Shift the window even though we have not added enough data for a decision
@@ -612,7 +610,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS);
 
@@ -647,7 +645,7 @@ class ConsensusHashManagerTests {
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    null);
+                    new BasicSoftwareVersion(1));
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
@@ -690,7 +688,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 DO_NOT_IGNORE_ROUNDS);
 
@@ -725,7 +723,7 @@ class ConsensusHashManagerTests {
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
                     new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
-                    null);
+                    new BasicSoftwareVersion(1));
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
@@ -762,7 +760,7 @@ class ConsensusHashManagerTests {
                 dispatchBuilder,
                 addressBook,
                 DEFAULT_EPOCH_HASH,
-                DEFAULT_SOFTWARE_VERSION,
+                new BasicSoftwareVersion(1),
                 false,
                 1);
 
@@ -789,12 +787,12 @@ class ConsensusHashManagerTests {
                     manager.handlePostconsensusSignatureTransaction(
                             address.getNodeId(),
                             new StateSignatureTransaction(round, mock(Signature.class), randomHash(random)),
-                            null);
+                            new BasicSoftwareVersion(1));
                 } else {
                     manager.handlePostconsensusSignatureTransaction(
                             address.getNodeId(),
                             new StateSignatureTransaction(round, mock(Signature.class), roundHash),
-                            null);
+                            new BasicSoftwareVersion(1));
                 }
             }
         }

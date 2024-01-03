@@ -23,15 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,7 +70,10 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
+        return ss -> {
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
+            stateHasEnoughSignaturesCount.getAndIncrement();
+        };
     }
 
     @Test
@@ -79,7 +82,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         final int count = 100;
         final StateConfig stateConfig = buildStateConfig();
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -140,11 +143,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
             manager.addState(signedState);
 
             if (round == 0) {
-                firstTimestamp = signedState
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getConsensusTimestamp();
+                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
             }
             assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
             assertEquals(firstRound, manager.getFirstStateRound());
@@ -173,10 +172,11 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
                 lastExpectedCompletedRound = Math.max(lastExpectedCompletedRound, roundToSign);
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test get lastState")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
+            try (final ReservedSignedState lastCompletedState =
+                    manager.getLatestSignedState("test get lastCompletedState")) {
                 assertSame(
                         signedStates.get(lastExpectedCompletedRound),
                         lastCompletedState.get(),

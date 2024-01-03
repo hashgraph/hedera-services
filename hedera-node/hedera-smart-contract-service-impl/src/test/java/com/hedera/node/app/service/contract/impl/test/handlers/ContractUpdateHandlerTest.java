@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
@@ -53,7 +54,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Account.Builder;
-import com.hedera.hapi.node.state.token.Account.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
@@ -70,7 +70,6 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.test.utils.KeyUtils;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,6 +142,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void invalidAutoRenewAccountIdFails() throws PreCheckException {
+        when(payerAccount.keyOrThrow()).thenReturn(AN_ED25519_KEY);
         when(accountStore.getContractById(targetContract)).thenReturn(payerAccount);
 
         final var txn = TransactionBody.newBuilder()
@@ -428,8 +428,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void verifyTheCorrectOutsideValidatorsAndUpdateContractAPIAreCalled() {
         doReturn(attributeValidator).when(context).attributeValidator();
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
+        when(contract.accountIdOrThrow())
+                .thenReturn(AccountID.newBuilder().accountNum(666).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
-        when(contract.stakedId()).thenReturn(new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, null));
         when(context.expiryValidator()).thenReturn(expiryValidator);
         when(context.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -632,5 +633,38 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         assertEquals(op.autoRenewAccountId(), updatedContract.autoRenewAccountId());
         assertEquals(op.maxAutomaticTokenAssociations(), updatedContract.maxAutoAssociations());
         verify(attributeValidator, times(1)).validateMemo(op.memo());
+    }
+
+    @Test
+    void handleWhenTargetIdContainOnlyEvmAddress() {
+        doReturn(attributeValidator).when(context).attributeValidator();
+        when(accountStore.getContractById(targetContractWithEvmAddress)).thenReturn(contract);
+        when(contract.accountIdOrThrow())
+                .thenReturn(AccountID.newBuilder().accountNum(999L).build());
+        when(contract.key()).thenReturn(Key.newBuilder().build());
+        when(context.expiryValidator()).thenReturn(expiryValidator);
+        when(context.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContractWithEvmAddress)
+                        .adminKey(adminKey)
+                        .memo("memo"))
+                .transactionID(transactionID)
+                .build();
+        when(context.body()).thenReturn(txn);
+        when(context.configuration()).thenReturn(configuration);
+        when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
+        when(stakingConfig.isEnabled()).thenReturn(true);
+        when(contract.copyBuilder()).thenReturn(mock(Builder.class));
+        when(context.recordBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+
+        subject.handle(context);
+
+        verify(expiryValidator, times(1)).resolveUpdateAttempt(any(), any(), anyBoolean());
+        verify(tokenServiceApi, times(1))
+                .assertValidStakingElectionForUpdate(anyBoolean(), anyBoolean(), any(), any(), any(), any(), any());
+        verify(tokenServiceApi, times(1)).updateContract(any());
+        verify(recordBuilder, times(1)).contractID(any());
     }
 }

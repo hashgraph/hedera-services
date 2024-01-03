@@ -24,13 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,7 +83,8 @@ class TipsetTrackerTests {
             }
 
             final EventDescriptor selfParent = latestEvents.get(creator);
-            final EventDescriptor fingerprint = new EventDescriptor(randomHash(random), creator, generation);
+            final EventDescriptor fingerprint =
+                    new EventDescriptor(randomHash(random), creator, generation, EventConstants.BIRTH_ROUND_UNDEFINED);
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.
@@ -139,8 +142,11 @@ class TipsetTrackerTests {
         long minimumGenerationNonAncient = 0;
         while (tracker.size() > 0) {
             minimumGenerationNonAncient += random.nextInt(1, 5);
-            tracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
-            assertEquals(minimumGenerationNonAncient, tracker.getMinimumGenerationNonAncient());
+            // FUTURE WORK: change test to use round number instead of minimum generation non-ancient.
+            final NonAncientEventWindow nonAncientEventWindow =
+                    new NonAncientEventWindow(1, 0, minimumGenerationNonAncient);
+            tracker.setNonAncientEventWindow(nonAncientEventWindow);
+            assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
                 if (fingerprint.getGeneration() < minimumGenerationNonAncient) {
                     assertNull(tracker.getTipset(fingerprint));

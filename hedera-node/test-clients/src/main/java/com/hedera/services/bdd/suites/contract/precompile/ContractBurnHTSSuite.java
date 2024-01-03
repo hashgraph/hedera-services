@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -43,8 +44,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractBurnHTSSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
@@ -87,7 +90,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
+    final HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
                 .given(
@@ -151,7 +154,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnNonFungibleV1andV2WithNegativeValues() {
+    final HapiSpec burnNonFungibleV1andV2WithNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec("burnNonFungibleV1andV2WithNegativeValues")
                 .given(

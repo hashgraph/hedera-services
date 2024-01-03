@@ -54,7 +54,7 @@ public class ContractCallLoadTest extends LoadTest {
         return List.of(runContractCalls());
     }
 
-    private HapiSpec runContractCalls() {
+    final HapiSpec runContractCalls() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";

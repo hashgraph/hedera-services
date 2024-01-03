@@ -29,11 +29,11 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -42,6 +42,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -81,6 +82,7 @@ class EventIntakeTest {
                 dispatcher,
                 mock(PhaseTimer.class),
                 shadowGraph,
+                null,
                 e -> {},
                 mock(IntakeEventCounter.class));
 
@@ -88,8 +90,11 @@ class EventIntakeTest {
         final EventImpl added = mock(EventImpl.class);
         when(added.getBaseEvent()).thenReturn(gossipEvent);
         final EventImpl consEvent1 = mock(EventImpl.class);
+        when(consEvent1.getBaseEvent()).thenReturn(mock(GossipEvent.class));
         final EventImpl consEvent2 = mock(EventImpl.class);
+        when(consEvent2.getBaseEvent()).thenReturn(mock(GossipEvent.class));
         final EventImpl stale = mock(EventImpl.class);
+        when(stale.getBaseEvent()).thenReturn(mock(GossipEvent.class));
 
         final Queue<EventImpl> staleQueue = new LinkedList<>(List.of(stale));
         when(shadowGraph.findByGeneration(anyLong(), anyLong(), any())).thenReturn(staleQueue);
@@ -106,6 +111,7 @@ class EventIntakeTest {
                     List.of(consEvent1, consEvent2),
                     added,
                     generations,
+                    mock(NonAncientEventWindow.class),
                     mock(ConsensusSnapshot.class)));
         });
 

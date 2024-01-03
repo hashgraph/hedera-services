@@ -122,7 +122,7 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
                 contract,
                 stakingInfoStore);
         final var maxReturnedRels = tokensConfig.maxRelsPerInfoQuery();
-        return ContractInfo.newBuilder()
+        final var builder = ContractInfo.newBuilder()
                 .ledgerId(ledgerConfig.id())
                 .accountID(accountId)
                 .contractID(ContractID.newBuilder().contractNum(accountId.accountNumOrThrow()))
@@ -136,9 +136,11 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
                 .expirationTime(Timestamp.newBuilder().seconds(contract.expirationSecond()))
                 .maxAutomaticTokenAssociations(contract.maxAutoAssociations())
                 .contractAccountID(hexedEvmAddressOf(contract))
-                .tokenRelationships(tokenRelationshipsOf(contract, tokenStore, tokenRelationStore, maxReturnedRels))
-                .stakingInfo(stakingInfo)
-                .build();
+                .stakingInfo(stakingInfo);
+        if (tokensConfig.balancesInQueriesEnabled()) {
+            builder.tokenRelationships(tokenRelationshipsOf(contract, tokenStore, tokenRelationStore, maxReturnedRels));
+        }
+        return builder.build();
     }
 
     private @Nullable Account contractFrom(@NonNull final QueryContext context) {

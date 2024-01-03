@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -47,8 +48,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class DefaultTokenStatusSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(DefaultTokenStatusSuite.class);
@@ -80,7 +83,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getTokenDefaultFreezeStatus() {
+    final HapiSpec getTokenDefaultFreezeStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("GetTokenDefaultFreezeStatus")
@@ -123,7 +126,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getTokenDefaultKycStatus() {
+    final HapiSpec getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("GetTokenDefaultKycStatus")

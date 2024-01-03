@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -61,8 +62,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class TokenUpdatePrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenUpdatePrecompileSuite.class);
@@ -118,7 +121,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateTokenWithInvalidKeyValues() {
+    final HapiSpec updateTokenWithInvalidKeyValues() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(

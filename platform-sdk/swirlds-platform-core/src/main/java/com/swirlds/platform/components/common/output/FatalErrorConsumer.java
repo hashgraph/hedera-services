@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.common.output;
 
-import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

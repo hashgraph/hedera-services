@@ -21,17 +21,17 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.StatsConfig;
+import com.hedera.node.config.types.Profile;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -75,12 +75,13 @@ public class SubmissionManager {
 
     /** The {@link Platform} to which transactions will be submitted */
     private final Platform platform;
-    /** Whether this node is running in production mode. We hope to remove this logic in the future.  */
-    private final boolean isProduction;
+
     /** Metrics related to submissions */
     private final SpeedometerMetric platformTxnRejections;
     /** The {@link DeduplicationCache} that keeps track of transactions that have been submitted */
     private final DeduplicationCache submittedTxns;
+
+    private final ConfigProvider configProvider;
 
     /**
      * Create a new {@code SubmissionManager} instance.
@@ -98,9 +99,7 @@ public class SubmissionManager {
             @NonNull final Metrics metrics) {
         this.platform = requireNonNull(platform);
         this.submittedTxns = requireNonNull(deduplicationCache);
-
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        this.isProduction = Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD;
+        this.configProvider = requireNonNull(configProvider);
 
         final var statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
         this.platformTxnRejections =
@@ -130,7 +129,9 @@ public class SubmissionManager {
         // FUTURE This should be deprecated and removed. We do not want this in our production system.
         if (txBody.hasUncheckedSubmit()) {
             // We do NOT allow this call in production!
-            if (isProduction) {
+            // check profile dynamically, this way we allow profile overriding in Hapi tests
+            final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+            if (hederaConfig.activeProfile() == Profile.PROD) {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
 

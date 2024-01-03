@@ -32,7 +32,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +46,7 @@ public class EnsureAliasesStep implements TransferStep {
     // Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
     // an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
     // token transfer list
-    private final Map<Bytes, AccountID> tokenTransferResolutions = new HashMap<>();
+    private final Map<Bytes, AccountID> tokenTransferResolutions = new LinkedHashMap<>();
 
     public EnsureAliasesStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);

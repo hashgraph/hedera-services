@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
@@ -291,30 +290,16 @@ public class DataFileCollection<D> implements Snapshotable {
 
     /**
      * Get a list of all files in this collection that have been fully finished writing, are read
-     * only, ready to be compacted, and don't exceed the specified size in MB.
-     *
-     * @param maxSizeMb all files returned are smaller than this number of MB
+     * only and ready to be compacted.
      */
-    public List<DataFileReader<D>> getAllCompletedFiles(final int maxSizeMb) {
+    public List<DataFileReader<D>> getAllCompletedFiles() {
         final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = dataFiles.get();
         if (activeIndexedFiles == null) {
             return Collections.emptyList();
         }
         Stream<DataFileReader<D>> filesStream = activeIndexedFiles.stream();
         filesStream = filesStream.filter(DataFileReader::isFileCompleted);
-        if (maxSizeMb != Integer.MAX_VALUE) {
-            final long maxSizeBytes = maxSizeMb * (long) MEBIBYTES_TO_BYTES;
-            filesStream = filesStream.filter(file -> file.getSize() < maxSizeBytes);
-        }
         return filesStream.toList();
-    }
-
-    /**
-     * Get a list of all files in this collection that have been fully finished writing, are read
-     * only and ready to be compacted.
-     */
-    public List<DataFileReader<D>> getAllCompletedFiles() {
-        return getAllCompletedFiles(Integer.MAX_VALUE);
     }
 
     /**

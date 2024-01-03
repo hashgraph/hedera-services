@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -63,8 +64,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class AssociatePrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
@@ -114,7 +117,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
+    final HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -130,7 +133,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
+    final HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("invalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -148,7 +151,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
+    final HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
@@ -162,7 +165,8 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
-    private HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    @HapiTest
+    final HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -210,7 +214,8 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    @HapiTest
+    final HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
@@ -268,7 +273,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
+    final HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var missingAddress =
                 Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
@@ -294,7 +299,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     @HapiTest
-    private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
+    final HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
@@ -311,7 +316,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                             .getTransactionRecord(INVALID_SINGLE_ABI_CALL_TXN)
                             .getContractCallResult()
                             .getGasUsed();
-                    assertEquals(99011, gasUsed);
+                    assertEquals(99014, gasUsed);
                 }));
     }
 

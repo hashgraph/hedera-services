@@ -39,7 +39,7 @@ public class FreezeIntellijNetwork extends HapiSuite {
         });
     }
 
-    private HapiSpec justFreeze() {
+    final HapiSpec justFreeze() {
         return defaultHapiSpec("JustFreeze")
                 .given()
                 .when()

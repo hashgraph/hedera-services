@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.hollowAccountFuzzingWith;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.initOperations;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -47,7 +48,8 @@ public class HollowAccountCompletionFuzzing extends HapiSuite {
         return List.of(hollowAccountCompletionFuzzing());
     }
 
-    private HapiSpec hollowAccountCompletionFuzzing() {
+    @HapiTest
+    final HapiSpec hollowAccountCompletionFuzzing() {
         return defaultHapiSpec("HollowAccountCompletionFuzzing")
                 .given(initOperations())
                 .when()

@@ -16,8 +16,10 @@
 
 package common;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -28,6 +30,9 @@ import com.hedera.node.app.authorization.AuthorizerImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
+import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
+import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -40,8 +45,10 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -59,6 +66,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -72,6 +80,7 @@ import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
 import com.hedera.node.app.workflows.query.QueryContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
@@ -85,6 +94,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -188,6 +198,10 @@ public interface BaseScaffoldingModule {
         return () -> new VersionedConfigImpl(configuration, 1L);
     }
 
+    @Binds
+    @Singleton
+    ChildRecordFinalizer provideChildRecordFinalizer(@NonNull FinalizeChildRecordHandler childRecordFinalizer);
+
     @Provides
     @Singleton
     static BiFunction<Query, AccountID, QueryContext> provideQueryContextFactory(
@@ -220,7 +234,8 @@ public interface BaseScaffoldingModule {
             @NonNull final HederaState state,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
@@ -257,7 +272,45 @@ public interface BaseScaffoldingModule {
                     exchangeRateManager,
                     consensusTime,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         };
+    }
+
+    @Provides
+    @Singleton
+    static CongestionMultipliers createCongestionMultipliers(@NonNull ConfigProvider configProvider) {
+        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
+        final var genericFeeMultiplier = new ThrottleMultiplier(
+                "logical TPS",
+                "TPS",
+                "CryptoTransfer throughput",
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .minCongestionPeriod(),
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .percentCongestionMultipliers(),
+                () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
+
+        final var txnRateMultiplier = new EntityUtilizationMultiplier(genericFeeMultiplier, configProvider);
+
+        final var gasFeeMultiplier = new ThrottleMultiplier(
+                "EVM gas/sec",
+                "gas/sec",
+                "EVM utilization",
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .minCongestionPeriod(),
+                () -> configProvider
+                        .getConfiguration()
+                        .getConfigData(FeesConfig.class)
+                        .percentCongestionMultipliers(),
+                () -> List.of(backendThrottle.gasLimitThrottle()));
+
+        return new CongestionMultipliers(txnRateMultiplier, gasFeeMultiplier);
     }
 }

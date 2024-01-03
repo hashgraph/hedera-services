@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -49,11 +48,7 @@ public class DeleteTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall<>(
-                attempt,
-                bodyForClassic(attempt),
-                SingleTransactionRecordBuilder.class,
-                DeleteTranslator::gasRequirement);
+        return new DispatchForResponseCodeHtsCall(attempt, bodyForClassic(attempt), DeleteTranslator::gasRequirement);
     }
 
     public static long gasRequirement(

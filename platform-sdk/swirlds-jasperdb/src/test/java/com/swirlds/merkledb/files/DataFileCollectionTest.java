@@ -33,8 +33,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.test.logging.MockAppender;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
@@ -156,10 +156,6 @@ class DataFileCollectionTest {
         assertSame(
                 Collections.emptyList(),
                 fileCollection.getAllCompletedFiles(),
-                "Initially there are no fully written files");
-        assertSame(
-                Collections.emptyList(),
-                fileCollection.getAllCompletedFiles(1),
                 "Initially there are no fully written files");
         assertThrows(
                 IOException.class,
@@ -424,7 +420,7 @@ class DataFileCollectionTest {
                 List<Path> mergedFiles = null;
                 try {
                     List<DataFileReader<?>> filesToMerge =
-                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
+                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles();
                     System.out.println("filesToMerge = " + filesToMerge.size());
                     AtomicInteger numMoves = new AtomicInteger(0);
                     Set<Integer> allKeysExpectedToBeThere =
@@ -489,12 +485,8 @@ class DataFileCollectionTest {
                 "unexpected # of files #1");
         // After merge is complete, there should be only 1 "fully written" file, and that it is
         // empty.
-        List<DataFileReader<?>> filesLeft =
-                (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
+        List<DataFileReader<?>> filesLeft = (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles();
         assertEquals(1, filesLeft.size(), "unexpected # of files #2");
-        filesLeft = (List<DataFileReader<?>>)
-                (Object) fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
-        assertEquals(1, filesLeft.size(), "unexpected # of files #3");
 
         // and trying to merge just one file is a no-op
         List<Path> secondMergeResults = fileCompactor.compactFiles(null, filesLeft, 1);
@@ -638,7 +630,8 @@ class DataFileCollectionTest {
 
     private static DataFileCompactor createFileCompactor(
             String storeName, DataFileCollection<long[]> fileCollection, FilesTestType testType) {
-        return new DataFileCompactor(storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null) {
+        return new DataFileCompactor(
+                storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
                 return 2;
@@ -692,8 +685,8 @@ class DataFileCollectionTest {
         // reopen
         final DataFileCollection<long[]> fileCollection2 =
                 new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
-        final DataFileCompactor fileCompactor =
-                new DataFileCompactor(storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null);
+        final DataFileCompactor fileCompactor = new DataFileCompactor(
+                storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
@@ -763,7 +756,7 @@ class DataFileCollectionTest {
                 new DataFileCollection<>(dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
         final DataFileCompactor compactor =
-                new DataFileCompactor(storeName, fileCollection, storedOffsets, null, null, null);
+                new DataFileCompactor(storeName, fileCollection, storedOffsets, null, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th

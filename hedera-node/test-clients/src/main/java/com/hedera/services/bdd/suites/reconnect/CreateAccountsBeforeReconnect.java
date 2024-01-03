@@ -68,7 +68,7 @@ public class CreateAccountsBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    private HapiSpec runCreateAccounts() {
+    final HapiSpec runCreateAccounts() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 ACCOUNT_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -38,6 +38,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -114,7 +115,8 @@ public class SyncNode {
         discardedEvents = new LinkedList<>();
         saveGeneratedEvents = false;
 
-        shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
+        shadowGraph =
+                new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
         consensus = mock(Consensus.class);
         this.executor = executor;
     }
@@ -241,6 +243,7 @@ public class SyncNode {
                 platformContext,
                 Time.getCurrent(),
                 shadowGraph,
+                null,
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,

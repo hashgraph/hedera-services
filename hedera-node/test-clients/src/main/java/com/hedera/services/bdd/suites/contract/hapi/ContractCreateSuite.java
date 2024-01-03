@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.signMessage;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -61,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -104,13 +106,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractCreateSuite extends HapiSuite {
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
+    private static final String PATTERN = "0.0.%d";
+
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
     public static void main(String... args) {
@@ -139,7 +145,8 @@ public class ContractCreateSuite extends HapiSuite {
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
                 newAccountsCanUsePureContractIdKey(),
-                createContractWithStakingFields());
+                createContractWithStakingFields(),
+                disallowCreationsOfEmptyInitCode());
     }
 
     @Override
@@ -209,13 +216,28 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec insufficientPayerBalanceUponCreation() {
+    final HapiSpec insufficientPayerBalanceUponCreation() {
         return defaultHapiSpec("InsufficientPayerBalanceUponCreation")
                 .given(cryptoCreate("bankrupt").balance(0L), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .payingWith("bankrupt")
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+    }
+
+    @HapiTest
+    private HapiSpec disallowCreationsOfEmptyInitCode() {
+        final var contract = "EmptyContract";
+        return defaultHapiSpec("allowCreationsOfEmptyContract")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        contractCreate(contract)
+                                .adminKey(ADMIN_KEY)
+                                .entityMemo("Empty Contract")
+                                .inlineInitCode(ByteString.EMPTY)
+                                .hasKnownStatus(CONTRACT_BYTECODE_EMPTY))
+                .when()
+                .then();
     }
 
     @HapiTest
@@ -251,7 +273,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
+    final HapiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
         return defaultHapiSpec("createsVanillaContractAsExpectedWithOmittedAdminKey")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -263,7 +285,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec childCreationsHaveExpectedKeysWithOmittedAdminKey() {
+    final HapiSpec childCreationsHaveExpectedKeysWithOmittedAdminKey() {
         final AtomicLong firstStickId = new AtomicLong();
         final AtomicLong secondStickId = new AtomicLong();
         final AtomicLong thirdStickId = new AtomicLong();
@@ -273,7 +295,7 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
                 .given(
                         uploadInitCode(contract),
-                        contractCreate(contract).omitAdminKey().gas(300_000).via(txn),
+                        contractCreate(contract).omitAdminKey().gas(600_000).via(txn),
                         withOpContext((spec, opLog) -> {
                             final var op = getTxnRecord(txn);
                             allRunFor(spec, op);
@@ -305,7 +327,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createEmptyConstructor() {
+    final HapiSpec createEmptyConstructor() {
         return defaultHapiSpec("createEmptyConstructor")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -313,7 +335,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec revertedTryExtCallHasNoSideEffects() {
+    final HapiSpec revertedTryExtCallHasNoSideEffects() {
         final var balance = 3_000;
         final int sendAmount = balance / 3;
         final var contract = "RevertingSendTry";
@@ -346,7 +368,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec createFailsIfMissingSigs() {
+    final HapiSpec createFailsIfMissingSigs() {
         final var shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         final var validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         final var invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -366,7 +388,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec rejectsInsufficientGas() {
+    final HapiSpec rejectsInsufficientGas() {
         return defaultHapiSpec("RejectsInsufficientGas")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -374,7 +396,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec rejectsInvalidMemo() {
+    final HapiSpec rejectsInvalidMemo() {
         return defaultHapiSpec("RejectsInvalidMemo")
                 .given()
                 .when()
@@ -388,7 +410,8 @@ public class ContractCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
-    private HapiSpec rejectsInsufficientFee() {
+    @HapiTest
+    final HapiSpec rejectsInsufficientFee() {
         return defaultHapiSpec("RejectsInsufficientFee")
                 .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -399,7 +422,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec rejectsInvalidBytecode() {
+    final HapiSpec rejectsInvalidBytecode() {
         final var contract = "InvalidBytecode";
         return defaultHapiSpec("RejectsInvalidBytecode")
                 .given(uploadInitCode(contract))
@@ -408,7 +431,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec revertsNonzeroBalance() {
+    final HapiSpec revertsNonzeroBalance() {
         return defaultHapiSpec("RevertsNonzeroBalance")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
@@ -416,7 +439,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec delegateContractIdRequiredForTransferInDelegateCall() {
+    final HapiSpec delegateContractIdRequiredForTransferInDelegateCall() {
         final var justSendContract = "JustSend";
         final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
 
@@ -466,7 +489,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotCreateTooLargeContract() {
+    final HapiSpec cannotCreateTooLargeContract() {
         ByteString contents;
         try {
             contents = ByteString.copyFrom(Files.readAllBytes(Path.of(bytecodePath("CryptoKitties"))));
@@ -495,6 +518,7 @@ public class ContractCreateSuite extends HapiSuite {
                         .hasKnownStatus(INSUFFICIENT_GAS));
     }
 
+    @HapiTest
     HapiSpec blockTimestampChangesWithinFewSeconds() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";

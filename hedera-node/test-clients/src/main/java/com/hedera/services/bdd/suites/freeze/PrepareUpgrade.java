@@ -46,7 +46,7 @@ public final class PrepareUpgrade extends HapiSuite {
         return List.of(new HapiSpec[] {prepareUpgrade()});
     }
 
-    private HapiSpec prepareUpgrade() {
+    final HapiSpec prepareUpgrade() {
         return defaultHapiSpec("PrepareUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> UtilVerbs.prepareUpgrade()

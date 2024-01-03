@@ -17,16 +17,20 @@
 package com.swirlds.platform;
 
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Objects;
 
 public class TestUtils {
@@ -53,14 +57,17 @@ public class TestUtils {
     static EventImpl createTestEvent(@NonNull final NodeId creatorId, @Nullable final NodeId otherId) {
         Objects.requireNonNull(creatorId, "creatorId must not be null");
         final Instant startTime = Instant.ofEpochSecond(1554466913);
+
+        final EventDescriptor selfDescriptor = new EventDescriptor(new Hash(), creatorId, -1, -1);
+        final EventDescriptor otherDescriptor = new EventDescriptor(new Hash(), otherId, -1, -1);
+
         final EventImpl e = new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
                         creatorId,
-                        -1,
-                        -1,
-                        (byte[]) null,
-                        (byte[]) null,
+                        selfDescriptor,
+                        Collections.singletonList(otherDescriptor),
+                        EventConstants.BIRTH_ROUND_UNDEFINED,
                         startTime,
                         new SwirldTransaction[0]),
                 new BaseEventUnhashedData(otherId, new byte[] {0, 0, 0, 0}),

@@ -37,7 +37,7 @@ public class CheckUnavailableNode extends HapiSuite {
         return List.of(checkUnavailableNode());
     }
 
-    private HapiSpec checkUnavailableNode() {
+    final HapiSpec checkUnavailableNode() {
         return defaultHapiSpec("CheckUnavailableNode")
                 .given()
                 .when()

@@ -19,13 +19,12 @@ package com.swirlds.platform.test;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.address.AddressBook;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -46,8 +45,6 @@ public final class PlatformStateUtils {
      */
     public static PlatformState randomPlatformState(final Random random) {
         final PlatformState platformState = new PlatformState();
-        final PlatformData platformData = new PlatformData();
-        platformState.setPlatformData(platformData);
 
         final AddressBook addressBook = new RandomAddressBookGenerator()
                 .setSize(4)
@@ -55,22 +52,20 @@ public final class PlatformStateUtils {
                 .build();
 
         platformState.setAddressBook(addressBook);
-        platformData.setHashEventsCons(randomHash(random));
-        platformData.setRound(random.nextLong());
-        platformData.setConsensusTimestamp(randomInstant(random));
+        platformState.setRunningEventHash(randomHash(random));
+        platformState.setRound(random.nextLong());
+        platformState.setConsensusTimestamp(randomInstant(random));
 
         final List<MinGenInfo> minGenInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(), random.nextLong()));
         }
-        platformState
-                .getPlatformData()
-                .setSnapshot(new ConsensusSnapshot(
-                        random.nextLong(),
-                        List.of(randomHash(random), randomHash(random), randomHash(random)),
-                        minGenInfo,
-                        random.nextLong(),
-                        randomInstant(random)));
+        platformState.setSnapshot(new ConsensusSnapshot(
+                random.nextLong(),
+                List.of(randomHash(random), randomHash(random), randomHash(random)),
+                minGenInfo,
+                random.nextLong(),
+                randomInstant(random)));
 
         return platformState;
     }

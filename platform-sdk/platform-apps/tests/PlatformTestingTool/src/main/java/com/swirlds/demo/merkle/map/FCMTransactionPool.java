@@ -34,7 +34,6 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 import com.google.protobuf.ByteString;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.FastCopyable;
-import com.swirlds.common.system.Platform;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
@@ -70,6 +69,7 @@ import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.platform.system.Platform;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -583,7 +583,7 @@ public class FCMTransactionPool implements FastCopyable {
                 break;
             }
             logger.error(
-                    ERROR,
+                    EXCEPTION.getMarker(),
                     "Warning: sequentialAmount is 0 for {}, will be skipped ",
                     config.getSequentials()[sequentialTypeIndex]);
             sequentialTypeIndex++;
@@ -603,9 +603,11 @@ public class FCMTransactionPool implements FastCopyable {
         while (sequentialTypeIndex < config.getSequentials().length
                 && (amount == 0 || test_type == PAYLOAD_TYPE.TYPE_TEST_SYNC)) {
             if (test_type == PAYLOAD_TYPE.TYPE_TEST_SYNC) {
-                logger.error(ERROR, "Warning: A pause stage after previous pause stage, will be skipped ");
+                logger.error(
+                        EXCEPTION.getMarker(), "Warning: A pause stage after previous pause stage, will be skipped ");
             } else {
-                logger.error(ERROR, "Warning: sequentialAmount is 0 for {}, will be skipped ", test_type);
+                logger.error(
+                        EXCEPTION.getMarker(), "Warning: sequentialAmount is 0 for {}, will be skipped ", test_type);
             }
             sequentialTypeIndex++;
             test_type = config.getSequentialType(sequentialTypeIndex); // update
@@ -663,7 +665,7 @@ public class FCMTransactionPool implements FastCopyable {
         MapKey key = getMapKeyForTx(Create, FCQ);
         if (key == null) {
             // for create transaction, getMapKeyForTx() would never return null
-            logger.error("Failed to generate MapKey for CreateFCQ transaction");
+            logger.error(EXCEPTION.getMarker(), "Failed to generate MapKey for CreateFCQ transaction");
             return null;
         }
 
@@ -735,7 +737,7 @@ public class FCMTransactionPool implements FastCopyable {
 
         final Optional<NftId> nftIdCheck = this.expectedFCMFamily.getAnyNftId();
         if (nftIdCheck.isEmpty()) {
-            logger.error("Failed to generate TokenId for transaction TransferToken");
+            logger.error(EXCEPTION.getMarker(), "Failed to generate TokenId for transaction TransferToken");
             return null;
         }
 
@@ -832,7 +834,7 @@ public class FCMTransactionPool implements FastCopyable {
         MapKey key = getMapKeyForTx(Create, Crypto);
         if (key == null) {
             // for create transaction, getMapKeyForTx() would never return null
-            logger.error("Failed to generate MapKey for CreateAccount transaction");
+            logger.error(EXCEPTION.getMarker(), "Failed to generate MapKey for CreateAccount transaction");
             return null;
         }
         final CreateAccount createAccount = CreateAccount.newBuilder()

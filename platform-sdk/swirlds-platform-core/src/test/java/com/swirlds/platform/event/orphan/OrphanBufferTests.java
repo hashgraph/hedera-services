@@ -26,12 +26,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -84,6 +87,10 @@ class OrphanBufferTests {
      */
     private static final int MAX_GENERATION_STEP = 10;
 
+    private AtomicLong eventsExitedIntakePipeline;
+
+    private OrphanBuffer orphanBuffer;
+
     /**
      * Create a bootstrap event for a node. This is just a descriptor, and will never be received from intake.
      *
@@ -93,7 +100,8 @@ class OrphanBufferTests {
      */
     private EventDescriptor createBootstrapEvent(
             @NonNull final NodeId nodeId, @NonNull final List<EventDescriptor> parentCandidates) {
-        final EventDescriptor bootstrapEvent = new EventDescriptor(randomHash(random), nodeId, 0);
+        final EventDescriptor bootstrapEvent =
+                new EventDescriptor(randomHash(random), nodeId, 0, EventConstants.BIRTH_ROUND_UNDEFINED);
 
         parentCandidates.add(bootstrapEvent);
 
@@ -125,6 +133,9 @@ class OrphanBufferTests {
         when(hashedData.getSelfParentHash()).thenReturn(selfParent.getHash());
         when(hashedData.getOtherParentHash()).thenReturn(otherParent.getHash());
         when(hashedData.getTimeCreated()).thenReturn(Instant.now());
+        when(hashedData.getSelfParent()).thenReturn(selfParent == null ? null : selfParent);
+        when(hashedData.getOtherParents())
+                .thenReturn(otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent));
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getOtherId()).thenReturn(otherParent.getCreator());
@@ -132,7 +143,9 @@ class OrphanBufferTests {
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getUnhashedData()).thenReturn(unhashedData);
-        when(event.getDescriptor()).thenReturn(new EventDescriptor(eventHash, eventCreator, eventGeneration));
+        when(event.getDescriptor())
+                .thenReturn(new EventDescriptor(
+                        eventHash, eventCreator, eventGeneration, EventConstants.BIRTH_ROUND_UNDEFINED));
         when(event.getGeneration()).thenReturn(eventGeneration);
         when(event.getSenderId()).thenReturn(eventCreator);
 
@@ -223,7 +236,7 @@ class OrphanBufferTests {
     void setup() {
         random = getRandomPrintSeed();
 
-        final ArrayList<EventDescriptor> parentCandidates = new ArrayList<>();
+        final List<EventDescriptor> parentCandidates = new ArrayList<>();
         final Map<NodeId, EventDescriptor> tips = new HashMap<>();
 
         intakeEvents = new ArrayList<>();
@@ -234,14 +247,10 @@ class OrphanBufferTests {
             parentCandidates.add(newEvent.getDescriptor());
             intakeEvents.add(newEvent);
         }
-    }
 
-    @Test
-    @DisplayName("Test standard orphan buffer operation")
-    void standardOperation() {
-        final AtomicLong minimumGenerationNonAncient = new AtomicLong(0);
+        Collections.shuffle(intakeEvents, random);
 
-        final AtomicLong eventsExitedIntakePipeline = new AtomicLong(0);
+        eventsExitedIntakePipeline = new AtomicLong(0);
         final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
         doAnswer(invocation -> {
                     eventsExitedIntakePipeline.incrementAndGet();
@@ -250,8 +259,13 @@ class OrphanBufferTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        final OrphanBuffer orphanBuffer =
-                new OrphanBuffer(TestPlatformContextBuilder.create().build(), intakeEventCounter);
+        orphanBuffer = new OrphanBuffer(TestPlatformContextBuilder.create().build(), intakeEventCounter);
+    }
+
+    @Test
+    @DisplayName("Test standard orphan buffer operation")
+    void standardOperation() {
+        long minimumGenerationNonAncient = 0;
 
         // increase minimum generation non-ancient at the approximate rate that event generations are increasing
         // this means that roughly half of the events will be ancient before they are received from intake
@@ -260,7 +274,6 @@ class OrphanBufferTests {
         // events that have been emitted from the orphan buffer
         final Collection<Hash> emittedEvents = new HashSet<>();
 
-        Collections.shuffle(intakeEvents, random);
         for (final GossipEvent intakeEvent : intakeEvents) {
             final List<GossipEvent> unorphanedEvents = new ArrayList<>();
 
@@ -269,12 +282,17 @@ class OrphanBufferTests {
             // add some randomness to step size, so minimumGenerationNonAncient doesn't always just increase by 1
             final int stepRandomness = Math.round(random.nextFloat() * MAX_GENERATION_STEP);
             if (random.nextFloat() < averageGenerationAdvancement / stepRandomness) {
-                minimumGenerationNonAncient.addAndGet(stepRandomness);
-                unorphanedEvents.addAll(orphanBuffer.setMinimumGenerationNonAncient(minimumGenerationNonAncient.get()));
+                minimumGenerationNonAncient += stepRandomness;
+                // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+                final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
+                        ConsensusConstants.ROUND_FIRST,
+                        ConsensusConstants.ROUND_NEGATIVE_INFINITY,
+                        minimumGenerationNonAncient);
+                unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
             }
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {
-                assertValidParents(unorphanedEvent, minimumGenerationNonAncient.get(), emittedEvents);
+                assertValidParents(unorphanedEvent, minimumGenerationNonAncient, emittedEvents);
                 emittedEvents.add(unorphanedEvent.getHashedData().getHash());
             }
         }
@@ -283,5 +301,37 @@ class OrphanBufferTests {
         // the pipeline at a later stage
         assertEquals(TEST_EVENT_COUNT, eventsExitedIntakePipeline.get() + emittedEvents.size());
         assertEquals(0, orphanBuffer.getCurrentOrphanCount());
+    }
+
+    @Test
+    @DisplayName("Test Parent Iterator")
+    void testParentIterator() {
+        final GossipEvent event = mock(GossipEvent.class);
+
+        final EventDescriptor selfParent =
+                new EventDescriptor(new Hash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherParent1 =
+                new EventDescriptor(new Hash(), new NodeId(1), 1, EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherParent2 =
+                new EventDescriptor(new Hash(), new NodeId(2), 2, EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherParent3 =
+                new EventDescriptor(new Hash(), new NodeId(3), 3, EventConstants.BIRTH_ROUND_UNDEFINED);
+        final List<EventDescriptor> otherParents = new ArrayList<>();
+        otherParents.add(otherParent1);
+        otherParents.add(otherParent2);
+        otherParents.add(otherParent3);
+
+        final BaseEventHashedData eventBase = mock(BaseEventHashedData.class);
+        when(eventBase.getSelfParent()).thenReturn(selfParent);
+        when(eventBase.getOtherParents()).thenReturn(otherParents);
+        when(event.getHashedData()).thenReturn(eventBase);
+
+        final ParentIterator iterator = new ParentIterator(event);
+
+        assertEquals(selfParent, iterator.next(), "The first parent should be the self parent");
+        int index = 0;
+        while (iterator.hasNext()) {
+            assertEquals(otherParents.get(index++), iterator.next(), "The next parent should be the next other parent");
+        }
     }
 }

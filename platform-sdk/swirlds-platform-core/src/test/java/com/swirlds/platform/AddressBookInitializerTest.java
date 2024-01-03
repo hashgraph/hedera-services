@@ -31,17 +31,17 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.platform.state.PlatformData;
+import com.swirlds.platform.config.AddressBookConfig_;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -339,10 +339,8 @@ class AddressBookInitializerTest {
         final SwirldState swirldState = getMockSwirldStateSupplier(weightValue).get();
         when(signedState.getAddressBook()).thenReturn(stateAddressBook);
         when(signedState.getSwirldState()).thenReturn(swirldState);
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformData.getCreationSoftwareVersion()).thenReturn(softwareVersion);
         final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
+        when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
         final State state = mock(State.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(signedState.getState()).thenReturn(state);
@@ -500,9 +498,9 @@ class AddressBookInitializerTest {
     private PlatformContext getPlatformContext(boolean forceUseOfConfigAddressBook) {
         return TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder()
-                        .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
-                        .withValue("addressBook.addressBookDirectory", testDirectory.toString())
-                        .withValue("addressBook.maxRecordedAddressBookFiles", 50)
+                        .withValue(AddressBookConfig_.FORCE_USE_OF_CONFIG_ADDRESS_BOOK, forceUseOfConfigAddressBook)
+                        .withValue(AddressBookConfig_.ADDRESS_BOOK_DIRECTORY, testDirectory.toString())
+                        .withValue(AddressBookConfig_.MAX_RECORDED_ADDRESS_BOOK_FILES, 50)
                         .getOrCreateConfig())
                 .build();
     }

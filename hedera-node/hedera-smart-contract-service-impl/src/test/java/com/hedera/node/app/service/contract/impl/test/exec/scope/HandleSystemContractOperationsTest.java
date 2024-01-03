@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,10 +28,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -39,13 +40,13 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Predicate;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,18 +75,14 @@ class HandleSystemContractOperationsTest {
     @Mock
     private SignatureVerification failed;
 
+    @Mock
+    private MessageFrame messageFrame;
+
     private HandleSystemContractOperations subject;
 
     @BeforeEach
     void setUp() {
         subject = new HandleSystemContractOperations(context);
-    }
-
-    @Test
-    void getNftNotImplementedYet() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.getNftAndExternalizeResult(NftID.DEFAULT, 1L, entity -> Bytes.EMPTY));
     }
 
     @Test
@@ -119,32 +116,53 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
-    void getTokenNotImplementedYet() {
-        assertThrows(AssertionError.class, () -> subject.getTokenAndExternalizeResult(1L, 2L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
-    void getAccountNotImplementedYet() {
-        assertThrows(AssertionError.class, () -> subject.getAccountAndExternalizeResult(1L, 2L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
     void externalizeSuccessfulResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
-        given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
+        given(recordBuilder.contractID(any())).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
 
         // then
-        verify(recordBuilder).contractID(ContractID.DEFAULT);
+        verify(recordBuilder).contractID(any());
         verify(recordBuilder).transaction(Transaction.DEFAULT);
+        verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
+        verify(recordBuilder).contractCallResult(contractFunctionResult);
+    }
+
+    @Test
+    void externalizeSuccessfulResultWithTransactionBodyTest() {
+        var transaction = Transaction.newBuilder()
+                .body(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.DEFAULT)
+                        .build())
+                .build();
+        var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
+
+        // given
+        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
+        given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
+
+        // when
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS, transaction);
+
+        // then
         verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
     }
@@ -152,22 +170,31 @@ class HandleSystemContractOperationsTest {
     @Test
     void externalizeFailedResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
-        given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
+        given(recordBuilder.contractID(any())).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_ERROR, ResponseCodeEnum.FAIL_INVALID);
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.FAIL_INVALID);
 
         // then
-        verify(recordBuilder).contractID(ContractID.DEFAULT);
+        verify(recordBuilder).contractID(any());
         verify(recordBuilder).transaction(Transaction.DEFAULT);
         verify(recordBuilder).status(ResponseCodeEnum.FAIL_INVALID);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
+    }
+
+    @Test
+    void syntheticTransactionForHtsCallTest() {
+        assertNotNull(subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true));
     }
 
     @Test

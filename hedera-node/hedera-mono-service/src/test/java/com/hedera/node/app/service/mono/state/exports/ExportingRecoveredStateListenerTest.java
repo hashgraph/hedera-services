@@ -21,8 +21,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -55,6 +57,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
@@ -63,7 +67,7 @@ import java.util.function.Function;
  * dynamic approach.
  */
 public class ReadableStoreFactory {
-
+    private static final Logger logger = LogManager.getLogger(ReadableStoreFactory.class);
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
     private static final Map<Class<?>, StoreEntry> STORE_FACTORY = createFactoryMap();
@@ -93,6 +97,9 @@ public class ReadableStoreFactory {
         newMap.put(ReadableFreezeStore.class, new StoreEntry(FreezeService.NAME, ReadableFreezeStoreImpl::new));
         // Contracts
         newMap.put(ContractStateStore.class, new StoreEntry(ContractService.NAME, ReadableContractStateStore::new));
+        // Block Records
+        newMap.put(
+                ReadableBlockRecordStore.class, new StoreEntry(BlockRecordService.NAME, ReadableBlockRecordStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 

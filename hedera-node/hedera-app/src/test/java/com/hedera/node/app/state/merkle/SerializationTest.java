@@ -124,7 +124,10 @@ class SerializationTest extends MerkleTestBase {
         // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(
-                (tree, state) -> {}, (evt, meta, provider) -> {}, (state, platform, dual, trigger, version) -> {});
+                (tree, state) -> {},
+                (evt, meta, provider) -> {},
+                (state, platform, dual, trigger, version) -> {},
+                (state, addressBook, platformContext) -> {});
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         final var schemaV1 = createV1Schema();
@@ -151,7 +154,8 @@ class SerializationTest extends MerkleTestBase {
                         handleThrottling,
                         mock(WritableEntityIdStore.class)),
                 (event, meta, provider) -> {},
-                (state, platform, dualState, trigger, version) -> {});
+                (state, platform, dualState, trigger, version) -> {},
+                (state, addressBook, platformContext) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 

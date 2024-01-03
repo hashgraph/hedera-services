@@ -39,14 +39,19 @@ public class CreatesXTestConstants {
     static final long SECOND = 123L;
     static final long AUTO_RENEW_PERIOD = 2592000L;
 
-    static final Tuple TOKEN_KEY =
+    static final Tuple TOKEN_ADMIN_KEY =
             Tuple.of(BigInteger.valueOf(1), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
+
+    static final Tuple TOKEN_SUPPLY_KEY = Tuple.of(
+            BigInteger.valueOf(16), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
 
     static final Tuple TOKEN_KEY_TWO = Tuple.of(
             BigInteger.valueOf(80), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
 
-    static final Tuple TOKEN_INVALID_KEY = Tuple.of(
-            BigInteger.valueOf(1),
+    static final Tuple TOKEN_INVALID_ADMIN_KEY = Tuple.of(
+            BigInteger.valueOf(1), Tuple.of(false, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
+    static final Tuple TOKEN_INVALID_SUPPLY_KEY = Tuple.of(
+            BigInteger.valueOf(16),
             Tuple.of(false, INVALID_ACCOUNT_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
 
     static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);

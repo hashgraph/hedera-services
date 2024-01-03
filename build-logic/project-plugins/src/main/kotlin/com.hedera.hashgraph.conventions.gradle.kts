@@ -44,6 +44,9 @@ testing {
                     // directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
 
+                    maxHeapSize = "8g"
+                    jvmArgs("-XX:ActiveProcessorCount=6")
+
                     addTestListener(
                         object : TestListener {
                             override fun beforeSuite(suite: TestDescriptor) {
@@ -84,6 +87,9 @@ testing {
                     // concurrently, that "test" completes first. If you run "eet"
                     // directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
+
+                    maxHeapSize = "8g"
+                    jvmArgs("-XX:ActiveProcessorCount=6")
                 }
             }
         }
@@ -98,6 +104,9 @@ testing {
                     // concurrently, that "test" completes first. If you run "xtest"
                     // directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
+
+                    maxHeapSize = "8g"
+                    jvmArgs("-XX:ActiveProcessorCount=7")
                 }
             }
         }

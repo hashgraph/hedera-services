@@ -47,7 +47,7 @@ public class ValidateExchangeRateStateAfterReconnect extends HapiSuite {
         return List.of(validateExchangeRateStateAfterReconnect());
     }
 
-    private HapiSpec validateExchangeRateStateAfterReconnect() {
+    final HapiSpec validateExchangeRateStateAfterReconnect() {
         final String transactionid = "authorizedTxn";
         final long oldFee = 13_299_075L;
         final long newFee = 159_588_904;

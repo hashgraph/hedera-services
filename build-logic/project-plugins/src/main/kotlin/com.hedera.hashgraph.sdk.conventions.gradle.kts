@@ -17,18 +17,17 @@
 plugins {
     id("java-library")
     id("com.hedera.hashgraph.java")
-    id("com.gorylenko.gradle-git-properties")
 }
 
 group = "com.swirlds"
+
+tasks.checkModuleInfo { moduleNamePrefix = "com.swirlds" }
 
 javaModuleDependencies { versionsFromConsistentResolution(":swirlds-platform-core") }
 
 configurations.getByName("mainRuntimeClasspath") {
     extendsFrom(configurations.getByName("internal"))
 }
-
-gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
 
 // !!! Remove the following once 'test' tasks are allowed to run in parallel ===
 val allPlatformSdkProjects =

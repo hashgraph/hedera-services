@@ -27,7 +27,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoTranslator.TOKEN_INFO;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyTranslator.TOKEN_KEY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static contract.MiscViewsXTestConstants.ERC_USER_ID;
+import static contract.MiscViewsXTestConstants.ERC_USER_ADDRESS;
 import static contract.MiscViewsXTestConstants.OPERATOR_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 
@@ -244,7 +244,7 @@ public class ClassicViewsXTestConstants {
                                     EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
                                     LEDGER_ID),
                             1L,
-                            headlongAddressOf(ERC_USER_ID),
+                            ERC_USER_ADDRESS,
                             0L,
                             com.hedera.pbj.runtime.io.buffer.Bytes.wrap("https://example.com/721/1")
                                     .toByteArray(),

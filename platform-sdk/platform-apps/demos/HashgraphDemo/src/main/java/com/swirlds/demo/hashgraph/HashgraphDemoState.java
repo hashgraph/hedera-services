@@ -30,9 +30,9 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldState;
 
 /**
  * The state for the hashgraph demo. See the comments for com.swirlds.demos.HashgraphDemoMain
@@ -67,7 +67,7 @@ public class HashgraphDemoState extends PartialMerkleLeaf implements SwirldState
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {}
+    public synchronized void handleConsensusRound(final Round round, final PlatformState platformState) {}
 
     /**
      * {@inheritDoc}

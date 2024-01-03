@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.common.system.SystemExitCode.FATAL_ERROR;
+import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.startup.CommandLineArgs;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.CommandLineArgs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;

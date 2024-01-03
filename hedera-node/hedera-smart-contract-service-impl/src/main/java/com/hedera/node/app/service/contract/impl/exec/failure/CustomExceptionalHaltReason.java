@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
@@ -33,7 +34,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation"),
     NOT_SUPPORTED("Not supported."),
     CONTRACT_ENTITY_LIMIT_REACHED("Contract entity limit reached."),
-    INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call.");
+    INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call."),
+    INSUFFICIENT_CHILD_RECORDS("Result cannot be externalized due to insufficient child records");
 
     private final String description;
 
@@ -66,6 +68,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.INSUFFICIENT_GAS;
         } else if (reason == ExceptionalHaltReason.ILLEGAL_STATE_CHANGE) {
             return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+        } else if (reason == CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS) {
+            return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
         } else {
             return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
         }
@@ -73,6 +77,11 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
 
     public static String errorMessageFor(@NonNull final ExceptionalHaltReason reason) {
         requireNonNull(reason);
+        // #10568 - We add this check to match mono behavior
+        if (reason == CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS) {
+            return Bytes.of(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED.name().getBytes())
+                    .toHexString();
+        }
         return reason.toString();
     }
 }

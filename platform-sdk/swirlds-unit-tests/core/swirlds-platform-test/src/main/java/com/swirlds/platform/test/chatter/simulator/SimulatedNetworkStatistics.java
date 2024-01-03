@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.test.chatter.simulator;
 
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.printHeader;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.formatting.UnitFormatter;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;

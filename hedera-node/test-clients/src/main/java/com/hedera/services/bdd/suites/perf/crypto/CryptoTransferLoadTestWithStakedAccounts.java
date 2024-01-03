@@ -129,7 +129,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                         }))
                 .then(
                         defaultLoadTest(transferBurst, settings),
-                        getAccountBalance("sender").logged());
+                        getAccountBalance("sender").payingWith(GENESIS).logged());
     }
 
     @Override

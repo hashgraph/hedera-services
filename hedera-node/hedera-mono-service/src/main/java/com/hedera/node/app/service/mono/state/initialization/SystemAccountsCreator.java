@@ -20,7 +20,7 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import java.time.Instant;
 
 public interface SystemAccountsCreator {

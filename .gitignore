@@ -1050,6 +1050,9 @@ hedera-node/cli-clients/testFile
 hedera-node/hedera-mono-service/src/test/resources/balance*/**
 hedera-node/hedera-mono-service/temp/**
 hedera-node/hedera-mono-service/swirlds-sst-tmp/**
+hedera-node/data/
+hedera-node/settingsUsed.txt
+hedera-node/hedera-node/data/
 
 # Test Files (Poorly Behaved Tests)
 *.json.gz
@@ -1078,3 +1081,6 @@ hedera-node/hapi/checkouts.bin
 
 ### CI Pipeline Created Files
 gha-creds-*.json
+/platform-sdk/swirlds-config-processor/src/main/java/com/swirlds/config/processor/antlr/generated/*.interp
+/platform-sdk/swirlds-config-processor/src/main/java/com/swirlds/config/processor/antlr/generated/*.tokens
+

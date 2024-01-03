@@ -244,7 +244,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     }
 
     @Override
-    @Nullable
+    @NonNull
     public Key payerKey() {
         return payerKey;
     }

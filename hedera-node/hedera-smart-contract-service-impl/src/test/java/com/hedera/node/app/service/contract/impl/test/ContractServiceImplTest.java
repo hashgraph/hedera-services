@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -38,7 +39,7 @@ class ContractServiceImplTest {
     void registersContractSchema() {
         final var captor = ArgumentCaptor.forClass(Schema.class);
         final var mockRegistry = mock(SchemaRegistry.class);
-        CONTRACT_SERVICE.registerSchemas(mockRegistry);
+        CONTRACT_SERVICE.registerSchemas(mockRegistry, RELEASE_045_VERSION);
         verify(mockRegistry).register(captor.capture());
         assertInstanceOf(ContractSchema.class, captor.getValue());
     }

@@ -16,7 +16,13 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.B_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
@@ -54,6 +60,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pauses.PausesTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
@@ -63,9 +70,13 @@ import org.apache.tuweni.bytes.Bytes;
  * <ol>
  *     <li>Transfer {@code ERC721_TOKEN} serial 1234 from SENDER to RECEIVER.</li>*
  *     <li>Pause {@code ERC721_TOKEN} via {@link PausesTranslator#PAUSE}.</li>
- *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should fail with code TOKEN_IS_PAUSED</li>*
+ *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER. This should fail with code TOKEN_IS_PAUSED.</li>*
  *     <li>Unpause {@code ERC721_TOKEN} via {@link PausesTranslator#UNPAUSE}.</li>
- *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should now succeed</li>*
+ *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER. This should now succeed.</li>*
+ *     <li>Pause {@code ERC721_TOKEN} via {@link PausesTranslator#PAUSE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
+ *     <li>Pause {@code ERC721_TOKEN} via {@link PausesTranslator#PAUSE}. This should fail with code TOKEN_HAS_NO_PAUSE_KEY.</li>
+ *     <li>Unpause {@code ERC721_TOKEN} via {@link PausesTranslator#UNPAUSE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
+ *     <li>Unpause {@code ERC721_TOKEN} via {@link PausesTranslator#UNPAUSE}. This should fail with code TOKEN_HAS_NO_PAUSE_KEY.</li>
  * </ol>
  */
 public class PausesXTest extends AbstractContractXTest {
@@ -125,6 +136,52 @@ public class PausesXTest extends AbstractContractXTest {
                                 SN_2345.serialNumber())
                         .array()),
                 assertSuccess("Post-unpause transfer failed"));
+
+        // PAUSE wrong pause key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(PausesTranslator.PAUSE
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output,
+                        "Token should have been paused"));
+
+        // PAUSE no pause key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(PausesTranslator.PAUSE
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_PAUSE_KEY).array()),
+                        output,
+                        "Token should have been paused"));
+
+        // UNPAUSE wrong pause key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(PausesTranslator.UNPAUSE
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output,
+                        "Token should have been paused"));
+
+        // UNPAUSE no pause key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(PausesTranslator.UNPAUSE
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_PAUSE_KEY).array()),
+                        output,
+                        "Token should have been paused"));
     }
 
     @Override
@@ -150,6 +207,21 @@ public class PausesXTest extends AbstractContractXTest {
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .pauseKey(SENDER_CONTRACT_ID_KEY)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .pauseKey(Scenarios.ALICE.account().key())
+                        .build());
+        tokens.put(
+                B_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(B_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .build());
         return tokens;
     }

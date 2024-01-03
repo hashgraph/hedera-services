@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.DefaultIntegerGauge;
 import com.swirlds.common.metrics.platform.Snapshot;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
@@ -110,15 +110,11 @@ class NumberAdapterTest {
                 new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME).withDescription(DESCRIPTION));
 
         // then
-        assertThatThrownBy(() -> new NumberAdapter(null, metric, GLOBAL)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new NumberAdapter(null, metric, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new NumberAdapter(registry, null, GLOBAL))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new NumberAdapter(registry, null, PLATFORM))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new NumberAdapter(registry, metric, null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new NumberAdapter(null, metric, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new NumberAdapter(null, metric, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new NumberAdapter(registry, null, GLOBAL)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new NumberAdapter(registry, null, PLATFORM)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new NumberAdapter(registry, metric, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -161,7 +157,7 @@ class NumberAdapterTest {
         final NodeId nodeId = new NodeId(1L);
 
         // then
-        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> adapter.update(null, nodeId)).isInstanceOf(NullPointerException.class);
     }
 }

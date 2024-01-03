@@ -48,7 +48,7 @@ public class ClosingTime extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec closeLastStreamFileWithNoBalanceImpact() {
+    final HapiSpec closeLastStreamFileWithNoBalanceImpact() {
         return customHapiSpec("CloseLastStreamFileWithNoBalanceImpact")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",

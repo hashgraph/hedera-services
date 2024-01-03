@@ -36,7 +36,8 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,14 +70,14 @@ class HederaBalanceOperationV038Test {
     @Test
     void haltsWithInsufficientStackItemsOperationResultWhenGetsStackItem() {
         initializeSubject();
-        given(frame.getStackItem(anyInt())).willThrow(new FixedStack.UnderflowException());
+        given(frame.getStackItem(anyInt())).willThrow(new UnderflowException());
         thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
     }
 
     @Test
     void haltsWithInsufficientStackItemsWhenPopsStackItem() {
         initializeSubject();
-        given(frame.popStackItem()).willThrow(new FixedStack.UnderflowException());
+        given(frame.popStackItem()).willThrow(new UnderflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
 
         thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
@@ -85,7 +86,7 @@ class HederaBalanceOperationV038Test {
     @Test
     void haltsWithTooManyStackItemsWhenPopsStackItem() {
         initializeSubject();
-        given(frame.popStackItem()).willThrow(new FixedStack.OverflowException());
+        given(frame.popStackItem()).willThrow(new OverflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
 
         thenOperationWillFailWithReason(TOO_MANY_STACK_ITEMS);

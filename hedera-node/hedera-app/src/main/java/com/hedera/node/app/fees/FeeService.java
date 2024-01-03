@@ -32,7 +32,6 @@ import java.util.Set;
 public class FeeService implements Service {
 
     public static final String NAME = "FeeService";
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
     static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
 
     @NonNull
@@ -42,8 +41,8 @@ public class FeeService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new Schema(GENESIS_VERSION) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
@@ -52,23 +51,28 @@ public class FeeService implements Service {
 
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
-                final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
-                final var exchangeRateSet = ExchangeRateSet.newBuilder()
-                        .currentRate(ExchangeRate.newBuilder()
-                                .centEquiv(bootstrapConfig.ratesCurrentCentEquiv())
-                                .hbarEquiv(bootstrapConfig.ratesCurrentHbarEquiv())
-                                .expirationTime(
-                                        TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesCurrentExpiry()))
-                                .build())
-                        .nextRate(ExchangeRate.newBuilder()
-                                .centEquiv(bootstrapConfig.ratesNextCentEquiv())
-                                .hbarEquiv(bootstrapConfig.ratesNextHbarEquiv())
-                                .expirationTime(
-                                        TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesNextExpiry()))
-                                .build())
-                        .build();
+                final var isGenesis = ctx.previousStates().isEmpty();
+                final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
+                if (isGenesis) {
+                    // Set the initial exchange rates (from the bootstrap config) as the midnight rates
+                    final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+                    final var exchangeRateSet = ExchangeRateSet.newBuilder()
+                            .currentRate(ExchangeRate.newBuilder()
+                                    .centEquiv(bootstrapConfig.ratesCurrentCentEquiv())
+                                    .hbarEquiv(bootstrapConfig.ratesCurrentHbarEquiv())
+                                    .expirationTime(
+                                            TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesCurrentExpiry()))
+                                    .build())
+                            .nextRate(ExchangeRate.newBuilder()
+                                    .centEquiv(bootstrapConfig.ratesNextCentEquiv())
+                                    .hbarEquiv(bootstrapConfig.ratesNextHbarEquiv())
+                                    .expirationTime(
+                                            TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesNextExpiry()))
+                                    .build())
+                            .build();
 
-                ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY).put(exchangeRateSet);
+                    midnightRatesState.put(exchangeRateSet);
+                }
             }
         });
     }

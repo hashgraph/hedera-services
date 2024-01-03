@@ -2,8 +2,8 @@
  * Main package for the Hedera node application.
  *
  * <p>The Hashgraph Platform today follows a "container-managed" model, where applications extend from
- * {@link com.swirlds.common.system.SwirldMain} to define their main entry point, much like a Java Applet would extend
- * from {@code Applet}. An application also extends from {@link com.swirlds.common.system.SwirldState} to define its
+ * {@link com.swirlds.platform.system.SwirldMain} to define their main entry point, much like a Java Applet would extend
+ * from {@code Applet}. An application also extends from {@link com.swirlds.platform.system.SwirldState} to define its
  * Merkle tree for holding state. The platform then dynamically looks up and creates these objects. The platform is thus
  * in charge of lifecycle management.
  *
@@ -19,7 +19,7 @@
  *
  * <p>The main entry point for the application today is {@link com.swirlds.platform.Browser}, which is
  * configured to find and load {@link com.hedera.node.app.ServicesMain} as the {@link
- * com.swirlds.common.system.SwirldMain} of the application. If the {@code WORKFLOWS_ENABLED} flag is set, then {@link
+ * com.swirlds.platform.system.SwirldMain} of the application. If the {@code WORKFLOWS_ENABLED} flag is set, then {@link
  * com.hedera.node.app.ServicesMain} will create an instance of {@link com.hedera.node.app.Hedera} and delegate to it.
  * Otherwise, it will create an instance of {@link com.hedera.node.app.MonoServicesMain} and delegate to it.
  *

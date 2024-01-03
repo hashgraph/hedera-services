@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import picocli.CommandLine;
@@ -91,7 +92,7 @@ public class PostUpgradeValidation implements Callable<Integer> {
     }
 
     private void loadConfig() {
-        var yamlIn = new Yaml(new Constructor(TopLevelConfig.class));
+        var yamlIn = new Yaml(new Constructor(TopLevelConfig.class, new LoaderOptions()));
         try {
             config = yamlIn.load(Files.newInputStream(Paths.get(CONFIG_LOC)));
         } catch (IOException e) {

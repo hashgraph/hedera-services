@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.CallStatusStandardizer.CALL_STATUS_STANDARDIZER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -79,9 +80,11 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.enhancement(),
                 selector,
                 attempt.senderId(),
+                decoder.checkForFailureStatus(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
                 isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
+                CALL_STATUS_STANDARDIZER,
                 attempt.defaultVerificationStrategy(),
                 SYSTEM_ACCOUNT_CREDIT_SCREEN);
     }

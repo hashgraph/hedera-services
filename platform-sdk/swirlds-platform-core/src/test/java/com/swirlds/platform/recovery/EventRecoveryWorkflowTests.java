@@ -35,13 +35,13 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -105,7 +105,7 @@ class EventRecoveryWorkflowTests {
     @Test
     @DisplayName("applyTransactions() Test")
     void applyTransactionsTest() {
-        final SwirldDualState dualState = mock(SwirldDualState.class);
+        final PlatformState platformState = mock(PlatformState.class);
 
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
@@ -143,14 +143,14 @@ class EventRecoveryWorkflowTests {
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should only be handled once");
                     assertSame(round, invocation.getArgument(0), "unexpected round");
-                    assertSame(dualState, invocation.getArgument(1), "unexpected dual state");
+                    assertSame(platformState, invocation.getArgument(1), "unexpected dual state");
                     roundHandled.set(true);
                     return null;
                 })
                 .when(mutableState)
                 .handleConsensusRound(any(), any());
 
-        EventRecoveryWorkflow.applyTransactions(immutableState, mutableState, dualState, round);
+        EventRecoveryWorkflow.applyTransactions(immutableState, mutableState, platformState, round);
 
         assertEquals(events.size(), preHandleList.size(), "incorrect number of pre-handle calls");
         for (int index = 0; index < events.size(); index++) {

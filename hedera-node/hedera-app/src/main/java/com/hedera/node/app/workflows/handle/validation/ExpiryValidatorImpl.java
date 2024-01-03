@@ -216,6 +216,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
      */
     private void validateAutoRenewAccount(final AccountID accountID) {
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
+
         validateTrue(
                 accountID.shardNum() == hederaConfig.shard() && accountID.realmNum() == hederaConfig.realm(),
                 INVALID_AUTORENEW_ACCOUNT);
@@ -229,6 +230,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             if (account == null || account.deleted()) {
                 throw new HandleException(INVALID_AUTORENEW_ACCOUNT);
             }
+            validateFalse(account.smartContract(), INVALID_AUTORENEW_ACCOUNT);
         } catch (final InvalidTransactionException e) {
             throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
         }

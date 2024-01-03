@@ -66,7 +66,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec updateWithMissingTokenMintFails() {
+    final HapiSpec updateWithMissingTokenMintFails() {
         var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
         return defaultHapiSpec("updateWithMissingTokenMintFails")
@@ -80,7 +80,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
 
     @HapiTest
     @Order(100) // this needs to be executed after all other tests
-    private HapiSpec ensureDefaultsRestored() {
+    final HapiSpec ensureDefaultsRestored() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
         return defaultHapiSpec("EnsureDefaultsRestored")
@@ -97,7 +97,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
+    final HapiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
         var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
         return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
@@ -110,7 +110,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec throttleUpdateRejectsMultiGroupAssignment() {
+    final HapiSpec throttleUpdateRejectsMultiGroupAssignment() {
         var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
         return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
@@ -123,7 +123,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec throttleDefsRejectUnauthorizedPayers() {
+    final HapiSpec throttleDefsRejectUnauthorizedPayers() {
         return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
                 .given(
                         cryptoCreate("civilian"),

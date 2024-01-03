@@ -395,7 +395,8 @@ public class StateView {
             final AccountID id,
             final AliasManager aliasManager,
             final int maxTokensForAccountInfo,
-            final RewardCalculator rewardCalculator) {
+            final RewardCalculator rewardCalculator,
+            final boolean areTokenBalancesEnabledInQueries) {
         final var accountNum = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = accounts().get(accountNum);
         if (account == null) {
@@ -421,9 +422,11 @@ public class StateView {
         if (!isOfEvmAddressSize(account.getAlias())) {
             info.setAlias(account.getAlias());
         }
-        final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
-        if (!tokenRels.isEmpty()) {
-            info.addAllTokenRelationships(tokenRels);
+        if (areTokenBalancesEnabledInQueries) {
+            final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
+            if (!tokenRels.isEmpty()) {
+                info.addAllTokenRelationships(tokenRels);
+            }
         }
         info.setStakingInfo(stakingInfo(account, rewardCalculator));
 
@@ -549,7 +552,8 @@ public class StateView {
             final ContractID id,
             final AliasManager aliasManager,
             final int maxTokensForAccountInfo,
-            final RewardCalculator rewardCalculator) {
+            final RewardCalculator rewardCalculator,
+            final boolean areTokenBalancesEnabledInQueries) {
         final var contractId = EntityIdUtils.unaliased(id, aliasManager);
         final var contract = contracts().get(contractId);
         if (contract == null) {
@@ -578,11 +582,12 @@ public class StateView {
         } else {
             info.setContractAccountID(asHexedEvmAddress(mirrorId));
         }
-        final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
-        if (!tokenRels.isEmpty()) {
-            info.addAllTokenRelationships(tokenRels);
+        if (areTokenBalancesEnabledInQueries) {
+            final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
+            if (!tokenRels.isEmpty()) {
+                info.addAllTokenRelationships(tokenRels);
+            }
         }
-
         info.setStakingInfo(stakingInfo(contract, rewardCalculator));
 
         try {

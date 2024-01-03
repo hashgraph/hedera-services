@@ -17,12 +17,12 @@
 package com.hedera.node.config.validation;
 
 import com.hedera.node.config.types.KeyValuePair;
-import com.swirlds.common.config.reflection.ConfigReflectionUtils;
-import com.swirlds.common.config.reflection.ConfigReflectionUtils.AnnotatedProperty;
-import com.swirlds.common.config.validators.DefaultConfigViolation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.api.validation.ConfigViolation;
+import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
+import com.swirlds.config.extensions.reflection.ConfigReflectionUtils.AnnotatedProperty;
+import com.swirlds.config.extensions.validators.DefaultConfigViolation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.INT64_INT64;
+
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,8 +34,15 @@ import javax.inject.Singleton;
 
 @Singleton
 public class BurnDecoder {
+    private static final TupleType BURN_RESULT_ENCODER = TupleType.parse(INT64_INT64);
+    public static final DispatchForResponseCodeHtsCall.OutputFn BURN_OUTPUT_FN =
+            recordBuilder -> BURN_RESULT_ENCODER.encodeElements(
+                    (long) recordBuilder.status().protoOrdinal(), recordBuilder.getNewTotalSupply());
+
     @Inject
-    public BurnDecoder() {}
+    public BurnDecoder() {
+        // Dagger2
+    }
 
     public TransactionBody decodeBurn(@NonNull final HtsCallAttempt attempt) {
         final var call = BurnTranslator.BURN_TOKEN_V1.decodeCall(attempt.inputBytes());

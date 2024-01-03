@@ -22,6 +22,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaH
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.writeSignatureFile;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.FILE_SIGN;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -164,7 +165,7 @@ public class FileSignTool {
                 | InvalidKeyException
                 | SignatureException e) {
             logger.error(
-                    FILE_SIGN.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Failed to verify Signature: {}, PublicKey: {}, File: {}",
                     hex(signature),
                     hex(publicKey.getEncoded()),
@@ -196,7 +197,7 @@ public class FileSignTool {
                 | UnrecoverableKeyException
                 | IOException
                 | CertificateException e) {
-            logger.error(FILE_SIGN.getMarker(), "loadPfxKey :: ERROR ", e);
+            logger.error(EXCEPTION.getMarker(), "loadPfxKey :: ERROR ", e);
         }
         return sigKeyPair;
     }
@@ -230,7 +231,7 @@ public class FileSignTool {
             output.write(signature);
         } catch (final IOException e) {
             logger.error(
-                    FILE_SIGN.getMarker(),
+                    EXCEPTION.getMarker(),
                     "generateSigFile :: Fail to generate signature file for {}. Exception: {}",
                     filePath,
                     e);
@@ -268,7 +269,7 @@ public class FileSignTool {
                 final int version = readFirstIntFromFile(streamFile);
                 if (version != VERSION_5) {
                     logger.error(
-                            FILE_SIGN.getMarker(),
+                            EXCEPTION.getMarker(),
                             "Failed to sign file {} with unsupported version {} ",
                             streamFile.getName(),
                             version);
@@ -296,7 +297,7 @@ public class FileSignTool {
                 | SignatureException
                 | InvalidStreamFileException
                 | IOException e) {
-            logger.error(FILE_SIGN.getMarker(), "Failed to sign file {} ", streamFile.getName(), e);
+            logger.error(EXCEPTION.getMarker(), "Failed to sign file {} ", streamFile.getName(), e);
         }
         logger.info(FILE_SIGN.getMarker(), "Finish generating signature file {}", destSigFilePath);
     }
@@ -359,7 +360,7 @@ public class FileSignTool {
             try {
                 streamType = loadStreamTypeFromJson(streamTypeJsonPath);
             } catch (final IOException e) {
-                logger.error(FILE_SIGN.getMarker(), "fail to load StreamType from {}.", streamTypeJsonPath, e);
+                logger.error(EXCEPTION.getMarker(), "fail to load StreamType from {}.", streamTypeJsonPath, e);
                 return;
             }
         }
@@ -368,7 +369,7 @@ public class FileSignTool {
         try {
             prepare(streamType);
         } catch (final ConstructableRegistryException e) {
-            logger.error(FILE_SIGN.getMarker(), "fail to register constructables.", e);
+            logger.error(EXCEPTION.getMarker(), "fail to register constructables.", e);
             return;
         }
 
@@ -401,7 +402,7 @@ public class FileSignTool {
                     signSingleFile(sigKeyPair, new File(fileName), destDir, streamType);
                 }
             } catch (final IOException e) {
-                logger.error(FILE_SIGN.getMarker(), "Got IOException", e);
+                logger.error(EXCEPTION.getMarker(), "Got IOException", e);
             }
         }
     }

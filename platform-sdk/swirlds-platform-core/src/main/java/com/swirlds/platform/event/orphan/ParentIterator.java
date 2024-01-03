@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.orphan;
 
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -47,19 +47,13 @@ class ParentIterator implements Iterator<EventDescriptor> {
     ParentIterator(@NonNull final GossipEvent event) {
         parents = new ArrayList<>();
 
-        if (event.getHashedData().getSelfParentHash() != null) {
-            parents.add(new EventDescriptor(
-                    event.getHashedData().getSelfParentHash(),
-                    event.getHashedData().getCreatorId(),
-                    event.getHashedData().getSelfParentGen()));
-        }
+        final EventDescriptor selfParent = event.getHashedData().getSelfParent();
+        final List<EventDescriptor> otherParents = event.getHashedData().getOtherParents();
 
-        if (event.getHashedData().getOtherParentHash() != null) {
-            parents.add(new EventDescriptor(
-                    event.getHashedData().getOtherParentHash(),
-                    event.getUnhashedData().getOtherId(),
-                    event.getHashedData().getOtherParentGen()));
+        if (selfParent != null) {
+            parents.add(selfParent);
         }
+        otherParents.forEach(parents::add);
     }
 
     /**

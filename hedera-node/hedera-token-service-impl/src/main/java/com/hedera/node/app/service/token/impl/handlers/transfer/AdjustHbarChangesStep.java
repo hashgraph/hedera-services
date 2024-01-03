@@ -32,7 +32,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferStep {
@@ -53,9 +53,9 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
 
         final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
         // Aggregate all the hbar balances from the changes. It also includes allowance transfer amounts
-        final Map<AccountID, Long> netHbarTransfers = new HashMap<>();
+        final Map<AccountID, Long> netHbarTransfers = new LinkedHashMap<>();
         // Allowance transfers is only for negative amounts, it is used to reduce allowance for the spender
-        final Map<AccountID, Long> allowanceTransfers = new HashMap<>();
+        final Map<AccountID, Long> allowanceTransfers = new LinkedHashMap<>();
         for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList())) {
             netHbarTransfers.merge(aa.accountID(), aa.amount(), Long::sum);
             if (aa.isApproval() && aa.amount() < 0) {

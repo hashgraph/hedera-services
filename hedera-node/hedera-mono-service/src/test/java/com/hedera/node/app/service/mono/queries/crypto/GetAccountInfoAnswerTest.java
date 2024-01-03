@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -253,7 +254,7 @@ class GetAccountInfoAnswerTest {
         // and:
         final StateView view = mock(StateView.class);
 
-        given(view.infoForAccount(any(), any(), anyInt(), any())).willReturn(Optional.empty());
+        given(view.infoForAccount(any(), any(), anyInt(), any(), anyBoolean())).willReturn(Optional.empty());
 
         // when:
         final Response response = subject.responseGiven(query, view, OK, fee);
@@ -268,6 +269,7 @@ class GetAccountInfoAnswerTest {
     @SuppressWarnings("unchecked")
     void getsTheAccountInfo() throws Throwable {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
         final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
         children.setTokens(MerkleMapLike.from(tokens));
 

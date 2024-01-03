@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -36,11 +37,16 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractUpdateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -54,6 +60,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -75,7 +82,13 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var op = context.body().contractUpdateInstanceOrThrow();
 
         if (isAdminSigRequired(op)) {
-            context.requireKeyOrThrow(op.contractIDOrElse(ContractID.DEFAULT), INVALID_CONTRACT_ID);
+            final var accountStore = context.createStore(ReadableAccountStore.class);
+            final var targetId = op.contractIDOrElse(ContractID.DEFAULT);
+            final var maybeContract = accountStore.getContractById(targetId);
+            if (maybeContract != null && maybeContract.keyOrThrow().key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
+                throw new PreCheckException(MODIFYING_IMMUTABLE_CONTRACT);
+            }
+            context.requireKeyOrThrow(targetId, INVALID_CONTRACT_ID);
         }
         if (hasCryptoAdminKey(op)) {
             context.requireKey(op.adminKeyOrThrow());
@@ -91,7 +104,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                 || op.hasProxyAccountID()
                 || op.hasAutoRenewPeriod()
                 || op.hasFileID()
-                || op.memoOrElse("").length() > 0;
+                || !op.memoOrElse("").isEmpty();
     }
 
     private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
@@ -107,17 +120,19 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
         validateSemantics(toBeUpdated, context, op, accountStore);
-        final var changed = update(toBeUpdated, context, op);
-
+        final var changed = update(requireNonNull(toBeUpdated), context, op);
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
-        context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(target);
+        context.recordBuilder(ContractUpdateRecordBuilder.class)
+                .contractID(ContractID.newBuilder()
+                        .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
+                        .build());
     }
 
     private void validateSemantics(
-            Account contract,
-            HandleContext context,
-            ContractUpdateTransactionBody op,
-            ReadableAccountStore accountStore) {
+            @Nullable final Account contract,
+            @NonNull final HandleContext context,
+            @NonNull final ContractUpdateTransactionBody op,
+            @NonNull final ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
         validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
 
@@ -170,10 +185,10 @@ public class ContractUpdateHandler implements TransactionHandler {
                         context.configuration()
                                 .getConfigData(StakingConfig.class)
                                 .isEnabled(),
-                        contract.declineReward(),
-                        contract.stakedId().kind().name(),
-                        contract.stakedAccountId(),
-                        contract.stakedNodeId(),
+                        op.hasDeclineReward(),
+                        op.stakedId().kind().name(),
+                        op.stakedAccountId(),
+                        op.stakedNodeId(),
                         accountStore,
                         context.networkInfo());
     }
@@ -220,7 +235,17 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var builder = contract.copyBuilder();
         if (op.hasAdminKey()) {
             if (EMPTY_KEY_LIST.equals(op.adminKey())) {
-                builder.key(contract.key());
+                try {
+                    var contractID = ContractID.newBuilder()
+                            .shardNum(contract.accountIdOrThrow().shardNum())
+                            .realmNum(contract.accountIdOrThrow().realmNum())
+                            .contractNum(contract.accountIdOrThrow().accountNumOrThrow())
+                            .build();
+                    var key = Key.newBuilder().contractID(contractID).build();
+                    builder.key(key);
+                } catch (NullPointerException e) {
+                    builder.key(contract.key());
+                }
             } else {
                 builder.key(op.adminKey());
             }
@@ -258,5 +283,15 @@ public class ContractUpdateHandler implements TransactionHandler {
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
         }
         return builder.build();
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractUpdateResourceUsage(
+                        new SmartContractFeeBuilder())
+                .usageGiven(fromPbj(op), sigValueObj, null));
     }
 }

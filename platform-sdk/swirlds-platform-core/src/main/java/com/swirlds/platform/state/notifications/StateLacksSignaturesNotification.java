@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.signed.SignedState;
 
 /**

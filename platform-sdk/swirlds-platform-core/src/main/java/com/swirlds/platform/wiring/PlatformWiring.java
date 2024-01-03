@@ -16,36 +16,63 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.common.wiring.wires.SolderType.INJECT;
+
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateDumpRequest;
+import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
-public class PlatformWiring implements Startable, Stoppable {
-
+public class PlatformWiring implements Startable, Stoppable, Clearable {
+    private final PlatformContext platformContext;
     private final WiringModel model;
 
-    private final InternalEventValidatorScheduler internalEventValidatorScheduler;
-    private final EventDeduplicatorScheduler eventDeduplicatorScheduler;
-    private final EventSignatureValidatorScheduler eventSignatureValidatorScheduler;
-    private final OrphanBufferScheduler orphanBufferScheduler;
-    private final InOrderLinkerScheduler inOrderLinkerScheduler;
-    private final LinkedEventIntakeScheduler linkedEventIntakeScheduler;
+    private final InternalEventValidatorWiring internalEventValidatorWiring;
+    private final EventDeduplicatorWiring eventDeduplicatorWiring;
+    private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
+    private final OrphanBufferWiring orphanBufferWiring;
+    private final InOrderLinkerWiring inOrderLinkerWiring;
+    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final EventCreationManagerWiring eventCreationManagerWiring;
+    private final SignedStateFileManagerWiring signedStateFileManagerWiring;
+    private final StateSignerWiring stateSignerWiring;
+    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
-    private final boolean cyclicalBackpressurePresent;
-    private final boolean illegalDirectSchedulerUsagePresent;
-
+    private final PlatformCoordinator platformCoordinator;
     /**
      * Constructor.
      *
@@ -53,24 +80,59 @@ public class PlatformWiring implements Startable, Stoppable {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+
+        this.platformContext = Objects.requireNonNull(platformContext);
         model = WiringModel.create(platformContext, time);
 
-        internalEventValidatorScheduler = new InternalEventValidatorScheduler(model);
-        eventDeduplicatorScheduler = new EventDeduplicatorScheduler(model);
-        eventSignatureValidatorScheduler = new EventSignatureValidatorScheduler(model);
-        orphanBufferScheduler = new OrphanBufferScheduler(model);
-        inOrderLinkerScheduler = new InOrderLinkerScheduler(model);
-        linkedEventIntakeScheduler = new LinkedEventIntakeScheduler(model);
+        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
+
+        // the new intake pipeline components must only be constructed if they are enabled
+        // this ensures that no exception will arise for unbound wires
+        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            internalEventValidatorWiring =
+                    InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
+            eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
+            eventSignatureValidatorWiring =
+                    EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
+            orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
+            inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
+            linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+            eventCreationManagerWiring =
+                    EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
+
+            applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
+                    schedulers.applicationTransactionPrehandlerScheduler());
+            stateSignatureCollectorWiring =
+                    StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
+
+            platformCoordinator = new PlatformCoordinator(
+                    internalEventValidatorWiring,
+                    eventDeduplicatorWiring,
+                    eventSignatureValidatorWiring,
+                    orphanBufferWiring,
+                    inOrderLinkerWiring,
+                    linkedEventIntakeWiring,
+                    eventCreationManagerWiring,
+                    applicationTransactionPrehandlerWiring,
+                    stateSignatureCollectorWiring);
+        } else {
+            internalEventValidatorWiring = null;
+            eventDeduplicatorWiring = null;
+            eventSignatureValidatorWiring = null;
+            orphanBufferWiring = null;
+            inOrderLinkerWiring = null;
+            linkedEventIntakeWiring = null;
+            eventCreationManagerWiring = null;
+            platformCoordinator = null;
+            applicationTransactionPrehandlerWiring = null;
+            stateSignatureCollectorWiring = null;
+        }
+
+        signedStateFileManagerWiring =
+                SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
+        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
 
         wire();
-
-        // Logs if there is cyclical back pressure.
-        // Do not throw -- in theory we might survive this, so no need to crash.
-        cyclicalBackpressurePresent = model.checkForCyclicalBackpressure();
-
-        // Logs if there is illegal direct scheduler usage.
-        // Do not throw -- in theory we might survive this, so no need to crash.
-        illegalDirectSchedulerUsagePresent = model.checkForIllegalDirectSchedulerUsage();
     }
 
     /**
@@ -84,38 +146,76 @@ public class PlatformWiring implements Startable, Stoppable {
     }
 
     /**
-     * Check if cyclical backpressure is present in the model.
-     *
-     * @return true if cyclical backpressure is present, false otherwise
+     * Solder the NonAncientEventWindow output to all components that need it.
      */
-    public boolean isCyclicalBackpressurePresent() {
-        return cyclicalBackpressurePresent;
-    }
+    private void solderNonAncientEventWindow() {
+        final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
+                linkedEventIntakeWiring.nonAncientEventWindowOutput();
 
-    /**
-     * Check if illegal direct scheduler usage is present in the model.
-     *
-     * @return true if illegal direct scheduler usage is present, false otherwise
-     */
-    public boolean isIllegalDirectSchedulerUsagePresent() {
-        return illegalDirectSchedulerUsagePresent;
+        nonAncientEventWindowOutputWire.solderTo(eventDeduplicatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
     }
 
     /**
      * Wire the components together.
      */
     private void wire() {
-        internalEventValidatorScheduler.getEventOutput().solderTo(eventDeduplicatorScheduler.getEventInput());
-        eventDeduplicatorScheduler.getEventOutput().solderTo(eventSignatureValidatorScheduler.getEventInput());
-        eventSignatureValidatorScheduler.getEventOutput().solderTo(orphanBufferScheduler.getEventInput());
-        orphanBufferScheduler.getEventOutput().solderTo(inOrderLinkerScheduler.getEventInput());
-        inOrderLinkerScheduler.getEventOutput().solderTo(linkedEventIntakeScheduler.getEventInput());
+        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
+            eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
+            eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+            orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+            inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+            orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
+            eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
+            orphanBufferWiring
+                    .eventOutput()
+                    .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
+            orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
-        // FUTURE WORK: solder all the things!
+            solderNonAncientEventWindow();
+        }
     }
 
     /**
-     * Bind schedulers to their components.
+     * Wire components that adhere to the framework to components that don't
+     * <p>
+     * Future work: as more components are moved to the framework, this method should shrink, and eventually be
+     * removed.
+     *
+     * @param preconsensusEventWriter   the preconsensus event writer to wire
+     * @param statusManager             the status manager to wire
+     * @param appCommunicationComponent the app communication component to wire
+     * @param transactionPool           the transaction pool to wire
+     */
+    public void wireExternalComponents(
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
+            @NonNull final PlatformStatusManager statusManager,
+            @NonNull final AppCommunicationComponent appCommunicationComponent,
+            @NonNull final TransactionPool transactionPool) {
+
+        signedStateFileManagerWiring
+                .oldestMinimumGenerationOnDiskOutputWire()
+                .solderTo(
+                        "PCES minimum generation to store",
+                        preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
+        signedStateFileManagerWiring
+                .stateWrittenToDiskOutputWire()
+                .solderTo("status manager", statusManager::submitStatusAction);
+        signedStateFileManagerWiring
+                .stateSavingResultOutputWire()
+                .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
+        stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
+    }
+
+    /**
+     * Bind the intake components to the wiring.
+     * <p>
+     * Future work: this method should be merged with {@link #bind} once the feature flag for the new intake pipeline
+     * has been removed
      *
      * @param internalEventValidator  the internal event validator to bind
      * @param eventDeduplicator       the event deduplicator to bind
@@ -123,23 +223,131 @@ public class PlatformWiring implements Startable, Stoppable {
      * @param orphanBuffer            the orphan buffer to bind
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
+     * @param eventCreationManager    the event creation manager to bind
+     * @param swirldStateManager      the swirld state manager to bind
+     * @param signedStateManager      the signed state manager to bind
      */
-    public void bind(
+    public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
             @NonNull final EventDeduplicator eventDeduplicator,
             @NonNull final EventSignatureValidator eventSignatureValidator,
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
-            @NonNull final LinkedEventIntake linkedEventIntake) {
+            @NonNull final LinkedEventIntake linkedEventIntake,
+            @NonNull final EventCreationManager eventCreationManager,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final SignedStateManager signedStateManager) {
 
-        internalEventValidatorScheduler.bind(internalEventValidator);
-        eventDeduplicatorScheduler.bind(eventDeduplicator);
-        eventSignatureValidatorScheduler.bind(eventSignatureValidator);
-        orphanBufferScheduler.bind(orphanBuffer);
-        inOrderLinkerScheduler.bind(inOrderLinker);
-        linkedEventIntakeScheduler.bind(linkedEventIntake);
+        internalEventValidatorWiring.bind(internalEventValidator);
+        eventDeduplicatorWiring.bind(eventDeduplicator);
+        eventSignatureValidatorWiring.bind(eventSignatureValidator);
+        orphanBufferWiring.bind(orphanBuffer);
+        inOrderLinkerWiring.bind(inOrderLinker);
+        linkedEventIntakeWiring.bind(linkedEventIntake);
+        eventCreationManagerWiring.bind(eventCreationManager);
+        applicationTransactionPrehandlerWiring.bind(swirldStateManager);
+        stateSignatureCollectorWiring.bind(signedStateManager);
+    }
+
+    /**
+     * Bind components to the wiring.
+     *
+     * @param signedStateFileManager the signed state file manager to bind
+     * @param stateSigner            the state signer to bind
+     */
+    public void bind(
+            @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner) {
+        signedStateFileManagerWiring.bind(signedStateFileManager);
+        stateSignerWiring.bind(stateSigner);
 
         // FUTURE WORK: bind all the things!
+    }
+
+    /**
+     * Get the input wire for the internal event validator.
+     * <p>
+     * Future work: this is a temporary hook to allow events from gossip to use the new intake pipeline. This method
+     * will be removed once gossip is moved to the new framework
+     *
+     * @return the input method for the internal event validator, which is the first step in the intake pipeline
+     */
+    @NonNull
+    public InputWire<GossipEvent> getEventInput() {
+        return internalEventValidatorWiring.eventInput();
+    }
+
+    /**
+     * Get the input wire for the address book update.
+     * <p>
+     * Future work: this is a temporary hook to update the address book in the new intake pipeline.
+     *
+     * @return the input method for the address book update
+     */
+    @NonNull
+    public InputWire<AddressBookUpdate> getAddressBookUpdateInput() {
+        return eventSignatureValidatorWiring.addressBookUpdateInput();
+    }
+
+    /**
+     * Get the input wire for saving a state to disk
+     * <p>
+     * Future work: this is a temporary hook to allow the components to save state a state to disk, prior to the whole
+     * system being migrated to the new framework.
+     *
+     * @return the input wire for saving a state to disk
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getSaveStateToDiskInput() {
+        return signedStateFileManagerWiring.saveStateToDisk();
+    }
+
+    /**
+     * Get the input wire for dumping a state to disk
+     * <p>
+     * Future work: this is a temporary hook to allow the components to dump a state to disk, prior to the whole system
+     * being migrated to the new framework.
+     *
+     * @return the input wire for dumping a state to disk
+     */
+    @NonNull
+    public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
+        return signedStateFileManagerWiring.dumpStateToDisk();
+    }
+
+    /**
+     * Get the input wire for signing a state
+     * <p>
+     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole system being
+     * migrated to the new framework.
+     *
+     * @return the input wire for signing a state
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getSignStateInput() {
+        return stateSignerWiring.signState();
+    }
+
+    /**
+     * Inject a new non-ancient event window into all components that need it.
+     * <p>
+     * Future work: this is a temporary hook to allow the components to get the non-ancient event window during startup.
+     * This method will be removed once the components are wired together.
+     *
+     * @param nonAncientEventWindow the new non-ancient event window
+     */
+    public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        eventDeduplicatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        eventSignatureValidatorWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+        eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+    }
+
+    /**
+     * Flush the intake pipeline.
+     */
+    public void flushIntakePipeline() {
+        platformCoordinator.flushIntakePipeline();
     }
 
     /**
@@ -156,5 +364,20 @@ public class PlatformWiring implements Startable, Stoppable {
     @Override
     public void stop() {
         model.stop();
+    }
+
+    /**
+     * Clear all the wiring objects.
+     */
+    @Override
+    public void clear() {
+        final boolean useLegacyIntake = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyIntake();
+
+        if (!useLegacyIntake) {
+            platformCoordinator.clear();
+        }
     }
 }

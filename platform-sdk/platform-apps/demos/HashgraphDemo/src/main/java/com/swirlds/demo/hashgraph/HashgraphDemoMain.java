@@ -29,23 +29,21 @@ package com.swirlds.demo.hashgraph;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.gui.model.GuiModel;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
-import com.swirlds.platform.network.ExternalIpAddress;
-import com.swirlds.platform.network.IpAddressStatus;
+import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.Checkbox;
 import java.awt.Color;
 import java.awt.Component;
@@ -248,14 +246,6 @@ public class HashgraphDemoMain implements SwirldMain {
             print(g, "%5.3f sec, receive to consensus", recCons);
             final Address address = platform.getAddressBook().getAddress(platform.getSelfId());
             print(g, "Internal: " + Network.getInternalIPAddress() + " : " + address.getPortInternal(), 0);
-
-            final ExternalIpAddress ipAddress = Network.getExternalIpAddress();
-            String externalIpAddress = ipAddress.toString();
-            if (ipAddress.getStatus() == IpAddressStatus.IP_FOUND) {
-                externalIpAddress += " : " + address.getPortExternal();
-            }
-
-            print(g, "External: " + externalIpAddress, 0);
 
             final int height1 = (row - 1) * textLineHeight; // text area at the top
             final int height2 = getHeight() - height1; // the main display, below the text

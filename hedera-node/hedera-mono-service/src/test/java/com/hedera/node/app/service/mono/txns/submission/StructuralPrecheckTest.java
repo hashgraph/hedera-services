@@ -47,7 +47,7 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;

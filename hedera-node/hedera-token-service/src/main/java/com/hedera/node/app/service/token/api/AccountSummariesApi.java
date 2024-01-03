@@ -57,7 +57,7 @@ import java.util.function.UnaryOperator;
  */
 public interface AccountSummariesApi {
     int EVM_ADDRESS_SIZE = 20;
-    int SENTINEL_NODE_ID = -1;
+    long SENTINEL_NODE_ID = -1L;
     AccountID SENTINEL_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).build();
 
     /**

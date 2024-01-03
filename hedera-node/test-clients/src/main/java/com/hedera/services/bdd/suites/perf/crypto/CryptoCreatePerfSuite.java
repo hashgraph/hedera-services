@@ -40,7 +40,7 @@ public class CryptoCreatePerfSuite extends LoadTest {
         return List.of(runCryptoCreates());
     }
 
-    private HapiSpec runCryptoCreates() {
+    final HapiSpec runCryptoCreates() {
         final int NUM_CREATES = 1000000;
         return defaultHapiSpec("cryptoCreatePerf")
                 .given()

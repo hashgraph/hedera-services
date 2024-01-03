@@ -51,7 +51,7 @@ import java.util.Random;
 import java.util.UUID;
 
 public class TxnUtils {
-    public static com.swirlds.common.system.transaction.Transaction mockTransaction(final byte[] contents) {
+    public static com.swirlds.platform.system.transaction.Transaction mockTransaction(final byte[] contents) {
         throw new AssertionError("Not implemented");
     }
 

@@ -31,6 +31,7 @@ mainModuleInfo {
 }
 
 testModuleInfo {
+    requires("com.fasterxml.jackson.databind")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
@@ -127,16 +128,15 @@ tasks.withType<Test> {
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
     inputs.files(configurations.runtimeClasspath)
-    manifest {
-        attributes(
-            "Main-Class" to "com.hedera.node.app.ServicesMain",
+    manifest { attributes("Main-Class" to "com.hedera.node.app.ServicesMain") }
+    doFirst {
+        manifest.attributes(
             "Class-Path" to
-                configurations.runtimeClasspath.get().elements.map { entry ->
-                    entry
-                        .map { "../../data/lib/" + it.asFile.name }
-                        .sorted()
-                        .joinToString(separator = " ")
-                }
+                inputs.files
+                    .filter { it.extension == "jar" }
+                    .map { "../../data/lib/" + it.name }
+                    .sorted()
+                    .joinToString(separator = " ")
         )
     }
 }
@@ -146,25 +146,6 @@ val copyLib =
     tasks.register<Sync>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
         into(layout.projectDirectory.dir("../data/lib"))
-
-        doLast {
-            val nonModulalJars =
-                destinationDir
-                    .listFiles()!!
-                    .mapNotNull { jar ->
-                        if (zipTree(jar).none { it.name == "module-info.class" }) {
-                            jar.name
-                        } else {
-                            null
-                        }
-                    }
-                    .sorted()
-            if (nonModulalJars.isNotEmpty()) {
-                throw RuntimeException(
-                    "Jars without 'module-info.class' in 'data/lib'\n${nonModulalJars.joinToString("\n")}"
-                )
-            }
-        }
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
@@ -176,16 +157,37 @@ val copyApp =
         shouldRunAfter(tasks.named("copyLib"))
     }
 
+// Working directory for 'run' tasks
+val nodeWorkingDir = layout.buildDirectory.dir("node")
+
+val copyNodeData =
+    tasks.register<Sync>("copyNodeDataAndConfig") {
+        into(nodeWorkingDir)
+
+        // Copy things from hedera-node/data
+        into("data/lib") { from(copyLib) }
+        into("data/apps") { from(copyApp) }
+        into("data/onboard") { from(layout.projectDirectory.dir("../data/onboard")) }
+        into("data/keys") { from(layout.projectDirectory.dir("../data/keys")) }
+
+        // Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
+        from(layout.projectDirectory.dir("../configuration/dev")) { into("data/config") }
+        from(layout.projectDirectory.file("../config.txt"))
+        from(layout.projectDirectory.file("../log4j2.xml"))
+        from(layout.projectDirectory.file("../configuration/dev/settings.txt"))
+    }
+
 tasks.assemble {
     dependsOn(copyLib)
     dependsOn(copyApp)
+    dependsOn(copyNodeData)
 }
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("..").asFile
+    workingDir = nodeWorkingDir.get().asFile
     jvmArgs = listOf("-cp", "data/lib/*")
     mainClass.set("com.swirlds.platform.Browser")
 }
@@ -193,7 +195,7 @@ tasks.register<JavaExec>("run") {
 tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("..").asFile
+    workingDir = nodeWorkingDir.get().asFile
     jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }

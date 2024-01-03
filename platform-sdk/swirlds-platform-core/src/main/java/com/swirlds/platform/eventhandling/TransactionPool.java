@@ -18,11 +18,12 @@ package com.swirlds.platform.eventhandling;
 
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
@@ -204,6 +205,14 @@ public class TransactionPool implements TransactionSupplier, Clearable {
         }
 
         return true;
+    }
+
+    /**
+     * Same as {@link #submitTransaction(ConsensusTransactionImpl, boolean)} but with priority set to true.
+     * This method has no return since system transactions are never rejected.
+     */
+    public synchronized void submitSystemTransaction(@NonNull final SystemTransaction transaction) {
+        submitTransaction(transaction, true);
     }
 
     /**

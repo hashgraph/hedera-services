@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -44,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -53,8 +55,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class HRCPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(HRCPrecompileSuite.class);
@@ -97,7 +101,8 @@ public class HRCPrecompileSuite extends HapiSuite {
                 hrcTooManyTokenAssociateShouldFail());
     }
 
-    private HapiSpec hrcNftAndFungibleTokenAssociateFromEOA() {
+    @HapiTest
+    final HapiSpec hrcNftAndFungibleTokenAssociateFromEOA() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
@@ -208,7 +213,8 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                         htsPrecompileResult().withStatus(SUCCESS)))))));
     }
 
-    private HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
+    @HapiTest
+    final HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
         return defaultHapiSpec("hrcNFTAndFungibleTokenAssociateFromContract")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -314,7 +320,8 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                         htsPrecompileResult().withStatus(SUCCESS)))))));
     }
 
-    private HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
+    @HapiTest
+    final HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenAssociateFromSameEOATwiceShouldFail")
@@ -379,7 +386,8 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                         .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))))));
     }
 
-    private HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
+    @HapiTest
+    final HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenDissociateWhenNotAssociatedShouldFail")
@@ -426,7 +434,8 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                         .withStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)))))));
     }
 
-    private HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
+    @HapiTest
+    final HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenDissociateWhenBalanceNotZeroShouldFail")
@@ -493,7 +502,8 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                         .withStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))))));
     }
 
-    private HapiSpec hrcTooManyTokenAssociateShouldFail() {
+    @HapiTest
+    final HapiSpec hrcTooManyTokenAssociateShouldFail() {
         final AtomicReference<String> fungibleTokenNum1 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum2 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum3 = new AtomicReference<>();

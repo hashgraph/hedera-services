@@ -70,7 +70,7 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
         return List.of(runTransfersBeforeReconnect(), validateTokensAfterReconnect());
     }
 
-    private HapiSpec validateTokensAfterReconnect() {
+    final HapiSpec validateTokensAfterReconnect() {
         String tokenToBeQueried = "token-1";
         String anotherToken = "token-2";
         String anotherAccount = "account";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
 import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
+import static com.hedera.hapi.streams.codec.ContractActionProtoCodec.RECIPIENT_UNSET;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
@@ -39,6 +40,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,24 +77,6 @@ public class ActionStack {
         OFF
     }
 
-    /**
-     * Controls whether the action being finalized should be popped from the top of the stack; or
-     * read from the end of the full list of actions that have been created up to this point. (The
-     * exact rationale for this pattern is hard to articulate, but was presumably derived through
-     * bitter experience with the mono-service tracer implementation...)
-     */
-    public enum Source {
-        /**
-         * The action being finalized should be popped from the stack.
-         */
-        POPPED_FROM_STACK,
-
-        /**
-         * The action being finalized should be read from the end of the full list of actions.
-         */
-        READ_FROM_LIST_END
-    }
-
     public ActionStack() {
         this(new ActionsHelper(), new ArrayList<>(), new ArrayDeque<>(), new ArrayList<>());
     }
@@ -100,9 +84,9 @@ public class ActionStack {
     /**
      * Convenience constructor for testing.
      *
-     * @param helper         the helper to use for action creation
-     * @param allActions     the container to use for all tracked actions
-     * @param actionsStack   the stack to use for actions
+     * @param helper the helper to use for action creation
+     * @param allActions the container to use for all tracked actions
+     * @param actionsStack the stack to use for actions
      * @param invalidActions the container to use for invalid actions
      */
     public ActionStack(
@@ -114,6 +98,16 @@ public class ActionStack {
         this.invalidActions = invalidActions;
         this.allActions = allActions;
         this.actionsStack = actionsStack;
+    }
+
+    /**
+     * Returns a view of this stack appropriate for externalizing in a
+     * {@link com.hedera.hapi.streams.SidecarType#CONTRACT_ACTION} sidecar.
+     *
+     * @return a view of this stack ready to be put in a sidecar
+     */
+    public @NonNull ContractActions asContractActions() {
+        return new ContractActions(allActions.stream().map(ActionWrapper::get).toList());
     }
 
     /**
@@ -133,22 +127,20 @@ public class ActionStack {
      *     sets the error causing the failure. When the error is {@code INVALID_SOLIDITY_ADDRESS},
      *     also constructs a synthetic action to represent the invalid call.
      * </ul>
+     *  @param frame      the frame to use for finalization context
      *
-     * @param source     the source of the action to finalize
-     * @param frame      the frame to use for finalization context
      * @param validation whether to validate the final action
      */
-    public void finalizeLastAction(
-            @NonNull final Source source, @NonNull final MessageFrame frame, @NonNull final Validation validation) {
-        internalFinalize(source, validation, frame);
+    public void finalizeLastAction(@NonNull final MessageFrame frame, @NonNull final Validation validation) {
+        internalFinalize(validation, frame);
     }
 
     /**
-     * Does the same work as {@link #finalizeLastAction(Source, MessageFrame, Validation)}, but takes a couple
+     * Does the same work as {@link #finalizeLastAction(MessageFrame, Validation)}, but takes a couple
      * extra steps to ensure the final action is customized for the given precompile type.
      *
-     * @param frame      the frame to use for finalization context
-     * @param type       the finalized action's precompile type
+     * @param frame the frame to use for finalization context
+     * @param type the finalized action's precompile type
      * @param validation whether to validate the final action
      */
     public void finalizeLastStackActionAsPrecompile(
@@ -156,42 +148,30 @@ public class ActionStack {
             @NonNull final ContractActionType type,
             @NonNull final Validation validation) {
         if (!isAlreadyFinalized(frame, type)) {
-            internalFinalize(Source.POPPED_FROM_STACK, validation, frame, action -> action.copyBuilder()
+            internalFinalize(validation, frame, action -> action.copyBuilder()
                     .recipientContract(asNumberedContractId(frame.getContractAddress()))
                     .callType(type)
                     .build());
         }
     }
 
-    private void internalFinalize(
-            @NonNull final Source source, @NonNull final Validation validateAction, @NonNull final MessageFrame frame) {
-        internalFinalize(source, validateAction, frame, null);
+    private void internalFinalize(@NonNull final Validation validateAction, @NonNull final MessageFrame frame) {
+        internalFinalize(validateAction, frame, null);
     }
 
     private void internalFinalize(
-            @NonNull final Source source,
             @NonNull final Validation validateAction,
             @NonNull final MessageFrame frame,
             @Nullable final UnaryOperator<ContractAction> transform) {
         requireNonNull(frame);
-        requireNonNull(source);
 
         // Try to get the action from the stack or the list as requested; warn and return if not found
         final ActionWrapper lastWrappedAction;
-        if (source == Source.POPPED_FROM_STACK) {
-            if (actionsStack.isEmpty()) {
-                log.warn("Action stack prematurely empty ({})", () -> formatFrameContextForLog(frame));
-                return;
-            } else {
-                lastWrappedAction = actionsStack.pop();
-            }
+        if (actionsStack.isEmpty()) {
+            log.warn("Action stack prematurely empty ({})", () -> formatFrameContextForLog(frame));
+            return;
         } else {
-            if (allActions.isEmpty()) {
-                log.warn("Action list prematurely empty ({})", () -> formatFrameContextForLog(frame));
-                return;
-            } else {
-                lastWrappedAction = allActions.get(allActions.size() - 1);
-            }
+            lastWrappedAction = actionsStack.pop();
         }
 
         // Swap in the final form of the action
@@ -228,10 +208,7 @@ public class ActionStack {
                         .ifPresentOrElse(
                                 reason -> builder.revertReason(tuweniToPbjBytes(reason)),
                                 () -> builder.revertReason(Bytes.EMPTY));
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
+                yield withUnsetRecipientIfNeeded(frame.getType(), builder);
             }
             case EXCEPTIONAL_HALT, COMPLETED_FAILED -> {
                 final var builder = action.copyBuilder();
@@ -246,10 +223,7 @@ public class ActionStack {
                 } else {
                     builder.error(Bytes.EMPTY);
                 }
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
+                yield withUnsetRecipientIfNeeded(frame.getType(), builder);
             }
         };
     }
@@ -361,6 +335,28 @@ public class ActionStack {
 
     private ContractID contractIdWith(final long num) {
         return ContractID.newBuilder().contractNum(num).build();
+    }
+
+    private ContractAction withUnsetRecipientIfNeeded(
+            @NonNull MessageFrame.Type type, @NonNull final ContractAction.Builder builder) {
+        final var action = builder.build();
+        return (type == CONTRACT_CREATION) ? withUnsetRecipient(action) : action;
+    }
+
+    // (FUTURE) Use builder for simplicity when PBJ lets us set the oneof recipient to UNSET;
+    // c.f., https://github.com/hashgraph/pbj/issues/160
+    private ContractAction withUnsetRecipient(@NonNull final ContractAction action) {
+        return new ContractAction(
+                action.callType(),
+                action.caller(),
+                action.gas(),
+                action.input(),
+                RECIPIENT_UNSET,
+                action.value(),
+                action.gasUsed(),
+                action.resultData(),
+                action.callDepth(),
+                action.callOperationType());
     }
 
     private boolean targetsMissingAddress(@NonNull final MessageFrame frame) {

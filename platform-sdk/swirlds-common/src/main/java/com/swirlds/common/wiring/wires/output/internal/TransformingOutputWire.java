@@ -18,7 +18,7 @@ package com.swirlds.common.wiring.wires.output.internal;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * An output wire that transforms data that flows across it. For advanced use cases where
- * {@link OutputWire#buildTransformer(String, Function)} semantics are insufficient.
+ * {@link OutputWire#buildTransformer(String, String, Function)} semantics are insufficient.
  *
  * @param <IN>  the type of data passed to the forwarding method
  * @param <OUT> the type of data forwarded to things soldered to this wire
@@ -56,7 +56,7 @@ public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OU
      *                    original data is passed to this method. Ignored if null.
      */
     public TransformingOutputWire(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final Function<IN, OUT> transformer,
             @Nullable final Consumer<IN> cleanup) {

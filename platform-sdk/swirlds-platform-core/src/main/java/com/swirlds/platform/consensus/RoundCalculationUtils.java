@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.events.EventConstants;
 import java.util.function.LongUnaryOperator;
 
 /**
@@ -72,10 +72,9 @@ public final class RoundCalculationUtils {
      * @return minimum non-ancient generation
      */
     public static long getMinGenNonAncient(final int roundsNonAncient, final SignedState signedState) {
-        return getMinGenNonAncient(roundsNonAncient, signedState.getRound(), round -> signedState
-                .getState()
-                .getPlatformState()
-                .getPlatformData()
-                .getMinGen(round));
+        return getMinGenNonAncient(
+                roundsNonAncient,
+                signedState.getRound(),
+                round -> signedState.getState().getPlatformState().getMinGen(round));
     }
 }

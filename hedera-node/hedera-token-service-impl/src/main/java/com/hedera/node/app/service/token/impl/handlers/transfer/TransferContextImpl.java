@@ -33,7 +33,7 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +46,7 @@ public class TransferContextImpl implements TransferContext {
     private final HandleContext context;
     private int numAutoCreations;
     private int numLazyCreations;
-    private final Map<Bytes, AccountID> resolutions = new HashMap<>();
+    private final Map<Bytes, AccountID> resolutions = new LinkedHashMap<>();
     private final AutoCreationConfig autoCreationConfig;
     private final LazyCreationConfig lazyCreationConfig;
     private final TokensConfig tokensConfig;

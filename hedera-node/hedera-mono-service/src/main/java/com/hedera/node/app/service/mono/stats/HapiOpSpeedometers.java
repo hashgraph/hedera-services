@@ -35,7 +35,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;

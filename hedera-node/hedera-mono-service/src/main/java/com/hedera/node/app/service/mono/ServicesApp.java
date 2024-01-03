@@ -45,7 +45,7 @@ import com.hedera.node.app.service.mono.queries.QueriesModule;
 import com.hedera.node.app.service.mono.records.RecordsModule;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.SigsModule;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryModule;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
@@ -79,15 +79,15 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
-import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.state.notifications.IssListener;
-import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
-import com.swirlds.common.system.state.notifications.NewSignedStateListener;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
+import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -135,7 +135,7 @@ public interface ServicesApp {
 
     ServicesInitFlow initializationFlow();
 
-    DualStateAccessor dualStateAccessor();
+    PlatformStateAccessor platformStateAccessor();
 
     VirtualMapFactory virtualMapFactory();
 

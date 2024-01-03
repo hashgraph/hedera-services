@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.simulator.SimulatedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;

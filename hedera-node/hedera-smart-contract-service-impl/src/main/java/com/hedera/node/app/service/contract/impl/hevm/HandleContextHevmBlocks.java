@@ -53,6 +53,6 @@ public class HandleContextHevmBlocks implements HederaEvmBlocks {
      */
     @Override
     public BlockValues blockValuesOf(final long gasLimit) {
-        return new HevmBlockValues(gasLimit, context.blockRecordInfo().lastBlockNo(), context.consensusNow());
+        return HevmBlockValues.from(context.blockRecordInfo(), gasLimit);
     }
 }

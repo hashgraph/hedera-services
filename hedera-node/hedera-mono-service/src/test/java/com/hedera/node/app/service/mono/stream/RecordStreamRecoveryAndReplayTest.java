@@ -49,9 +49,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -162,7 +164,7 @@ class RecordStreamRecoveryAndReplayTest {
 
     /**
      * Sets the test subject to a {@link RecordStreamManager} that will receive record stream objects
-     * created during {@link com.swirlds.common.system.InitTrigger#EVENT_STREAM_RECOVERY}. The subject
+     * created during {@link InitTrigger#EVENT_STREAM_RECOVERY}. The subject
      * must reconcile the items replayed during recovery with the "golden" record file on disk that
      * contains the consensus time at which recovery begins; and it must otherwise delete and recreate
      * any record files it finds on disk.
@@ -195,7 +197,7 @@ class RecordStreamRecoveryAndReplayTest {
 
     /**
      * Sets the test subject to a {@link RecordStreamManager} that will receive record stream objects
-     * created while {@link com.swirlds.common.system.status.PlatformStatus#REPLAYING_EVENTS}. The subject
+     * created while {@link PlatformStatus#REPLAYING_EVENTS}. The subject
      * does not need to do any work to reconcile the items replayed with record files on
      * disk, since it should instead just skip the blocks corresponding to those old files.
      *

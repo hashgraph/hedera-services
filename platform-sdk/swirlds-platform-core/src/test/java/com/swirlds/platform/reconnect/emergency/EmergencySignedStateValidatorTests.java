@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Random;
@@ -130,10 +130,7 @@ public class EmergencySignedStateValidatorTests {
     }
 
     private void assertNextEpochHashEquals(final Hash hash, final SignedState signedState, final String msg) {
-        assertEquals(
-                hash,
-                signedState.getState().getPlatformState().getPlatformData().getNextEpochHash(),
-                msg);
+        assertEquals(hash, signedState.getState().getPlatformState().getNextEpochHash(), msg);
     }
 
     /**
@@ -154,7 +151,7 @@ public class EmergencySignedStateValidatorTests {
                 .build();
 
         final Hash emergencyHash = RandomUtils.randomHash(random);
-        laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
+        laterState.getState().getPlatformState().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
                 STATE_CONFIG,
@@ -184,7 +181,7 @@ public class EmergencySignedStateValidatorTests {
 
         final Hash emergencyHash = RandomUtils.randomHash(random);
         final Hash badEpochHash = RandomUtils.randomHash(random);
-        laterState.getState().getPlatformState().getPlatformData().setNextEpochHash(badEpochHash);
+        laterState.getState().getPlatformState().setNextEpochHash(badEpochHash);
 
         validator = new EmergencySignedStateValidator(
                 STATE_CONFIG,
@@ -215,7 +212,7 @@ public class EmergencySignedStateValidatorTests {
                 .build();
 
         final Hash emergencyHash = RandomUtils.randomHash(random);
-        laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
+        laterState.getState().getPlatformState().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
                 STATE_CONFIG,

@@ -95,7 +95,7 @@ public class GrantRevokeKycV1SecurityModelSuite extends HapiSuite {
         return List.of(grantRevokeKycSpec());
     }
 
-    private HapiSpec grantRevokeKycSpec() {
+    final HapiSpec grantRevokeKycSpec() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();

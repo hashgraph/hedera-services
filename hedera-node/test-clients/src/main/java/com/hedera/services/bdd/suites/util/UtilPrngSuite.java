@@ -55,7 +55,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec usdFeeAsExpected() {
+    final HapiSpec usdFeeAsExpected() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
 
@@ -83,7 +83,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsInPreCheckForNegativeRange() {
+    final HapiSpec failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
@@ -99,7 +99,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec happyPathWorksForRangeAndBitString() {
+    final HapiSpec happyPathWorksForRangeAndBitString() {
         final var rangeTxn = "prngWithRange";
         final var rangeTxn1 = "prngWithRange1";
         final var prngWithoutRange = "prngWithoutRange";

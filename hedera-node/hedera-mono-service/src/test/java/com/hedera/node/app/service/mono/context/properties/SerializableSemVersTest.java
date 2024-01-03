@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 

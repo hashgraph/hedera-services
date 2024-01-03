@@ -29,6 +29,7 @@ package com.swirlds.demo.iss;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -36,19 +37,19 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -148,7 +149,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState swirldDualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
 
@@ -172,7 +173,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(final Round round, final PlatformState platformState) {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -380,7 +381,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         }
 
         logger.error(
-                STARTUP.getMarker(),
+                EXCEPTION.getMarker(),
                 "This error was scheduled to be logged at time after genesis {}, and actually was logged "
                         + "at time after genesis {}.",
                 plannedLogError.getTimeAfterGenesis(),

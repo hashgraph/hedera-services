@@ -97,7 +97,7 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
         return List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios());
     }
 
-    private HapiSpec wipeFungibleTokenScenarios() {
+    final HapiSpec wipeFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
@@ -221,7 +221,7 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
 
-    private HapiSpec wipeNonFungibleTokenScenarios() {
+    final HapiSpec wipeNonFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

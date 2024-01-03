@@ -18,7 +18,7 @@ package com.swirlds.platform.event.linking;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
+import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,14 +27,21 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +60,8 @@ class InOrderLinkerTests {
     private GossipEvent genesisSelfParent;
     private GossipEvent genesisOtherParent;
 
+    private FakeTime time;
+
     /**
      * Generates a mock event with the given parameters
      *
@@ -62,6 +71,7 @@ class InOrderLinkerTests {
      * @param selfParentGeneration  the generation of the self parent of the event
      * @param otherParentHash       the hash of the other parent of the event
      * @param otherParentGeneration the generation of the other parent of the event
+     * @param selfTimeCreated       the time created of the event
      * @return the mock event
      */
     private static GossipEvent generateMockEvent(
@@ -70,7 +80,8 @@ class InOrderLinkerTests {
             @Nullable final Hash selfParentHash,
             final long selfParentGeneration,
             @Nullable final Hash otherParentHash,
-            final long otherParentGeneration) {
+            final long otherParentGeneration,
+            @NonNull final Instant selfTimeCreated) {
 
         final EventDescriptor descriptor = mock(EventDescriptor.class);
         when(descriptor.getHash()).thenReturn(selfHash);
@@ -83,6 +94,7 @@ class InOrderLinkerTests {
         when(hashedData.getSelfParentGen()).thenReturn(selfParentGeneration);
         when(hashedData.getOtherParentHash()).thenReturn(otherParentHash);
         when(hashedData.getOtherParentGen()).thenReturn(otherParentGeneration);
+        when(hashedData.getTimeCreated()).thenReturn(selfTimeCreated);
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
 
@@ -113,15 +125,21 @@ class InOrderLinkerTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        inOrderLinker = new InOrderLinker(intakeEventCounter);
+        time = new FakeTime();
 
-        genesisSelfParent =
-                generateMockEvent(randomHash(random), 0, null, GENERATION_UNDEFINED, null, GENERATION_UNDEFINED);
+        inOrderLinker = new InOrderLinker(TestPlatformContextBuilder.create().build(), time, intakeEventCounter);
+
+        time.tick(Duration.ofSeconds(1));
+        genesisSelfParent = generateMockEvent(
+                randomHash(random), 0, null, GENERATION_UNDEFINED, null, GENERATION_UNDEFINED, time.now());
         inOrderLinker.linkEvent(genesisSelfParent);
 
-        genesisOtherParent =
-                generateMockEvent(randomHash(random), 0, null, GENERATION_UNDEFINED, null, GENERATION_UNDEFINED);
+        time.tick(Duration.ofSeconds(1));
+        genesisOtherParent = generateMockEvent(
+                randomHash(random), 0, null, GENERATION_UNDEFINED, null, GENERATION_UNDEFINED, time.now());
         inOrderLinker.linkEvent(genesisOtherParent);
+
+        time.tick(Duration.ofSeconds(1));
     }
 
     @Test
@@ -135,12 +153,20 @@ class InOrderLinkerTests {
                 genesisSelfParent.getHashedData().getHash(),
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
-                genesisOtherParent.getGeneration());
-        assertNotEquals(null, inOrderLinker.linkEvent(child1));
+                genesisOtherParent.getGeneration(),
+                time.now());
 
-        inOrderLinker.setMinimumGenerationNonAncient(2);
+        final EventImpl linkedEvent1 = inOrderLinker.linkEvent(child1);
+        assertNotEquals(null, linkedEvent1);
+        assertNotEquals(null, linkedEvent1.getSelfParent(), "Self parent is non-ancient, and should not be null");
+        assertNotEquals(null, linkedEvent1.getOtherParent(), "Other parent is non-ancient, and should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
 
-        // almost ancient
+        time.tick(Duration.ofSeconds(1));
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 1));
+
         final Hash child2Hash = randomHash(random);
         final long child2Generation = 2;
         final GossipEvent child2 = generateMockEvent(
@@ -149,32 +175,50 @@ class InOrderLinkerTests {
                 child1Hash,
                 child1Generation,
                 genesisOtherParent.getHashedData().getHash(),
-                genesisOtherParent.getGeneration());
+                genesisOtherParent.getGeneration(),
+                time.now());
 
-        assertNotEquals(null, inOrderLinker.linkEvent(child2));
+        final EventImpl linkedEvent2 = inOrderLinker.linkEvent(child2);
+        assertNotEquals(null, linkedEvent2);
+        assertNotEquals(null, linkedEvent2.getSelfParent(), "Self parent is non-ancient, and should not be null");
+        assertNull(linkedEvent2.getOtherParent(), "Other parent is ancient, and should be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
+
+        time.tick(Duration.ofSeconds(1));
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 2));
+
+        final Hash child3Hash = randomHash(random);
+        final long child3Generation = 3;
+        final GossipEvent child3 = generateMockEvent(
+                child3Hash, child3Generation, child1Hash, child1Generation, child2Hash, child2Generation, time.now());
+
+        final EventImpl linkedEvent3 = inOrderLinker.linkEvent(child3);
+        assertNotEquals(null, linkedEvent3);
+        assertNull(linkedEvent3.getSelfParent(), "Self parent is ancient, and should be null");
+        assertNotEquals(null, linkedEvent3.getOtherParent(), "Other parent is non-ancient, and should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
+
+        time.tick(Duration.ofSeconds(1));
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 4));
+
+        final Hash child4Hash = randomHash(random);
+        final long child4Generation = 4;
+        final GossipEvent child4 = generateMockEvent(
+                child4Hash, child4Generation, child2Hash, child2Generation, child3Hash, child3Generation, time.now());
+
+        final EventImpl linkedEvent4 = inOrderLinker.linkEvent(child4);
+        assertNotEquals(null, linkedEvent4);
+        assertNull(linkedEvent4.getSelfParent(), "Self parent is ancient, and should be null");
+        assertNull(linkedEvent4.getOtherParent(), "Other parent is ancient, and should be null");
         assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @Test
-    @DisplayName("Events with ancient parents should still be linkable")
-    void parentBecomesAncient() {
-        // this will cause the genesis parents to be purged, since they are now ancient
-        inOrderLinker.setMinimumGenerationNonAncient(3);
-
-        final GossipEvent child = generateMockEvent(
-                randomHash(random),
-                4,
-                genesisSelfParent.getHashedData().getHash(),
-                genesisSelfParent.getGeneration(),
-                genesisOtherParent.getHashedData().getHash(),
-                genesisOtherParent.getGeneration());
-
-        assertNotEquals(null, inOrderLinker.linkEvent(child));
-        assertEquals(0, exitedIntakePipelineCount.get());
-    }
-
-    @Test
-    @DisplayName("Events with a missing self parent should exit the intake pipeline")
+    @DisplayName("Missing self parent should not be linked")
     void missingSelfParent() {
         final GossipEvent child = generateMockEvent(
                 randomHash(random),
@@ -182,14 +226,19 @@ class InOrderLinkerTests {
                 null,
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
-                genesisOtherParent.getGeneration());
+                genesisOtherParent.getGeneration(),
+                time.now());
 
-        assertNull(inOrderLinker.linkEvent(child));
-        assertEquals(1, exitedIntakePipelineCount.get());
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
+        assertNotEquals(null, linkedEvent);
+        assertNull(linkedEvent.getSelfParent(), "Self parent is missing, and should be null");
+        assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent is not missing, and should not be null");
+
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @Test
-    @DisplayName("Events with a missing other parent should exit the intake pipeline")
+    @DisplayName("Missing other parent should not be linked")
     void missingOtherParent() {
         final GossipEvent child = generateMockEvent(
                 randomHash(random),
@@ -197,16 +246,23 @@ class InOrderLinkerTests {
                 genesisSelfParent.getHashedData().getHash(),
                 genesisSelfParent.getGeneration(),
                 null,
-                genesisOtherParent.getGeneration());
+                genesisOtherParent.getGeneration(),
+                time.now());
 
-        assertNull(inOrderLinker.linkEvent(child));
-        assertEquals(1, exitedIntakePipelineCount.get());
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
+        assertNotEquals(null, linkedEvent);
+        assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent is not missing, and should not be null");
+        assertNull(linkedEvent.getOtherParent(), "Other parent is missing, and should be null");
+
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @Test
     @DisplayName("Ancient events should immediately exit the intake pipeline")
     void ancientEvent() {
-        inOrderLinker.setMinimumGenerationNonAncient(3);
+        // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
+        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 3));
 
         final GossipEvent child1 = generateMockEvent(
                 randomHash(random),
@@ -214,7 +270,10 @@ class InOrderLinkerTests {
                 genesisSelfParent.getHashedData().getHash(),
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
-                genesisOtherParent.getGeneration());
+                genesisOtherParent.getGeneration(),
+                time.now());
+
+        time.tick(Duration.ofSeconds(1));
 
         assertNull(inOrderLinker.linkEvent(child1));
 
@@ -225,9 +284,110 @@ class InOrderLinkerTests {
                 genesisSelfParent.getHashedData().getHash(),
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
-                genesisOtherParent.getGeneration());
+                genesisOtherParent.getGeneration(),
+                time.now());
 
         assertNull(inOrderLinker.linkEvent(child2));
         assertEquals(2, exitedIntakePipelineCount.get());
+    }
+
+    @Test
+    @DisplayName("Self parent with mismatched generation should not be linked")
+    void selfParentGenerationMismatch() {
+        final GossipEvent child = generateMockEvent(
+                randomHash(random),
+                2,
+                genesisSelfParent.getHashedData().getHash(),
+                genesisSelfParent.getGeneration() + 1,
+                genesisOtherParent.getHashedData().getHash(),
+                genesisOtherParent.getGeneration(),
+                time.now());
+
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
+        assertNotEquals(null, linkedEvent);
+        assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched generation, and should be null");
+        assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
+    }
+
+    @Test
+    @DisplayName("Other parent with mismatched generation should not be linked")
+    void otherParentGenerationMismatch() {
+        final GossipEvent child = generateMockEvent(
+                randomHash(random),
+                2,
+                genesisSelfParent.getHashedData().getHash(),
+                genesisSelfParent.getGeneration(),
+                genesisOtherParent.getHashedData().getHash(),
+                genesisOtherParent.getGeneration() + 1,
+                time.now());
+
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
+        assertNotEquals(null, linkedEvent);
+        assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
+        assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched generation, and should be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
+    }
+
+    @Test
+    @DisplayName("Self parent with mismatched time created should not be linked")
+    void selfParentTimeCreatedMismatch() {
+        final Hash lateParentHash = randomHash(random);
+        final long lateParentGeneration = 1;
+        final GossipEvent lateParent = generateMockEvent(
+                lateParentHash,
+                lateParentGeneration,
+                genesisSelfParent.getHashedData().getHash(),
+                genesisSelfParent.getGeneration(),
+                genesisOtherParent.getHashedData().getHash(),
+                genesisOtherParent.getGeneration(),
+                time.now().plus(Duration.ofSeconds(10)));
+        inOrderLinker.linkEvent(lateParent);
+
+        final GossipEvent child = generateMockEvent(
+                randomHash(random),
+                2,
+                lateParentHash,
+                lateParentGeneration,
+                genesisOtherParent.getHashedData().getHash(),
+                genesisOtherParent.getGeneration(),
+                time.now());
+
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
+        assertNotEquals(null, linkedEvent);
+        assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched time created, and should be null");
+        assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
+    }
+
+    @Test
+    @DisplayName("Other parent with mismatched time created should not be linked")
+    void otherParentTimeCreatedMismatch() {
+        final Hash lateParentHash = randomHash(random);
+        final long lateParentGeneration = 1;
+        final GossipEvent lateParent = generateMockEvent(
+                lateParentHash,
+                lateParentGeneration,
+                genesisSelfParent.getHashedData().getHash(),
+                genesisSelfParent.getGeneration(),
+                genesisOtherParent.getHashedData().getHash(),
+                genesisOtherParent.getGeneration(),
+                time.now().plus(Duration.ofSeconds(10)));
+        inOrderLinker.linkEvent(lateParent);
+
+        final GossipEvent child = generateMockEvent(
+                randomHash(random),
+                2,
+                genesisSelfParent.getHashedData().getHash(),
+                genesisSelfParent.getGeneration(),
+                lateParentHash,
+                lateParentGeneration,
+                time.now());
+
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
+        assertNotEquals(null, linkedEvent);
+        assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
+        assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched time created, and should be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 }

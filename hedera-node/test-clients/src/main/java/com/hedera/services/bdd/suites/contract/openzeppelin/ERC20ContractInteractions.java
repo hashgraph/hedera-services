@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -38,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -46,8 +48,10 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ERC20ContractInteractions extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
@@ -75,7 +79,8 @@ public class ERC20ContractInteractions extends HapiSuite {
         return List.of(callsERC20ContractInteractions());
     }
 
-    private HapiSpec callsERC20ContractInteractions() {
+    @HapiTest
+    final HapiSpec callsERC20ContractInteractions() {
         final var CONTRACT = "GLDToken";
         final var CREATE_TX = "create";
         final var APPROVE_TX = "approve";
@@ -94,7 +99,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                 .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
                                 .via(CREATE_TX)
-                                .scrambleTxnBody(tx -> {
+                                .withTxnTransform(tx -> {
                                     System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                     return tx;
                                 }),
@@ -126,7 +131,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                             final var transfer = contractCall(CONTRACT, TRANSFER, transferParams)
                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                     .via(TRANSFER_TX)
-                                    .scrambleTxnBody(tx -> {
+                                    .withTxnTransform(tx -> {
                                         System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
@@ -136,7 +141,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
-                                    .scrambleTxnBody(tx -> {
+                                    .withTxnTransform(tx -> {
                                         System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
@@ -144,7 +149,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                             final var approve = contractCall(CONTRACT, "approve", approveParams)
                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                     .via(APPROVE_TX)
-                                    .scrambleTxnBody(tx -> {
+                                    .withTxnTransform(tx -> {
                                         System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
@@ -153,7 +158,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                     .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
                                     .via(TRANSFER_FROM_TX)
-                                    .scrambleTxnBody(tx -> {
+                                    .withTxnTransform(tx -> {
                                         System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
@@ -163,7 +168,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .via(TRANSFER_MORE_THAN_APPROVED_FROM_TX)
-                                    .scrambleTxnBody(tx -> {
+                                    .withTxnTransform(tx -> {
                                         System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });

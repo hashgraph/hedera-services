@@ -21,11 +21,11 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransactionPing;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;

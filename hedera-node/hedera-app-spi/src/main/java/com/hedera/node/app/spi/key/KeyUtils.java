@@ -34,6 +34,7 @@ public class KeyUtils {
 
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    public static final int EVM_ADDRESS_BYTE_LENGTH = 20;
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
     private static final byte EVEN_PARITY = (byte) 0x02;
@@ -106,12 +107,9 @@ public class KeyUtils {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasEcdsaSecp256k1()) {
             return ((Bytes) key.value()).length() == 0;
-        } else if (pbjKey.hasDelegatableContractId()) {
-            return !((ContractID) key.value()).hasContractNum()
-                    || (((ContractID) key.value()).hasContractNum() && ((ContractID) key.value()).contractNum() == 0);
-        } else if (pbjKey.hasContractID()) {
-            return !((ContractID) key.value()).hasContractNum()
-                    || (((ContractID) key.value()).hasContractNum() && ((ContractID) key.value()).contractNum() == 0);
+        } else if (pbjKey.hasDelegatableContractId() || pbjKey.hasContractID()) {
+            return ((ContractID) key.value()).contractNumOrElse(0L) == 0
+                    && ((ContractID) key.value()).evmAddressOrElse(Bytes.EMPTY).length() == 0L;
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
@@ -152,10 +150,9 @@ public class KeyUtils {
             final var ecKey = ((Bytes) key.value());
             return ecKey.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
                     && (ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY);
-        } else if (pbjKey.hasDelegatableContractId()) {
-            return ((ContractID) key.value()).contractNum().intValue() > 0;
-        } else if (pbjKey.hasContractID()) {
-            return ((ContractID) key.value()).contractNum().intValue() > 0;
+        } else if (pbjKey.hasDelegatableContractId() || pbjKey.hasContractID()) {
+            return ((ContractID) key.value()).contractNumOrElse(0L) > 0
+                    || ((ContractID) key.value()).evmAddressOrElse(Bytes.EMPTY).length() == EVM_ADDRESS_BYTE_LENGTH;
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;

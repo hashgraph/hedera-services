@@ -23,11 +23,13 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import javax.inject.Inject;
@@ -36,18 +38,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A {@link ConsensusTimeHook} implementation that handles the daily staking period updates
+ * Handles the daily staking period updates
  */
 @Singleton
-public class StakingPeriodTimeHook implements ConsensusTimeHook {
+public class StakingPeriodTimeHook {
     private static final Logger logger = LogManager.getLogger(StakingPeriodTimeHook.class);
 
     private final EndOfStakingPeriodUpdater stakingCalculator;
-    private Instant consensusTimeOfLastHandledTxn;
+    private final ExchangeRateManager exchangeRateManager;
 
     @Inject
-    public StakingPeriodTimeHook(@NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator) {
+    public StakingPeriodTimeHook(
+            @NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
 
     /**
@@ -59,28 +64,40 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
      * <b>which should only happen on node startup.</b> The node should therefore run this process
      * to catch up on updates and distributions when first coming online.
      */
-    @Override
-    public void process(@NonNull final TokenContext context) {
-        requireNonNull(context, "context must not be null");
-        final var consensusTime = context.consensusTime();
+    void process(@NonNull final SavepointStackImpl stack, @NonNull final TokenContext tokenContext) {
+        requireNonNull(stack, "stack must not be null");
+        requireNonNull(tokenContext, "tokenContext must not be null");
+        final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+        final var consensusTimeOfLastHandledTxn = blockStore.getLastBlockInfo().consTimeOfLastHandledTxn();
+
+        final var consensusTime = tokenContext.consensusTime();
         if (consensusTimeOfLastHandledTxn == null
-                || consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.getEpochSecond()
-                        && isNextStakingPeriod(consensusTime, consensusTimeOfLastHandledTxn, context)) {
-            // Handle the daily staking distributions and updates
+                || (consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.seconds()
+                        && isNextStakingPeriod(
+                                consensusTime,
+                                Instant.ofEpochSecond(
+                                        consensusTimeOfLastHandledTxn.seconds(), consensusTimeOfLastHandledTxn.nanos()),
+                                tokenContext))) {
             try {
-                stakingCalculator.updateNodes(context);
+                // handle staking updates
+                stakingCalculator.updateNodes(tokenContext);
+                stack.commitFullStack();
             } catch (final Exception e) {
+                // If anything goes wrong, we log the error and continue
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
+                stack.rollbackFullStack();
             }
 
-            // Advance the last consensus time to the given consensus time
-            consensusTimeOfLastHandledTxn = consensusTime;
+            try {
+                // Update the exchange rate
+                exchangeRateManager.updateMidnightRates(stack);
+                stack.commitFullStack();
+            } catch (final Exception e) {
+                // If anything goes wrong, we log the error and continue
+                logger.error("CATASTROPHIC failure updating midnight rates", e);
+                stack.rollbackFullStack();
+            }
         }
-    }
-
-    @VisibleForTesting
-    void setLastConsensusTime(@Nullable final Instant lastConsensusTime) {
-        consensusTimeOfLastHandledTxn = lastConsensusTime;
     }
 
     @VisibleForTesting

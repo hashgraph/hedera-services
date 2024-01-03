@@ -74,10 +74,9 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
  * Provides the Services 0.38 EVM implementation, which consists of Shanghai operations and
- * Instanbul precompiles plus the Hedera gas calculator, system contracts, and operations
- * as they were configured in the 0.38 release (with both the option for lazy creation, and
- * with special treatment to treat system addresses in a more legible way across a few types
- * of operations).
+ * Istanbul precompiles plus the Hedera gas calculator, system contracts, and operations as they
+ * were configured in the 0.38 release (with both the option for lazy creation, and with special
+ * treatment to treat system addresses in a more legible way across a few types of operations).
  */
 @Module
 public interface V038Module {
@@ -125,12 +124,14 @@ public interface V038Module {
     @Singleton
     @ServicesV038
     static EVM provideEVM(
-            @ServicesV038 @NonNull final Set<Operation> customOperations, @NonNull final GasCalculator gasCalculator) {
+            @ServicesV038 @NonNull final Set<Operation> customOperations,
+            @NonNull final EvmConfiguration evmConfiguration,
+            @NonNull final GasCalculator gasCalculator) {
         // Use Paris EVM with 0.38 custom operations and 0x00 chain id (set at runtime)
         final var operationRegistry = new OperationRegistry();
         registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.SHANGHAI);
+        return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.SHANGHAI);
     }
 
     @Provides

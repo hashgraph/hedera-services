@@ -22,9 +22,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,10 +60,8 @@ class ConcurrentTaskSchedulerTests {
                 .withType(TaskSchedulerType.CONCURRENT)
                 .build()
                 .cast();
-        final BindableInputWire<Integer, Void> channel = taskScheduler
-                .buildInputWire("channel")
-                .withInputType(Integer.class)
-                .bind(handler);
+        final BindableInputWire<Integer, Void> channel = taskScheduler.buildInputWire("channel");
+        channel.bind(handler);
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
@@ -112,10 +109,8 @@ class ConcurrentTaskSchedulerTests {
                 .withType(TaskSchedulerType.CONCURRENT)
                 .build()
                 .cast();
-        final BindableInputWire<Operation, Void> channel = taskScheduler
-                .buildInputWire("channel")
-                .withInputType(Operation.class)
-                .bind(handler);
+        final BindableInputWire<Operation, Void> channel = taskScheduler.buildInputWire("channel");
+        channel.bind(handler);
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 

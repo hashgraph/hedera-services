@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.FailureCustomizer.NOOP_CUSTOMIZER;
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -27,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -67,11 +68,11 @@ public class WipeTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleWipe = body.tokenWipeOrThrow().serialNumbers().isEmpty();
-        return new DispatchForResponseCodeHtsCall<>(
+        return new DispatchForResponseCodeHtsCall(
                 attempt,
                 body,
-                SingleTransactionRecordBuilder.class,
-                isFungibleWipe ? WipeTranslator::fungibleWipeGasRequirement : WipeTranslator::nftWipeGasRequirement);
+                isFungibleWipe ? WipeTranslator::fungibleWipeGasRequirement : WipeTranslator::nftWipeGasRequirement,
+                NOOP_CUSTOMIZER);
     }
 
     public static long fungibleWipeGasRequirement(

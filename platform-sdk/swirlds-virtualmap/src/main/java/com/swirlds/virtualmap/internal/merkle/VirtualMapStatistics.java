@@ -22,7 +22,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.CommonUtils;
+import java.util.Objects;
 
 /**
  * Encapsulates statistics for a virtual map.
@@ -93,11 +93,10 @@ public class VirtualMapStatistics {
      *
      * @param label
      * 		the label for the virtual map
-     * @throws IllegalArgumentException
-     * 		if {@code label} is {@code null}
+     * @throws NullPointerException in case {@code label} parameter is {@code null}
      */
     public VirtualMapStatistics(final String label) {
-        CommonUtils.throwArgNull(label, "label");
+        Objects.requireNonNull(label, "label must not be null");
         this.label = label;
     }
 
@@ -106,11 +105,10 @@ public class VirtualMapStatistics {
      *
      * @param metrics
      * 		reference to the metrics system
-     * @throws IllegalArgumentException
-     * 		if {@code metrics} is {@code null}
+     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public void registerMetrics(final Metrics metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(metrics, "metrics must not be null");
 
         // Generic
         size = metrics.getOrCreate(new LongGauge.Config(STAT_CATEGORY, VMAP_PREFIX + "size_" + label)

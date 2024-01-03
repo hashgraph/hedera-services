@@ -36,6 +36,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
@@ -75,13 +76,12 @@ public class XTestConstants {
             AccountID.newBuilder().accountNum(987654321L).build();
     public static final AccountID INVALID_ID =
             AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
-    public static final Key INVALID_CONTRACT_ID_KEY = Key.newBuilder()
-            .contractID(ContractID.newBuilder()
-                    .contractNum(SENDER_ID.accountNumOrThrow())
-                    .build())
-            .build();
     public static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(RECEIVER_ID.accountNumOrThrow()));
+    public static final com.esaulpaugh.headlong.abi.Address LAZY_CREATE_TARGET_1_HEADLONG_ADDRESS =
+            asHeadlongAddress(CommonUtils.unhex("abcdef1234567890abcdef1234567890abcdef12"));
+    public static final com.esaulpaugh.headlong.abi.Address LAZY_CREATE_TARGET_2_HEADLONG_ADDRESS =
+            asHeadlongAddress(CommonUtils.unhex("aaaaaa1234567890bbbbbb1234567890cccccc12"));
     public static final Address RECEIVER_BESU_ADDRESS =
             pbjToBesuAddress(Bytes.wrap(asEvmAddress(RECEIVER_ID.accountNumOrThrow())));
     public static final TokenID ERC721_TOKEN_ID =

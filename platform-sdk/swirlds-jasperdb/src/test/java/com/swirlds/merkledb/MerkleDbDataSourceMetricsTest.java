@@ -25,12 +25,12 @@ import static com.swirlds.merkledb.TestType.fixed_fixed;
 import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_BUFFER_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;

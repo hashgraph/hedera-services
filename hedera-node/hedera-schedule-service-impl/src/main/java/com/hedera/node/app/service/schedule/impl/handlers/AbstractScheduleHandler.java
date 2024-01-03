@@ -46,12 +46,15 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
+    private final Logger log = LogManager.getLogger(AbstractScheduleHandler.class);
     protected static final String NULL_CONTEXT_MESSAGE =
             "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
 
@@ -67,9 +70,10 @@ abstract class AbstractScheduleHandler {
     protected Set<Key> allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final PreHandleContext context) throws PreCheckException {
         final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);
-        // note, payerAccount should never be null, but we're dealing with Sonar here.
-        final AccountID payerForNested =
-                scheduleInState.payerAccountIdOrElse(scheduleInState.schedulerAccountIdOrThrow());
+        final AccountID originalCreatePayer =
+                scheduleInState.originalCreateTransaction().transactionID().accountID();
+        // note, payerAccount will never be null, but we're dealing with Sonar here.
+        final AccountID payerForNested = scheduleInState.payerAccountIdOrElse(originalCreatePayer);
         final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payerForNested);
         return getKeySetFromTransactionKeys(keyStructure);
     }
@@ -77,37 +81,46 @@ abstract class AbstractScheduleHandler {
     @NonNull
     protected ScheduleKeysResult allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
+        final AccountID originalCreatePayer =
+                scheduleInState.originalCreateTransaction().transactionID().accountID();
         // note, payerAccount should never be null, but we're playing it safe here.
-        final AccountID payer = scheduleInState.payerAccountIdOrElse(context.payer());
+        final AccountID payer = scheduleInState.payerAccountIdOrElse(originalCreatePayer);
         final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);
-        TransactionKeys keyStructure = null;
+        final TransactionKeys keyStructure;
         try {
             keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payer);
             // @todo('9447') We have an issue here.  Currently, allKeysForTransaction fails in many cases where a
             //     key is currently unavailable, but could be in the future.  We need the keys, even
-            //     if the transaction is currently invalid, because we may creates and signs schedules for
+            //     if the transaction is currently invalid, because we may create and sign schedules for
             //     invalid transactions, then only fail when the transaction is executed.  This would allow
-            //     (e.g.) scheduling the transfer of a service fee from a newly created account to be
-            //     signed by that account before it's created; then the new account, once funded, signs
+            //     (e.g.) scheduling the transfer of a dApp service fee from a newly created account to be
+            //     set up before the account (or key) is created; then the new account, once funded, signs
             //     the scheduled transaction and the funds are immediately transferred.  Currently that
             //     would fail on create.  Long-term we should fix that.
         } catch (final PreCheckException translated) {
             throw new HandleException(translated.responseCode());
         }
         final Set<Key> scheduledRequiredKeys = getKeySetFromTransactionKeys(keyStructure);
-        // Ensure the payer is required, some rare corner cases may not require it otherwise.
+        // Ensure the *custom* payer is required; some rare corner cases may not require it otherwise.
         final Key payerKey = getKeyForAccount(context, payer);
-        if (payerKey != null) scheduledRequiredKeys.add(payerKey);
+        if (hasCustomPayer(scheduleInState) && payerKey != null) scheduledRequiredKeys.add(payerKey);
         final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
-        scheduledRequiredKeys.removeAll(currentSignatories);
         final Set<Key> remainingRequiredKeys =
-                filterRemainingRequiredKeys(context, scheduledRequiredKeys, currentSignatories);
+                filterRemainingRequiredKeys(context, scheduledRequiredKeys, currentSignatories, originalCreatePayer);
         // Mono doesn't store extra signatures, so for now we mustn't either.
         // This is structurally wrong for long term schedules, so we must remove this later.
         // @todo('9447') Stop removing currently unused signatures, just store all the verified signatures until
         //     there are enough to execute, so we don't discard a signature now that would be required later.
         HandlerUtility.filterSignatoriesToRequired(currentSignatories, scheduledRequiredKeys);
         return new ScheduleKeysResult(currentSignatories, remainingRequiredKeys);
+    }
+
+    private boolean hasCustomPayer(final Schedule scheduleToCheck) {
+        final AccountID originalCreatePayer =
+                scheduleToCheck.originalCreateTransaction().transactionID().accountID();
+        final AccountID assignedPayer = scheduleToCheck.payerAccountId();
+        // Will never be null, but Sonar doesn't know that.
+        return assignedPayer != null && !assignedPayer.equals(originalCreatePayer);
     }
 
     /**
@@ -218,7 +231,13 @@ abstract class AbstractScheduleHandler {
                                 (expiration != Schedule.DEFAULT.calculatedExpirationSecond()
                                         ? Instant.ofEpochSecond(expiration)
                                         : Instant.MAX);
-                        if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
+                        log.info(
+                                "Evaluating schedule id {} for execution with calculatedExpiration {}, "
+                                        + "consensus time {}",
+                                scheduleToValidate.scheduleId(),
+                                calculatedExpiration,
+                                effectiveConsensusTime);
+                        if (calculatedExpiration.getEpochSecond() >= effectiveConsensusTime.getEpochSecond()) {
                             result = ResponseCodeEnum.OK;
                         } else {
                             // We are past expiration time
@@ -271,7 +290,14 @@ abstract class AbstractScheduleHandler {
             @NonNull final ResponseCodeEnum validationResult,
             final boolean isLongTermEnabled) {
         if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
-            final Predicate<Key> assistant = new DispatchPredicate(validSignatories);
+            final AccountID originalPayer = scheduleToExecute
+                    .originalCreateTransaction()
+                    .transactionID()
+                    .accountID();
+            final Set<Key> acceptedSignatories = new HashSet<>();
+            acceptedSignatories.addAll(validSignatories);
+            acceptedSignatories.add(getKeyForAccount(context, originalPayer));
+            final Predicate<Key> assistant = new DispatchPredicate(acceptedSignatories);
             // This sets the child transaction ID to scheduled.
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
             final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(
@@ -305,21 +331,28 @@ abstract class AbstractScheduleHandler {
         final SortedSet<Key> scheduledRequiredKeys = new ConcurrentSkipListSet<>(new KeyComparator());
         scheduledRequiredKeys.addAll(requiredKeys.requiredNonPayerKeys());
         scheduledRequiredKeys.addAll(requiredKeys.optionalNonPayerKeys());
-        scheduledRequiredKeys.add(requiredKeys.payerKey());
         return scheduledRequiredKeys;
     }
 
     private SortedSet<Key> filterRemainingRequiredKeys(
-            final HandleContext context, final Set<Key> scheduledRequiredKeys, final Set<Key> currentSignatories) {
+            final HandleContext context,
+            final Set<Key> scheduledRequiredKeys,
+            final Set<Key> currentSignatories,
+            final AccountID originalCreatePayer) {
         // the final output must be a sorted/ordered set.
-        final SortedSet<Key> remainingKeys = new ConcurrentSkipListSet<>(new KeyComparator());
+        final KeyComparator keyMatcher = new KeyComparator();
+        final SortedSet<Key> remainingKeys = new ConcurrentSkipListSet<>(keyMatcher);
         final Set<Key> currentUnverifiedKeys = new HashSet<>(1);
+        final Key originalPayerKey = getKeyForAccount(context, originalCreatePayer);
         final var assistant = new ScheduleVerificationAssistant(currentSignatories, currentUnverifiedKeys);
         for (final Key next : scheduledRequiredKeys) {
             // The schedule verification assistant observes each primitive key in the tree
             final SignatureVerification isVerified = context.verificationFor(next, assistant);
             // unverified primitive keys only count if the top-level key failed verification.
-            if (!isVerified.passed()) {
+            // @todo('9447') The comparison to originalPayerKey here is to match monoservice
+            //      "hidden default payer" behavior. We intend to remove that behavior after v1
+            //      release as it is not considered fully "correct", particularly for long term schedules.
+            if (!isVerified.passed() && keyMatcher.compare(next, originalPayerKey) != 0) {
                 remainingKeys.addAll(currentUnverifiedKeys);
             }
             currentUnverifiedKeys.clear();

@@ -66,4 +66,12 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
     public Optional<Topic> getTopicLeaf(@NonNull final TopicID id) {
         return Optional.ofNullable(topicState.get(id));
     }
+
+    /**
+     * Returns the number of topics in the state.
+     * @return the number of topics in the state.
+     */
+    public long sizeOfState() {
+        return topicState.size();
+    }
 }

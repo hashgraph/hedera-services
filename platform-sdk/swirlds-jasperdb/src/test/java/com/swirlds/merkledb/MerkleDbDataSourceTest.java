@@ -30,9 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualLongKey;

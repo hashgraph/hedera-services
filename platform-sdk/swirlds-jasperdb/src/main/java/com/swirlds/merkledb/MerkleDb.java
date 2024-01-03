@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -504,7 +505,7 @@ public final class MerkleDb {
     public void snapshot(final Path destination, final MerkleDbDataSource dataSource) throws IOException {
         if (this != dataSource.getDatabase()) {
             logger.error(
-                    MERKLE_DB.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Trying to snapshot a data source from a different"
                             + " database. This storageDir={}, other storageDir={}",
                     getStorageDir(),

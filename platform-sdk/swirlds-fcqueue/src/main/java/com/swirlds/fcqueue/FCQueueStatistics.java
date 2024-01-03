@@ -20,13 +20,11 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.utility.CommonUtils;
+import java.util.Objects;
 
 /**
  * Singleton factory for loading and registering {@link FCQueue} statistics. This is the primary entry point for all
- * {@link SwirldMain} implementations that wish to track {@link FCQueue} statistics.
+ * SwirldMain implementations that wish to track {@link FCQueue} statistics.
  */
 public class FCQueueStatistics {
 
@@ -75,13 +73,14 @@ public class FCQueueStatistics {
     private FCQueueStatistics() {}
 
     /**
-     * Registers the {@link FCQueue} statistics with the specified {@link Platform} instance.
+     * Registers the {@link FCQueue} statistics with the specified Platform instance.
      *
      * @param metrics
      * 		the metrics-system
+     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public static void register(final Metrics metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(metrics, "metrics must not be null");
         fcqAddExecutionMicros = metrics.getOrCreate(FCQ_ADD_EXECUTION_MICROS_CONFIG);
         fcqRemoveExecutionMicros = metrics.getOrCreate(FCQ_REMOVE_EXECUTION_MICROS_CONFIG);
         fcqHashExecutionMicros = metrics.getOrCreate(FCQ_HASH_EXECUTION_MICROS_CONFIG);
@@ -90,7 +89,7 @@ public class FCQueueStatistics {
     }
 
     /**
-     * Gets a value indicating whether the {@link SwirldMain} has called the {@link
+     * Gets a value indicating whether the SwirldMain has called the {@link
      * #register(Metrics)} method on this factory.
      *
      * @return true if these statistics have been registered by the application; otherwise false

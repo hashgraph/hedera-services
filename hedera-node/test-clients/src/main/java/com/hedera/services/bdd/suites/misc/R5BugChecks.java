@@ -99,7 +99,7 @@ public class R5BugChecks extends HapiSuite {
         });
     }
 
-    private HapiSpec cannotUseThresholdWithM0() {
+    final HapiSpec cannotUseThresholdWithM0() {
         KeyShape invalid = listOf(SIMPLE, SIMPLE, threshOf(0, 3));
 
         return defaultHapiSpec("CannotUseThresholdWithM0")
@@ -108,7 +108,7 @@ public class R5BugChecks extends HapiSuite {
                 .then(cryptoCreate(SKETCHY).keyShape(invalid).hasPrecheck(BAD_ENCODING));
     }
 
-    private HapiSpec cannotTransferEntirePayerBalance() {
+    final HapiSpec cannotTransferEntirePayerBalance() {
         var balance = 1_234_567L;
         return defaultHapiSpec("CannotTransferEntirePayerBalance")
                 .given(cryptoCreate(SKETCHY).balance(balance))
@@ -118,21 +118,21 @@ public class R5BugChecks extends HapiSuite {
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
-    private HapiSpec canGetDeletedFileInfo() {
+    final HapiSpec canGetDeletedFileInfo() {
         return defaultHapiSpec("CanGetDeletedFileInfo")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))
                 .then(getFileInfo("tbd").hasCostAnswerPrecheck(OK).hasAnswerOnlyPrecheck(OK));
     }
 
-    private HapiSpec costAnswerGetAccountInfoRejectsInvalidId() {
+    final HapiSpec costAnswerGetAccountInfoRejectsInvalidId() {
         return defaultHapiSpec("CostAnswerGetAccountInfoRejectsInvalidId")
                 .given()
                 .when()
                 .then(getAccountInfo("1.2.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiSpec contractCannotTransferToReceiverSigRequired() {
+    final HapiSpec contractCannotTransferToReceiverSigRequired() {
         return defaultHapiSpec("ContractCannotTransferToReceiverSigRequired")
                 .given(
                         uploadInitCode(MULTIPURPOSE),
@@ -144,7 +144,7 @@ public class R5BugChecks extends HapiSuite {
                         .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiSpec enforcesSigRequirements() {
+    final HapiSpec enforcesSigRequirements() {
         final var contract = "LastTrackingSender";
         KeyShape complexSrShape = listOf(SIMPLE, threshOf(1, 3));
         SigControl activeSig = complexSrShape.signedWith(sigs(ON, sigs(OFF, OFF, ON)));
@@ -192,7 +192,7 @@ public class R5BugChecks extends HapiSuite {
                         getAccountBalance("noSr").hasTinyBars(1L));
     }
 
-    private HapiSpec cannotTransferToDeleted() {
+    final HapiSpec cannotTransferToDeleted() {
         final var contract = "LastTrackingSender";
         return defaultHapiSpec("CannotTransferToDeleted")
                 .given(
@@ -210,7 +210,7 @@ public class R5BugChecks extends HapiSuite {
                         .hasKnownStatus(INVALID_SOLIDITY_ADDRESS));
     }
 
-    private HapiSpec genesisUpdatesFeesForFree() {
+    final HapiSpec genesisUpdatesFeesForFree() {
         AtomicReference<ByteString> schedulePart1 = new AtomicReference<>();
         AtomicReference<ByteString> schedulePart2 = new AtomicReference<>();
 
@@ -243,7 +243,7 @@ public class R5BugChecks extends HapiSuite {
     }
 
     /* Run from clean local environment to test need for state migration vis-a-vis JContractFunctionResult. */
-    private HapiSpec genRecordWithCreations() {
+    final HapiSpec genRecordWithCreations() {
         final var contract = "Fuse";
         return defaultHapiSpec("CreateRecordViaExpensiveSubmit")
                 .given(uploadInitCode(contract), contractCreate(contract))

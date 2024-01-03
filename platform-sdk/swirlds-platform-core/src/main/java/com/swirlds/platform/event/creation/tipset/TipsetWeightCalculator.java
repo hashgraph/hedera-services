@@ -22,11 +22,11 @@ import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.creation.EventCreationConfig;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -236,7 +236,7 @@ public class TipsetWeightCalculator {
                                     + "Parent ID = {}, parent generation = {}, minimum generation non-ancient = {}",
                             parent.getCreator(),
                             parent.getGeneration(),
-                            tipsetTracker.getMinimumGenerationNonAncient());
+                            tipsetTracker.getNonAncientEventWindow());
                 }
                 continue;
             }

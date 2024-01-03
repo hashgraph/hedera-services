@@ -36,6 +36,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hederahashgraph.api.proto.java.NodeAddress;
@@ -102,12 +103,14 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 unauthorizedAccountCannotUpdateExchangeRates());
     }
 
-    private HapiSpec specialAccountCanUpdateSpecialPropertyFile(
+    @BddMethodIsNotATest
+    final HapiSpec specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount, final String specialFile, final String property, final String expected) {
         return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
     }
 
-    private HapiSpec specialAccountCanUpdateSpecialPropertyFile(
+    @BddMethodIsNotATest
+    final HapiSpec specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount,
             final String specialFile,
             final String property,
@@ -140,12 +143,14 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         });
     }
 
-    private HapiSpec specialAccountCanUpdateSpecialFile(
+    @BddMethodIsNotATest
+    final HapiSpec specialAccountCanUpdateSpecialFile(
             final String specialAccount, final String specialFile, final String target, final String replacement) {
         return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
     }
 
-    private HapiSpec specialAccountCanUpdateSpecialFile(
+    @BddMethodIsNotATest
+    final HapiSpec specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,
             final String target,
@@ -160,7 +165,8 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                         : (new String(contents).replace(target, replacement)).getBytes());
     }
 
-    private HapiSpec specialAccountCanUpdateSpecialFile(
+    @BddMethodIsNotATest
+    final HapiSpec specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,
             final boolean isFree,
@@ -201,7 +207,8 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return ArrayUtils.addAll(accountBalanceUnchanged, opsArray);
     }
 
-    private HapiSpec unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
+    @BddMethodIsNotATest
+    final HapiSpec unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
         return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
                 .given(cryptoCreate("unauthorizedAccount"))
                 .when()
@@ -212,114 +219,114 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec account2CanUpdateApplicationProperties() {
+    final HapiSpec account2CanUpdateApplicationProperties() {
         return specialAccountCanUpdateSpecialPropertyFile(GENESIS, APP_PROPERTIES, "throttlingTps", "10");
     }
 
     @HapiTest
-    private HapiSpec account50CanUpdateApplicationProperties() {
+    final HapiSpec account50CanUpdateApplicationProperties() {
         return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, APP_PROPERTIES, "getReceiptTps", "100");
     }
 
     @HapiTest
-    private HapiSpec unauthorizedAccountCannotUpdateApplicationProperties() {
+    final HapiSpec unauthorizedAccountCannotUpdateApplicationProperties() {
         return unauthorizedAccountCannotUpdateSpecialFile(APP_PROPERTIES, NEW_CONTENTS);
     }
 
     @HapiTest
-    private HapiSpec account2CanUpdateApiPermissions() {
+    final HapiSpec account2CanUpdateApiPermissions() {
         return specialAccountCanUpdateSpecialPropertyFile(GENESIS, API_PERMISSIONS, "createTopic", "1-*");
     }
 
     @HapiTest
-    private HapiSpec account50CanUpdateApiPermissions() {
+    final HapiSpec account50CanUpdateApiPermissions() {
         return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, API_PERMISSIONS, "updateFile", "1-*");
     }
 
     @HapiTest
-    private HapiSpec unauthorizedAccountCannotUpdateApiPermissions() {
+    final HapiSpec unauthorizedAccountCannotUpdateApiPermissions() {
         return unauthorizedAccountCannotUpdateSpecialFile(API_PERMISSIONS, NEW_CONTENTS);
     }
 
     @HapiTest
-    private HapiSpec account2CanUpdateAddressBook() {
+    final HapiSpec account2CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(
                 GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, TARGET_MEMO, REPLACE_MEMO));
     }
 
     @HapiTest
-    private HapiSpec account50CanUpdateAddressBook() {
+    final HapiSpec account50CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO);
     }
 
     @HapiTest
-    private HapiSpec account55CanUpdateAddressBook() {
+    final HapiSpec account55CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO, false);
     }
 
     @HapiTest
-    private HapiSpec unauthorizedAccountCannotUpdateAddressBook() {
+    final HapiSpec unauthorizedAccountCannotUpdateAddressBook() {
         return unauthorizedAccountCannotUpdateSpecialFile(ADDRESS_BOOK, NEW_CONTENTS);
     }
 
     @HapiTest
-    private HapiSpec account2CanUpdateNodeDetails() {
+    final HapiSpec account2CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(
                 GENESIS, NODE_DETAILS, true, contents -> extendedBioNodeDetails(contents, TARGET_MEMO, REPLACE_MEMO));
     }
 
     @HapiTest
-    private HapiSpec account50CanUpdateNodeDetails() {
+    final HapiSpec account50CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO);
     }
 
     @HapiTest
-    private HapiSpec account55CanUpdateNodeDetails() {
+    final HapiSpec account55CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO, false);
     }
 
     @HapiTest
-    private HapiSpec unauthorizedAccountCannotUpdateNodeDetails() {
+    final HapiSpec unauthorizedAccountCannotUpdateNodeDetails() {
         return unauthorizedAccountCannotUpdateSpecialFile(NODE_DETAILS, NEW_CONTENTS);
     }
 
     @HapiTest
-    private HapiSpec account2CanUpdateFeeSchedule() {
+    final HapiSpec account2CanUpdateFeeSchedule() {
         return specialAccountCanUpdateSpecialFile(GENESIS, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     @HapiTest
-    private HapiSpec account50CanUpdateFeeSchedule() {
+    final HapiSpec account50CanUpdateFeeSchedule() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     @HapiTest
-    private HapiSpec account56CanUpdateFeeSchedule() {
+    final HapiSpec account56CanUpdateFeeSchedule() {
         return specialAccountCanUpdateSpecialFile(FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     @HapiTest
-    private HapiSpec unauthorizedAccountCannotUpdateFeeSchedule() {
+    final HapiSpec unauthorizedAccountCannotUpdateFeeSchedule() {
         return unauthorizedAccountCannotUpdateSpecialFile(FEE_SCHEDULE, NEW_CONTENTS);
     }
 
     @HapiTest
-    private HapiSpec account2CanUpdateExchangeRates() {
+    final HapiSpec account2CanUpdateExchangeRates() {
         return specialAccountCanUpdateSpecialFile(GENESIS, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     @HapiTest
-    private HapiSpec account50CanUpdateExchangeRates() {
+    final HapiSpec account50CanUpdateExchangeRates() {
         return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     @HapiTest
-    private HapiSpec account57CanUpdateExchangeRates() {
+    final HapiSpec account57CanUpdateExchangeRates() {
         return specialAccountCanUpdateSpecialFile(EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     @HapiTest
-    private HapiSpec unauthorizedAccountCannotUpdateExchangeRates() {
+    final HapiSpec unauthorizedAccountCannotUpdateExchangeRates() {
         return unauthorizedAccountCannotUpdateSpecialFile(EXCHANGE_RATES, NEW_CONTENTS);
     }
 

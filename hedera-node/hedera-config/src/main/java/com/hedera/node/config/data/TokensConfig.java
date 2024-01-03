@@ -48,4 +48,6 @@ public record TokensConfig(
         @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "true") @NetworkProperty
                 boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
-                boolean autoCreationsIsEnabled) {}
+                boolean autoCreationsIsEnabled,
+        @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "true") @NetworkProperty
+                boolean balancesInQueriesEnabled) {}
