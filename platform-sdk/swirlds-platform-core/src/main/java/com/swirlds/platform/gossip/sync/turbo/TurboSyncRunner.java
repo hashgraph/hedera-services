@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,7 +195,7 @@ public class TurboSyncRunner {
         // Sanity check
         dataOutputStream.writeLong(cycleNumber);
 
-        final List<Hash> tipsOfSendList = sendEvents();
+        final List<EventImpl> tipsOfSendList = sendEvents();
         sendBooleans();
         final List<Hash> tipsSent = sendTips();
         final ReservedGenerations reservedGenerations = sendGenerations();
@@ -369,7 +369,7 @@ public class TurboSyncRunner {
      * multiple times to the same peer
      */
     @NonNull
-    private List<Hash> sendEvents() throws IOException, SyncException {
+    private List<EventImpl> sendEvents() throws IOException, SyncException {
         if (dataSentC == null) {
             // We haven't yet sent the booleans to the peer.
             // This happens right at the beginning of the protocol.
@@ -383,7 +383,10 @@ public class TurboSyncRunner {
             dataOutputStream.writeEventData(event);
         }
 
-        return SyncUtils.findTipHashesOfEventList(eventsToSend);
+        return SyncUtils.computeSentTips(
+                dataSentB.tipsOfEventsSent(),
+                eventsToSend,
+                dataReceivedC.theirGenerations().getMinGenerationNonAncient());
     }
 
     /**
@@ -479,8 +482,13 @@ public class TurboSyncRunner {
         eventsTheyHave.addAll(getMyTipsTheyKnow(
                 connection, shadowgraph.shadows(dataSentC.tipsSent()), dataReceivedB.theirBooleans()));
 
-        // Add the tips of the events we sent in the previous sync.
-        eventsTheyHave.addAll(shadowgraph.shadowsIfPresent(dataSentB.tipsOfSendList()));
+        // Add the tips of the events we have previously sent.
+        for (final EventImpl tip : dataSentB.tipsOfEventsSent()) {
+            final ShadowEvent shadow = shadowgraph.shadow(tip);
+            if (shadow != null) {
+                eventsTheyHave.add(shadow);
+            }
+        }
 
         return eventsTheyHave;
     }

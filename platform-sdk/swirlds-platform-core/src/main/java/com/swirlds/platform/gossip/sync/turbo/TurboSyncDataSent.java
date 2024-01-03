@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync.turbo;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -29,14 +30,13 @@ import java.util.List;
  * @param generationsSent     the generations sent during this iteration
  * @param tipsSent            the tips sent during this iteration. In iteration N+1, the peer will send back a boolean
  *                            value for each tip indicating whether it has the tip or not.
- * @param tipsOfSendList      when we eventually decide which events to send to the peer, these are the tips of that
- *                            list. In iteration N+1, we can assume that the peer has all of these events.
+ * @param tipsOfEventsSent    the tips of the events we have sent to the peer so far at the end of this iteration
  */
 public record TurboSyncDataSent(
         @NonNull GenerationReservation reservedGenerations,
         @NonNull Generations generationsSent,
         @NonNull List<Hash> tipsSent,
-        @NonNull List<Hash> tipsOfSendList) {
+        @NonNull List<EventImpl> tipsOfEventsSent) {
 
     /**
      * Release resources held by this object.

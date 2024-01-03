@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -617,29 +615,47 @@ public final class SyncUtils {
     }
 
     /**
-     * Given a list of events we are transmitting, find the hashes of the tips of these events. A tip in this context is
-     * defined as an event with no self child.
+     * Given a list of events we are transmitting to the peer and the previous list of tips for events we have
+     * previously transmitted, find the list tips that describe all transmitted events after this batch of events is
+     * transmitted.
      *
-     * @param events the events we are transmitting
-     * @return the hashes of the tips of these events
+     * <p>
+     * A tip in this context is defined as an event with no self child.
+     *
+     * @param previousTips                the tips of events we have transmitted so far
+     * @param eventsToTransmit            the events we are transmitting
+     * @param minimumGenerationNonAncient the minimum generation that is considered non-ancient from the peer's
+     *                                    perspective
+     * @return the tips of all events we have sent following the transmission we are about to perform
      */
-    public static List<Hash> findTipHashesOfEventList(@NonNull final List<EventImpl> events) {
-        final Set<Hash> eventHashes = new HashSet<>();
-        for (final EventImpl event : events) {
-            eventHashes.add(event.getBaseHash());
+    public static List<EventImpl> computeSentTips(
+            @NonNull final List<EventImpl> previousTips,
+            @NonNull final List<EventImpl> eventsToTransmit,
+            final long minimumGenerationNonAncient) {
+
+        final Map<Hash, EventImpl> tips = new HashMap<>();
+        for (final EventImpl event : eventsToTransmit) {
+            tips.put(event.getBaseHash(), event);
+        }
+        for (final EventImpl event : previousTips) {
+            if (event.getBaseEvent().getGeneration() < minimumGenerationNonAncient) {
+                // Don't carry forward ancient tips, even if they have had no self children.
+                continue;
+            }
+            tips.put(event.getBaseHash(), event);
         }
 
         // A tip is an event with no self child. Check the self parent of each event, and remove that parent
         // from the set if it exists.
 
-        for (final EventImpl event : events) {
+        for (final EventImpl event : eventsToTransmit) {
             final EventImpl selfParent = event.getSelfParent();
             if (selfParent == null) {
                 continue;
             }
-            eventHashes.remove(selfParent.getBaseHash());
+            tips.remove(selfParent.getBaseHash());
         }
 
-        return new ArrayList<>(eventHashes);
+        return new ArrayList<>(tips.values());
     }
 }
