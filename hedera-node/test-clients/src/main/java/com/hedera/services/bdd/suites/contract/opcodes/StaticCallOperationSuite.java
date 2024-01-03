@@ -65,9 +65,7 @@ public class StaticCallOperationSuite extends HapiSuite {
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
         return defaultHapiSpec("VerifiesExistence")
-                .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
-                        uploadInitCode(contract), contractCreate(contract))
+                .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, STATIC_CALL, asHeadlongAddress(INVALID_ADDRESS))
