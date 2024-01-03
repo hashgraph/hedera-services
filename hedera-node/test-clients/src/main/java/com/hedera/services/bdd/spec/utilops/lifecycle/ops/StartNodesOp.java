@@ -40,7 +40,6 @@ public class StartNodesOp extends LifecycleOp {
             node.start();
         } catch (Exception e) {
             logger.error("Node {} failed to start", node);
-            return true;
         }
         logger.info("Node {} has started...", node);
         return false;
