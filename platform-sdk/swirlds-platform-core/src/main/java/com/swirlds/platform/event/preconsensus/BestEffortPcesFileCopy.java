@@ -73,7 +73,7 @@ public final class BestEffortPcesFileCopy {
 
         final boolean copyPreconsensusStream = platformContext
                 .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
+                .getConfigData(PcesConfig.class)
                 .copyRecentStreamToStateSnapshots();
         if (!copyPreconsensusStream) {
             // PCES copying is disabled
@@ -135,7 +135,7 @@ public final class BestEffortPcesFileCopy {
             final long minimumGenerationNonAncient)
             throws IOException {
 
-        final List<PreconsensusEventFile> allFiles = gatherPreconsensusFilesOnDisk(selfId, platformContext);
+        final List<PcesFile> allFiles = gatherPreconsensusFilesOnDisk(selfId, platformContext);
         if (allFiles.isEmpty()) {
             return;
         }
@@ -144,8 +144,7 @@ public final class BestEffortPcesFileCopy {
         Collections.sort(allFiles);
 
         // Discard all files that either have an incorrect origin or that do not contain non-ancient events.
-        final List<PreconsensusEventFile> filesToCopy =
-                getRequiredPreconsensusFiles(allFiles, minimumGenerationNonAncient);
+        final List<PcesFile> filesToCopy = getRequiredPreconsensusFiles(allFiles, minimumGenerationNonAncient);
         if (filesToCopy.isEmpty()) {
             return;
         }
@@ -163,12 +162,12 @@ public final class BestEffortPcesFileCopy {
      * @return the list of files to copy
      */
     @NonNull
-    private static List<PreconsensusEventFile> getRequiredPreconsensusFiles(
-            @NonNull final List<PreconsensusEventFile> allFiles, final long minimumGenerationNonAncient) {
+    private static List<PcesFile> getRequiredPreconsensusFiles(
+            @NonNull final List<PcesFile> allFiles, final long minimumGenerationNonAncient) {
 
-        final List<PreconsensusEventFile> filesToCopy = new ArrayList<>();
-        final PreconsensusEventFile lastFile = allFiles.get(allFiles.size() - 1);
-        for (final PreconsensusEventFile file : allFiles) {
+        final List<PcesFile> filesToCopy = new ArrayList<>();
+        final PcesFile lastFile = allFiles.get(allFiles.size() - 1);
+        for (final PcesFile file : allFiles) {
             if (file.getOrigin() == lastFile.getOrigin()
                     && file.getMaximumGeneration() >= minimumGenerationNonAncient) {
                 filesToCopy.add(file);
@@ -217,14 +216,14 @@ public final class BestEffortPcesFileCopy {
      * @return a list of all PCES files on disk
      */
     @NonNull
-    private static List<PreconsensusEventFile> gatherPreconsensusFilesOnDisk(
+    private static List<PcesFile> gatherPreconsensusFilesOnDisk(
             @NonNull final NodeId selfId, @NonNull final PlatformContext platformContext) throws IOException {
-        final List<PreconsensusEventFile> allFiles = new ArrayList<>();
+        final List<PcesFile> allFiles = new ArrayList<>();
         final Path preconsensusEventStreamDirectory = PcesUtilities.getDatabaseDirectory(platformContext, selfId);
         try (final Stream<Path> stream = Files.walk(preconsensusEventStreamDirectory)) {
             stream.filter(Files::isRegularFile).forEach(path -> {
                 try {
-                    allFiles.add(PreconsensusEventFile.of(path));
+                    allFiles.add(PcesFile.of(path));
                 } catch (final IOException e) {
                     // Ignore, this will get thrown for each file that is not a PCES file
                 }
@@ -262,15 +261,14 @@ public final class BestEffortPcesFileCopy {
      * @param pcesDestination the directory where the files should be copied
      */
     private static void copyPreconsensusFileList(
-            @NonNull final List<PreconsensusEventFile> filesToCopy, @NonNull final Path pcesDestination)
-            throws IOException {
+            @NonNull final List<PcesFile> filesToCopy, @NonNull final Path pcesDestination) throws IOException {
         logger.info(STATE_TO_DISK.getMarker(), "Copying {} preconsensus event file(s)", filesToCopy.size());
 
         // Copy files from newest to oldest. Newer files are more likely to be modified concurrently by the
         // PCES file writer and are more likely to fail. If we fail to copy files, it's better to fail early
         // so that we can retry again more quickly.
         for (int index = filesToCopy.size() - 1; index >= 0; index--) {
-            final PreconsensusEventFile file = filesToCopy.get(index);
+            final PcesFile file = filesToCopy.get(index);
             Files.copy(file.getPath(), pcesDestination.resolve(file.getFileName()));
         }
 

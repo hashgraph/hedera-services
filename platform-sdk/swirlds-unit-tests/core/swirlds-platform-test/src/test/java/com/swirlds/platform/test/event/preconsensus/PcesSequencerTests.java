@@ -30,7 +30,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("PreconsensusEventStreamSequencer Tests")
-class PreconsensusEventStreamSequencerTests {
+class PcesSequencerTests {
 
     @Test
     @DisplayName("Standard Behavior Test")
