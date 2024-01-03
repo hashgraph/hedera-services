@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ package com.swirlds.platform.test.event.preconsensus;
 // import com.swirlds.config.api.Configuration;
 // import com.swirlds.platform.event.preconsensus.PcesFile;
 // import com.swirlds.platform.event.preconsensus.PcesFileManager;
-// import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
+// import com.swirlds.platform.event.preconsensus.PcesConfig_;
 // import com.swirlds.test.framework.config.TestConfigBuilder;
 // import edu.umd.cs.findbugs.annotations.NonNull;
 // import java.io.FileOutputStream;
@@ -96,12 +96,12 @@ class PreconsensusEventFileManagerTests {
     //
     //    private PlatformContext buildContext(final boolean permitGaps) {
     //        final Configuration configuration = new TestConfigBuilder()
-    //                .withValue(PreconsensusEventStreamConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
+    //                .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
     //                .withValue(
     //                        "event.preconsensus.recycleBinDirectory",
     //                        testDirectory.resolve("recycle")) // FUTURE: No property defined for value
-    //                .withValue(PreconsensusEventStreamConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
-    //                .withValue(PreconsensusEventStreamConfig_.PERMIT_GAPS, permitGaps)
+    //                .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
+    //                .withValue(PcesConfig_.PERMIT_GAPS, permitGaps)
     //                .getOrCreateConfig();
     //
     //        final Metrics metrics = new NoOpMetrics();

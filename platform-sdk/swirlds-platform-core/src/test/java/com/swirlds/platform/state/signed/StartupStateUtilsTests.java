@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
@@ -742,8 +742,8 @@ class StartupStateUtilsTests {
 
         // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path pcesDirectory = savedStateDirectory
                 .resolve(preconsensusEventStreamConfig.databaseDirectory())
@@ -800,8 +800,8 @@ class StartupStateUtilsTests {
 
         // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path pcesDirectory = savedStateDirectory
                 .resolve(preconsensusEventStreamConfig.databaseDirectory())
@@ -866,8 +866,8 @@ class StartupStateUtilsTests {
 
         // Write a file into the PCES directory. This file will should be deleted
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path pcesDirectory = savedStateDirectory
                 .resolve(preconsensusEventStreamConfig.databaseDirectory())

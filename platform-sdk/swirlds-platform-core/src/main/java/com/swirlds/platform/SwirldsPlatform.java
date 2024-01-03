@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,13 +96,13 @@ import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -464,8 +464,8 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 initialState.getRound());
 
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         final PcesFileManager preconsensusEventFileManager;
         try {
@@ -499,7 +499,7 @@ public class SwirldsPlatform implements Platform {
 
         final boolean forceIgnorePcesSignatures = platformContext
                 .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
+                .getConfigData(PcesConfig.class)
                 .forceIgnorePcesSignatures();
 
         final boolean ignorePreconsensusSignatures;

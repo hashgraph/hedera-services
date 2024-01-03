@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class PcesWriter {
     /**
      * The current file that is being written to.
      */
-    private PreconsensusEventMutableFile currentMutableFile;
+    private PcesMutableFile currentMutableFile;
 
     /**
      * The current minimum generation required to be considered non-ancient. Only read and written on the handle
@@ -134,8 +134,7 @@ public class PcesWriter {
         Objects.requireNonNull(platformContext, "platformContext must not be null");
         Objects.requireNonNull(fileManager, "fileManager must not be null");
 
-        final PreconsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 

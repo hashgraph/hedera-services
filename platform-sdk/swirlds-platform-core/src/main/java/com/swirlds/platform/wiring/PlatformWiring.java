@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,7 +208,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
             solderNonAncientEventWindow();
-            linkedEventIntakeWiring.minimumGenerationNonAncientOutput().solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
+            linkedEventIntakeWiring
+                    .minimumGenerationNonAncientOutput()
+                    .solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
         } else {
             // TODO: wire events into the pces writer from the old pipeline
             // TODO: wire event output from the hasher to the old pipeline
