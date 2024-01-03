@@ -414,7 +414,6 @@ public final class BootstrapProperties implements PropertySource {
             ACCOUNTS_SYSTEM_UNDELETE_ADMIN,
             ACCOUNTS_TREASURY,
             ACCOUNTS_STORE_ON_DISK,
-            ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION,
             AUTO_RENEW_GRANT_FREE_RENEWALS,
             ENTITIES_MAX_LIFETIME,
             ENTITIES_SYSTEM_DELETABLE,
@@ -442,6 +441,7 @@ public final class BootstrapProperties implements PropertySource {
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
+            ACCOUNTS_RELEASE_ALIAS_AFTER_DELETION,
             AUTO_CREATION_ENABLED,
             LAZY_CREATION_ENABLED,
             CRYPTO_CREATE_WITH_ALIAS_ENABLED,
