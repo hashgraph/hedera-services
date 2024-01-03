@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -175,7 +175,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                     log.error(
                             "{} Status resolution failed due to unrecoverable runtime exception, "
                                     + "possibly network connection lost.",
-                            TxnUtils.toReadableString(txn));
+                            TxnUtils.toReadableString(txn),
+                            e);
                     if (unavailableStatusIsOk) {
                         // If we expect the status to be unavailable (because e.g. the
                         // submitted transaction exceeds 6144 bytes and will have its

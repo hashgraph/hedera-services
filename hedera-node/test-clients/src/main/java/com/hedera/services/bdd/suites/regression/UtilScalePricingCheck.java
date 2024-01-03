@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -36,7 +37,8 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+// Run this suite first in CI, since it assumes there are no NFTs in state
+@HapiTestSuite(order = Integer.MIN_VALUE)
 public class UtilScalePricingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(UtilScalePricingCheck.class);
@@ -53,7 +55,7 @@ public class UtilScalePricingCheck extends HapiSuite {
         return List.of(nftPriceScalesWithUtilization());
     }
 
-    // Can only be run against an isolated network since it assumes the state begins with 0 NFTs minted
+    @HapiTest
     final HapiSpec nftPriceScalesWithUtilization() {
         final var civilian = "civilian";
         final var maxAllowed = 100;
