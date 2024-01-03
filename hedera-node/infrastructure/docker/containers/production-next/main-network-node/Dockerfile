@@ -4,6 +4,7 @@
 #
 ########################################################################################################################
 ARG UBUNTU_TAG="lunar-20231128"
+ARG S6_OVERLAY_VERSION="3.1.6.2"
 ARG SOURCE_DATE_EPOCH="0"
 
 ########################################################################################################################
@@ -81,10 +82,86 @@ COPY --from=java-builder-interim / /
 
 ########################################################################################################################
 #
+# Setup S6 Overlay Base Layer
+#
+########################################################################################################################
+FROM ubuntu:${UBUNTU_TAG} AS s6-overlay-interim
+# Define Build Arguments
+ARG SOURCE_DATE_EPOCH
+ARG S6_OVERLAY_VERSION
+
+# Install basic OS utilities
+RUN --mount=type=bind,source=./repro-sources-list.sh,target=/usr/local/bin/repro-sources-list.sh \
+    repro-sources-list.sh && \
+    apt-get update && \
+    apt-get install --yes --no-install-recommends tar gzip openssl zlib1g libsodium23 libreadline8 sudo netcat-traditional net-tools xz-utils curl
+
+###########################
+####    S6 Install     ####
+###########################
+RUN set -eux; \
+        NOARCH_PKG_ESUM="05af2536ec4fb23f087a43ce305f8962512890d7c71572ed88852ab91d1434e3" \
+        NOARCH_BINARY_URL="https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" \
+        ARCH="$(dpkg --print-architecture)"; \
+        case "${ARCH}" in \
+           aarch64|arm64) \
+             ARCH_PKG_ESUM='3fc0bae418a0e3811b3deeadfca9cc2f0869fb2f4787ab8a53f6944067d140ee'; \
+             ARCH_BINARY_URL="https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-aarch64.tar.xz"; \
+             ;; \
+          amd64|i386:x86-64) \
+            ARCH_PKG_ESUM='95081f11c56e5a351e9ccab4e70c2b1c3d7d056d82b72502b942762112c03d1c'; \
+            ARCH_BINARY_URL="https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz"; \
+            ;; \
+           ppc64el|powerpc:common64) \
+             ARCH_PKG_ESUM='6747f7415d5d8f1b4f51a180af81435de3d0b99762e16bd42c7688dc5dbd089f'; \
+             ARCH_BINARY_URL="https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-powerpc64le.tar.xz"; \
+             ;; \
+           *) \
+             echo "Unsupported arch: ${ARCH}"; \
+             exit 1; \
+             ;; \
+        esac; \
+    curl -sSLo /tmp/s6-overlay-noarch.tar.xz ${NOARCH_BINARY_URL}; \
+    curl -sSLo /tmp/s6-overlay-arch.tar.xz ${ARCH_BINARY_URL}; \
+    echo "${NOARCH_PKG_ESUM} */tmp/s6-overlay-noarch.tar.xz" | sha256sum -c -; \
+    echo "${ARCH_PKG_ESUM} */tmp/s6-overlay-arch.tar.xz" | sha256sum -c -; \
+    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz; \
+    tar -C / -Jxpf /tmp/s6-overlay-arch.tar.xz; \
+    rm -f /tmp/s6-overlay-noarch.tar.xz; \
+    rm -f /tmp/s6-overlay-arch.tar.xz
+
+# Remove Unneeded Utilities
+RUN --mount=type=bind,source=./repro-sources-list.sh,target=/usr/local/bin/repro-sources-list.sh \
+    repro-sources-list.sh && \
+    apt-get remove --yes xz-utils curl && \
+    apt-get autoremove --yes && \
+    apt-get autoclean --yes && \
+    apt-get clean all --yes && \
+    rm -rf /var/log/ && \
+    rm -rf /var/cache/
+
+
+########################################
+####    Deterministic Build Hack    ####
+########################################
+
+# === Workarounds below will not be needed when https://github.com/moby/buildkit/pull/4057 is merged ===
+# NOTE: PR #4057 has been merged but will not be available until the v0.13.x series of releases.
+# Limit the timestamp upper bound to SOURCE_DATE_EPOCH.
+# Workaround for https://github.com/moby/buildkit/issues/3180
+RUN find $( ls / | grep -E -v "^(dev|mnt|proc|sys)$" ) \
+  -newermt "@${SOURCE_DATE_EPOCH}" -writable -xdev \
+  | xargs touch --date="@${SOURCE_DATE_EPOCH}" --no-dereference
+
+FROM scratch AS s6-overlay
+COPY --from=s6-overlay-interim / /
+
+########################################################################################################################
+#
 # Setup OS Base Layer
 #
 ########################################################################################################################
-FROM ubuntu:${UBUNTU_TAG} AS operating-system-base-interim
+FROM s6-overlay AS operating-system-base-interim
 # Define Build Arguments
 ARG SOURCE_DATE_EPOCH
 
@@ -92,16 +169,6 @@ ARG SOURCE_DATE_EPOCH
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
-
-# Install basic OS utilities
-RUN --mount=type=bind,source=./repro-sources-list.sh,target=/usr/local/bin/repro-sources-list.sh \
-    repro-sources-list.sh && \
-    apt-get update && \
-    apt-get install -y tar gzip openssl zlib1g libsodium23 libreadline8 sudo netcat-traditional net-tools && \
-    apt-get autoclean --yes && \
-    apt-get clean all --yes && \
-    rm -rf /var/log/ && \
-    rm -rf /var/cache/
 
 # Create Application Folders
 RUN mkdir -p "/opt/hgcapp" && \
@@ -224,4 +291,5 @@ EXPOSE 50111/tcp 50211/tcp 50212/tcp
 # Set Final Working Directory, User, and Entrypoint
 USER 2000
 WORKDIR "/opt/hgcapp"
-ENTRYPOINT ["/opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh"]
+ENTRYPOINT ["/init"]
+CMD ["/opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh"]
