@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
@@ -79,5 +80,49 @@ class NanoClockTest {
 
         // then
         assertEquals(initialInstant, laterInstant.minus(laterInstant.getNano(), ChronoUnit.NANOS));
+    }
+
+    @Test
+    void shouldThrowNullOnNullClockParameter() {
+        // given
+        Clock aClock = null;
+
+        // then
+        assertThrows(NullPointerException.class, ()->new NanoClock(aClock));
+    }
+
+    @Test
+    void shouldThrowNullOnNullZoneParameter() {
+        // given
+        Clock aClock = new NanoClock();
+
+        // then
+        assertThrows(NullPointerException.class, ()->aClock.withZone(null));
+    }
+    @Test
+    void shouldReturnNotNullInstant() {
+        // given
+        Clock aClock = new NanoClock();
+
+        // then
+        assertNotNull(aClock.instant());
+    }
+
+    @Test
+    void shouldReturnNotNullZone() {
+        // given
+        Clock aClock = new NanoClock();
+
+        // then
+        assertNotNull(aClock.getZone());
+    }
+
+    @Test
+    void shouldReturnNotNullClock() {
+        // given
+        Clock aClock = new NanoClock();
+
+        // then
+        assertNotNull(aClock.withZone(ZoneOffset.UTC));
     }
 }
