@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,7 +128,8 @@ public class ERC20ContractInteractions extends HapiSuite {
                             final var transferFromParams = new Object[] {
                                 asHeadlongAddress(ownerContractId), asHeadlongAddress(receiverContractId), amount
                             };
-                            final var transferNonExistentParams = new Object[] { evmAddressFromSecp256k1Key(nonExistentAccountKey) , amount};
+                            final var transferNonExistentParams =
+                                    new Object[] {evmAddressFromSecp256k1Key(nonExistentAccountKey), amount};
 
                             final var transferMoreThanApprovedFromParams = new Object[] {
                                 asHeadlongAddress(ownerContractId),
@@ -244,31 +245,25 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .logged();
                             final var getTransferNonExistentRecord = getTxnRecord(TRANSFER_NON_EXISTENT_TX)
                                     .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
-                                    .hasPriority(
-                                            recordWith()
-                                                    .contractCallResult(
-                                                            resultWith()
-                                                                    .logs(
-                                                                            inOrder(
-                                                                                    logWith()
-                                                                                            .longValue(
-                                                                                                    amount
-                                                                                                            .longValueExact())
-                                                                                            .withTopicsInOrder(
-                                                                                                    List.of(
-                                                                                                            eventSignatureOf(
-                                                                                                                    TRANSFER_ADDRESS_ADDRESS_UINT_256),
-                                                                                                            ByteString
-                                                                                                                    .copyFrom(
-                                                                                                                            asAddressInTopic(
-                                                                                                                                    unhex(
-                                                                                                                                            ownerInfo
-                                                                                                                                                    .getContractAccountID()))),
-                                                                                                            ByteString
-                                                                                                                    .copyFrom(
-                                                                                                                            asAddressInTopic(
-                                                                                                                                    unhex(
-                                                                                                                                            evmAddressFromSecp256k1Key(nonExistentAccountKey).toString().substring(2))))))))))
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .logs(inOrder(logWith()
+                                                            .longValue(amount.longValueExact())
+                                                            .withTopicsInOrder(List.of(
+                                                                    eventSignatureOf(TRANSFER_ADDRESS_ADDRESS_UINT_256),
+                                                                    ByteString.copyFrom(
+                                                                            asAddressInTopic(
+                                                                                    unhex(
+                                                                                            ownerInfo
+                                                                                                    .getContractAccountID()))),
+                                                                    ByteString.copyFrom(
+                                                                            asAddressInTopic(
+                                                                                    unhex(
+                                                                                            evmAddressFromSecp256k1Key(
+                                                                                                            nonExistentAccountKey)
+                                                                                                    .toString()
+                                                                                                    .substring(
+                                                                                                            2))))))))))
                                     .logged();
                             final var getApproveRecord = getTxnRecord(APPROVE_TX)
                                     .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
