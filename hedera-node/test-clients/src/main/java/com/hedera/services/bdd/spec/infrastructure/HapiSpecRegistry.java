@@ -627,6 +627,11 @@ public class HapiSpecRegistry {
         put(name, id);
         put(asTokenString(id), name);
     }
+    // Added by VVAIRAVA for CreatePartitionToken
+    public void savePartitionId(String name, TokenID id) {
+        put(name, id);
+        put(asTokenString(id), name);
+    }
 
     public void saveAccountAlias(String alias, AccountID id) {
         put(alias, id);
