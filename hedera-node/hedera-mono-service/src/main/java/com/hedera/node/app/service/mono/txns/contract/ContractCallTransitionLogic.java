@@ -240,7 +240,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
         final var target = targetOf(op);
-        if (possiblySanityCheckOp(op)) {
+        if (possiblySanityCheckOp(op, target)) {
             try {
                 final var receiver = accountStore.loadContract(target.toId());
                 validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
@@ -252,18 +252,16 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     }
 
     // Determine if the operation should be sanity checked.
-    private boolean possiblySanityCheckOp(final ContractCallTransactionBody op) {
-        final var target = targetOf(op);
-
+    private boolean possiblySanityCheckOp(final ContractCallTransactionBody op, final EntityNum target) {
         // Tokens are valid targets
         if (entityAccess.isTokenAccount(target.toId().asEvmAddress())) {
             return false;
         }
 
         // Check for possible lazy create
-        if (target.equals(EntityNum.MISSING_NUM)
-                && isOfEvmAddressSize(op.getContractID().getEvmAddress())
-                && op.getAmount() > 0) {
+        if (((target.equals(EntityNum.MISSING_NUM)
+                        && isOfEvmAddressSize(op.getContractID().getEvmAddress()))
+                || op.getAmount() > 0)) {
             return false;
         }
 
