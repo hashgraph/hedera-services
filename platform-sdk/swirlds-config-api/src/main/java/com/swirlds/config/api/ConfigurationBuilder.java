@@ -62,6 +62,34 @@ public interface ConfigurationBuilder {
      * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
+     * @param converter the converter that should be used for the configuration
+     * @return the builder instance (useful for fluent API)
+     * @throws IllegalStateException if this method is called after the config has been created
+     *
+     * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
+     */
+    @NonNull
+    @Deprecated
+    ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) throws IllegalStateException;
+
+    /**
+     * Adds converters (see {@link ConfigConverter}). If this method is called after the config has been created (see
+     * {@link #build()}) a {@link IllegalStateException} will be thrown.
+     *
+     * @param converters the converters that should be used for the configuration
+     * @return the builder instance (useful for fluent API)
+     * @throws IllegalStateException if this method is called after the config has been created
+     *
+     * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
+     */
+    @NonNull
+    @Deprecated
+    ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) throws IllegalStateException;
+
+    /**
+     * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see
+     * {@link #build()}) a {@link IllegalStateException} will be thrown.
+     *
      * @param converterType the type to convert to
      * @param converter the converter that should be used for the configuration
      * @return the builder instance (useful for fluent API)

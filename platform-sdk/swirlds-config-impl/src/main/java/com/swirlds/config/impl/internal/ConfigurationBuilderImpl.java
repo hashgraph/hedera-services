@@ -23,6 +23,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,6 +133,31 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         configSourceService.addConfigSource(configSource);
     }
 
+    /**
+     * @param converter the converter that should be used for the configuration
+     * @deprecated Use {@link ConfigurationBuilderImpl#withConverter(Class, ConfigConverter)}
+     */
+    @NonNull
+    @Override
+    @SuppressWarnings({"unchecked"})
+    @Deprecated
+    public ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) {
+        addConverter(getConverterType(converter.getClass()), converter);
+        return this;
+    }
+
+    /**
+     * @param converters the converters that should be used for the configuration
+     * @deprecated Use {@link ConfigurationBuilderImpl#withConverter(Class, ConfigConverter)}
+     */
+    @NonNull
+    @Override
+    @Deprecated
+    public ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) {
+        Arrays.stream(converters).forEach(this::withConverter);
+        return this;
+    }
+
     @NonNull
     @Override
     public <T> ConfigurationBuilder withConverter(
@@ -205,5 +231,24 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         Objects.requireNonNull(value, "value must not be null");
         properties.put(propertyName, value);
         return this;
+    }
+
+    @NonNull
+    @SuppressWarnings({"unchecked"})
+    private static <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
+        Objects.requireNonNull(converterClass, "converterClass must not be null");
+        return Arrays.stream(converterClass.getGenericInterfaces())
+                .filter(ParameterizedType.class::isInstance)
+                .map(ParameterizedType.class::cast)
+                .filter(parameterizedType -> Objects.equals(ConfigConverter.class, parameterizedType.getRawType()))
+                .map(ParameterizedType::getActualTypeArguments)
+                .findAny()
+                .map(typeArguments -> {
+                    if (typeArguments.length != 1) {
+                        throw new IllegalStateException("Can not extract generic type for converter " + converterClass);
+                    }
+                    return (Class<T>) typeArguments[0];
+                })
+                .orElseGet(() -> getConverterType((Class<C>) converterClass.getSuperclass()));
     }
 }
