@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,12 @@ public final class MerkleInitialize {
         final int deserializationVersion = Objects.requireNonNull(
                 deserializationVersions.get(root.getClassId()), "class not discovered during deserialization");
 
-        return root.migrate(deserializationVersion);
+        final MerkleNode migratedRoot = root.migrate(deserializationVersion);
+        if (migratedRoot != root) {
+            root.release();
+        }
+
+        return migratedRoot;
     }
 
     /**
