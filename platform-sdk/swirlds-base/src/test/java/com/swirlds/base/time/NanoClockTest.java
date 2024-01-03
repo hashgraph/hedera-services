@@ -88,7 +88,7 @@ class NanoClockTest {
         Clock aClock = null;
 
         // then
-        assertThrows(NullPointerException.class, ()->new NanoClock(aClock));
+        assertThrows(NullPointerException.class, () -> new NanoClock(aClock));
     }
 
     @Test
@@ -97,8 +97,9 @@ class NanoClockTest {
         Clock aClock = new NanoClock();
 
         // then
-        assertThrows(NullPointerException.class, ()->aClock.withZone(null));
+        assertThrows(NullPointerException.class, () -> aClock.withZone(null));
     }
+
     @Test
     void shouldReturnNotNullInstant() {
         // given
