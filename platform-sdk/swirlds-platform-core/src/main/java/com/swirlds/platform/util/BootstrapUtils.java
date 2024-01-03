@@ -42,7 +42,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
-import com.swirlds.config.extensions.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.ApplicationDefinition;
@@ -131,12 +130,10 @@ public final class BootstrapUtils {
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load Configuration Definitions
         configurationBuilder
                 .withSource(mappedSettingsConfigSource)
-                .withSource(threadCountPropertyConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
