@@ -27,7 +27,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
+import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -66,7 +66,7 @@ final class FileSchemaTest {
     void emptyFilesCreatedForUpdateFiles() {
         // Given a file GenesisSchema, and a configuration setting for the range that is unique, so we can make
         // sure to verify that the code in question is using the config values, (and same for key and expiry)
-        final var schema = new FileGenesisSchema(RELEASE_045_VERSION, configProvider);
+        final var schema = new InitialModFileGenesisSchema(RELEASE_045_VERSION, configProvider);
         final var expiry = 1000;
         final var keyString = "0123456789012345678901234567890123456789012345678901234567890123";
         final var key = Key.newBuilder().ed25519(Bytes.wrap(unhex(keyString))).build();

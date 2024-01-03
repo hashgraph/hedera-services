@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema.readThrottleDefinitionsBytes;
+import static com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema.readThrottleDefinitionsBytes;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
 import com.hedera.hapi.node.base.SemanticVersion;
