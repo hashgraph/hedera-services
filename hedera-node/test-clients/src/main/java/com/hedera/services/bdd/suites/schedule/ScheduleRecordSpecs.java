@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.exactParticipants;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -106,7 +105,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
 
     @HapiTest
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
-        return onlyDefaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
+        return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         uploadDefaultFeeSchedules(GENESIS),
