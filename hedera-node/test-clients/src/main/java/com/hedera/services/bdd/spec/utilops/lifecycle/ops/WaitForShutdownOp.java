@@ -52,9 +52,4 @@ public class WaitForShutdownOp extends LifecycleOp {
             return true; // Stop the test, we're toast.
         }
     }
-
-    @Override
-    public String toString() {
-        return "WaitForShutdownOp";
-    }
 }

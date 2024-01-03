@@ -51,9 +51,4 @@ public class WaitForBehindOp extends LifecycleOp {
             return true; // Stop the test, we're toast.
         }
     }
-
-    @Override
-    public String toString() {
-        return "WaitForBehindOp";
-    }
 }

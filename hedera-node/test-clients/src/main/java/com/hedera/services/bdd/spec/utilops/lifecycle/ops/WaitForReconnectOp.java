@@ -51,9 +51,4 @@ public class WaitForReconnectOp extends LifecycleOp {
             return true; // Stop the test, we're toast.
         }
     }
-
-    @Override
-    public String toString() {
-        return "WaitForReconnectOp";
-    }
 }

@@ -45,9 +45,4 @@ public class StartNodesOp extends LifecycleOp {
         logger.info("Node {} has started...", node);
         return false;
     }
-
-    @Override
-    public String toString() {
-        return "StartNodesOp";
-    }
 }
