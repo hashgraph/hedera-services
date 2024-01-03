@@ -43,11 +43,26 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BEGIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATION;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.INSOLVENT_PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.OTHER_PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYING_SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_UPDATE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_XFER_SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_NODE_REWARD_PERCENTAGE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TRIGGER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.UNWILLING_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.scheduledVersionOf;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -71,20 +86,6 @@ import org.apache.logging.log4j.Logger;
 @HapiTestSuite
 public class ScheduleRecordSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
-    private static final String TWO_SIG_XFER = "twoSigXfer";
-    private static final String BEGIN = "begin";
-    private static final String SIMPLE_XFER_SCHEDULE = "simpleXferSchedule";
-    private static final String ADMIN = "admin";
-    private static final String CREATION = "creation";
-    private static final String PAYER = "payer";
-    private static final String PAYING_SENDER = "payingSender";
-    private static final String OTHER_PAYER = "otherPayer";
-    private static final String SIMPLE_UPDATE = "SimpleUpdate";
-    private static final String TRIGGER = "trigger";
-    private static final String INSOLVENT_PAYER = "insolventPayer";
-    private static final String SCHEDULE = "schedule";
-    private static final String UNWILLING_PAYER = "unwillingPayer";
-    private static final String RECEIVER = "receiver";
 
     public static void main(String... args) {
         new ScheduleRecordSpecs().runSuiteAsync();
@@ -269,10 +270,6 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_NODE_REWARD_PERCENTAGE),
                                 STAKING_FEES_STAKING_REWARD_PERCENTAGE,
                                 HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_STAKING_REWARD_PERCENTAGE))));
-    }
-
-    static TransactionID scheduledVersionOf(TransactionID txnId) {
-        return txnId.toBuilder().setScheduled(true).build();
     }
 
     @HapiTest
