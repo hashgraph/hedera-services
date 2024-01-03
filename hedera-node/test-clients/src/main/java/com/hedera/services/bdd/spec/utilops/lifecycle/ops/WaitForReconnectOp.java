@@ -23,6 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * Blocks waiting until the selected node or nodes are reconnected, or until a timeout of {@code waitSeconds} has happened.
  */
@@ -44,7 +46,7 @@ public class WaitForReconnectOp extends LifecycleOp {
             node.waitForReconnectComplete(waitSeconds);
             logger.info("Node {} started and have reconnected successfully", node);
             return false; // Do not stop the test, all is well.
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
             logger.info("Node {} did not reconnect within {}s", node, waitSeconds);
             return true; // Stop the test, we're toast.
         }

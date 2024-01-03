@@ -23,6 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * Blocks waiting until the selected node or nodes are shut down, or until a timeout of {@code waitSeconds} has
  * happened.
@@ -45,7 +47,7 @@ public class WaitForShutdownOp extends LifecycleOp {
             node.waitForShutdown(waitSeconds);
             logger.info("Node {} is shut down", node);
             return false; // Do not stop the test, all is well.
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
             logger.info("Node {} did not shut down within {}s", node, waitSeconds);
             return true; // Stop the test, we're toast.
         }

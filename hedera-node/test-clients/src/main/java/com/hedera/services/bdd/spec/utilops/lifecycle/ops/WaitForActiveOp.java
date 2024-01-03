@@ -23,6 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * Blocks waiting until the selected node or nodes are active, or until a timeout of {@code waitSeconds} has happened.
  */
@@ -44,7 +46,7 @@ public class WaitForActiveOp extends LifecycleOp {
             node.waitForActive(waitSeconds);
             logger.info("Node {} started and is active", node);
             return false; // Do not stop the test, all is well.
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
             logger.info("Node {} did not become active within {}s with error {}", node, waitSeconds, e);
             return true; // Stop the test, we're toast.
         }

@@ -23,6 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * Blocks waiting until the selected node or nodes are frozen, or until a timeout of {@code waitSeconds} has
  * happened.
@@ -45,7 +47,7 @@ public class WaitForFreezeOp extends LifecycleOp {
             node.waitForFreeze(waitSeconds);
             logger.info("Node {} is frozen", node);
             return false; // Do not stop the test, all is well.
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
             logger.info("Node {} did not freeze within {}s", node, waitSeconds);
             return true; // Stop the test, we're toast.
         }
