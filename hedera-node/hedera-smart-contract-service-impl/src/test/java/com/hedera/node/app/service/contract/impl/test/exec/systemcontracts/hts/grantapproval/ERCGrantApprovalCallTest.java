@@ -19,15 +19,20 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REVOKE_APPROVAL_SPENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -37,7 +42,9 @@ import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.H
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -53,6 +60,15 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
 
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
+
+    @Mock
+    private Nft nft;
+
+    @Mock
+    private Token token;
+
+    @Mock
+    private Account account;
 
     @Test
     void erc20approve() {
@@ -72,6 +88,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(nativeOperations.getAccount(anyLong())).willReturn(account);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -99,6 +116,67 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
+        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
+        given(token.treasuryAccountId()).willReturn(OWNER_ID);
+        given(nativeOperations.getAccount(anyLong())).willReturn(account);
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
+                        .getOutputs()
+                        .encodeElements()),
+                result.getOutput());
+    }
+
+    @Test
+    void erc721approveFailsWithInvalidSpenderAllowance() {
+        subject = new ERCGrantApprovalCall(
+                mockEnhancement(),
+                systemContractGasCalculator,
+                verificationStrategy,
+                OWNER_ID,
+                NON_FUNGIBLE_TOKEN_ID,
+                UNAUTHORIZED_SPENDER_ID,
+                BigInteger.valueOf(100L),
+                TokenType.NON_FUNGIBLE_UNIQUE);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
+        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
+        given(token.treasuryAccountId()).willReturn(OWNER_ID);
+        given(nativeOperations.getAccount(anyLong())).willReturn(null).willReturn(account);
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(State.REVERT, result.getState());
+        assertEquals(
+                Bytes.wrap(ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID
+                        .protoName()
+                        .getBytes()),
+                result.getOutput());
+    }
+
+    @Test
+    void erc721revoke() {
+        subject = new ERCGrantApprovalCall(
+                mockEnhancement(),
+                systemContractGasCalculator,
+                verificationStrategy,
+                OWNER_ID,
+                NON_FUNGIBLE_TOKEN_ID,
+                REVOKE_APPROVAL_SPENDER_ID,
+                BigInteger.valueOf(100L),
+                TokenType.NON_FUNGIBLE_UNIQUE);
+        given(systemContractOperations.dispatch(
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(OWNER_ID),
+                        eq(SingleTransactionRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
+        given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
+        given(nativeOperations.getAccount(anyLong())).willReturn(account);
+        given(token.treasuryAccountId()).willReturn(OWNER_ID);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());

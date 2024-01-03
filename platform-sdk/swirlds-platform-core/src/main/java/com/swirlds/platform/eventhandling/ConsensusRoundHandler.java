@@ -25,8 +25,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -44,6 +42,8 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -133,7 +133,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /**
      * A method that blocks until an event becomes durable.
      */
-    final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability;
+    final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability;
 
     /**
      * The number of non-ancient rounds.
@@ -171,7 +171,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
-            @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<Long> roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -362,7 +362,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         final CycleTimingStat consensusTimingStat = consensusHandlingMetrics.getConsCycleStat();
         consensusTimingStat.startCycle();
 
-        waitForEventDurability.accept(round.getKeystoneEvent());
+        waitForEventDurability.accept(round.getKeystoneEvent().getBaseEvent());
 
         consensusTimingStat.setTimePoint(1);
 

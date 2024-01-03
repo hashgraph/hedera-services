@@ -23,7 +23,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.stats.AverageAndMax;
@@ -33,6 +32,7 @@ import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Provides access to statistics relevant to {@link ConsensusRoundHandler}
@@ -66,11 +66,10 @@ public class ConsensusHandlingMetrics {
      * @param metrics
      * 		a reference to the metrics-system
      * @param time provides wall clock time
-     * @throws IllegalArgumentException
-     * 		if {@code metrics} is {@code null}
+     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public ConsensusHandlingMetrics(final Metrics metrics, final Time time) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
 
         consensusCycleTiming = new CycleTimingStat(
