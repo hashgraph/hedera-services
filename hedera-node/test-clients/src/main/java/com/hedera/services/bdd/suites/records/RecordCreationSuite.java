@@ -271,10 +271,9 @@ public class RecordCreationSuite extends HapiSuite {
                     final var payerId = spec.registry().getAccountID(PAYER);
                     final var subOp = getAccountRecords(PAYER).logged();
                     allRunFor(spec, subOp);
-                    final var records =
-                            subOp.getResponse().getCryptoGetAccountRecords().getRecordsList().stream()
-                                    .filter(
-                                            TxnUtils::isNotEndOfStakingPeriodRecord).toList();
+                    final var records = subOp.getResponse().getCryptoGetAccountRecords().getRecordsList().stream()
+                            .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
+                            .toList();
                     assertEquals(3, records.size());
                     for (var record : records) {
                         assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));
