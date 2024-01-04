@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -330,7 +330,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @SuppressWarnings("java:S5960")
     final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
         final var tcValue = 1_234L;
-        final var contract = "Create2FactoryWithSelfDestructingContract";
+        final var contract = "Create2SelfDestructContract";
         final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
