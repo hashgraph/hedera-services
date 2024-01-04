@@ -424,6 +424,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         // the event to be discarded
         if (!previousTimestampForSource.equals(previousTimestamp)
                 && shouldRepeatTimestamp
+                && previousEvent != null
                 && !previousEvent.getCreatorId().equals(source.getNodeId())) {
             return previousTimestamp;
         } else {
