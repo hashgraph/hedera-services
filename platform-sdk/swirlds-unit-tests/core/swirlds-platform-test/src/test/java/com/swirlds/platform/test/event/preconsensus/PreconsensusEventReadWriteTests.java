@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.io.FileManipulation.corruptFile;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.truncateFile;
+import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -107,7 +108,13 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
+                GENERATION_BOUND, // TODO test both styles
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                maximumGeneration,
+                0,
+                testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
@@ -154,6 +161,7 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -193,6 +201,7 @@ class PreconsensusEventReadWriteTests {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 random.nextLong(0, 1000),
@@ -235,6 +244,7 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -300,7 +310,13 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
+                GENERATION_BOUND, // TODO test both styles
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                maximumGeneration,
+                0,
+                testDirectory);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -360,6 +376,7 @@ class PreconsensusEventReadWriteTests {
         final long restrictedMaximumGeneration = maximumGeneration - (minimumGeneration + maximumGeneration) / 4;
 
         final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 restrictedMinimumGeneration,
@@ -418,6 +435,7 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(1, 10);
 
         final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumGeneration,
@@ -435,13 +453,13 @@ class PreconsensusEventReadWriteTests {
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
-        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
-        assertTrue(maximumGeneration > compressedFile.getMaximumGeneration());
+        assertEquals(file.getLowerBound(), compressedFile.getLowerBound());
+        assertTrue(maximumGeneration > compressedFile.getUpperBound());
         assertEquals(
                 mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration());
+                compressedFile.getUpperBound() - compressedFile.getLowerBound());
         assertNotEquals(file.getPath(), compressedFile.getPath());
-        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertNotEquals(file.getUpperBound(), compressedFile.getUpperBound());
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
@@ -484,6 +502,7 @@ class PreconsensusEventReadWriteTests {
         final long uncompressedSpan = 5;
 
         final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumEventGeneration,
@@ -501,13 +520,13 @@ class PreconsensusEventReadWriteTests {
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
-        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
-        assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.getMaximumGeneration());
+        assertEquals(file.getLowerBound(), compressedFile.getLowerBound());
+        assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.getUpperBound());
         assertEquals(
                 mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration() - uncompressedSpan);
+                compressedFile.getUpperBound() - compressedFile.getLowerBound() - uncompressedSpan);
         assertNotEquals(file.getPath(), compressedFile.getPath());
-        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertNotEquals(file.getUpperBound(), compressedFile.getUpperBound());
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
@@ -523,7 +542,14 @@ class PreconsensusEventReadWriteTests {
     @Test
     @DisplayName("Empty File Test")
     void emptyFileTest() throws IOException {
-        final PcesFile file = PcesFile.of(Instant.now(), 0, 0, 100, 0, testDirectory);
+        final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
+                Instant.now(),
+                0,
+                0,
+                100,
+                0,
+                testDirectory);
 
         final Path path = file.getPath();
 

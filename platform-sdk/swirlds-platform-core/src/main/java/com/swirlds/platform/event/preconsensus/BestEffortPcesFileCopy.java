@@ -168,8 +168,7 @@ public final class BestEffortPcesFileCopy {
         final List<PcesFile> filesToCopy = new ArrayList<>();
         final PcesFile lastFile = allFiles.get(allFiles.size() - 1);
         for (final PcesFile file : allFiles) {
-            if (file.getOrigin() == lastFile.getOrigin()
-                    && file.getMaximumGeneration() >= minimumGenerationNonAncient) {
+            if (file.getOrigin() == lastFile.getOrigin() && file.getUpperBound() >= minimumGenerationNonAncient) {
                 filesToCopy.add(file);
             }
         }

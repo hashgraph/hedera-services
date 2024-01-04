@@ -103,7 +103,7 @@ public class PcesFileReader {
         final long previousMaximumGeneration;
         if (files.getFileCount() > 1) {
             final PcesFile secondToLastFile = files.getFile(files.getFileCount() - 2);
-            previousMaximumGeneration = secondToLastFile.getMaximumGeneration();
+            previousMaximumGeneration = secondToLastFile.getUpperBound();
         } else {
             previousMaximumGeneration = 0;
         }
@@ -140,8 +140,8 @@ public class PcesFileReader {
             }
 
             previousSequenceNumber.setValue(descriptor.getSequenceNumber());
-            previousMinimumGeneration.setValue(descriptor.getMinimumGeneration());
-            previousMaximumGeneration.setValue(descriptor.getMaximumGeneration());
+            previousMinimumGeneration.setValue(descriptor.getLowerBound());
+            previousMaximumGeneration.setValue(descriptor.getUpperBound());
             previousTimestamp.setValue(descriptor.getTimestamp());
 
             // If the sequence number is good then add it to the collection of tracked files

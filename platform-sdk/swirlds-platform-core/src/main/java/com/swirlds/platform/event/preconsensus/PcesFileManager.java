@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 
 import com.swirlds.base.time.Time;
@@ -127,9 +128,9 @@ public class PcesFileManager {
 
         if (files.getFileCount() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirstFile().getMinimumGeneration());
+                    .set(files.getFirstFile().getLowerBound());
             metrics.getPreconsensusEventFileYoungestGeneration()
-                    .set(files.getLastFile().getMaximumGeneration());
+                    .set(files.getLastFile().getUpperBound());
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         } else {
@@ -184,7 +185,8 @@ public class PcesFileManager {
      * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
-    public @NonNull PcesFile getNextFileDescriptor(final long minimumGeneration, final long maximumGeneration) {
+    public @NonNull PcesFile getNextFileDescriptor(
+            final long minimumGeneration, final long maximumGeneration) { // TODO rename to bounds
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -200,12 +202,13 @@ public class PcesFileManager {
         } else {
             // This is not the first file, min/max values are constrained to only increase
             minimumGenerationForFile =
-                    Math.max(minimumGeneration, files.getLastFile().getMinimumGeneration());
+                    Math.max(minimumGeneration, files.getLastFile().getLowerBound());
             maximumGenerationForFile =
-                    Math.max(maximumGeneration, files.getLastFile().getMaximumGeneration());
+                    Math.max(maximumGeneration, files.getLastFile().getUpperBound());
         }
 
         final PcesFile descriptor = PcesFile.of(
+                GENERATION_BOUND, // TODO use setting
                 time.now(),
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
@@ -220,15 +223,15 @@ public class PcesFileManager {
             PcesUtilities.fileSanityChecks(
                     false,
                     previousFile.getSequenceNumber(),
-                    previousFile.getMinimumGeneration(),
-                    previousFile.getMaximumGeneration(),
+                    previousFile.getLowerBound(),
+                    previousFile.getUpperBound(),
                     currentOrigin,
                     previousFile.getTimestamp(),
                     descriptor);
         }
 
         files.addFile(descriptor);
-        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getMaximumGeneration());
+        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getUpperBound());
 
         return descriptor;
     }
@@ -244,7 +247,7 @@ public class PcesFileManager {
             previousFileHighestGeneration = 0;
         } else {
             previousFileHighestGeneration =
-                    files.getFile(files.getFileCount() - 2).getMaximumGeneration();
+                    files.getFile(files.getFileCount() - 2).getUpperBound();
         }
 
         // Compress the generational span of the file. Reduces overlap between files.
@@ -272,7 +275,7 @@ public class PcesFileManager {
         final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
 
         while (files.getFileCount() > 0
-                && files.getFirstFile().getMaximumGeneration() < minimumGeneration
+                && files.getFirstFile().getUpperBound() < minimumGeneration
                 && files.getFirstFile().getTimestamp().isBefore(minimumTimestamp)) {
 
             final PcesFile file = files.removeFirstFile();
@@ -282,7 +285,7 @@ public class PcesFileManager {
 
         if (files.getFileCount() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirstFile().getMinimumGeneration());
+                    .set(files.getFirstFile().getLowerBound());
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }

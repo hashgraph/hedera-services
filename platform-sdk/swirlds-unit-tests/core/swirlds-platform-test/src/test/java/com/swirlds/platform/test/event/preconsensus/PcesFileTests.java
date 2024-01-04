@@ -25,6 +25,7 @@ import static com.swirlds.platform.event.preconsensus.PcesFile.MAXIMUM_GENERATIO
 import static com.swirlds.platform.event.preconsensus.PcesFile.MINIMUM_GENERATION_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PcesFile.ORIGIN_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PcesFile.SEQUENCE_NUMBER_PREFIX;
+import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -83,21 +84,93 @@ class PcesFileTests {
     @Test
     @DisplayName("Invalid Parameters Test")
     void invalidParametersTest() {
-        assertThrows(IllegalArgumentException.class, () -> PcesFile.of(Instant.now(), -1, 1, 2, 0, Path.of("foo")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        Instant.now(),
+                        -1,
+                        1,
+                        2,
+                        0,
+                        Path.of("foo")));
 
-        assertThrows(IllegalArgumentException.class, () -> PcesFile.of(Instant.now(), 1, -1, 2, 0, Path.of("foo")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        Instant.now(),
+                        1,
+                        -1,
+                        2,
+                        0,
+                        Path.of("foo")));
 
-        assertThrows(IllegalArgumentException.class, () -> PcesFile.of(Instant.now(), 1, -2, -1, 0, Path.of("foo")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        Instant.now(),
+                        1,
+                        -2,
+                        -1,
+                        0,
+                        Path.of("foo")));
 
-        assertThrows(IllegalArgumentException.class, () -> PcesFile.of(Instant.now(), 1, 1, -1, 0, Path.of("foo")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        Instant.now(),
+                        1,
+                        1,
+                        -1,
+                        0,
+                        Path.of("foo")));
 
-        assertThrows(IllegalArgumentException.class, () -> PcesFile.of(Instant.now(), 1, 2, 1, 0, Path.of("foo")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        Instant.now(),
+                        1,
+                        2,
+                        1,
+                        0,
+                        Path.of("foo")));
 
-        assertThrows(NullPointerException.class, () -> PcesFile.of(null, 1, 1, 2, 0, Path.of("foo")));
+        assertThrows(
+                NullPointerException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        null,
+                        1,
+                        1,
+                        2,
+                        0,
+                        Path.of("foo")));
 
-        assertThrows(IllegalArgumentException.class, () -> PcesFile.of(Instant.now(), 1, 1, 2, -1, Path.of("foo")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        Instant.now(),
+                        1,
+                        1,
+                        2,
+                        -1,
+                        Path.of("foo")));
 
-        assertThrows(NullPointerException.class, () -> PcesFile.of(Instant.now(), 1, 1, 2, 0, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> PcesFile.of(
+                        GENERATION_BOUND, // TODO test both styles
+                        Instant.now(),
+                        1,
+                        1,
+                        2,
+                        0,
+                        null));
     }
 
     @Test
@@ -120,7 +193,13 @@ class PcesFileTests {
                             + maximumGeneration + EVENT_FILE_SEPARATOR + ORIGIN_PREFIX + origin + ".pces";
 
             final PcesFile file = PcesFile.of(
-                    timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, Path.of("foo/bar"));
+                    GENERATION_BOUND, // TODO test both styles
+                    timestamp,
+                    sequenceNumber,
+                    minimumGeneration,
+                    maximumGeneration,
+                    origin,
+                    Path.of("foo/bar"));
 
             assertEquals(expectedName, file.getFileName());
             assertEquals(expectedName, file.toString());
@@ -152,6 +231,7 @@ class PcesFileTests {
             assertEquals(
                     expectedPath,
                     PcesFile.of(
+                                    GENERATION_BOUND, // TODO test both styles
                                     timestamp,
                                     sequenceNumber,
                                     minimumGeneration,
@@ -178,15 +258,21 @@ class PcesFileTests {
 
             final Path directory = Path.of("foo/bar/baz");
 
-            final PcesFile expected =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, directory);
+            final PcesFile expected = PcesFile.of(
+                    GENERATION_BOUND, // TODO test both styles
+                    timestamp,
+                    sequenceNumber,
+                    minimumGeneration,
+                    maximumGeneration,
+                    origin,
+                    directory);
 
             final PcesFile parsed = PcesFile.of(expected.getPath());
 
             assertEquals(expected, parsed);
             assertEquals(sequenceNumber, parsed.getSequenceNumber());
-            assertEquals(minimumGeneration, parsed.getMinimumGeneration());
-            assertEquals(maximumGeneration, parsed.getMaximumGeneration());
+            assertEquals(minimumGeneration, parsed.getLowerBound());
+            assertEquals(maximumGeneration, parsed.getUpperBound());
             assertEquals(origin, parsed.getOrigin());
             assertEquals(timestamp, parsed.getTimestamp());
         }
@@ -241,7 +327,14 @@ class PcesFileTests {
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
             // We don't care about generations for this test
-            final PcesFile file = PcesFile.of(timestamp, index, 0, 0, 0, testDirectory);
+            final PcesFile file = PcesFile.of(
+                    GENERATION_BOUND, // TODO test both styles
+                    timestamp,
+                    index,
+                    0,
+                    0,
+                    0,
+                    testDirectory);
 
             writeRandomBytes(random, file.getPath(), 100);
             files.add(file);
@@ -315,7 +408,14 @@ class PcesFileTests {
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
             // We don't care about generations for this test
-            final PcesFile file = PcesFile.of(timestamp, index, 0, 0, 0, streamDirectory);
+            final PcesFile file = PcesFile.of(
+                    GENERATION_BOUND, // TODO test both styles
+                    timestamp,
+                    index,
+                    0,
+                    0,
+                    0,
+                    streamDirectory);
 
             writeRandomBytes(random, file.getPath(), 100);
             files.add(file);
@@ -372,6 +472,7 @@ class PcesFileTests {
             final long maximumGenerationB = random.nextLong(minimumGenerationB, minimumGenerationB + 100);
 
             final PcesFile a = PcesFile.of(
+                    GENERATION_BOUND, // TODO test both styles
                     randomInstant(random),
                     sequenceA,
                     minimumGenerationA,
@@ -379,6 +480,7 @@ class PcesFileTests {
                     random.nextLong(1000),
                     directory);
             final PcesFile b = PcesFile.of(
+                    GENERATION_BOUND, // TODO test both styles
                     randomInstant(random),
                     sequenceB,
                     minimumGenerationB,
@@ -403,8 +505,14 @@ class PcesFileTests {
             final long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + 1000);
             final Instant timestamp = RandomUtils.randomInstant(random);
 
-            final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, directory);
+            final PcesFile file = PcesFile.of(
+                    GENERATION_BOUND, // TODO test both styles
+                    timestamp,
+                    sequenceNumber,
+                    minimumGeneration,
+                    maximumGeneration,
+                    0,
+                    directory);
 
             // An event with a sequence number that is too small
             assertFalse(file.canContain(minimumGeneration - random.nextLong(1, 100)));
@@ -436,8 +544,14 @@ class PcesFileTests {
         final long origin = random.nextLong(1000);
         final Instant timestamp = randomInstant(random);
 
-        final PcesFile file =
-                PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, directory);
+        final PcesFile file = PcesFile.of(
+                GENERATION_BOUND, // TODO test both styles
+                timestamp,
+                sequenceNumber,
+                minimumGeneration,
+                maximumGeneration,
+                origin,
+                directory);
 
         assertThrows(IllegalArgumentException.class, () -> file.buildFileWithCompressedSpan(minimumGeneration - 1));
         assertThrows(IllegalArgumentException.class, () -> file.buildFileWithCompressedSpan(maximumGeneration + 1));
@@ -447,8 +561,8 @@ class PcesFileTests {
         final PcesFile compressedFile = file.buildFileWithCompressedSpan(newMaximumGeneration);
 
         assertEquals(sequenceNumber, compressedFile.getSequenceNumber());
-        assertEquals(minimumGeneration, compressedFile.getMinimumGeneration());
-        assertEquals(newMaximumGeneration, compressedFile.getMaximumGeneration());
+        assertEquals(minimumGeneration, compressedFile.getLowerBound());
+        assertEquals(newMaximumGeneration, compressedFile.getUpperBound());
         assertEquals(origin, compressedFile.getOrigin());
         assertEquals(timestamp, compressedFile.getTimestamp());
     }

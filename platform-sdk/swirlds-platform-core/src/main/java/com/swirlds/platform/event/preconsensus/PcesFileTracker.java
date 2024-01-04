@@ -184,7 +184,7 @@ public class PcesFileTracker {
         }
 
         // Edge case: our first file comes after the requested starting generation
-        if (files.get(firstFileIndex).getMinimumGeneration() >= minimumGeneration) {
+        if (files.get(firstFileIndex).getLowerBound() >= minimumGeneration) {
             // Unless we observe at least one file with a minimum generation less than the requested minimum,
             // then we can't know for certain that we have all data for the requested minimum generation.
             logger.warn(
@@ -192,20 +192,20 @@ public class PcesFileTracker {
                     "The preconsensus event stream has insufficient data to guarantee that all events with the "
                             + "requested generation of {} are present, the first file has a minimum generation of {}",
                     minimumGeneration,
-                    files.getFirst().getMinimumGeneration());
+                    files.getFirst().getLowerBound());
 
             return new UnmodifiableIterator<>(files.iterator(firstFileIndex));
         }
 
         // Edge case: all of our data comes before the requested starting generation
-        if (files.getLast().getMaximumGeneration() < minimumGeneration) {
+        if (files.getLast().getUpperBound() < minimumGeneration) {
             logger.warn(
                     STARTUP.getMarker(),
                     "The preconsensus event stream has insufficient data to guarantee that "
                             + "all events with the requested minimum generation of {} are present, "
                             + "the last file has a maximum generation of {}",
                     minimumGeneration,
-                    files.getLast().getMaximumGeneration());
+                    files.getLast().getUpperBound());
             return Collections.emptyIterator();
         }
 
@@ -213,7 +213,7 @@ public class PcesFileTracker {
         final int fileCount = files.size();
         for (int index = firstFileIndex; index < fileCount; index++) {
             final PcesFile file = files.get(index);
-            if (file.getMaximumGeneration() >= minimumGeneration) {
+            if (file.getUpperBound() >= minimumGeneration) {
                 // We have found the first file that may contain events at the requested generation.
                 return new UnmodifiableIterator<>(files.iterator(index));
             }

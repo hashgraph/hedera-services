@@ -172,17 +172,17 @@ class PcesWriterTests {
             nextSequenceNumber++;
             assertTrue(isGreaterThanOrEqualTo(file.getTimestamp(), previousTimestamp));
             previousTimestamp = file.getTimestamp();
-            assertTrue(file.getMinimumGeneration() <= file.getMaximumGeneration());
-            assertTrue(file.getMinimumGeneration() >= previousMinimum);
-            previousMinimum = file.getMinimumGeneration();
-            assertTrue(file.getMaximumGeneration() >= previousMaximum);
-            previousMaximum = file.getMaximumGeneration();
+            assertTrue(file.getLowerBound() <= file.getUpperBound());
+            assertTrue(file.getLowerBound() >= previousMinimum);
+            previousMinimum = file.getLowerBound();
+            assertTrue(file.getUpperBound() >= previousMaximum);
+            previousMaximum = file.getUpperBound();
 
             final IOIterator<GossipEvent> fileEvents = file.iterator(0);
             while (fileEvents.hasNext()) {
                 final GossipEvent event = fileEvents.next();
-                assertTrue(event.getGeneration() >= file.getMinimumGeneration());
-                assertTrue(event.getGeneration() <= file.getMaximumGeneration());
+                assertTrue(event.getGeneration() >= file.getLowerBound());
+                assertTrue(event.getGeneration() <= file.getUpperBound());
             }
         }
     }
@@ -412,7 +412,7 @@ class PcesWriterTests {
         // we should never be able to increase the minimum generation from 0.
         for (final Iterator<PcesFile> it = pcesFiles.getFileIterator(0, 0); it.hasNext(); ) {
             final PcesFile file = it.next();
-            assertEquals(0, file.getMinimumGeneration());
+            assertEquals(0, file.getLowerBound());
         }
     }
 
@@ -591,7 +591,7 @@ class PcesWriterTests {
 
         pcesFiles
                 .getFileIterator(NO_MINIMUM_GENERATION, 0)
-                .forEachRemaining(file -> assertTrue(file.getMaximumGeneration() >= minimumGenerationToStore));
+                .forEachRemaining(file -> assertTrue(file.getUpperBound() >= minimumGenerationToStore));
 
         writer.closeCurrentMutableFile();
 
@@ -600,7 +600,7 @@ class PcesWriterTests {
         boolean foundNonZeroMinimumGeneration = false;
         for (final Iterator<PcesFile> fileIterator = pcesFiles.getFileIterator(0, 0); fileIterator.hasNext(); ) {
             final PcesFile file = fileIterator.next();
-            if (file.getMinimumGeneration() > 0) {
+            if (file.getLowerBound() > 0) {
                 foundNonZeroMinimumGeneration = true;
                 break;
             }

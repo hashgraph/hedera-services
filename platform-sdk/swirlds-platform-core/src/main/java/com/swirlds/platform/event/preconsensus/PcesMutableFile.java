@@ -74,7 +74,7 @@ public class PcesMutableFile {
                         new FileOutputStream(descriptor.getPath().toFile())),
                 counter));
         out.writeInt(FILE_VERSION);
-        highestGenerationInFile = descriptor.getMinimumGeneration();
+        highestGenerationInFile = descriptor.getLowerBound();
     }
 
     /**
@@ -111,7 +111,7 @@ public class PcesMutableFile {
      * @return the new span compressed file
      */
     public PcesFile compressGenerationalSpan(final long highestGenerationInPreviousFile) {
-        if (highestGenerationInFile == descriptor.getMaximumGeneration()) {
+        if (highestGenerationInFile == descriptor.getUpperBound()) {
             // No need to compress, we used the entire span.
             return descriptor;
         }
@@ -156,7 +156,7 @@ public class PcesMutableFile {
      * file. Higher values mean that the maximum generation was chosen well.
      */
     public long getUtilizedGenerationalSpan() {
-        return highestGenerationInFile - descriptor.getMinimumGeneration();
+        return highestGenerationInFile - descriptor.getLowerBound();
     }
 
     /**
@@ -164,14 +164,14 @@ public class PcesMutableFile {
      * well, resulting in less overlap between files. A value of 0 represents a "perfect" choice.
      */
     public long getUnUtilizedGenerationalSpan() {
-        return descriptor.getMaximumGeneration() - highestGenerationInFile;
+        return descriptor.getUpperBound() - highestGenerationInFile;
     }
 
     /**
      * Get the span of generations that this file can legally contain.
      */
     public long getGenerationalSpan() {
-        return descriptor.getMaximumGeneration() - descriptor.getMinimumGeneration();
+        return descriptor.getUpperBound() - descriptor.getLowerBound();
     }
 
     /**

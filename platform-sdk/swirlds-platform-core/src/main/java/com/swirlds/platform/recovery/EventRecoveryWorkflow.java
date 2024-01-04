@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
@@ -181,6 +182,7 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
             final PcesFile preconsensusEventFile = PcesFile.of(
+                    GENERATION_BOUND, // TODO use setting
                     Instant.now(),
                     0,
                     recoveredState.judge().getGeneration(),

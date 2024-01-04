@@ -60,7 +60,7 @@ public final class PcesUtilities {
             @NonNull final PcesFile originalFile, final long previousMaximumGeneration) {
 
         // Find the maximum generation in the file.
-        long maxGeneration = originalFile.getMinimumGeneration();
+        long maxGeneration = originalFile.getLowerBound();
         try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0)) {
 
             while (iterator.hasNext()) {
@@ -76,7 +76,7 @@ public final class PcesUtilities {
         // Important: do not decrease the maximum generation below the value of the previous file's maximum generation.
         maxGeneration = Math.max(maxGeneration, previousMaximumGeneration);
 
-        if (maxGeneration == originalFile.getMaximumGeneration()) {
+        if (maxGeneration == originalFile.getUpperBound()) {
             // The file cannot have its span compacted any further.
             logger.info(STARTUP.getMarker(), "No span compaction necessary for {}", originalFile.getPath());
             return originalFile;
@@ -139,7 +139,7 @@ public final class PcesUtilities {
         long previousMaximumGeneration = 0;
         for (final PcesFile file : files) {
             final PcesFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
-            previousMaximumGeneration = compactedFile.getMaximumGeneration();
+            previousMaximumGeneration = compactedFile.getUpperBound();
         }
     }
 
@@ -173,14 +173,14 @@ public final class PcesUtilities {
         }
 
         // Minimum generation may never decrease
-        if (descriptor.getMinimumGeneration() < previousMinimumGeneration) {
+        if (descriptor.getLowerBound() < previousMinimumGeneration) {
             throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.getPath()
                     + " has a minimum generation that is less than the previous minimum generation of "
                     + previousMinimumGeneration);
         }
 
         // Maximum generation may never decrease
-        if (descriptor.getMaximumGeneration() < previousMaximumGeneration) {
+        if (descriptor.getUpperBound() < previousMaximumGeneration) {
             throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.getPath()
                     + " has a maximum generation that is less than the previous maximum generation of "
                     + previousMaximumGeneration);
