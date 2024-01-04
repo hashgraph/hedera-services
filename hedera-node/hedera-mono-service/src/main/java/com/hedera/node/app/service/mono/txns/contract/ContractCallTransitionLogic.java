@@ -234,6 +234,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 return e.getResponseCode();
             }
         }
+
         return OK;
     }
 
