@@ -69,7 +69,7 @@ public interface ConfigurationBuilder {
      * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
      */
     @NonNull
-    @Deprecated
+    @Deprecated(forRemoval = true)
     ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) throws IllegalStateException;
 
     /**
@@ -83,7 +83,7 @@ public interface ConfigurationBuilder {
      * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
      */
     @NonNull
-    @Deprecated
+    @Deprecated(forRemoval = true)
     ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) throws IllegalStateException;
 
     /**
