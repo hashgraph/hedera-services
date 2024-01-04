@@ -135,7 +135,7 @@ public class PerfTestLoadSettings {
     private String upgradeFileId = DEFAULT_UPGRADE_FILE_ID;
     private int upgradeFileAppendsPerBurst = DEFAULT_APPENDS_PER_BURST;
     private int nodeToStake = DEFAULT_NODE_TO_STAKE;
-    private Set<Integer> extraNodesToStake = Set.of();
+    private int[] extraNodesToStake = {};
     private HapiPropertySource ciProps = null;
 
     public PerfTestLoadSettings() {}
@@ -198,7 +198,7 @@ public class PerfTestLoadSettings {
         return nodeToStake;
     }
 
-    public Set<Integer> getExtraNodesToStake() {
+    public int[] getExtraNodesToStake() {
         return extraNodesToStake;
     }
 
@@ -355,8 +355,8 @@ public class PerfTestLoadSettings {
         }
         if (ciProps.has("extraNodesToStake")) {
             extraNodesToStake = Arrays.stream(ciProps.get("extraNodesToStake").split("[+]"))
-                    .map(Integer::parseInt)
-                    .collect(Collectors.toSet());
+                    .mapToInt(Integer::parseInt)
+                    .toArray();
         }
     }
 
