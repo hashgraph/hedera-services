@@ -85,10 +85,10 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.NoOpPreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -453,7 +453,7 @@ public class SwirldsPlatform implements Platform {
 
         final boolean forceIgnorePcesSignatures = platformContext
                 .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
+                .getConfigData(PcesConfig.class)
                 .forceIgnorePcesSignatures();
 
         final boolean ignorePreconsensusSignatures;
@@ -634,7 +634,7 @@ public class SwirldsPlatform implements Platform {
                 appVersion));
 
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph, latestEventTipsetTracker),
@@ -760,7 +760,11 @@ public class SwirldsPlatform implements Platform {
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
-                getAddressBook()));
+                getAddressBook(),
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .useBirthRoundAncientThreshold()));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -774,13 +778,8 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
-                    initialState.getRound(),
-                    initialMinimumGenerationNonAncient,
-                    platformContext
-                            .getConfiguration()
-                            .getConfigData(ConsensusConfig.class)
-                            .roundsNonAncient()));
+            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                    initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
 
             // We don't want to invoke these callbacks until after we are starting up.
             final long round = initialState.getRound();
@@ -964,13 +963,8 @@ public class SwirldsPlatform implements Platform {
                     .inject(new AddressBookUpdate(
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
-                    signedState.getRound(),
-                    signedState.getMinRoundGeneration(),
-                    platformContext
-                            .getConfiguration()
-                            .getConfigData(ConsensusConfig.class)
-                            .roundsNonAncient()));
+            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                    signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
@@ -1032,8 +1026,8 @@ public class SwirldsPlatform implements Platform {
     private PreconsensusEventWriter buildPreconsensusEventWriter(
             @NonNull final PreconsensusEventFileManager fileManager) {
 
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         if (!preconsensusEventStreamConfig.enableStorage()) {
             return new NoOpPreconsensusEventWriter();
@@ -1098,7 +1092,7 @@ public class SwirldsPlatform implements Platform {
 
         final boolean enableReplay = platformContext
                 .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
+                .getConfigData(PcesConfig.class)
                 .enableReplay();
         final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
 

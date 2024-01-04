@@ -102,7 +102,7 @@ class ChildlessEventTrackerTests {
 
         // Increase the minimum generation non-ancient to 1, all events from batch1 should be removed
         // FUTURE WORK: Change the test to use round instead of generation for ancient.
-        tracker.pruneOldEvents(new NonAncientEventWindow(1, 0, 1));
+        tracker.pruneOldEvents(new NonAncientEventWindow(1, 1, 1, false));
 
         assertEquals(removeBranches(batch2), new HashSet<>(tracker.getChildlessEvents()));
     }
