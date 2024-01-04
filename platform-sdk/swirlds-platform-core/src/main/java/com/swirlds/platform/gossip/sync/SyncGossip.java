@@ -52,7 +52,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
-import com.swirlds.platform.gossip.sync.protocol.TurboSyncProtocol;
+import com.swirlds.platform.gossip.sync.turbo.TurboSyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
@@ -249,6 +249,7 @@ public class SyncGossip extends AbstractGossip {
             if (syncConfig.turbo()) {
                 syncProtocol = new TurboSyncProtocol(
                         platformContext,
+                        addressBook,
                         selfId,
                         shadowgraphExecutor,
                         shadowGraph,

@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.sync.protocol;
+package com.swirlds.platform.gossip.sync.turbo;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.sync.turbo.TurboSyncRunner;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
@@ -45,6 +48,7 @@ public class TurboSyncProtocol implements Protocol {
     private static final Logger logger = LogManager.getLogger(TurboSyncProtocol.class);
 
     private final PlatformContext platformContext;
+    private final AddressBook addressBook;
     private final NodeId selfId;
     private final ParallelExecutor executor;
     private final ShadowGraph shadowgraph;
@@ -65,6 +69,7 @@ public class TurboSyncProtocol implements Protocol {
      */
     public TurboSyncProtocol(
             @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
@@ -72,6 +77,7 @@ public class TurboSyncProtocol implements Protocol {
             @NonNull final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer) {
         this.platformContext = Objects.requireNonNull(platformContext);
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.executor = Objects.requireNonNull(executor);
         this.shadowgraph = Objects.requireNonNull(shadowgraph);
@@ -117,6 +123,7 @@ public class TurboSyncProtocol implements Protocol {
         try {
             new TurboSyncRunner(
                             platformContext,
+                            addressBook,
                             selfId,
                             connection,
                             executor,
@@ -125,10 +132,12 @@ public class TurboSyncProtocol implements Protocol {
                             latestEventTipsetTracker,
                             gossipEventConsumer)
                     .run();
-        } catch (final Exception e) {
-            // TODO: this is temporary
-            logger.error(EXCEPTION.getMarker(), "exception during sync", e);
-            throw new IOException(e);
+        } catch (final ParallelExecutionException e) {
+            if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
+                throw new IOException(e);
+            }
+
+            throw new NetworkProtocolException(e);
         }
     }
 }

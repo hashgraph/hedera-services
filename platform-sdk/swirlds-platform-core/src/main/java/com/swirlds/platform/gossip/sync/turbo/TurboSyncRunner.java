@@ -38,9 +38,9 @@ import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gossip.sync.protocol.TurboSyncProtocol;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -62,7 +62,8 @@ import java.util.stream.Collectors;
  */
 public class TurboSyncRunner {
 
-    private static final Runnable NO_OP = () -> {};
+    private static final Runnable NO_OP = () -> {
+    };
 
     private final PlatformContext platformContext;
     private final NodeId selfId;
@@ -95,14 +96,15 @@ public class TurboSyncRunner {
     private TurboSyncDataSent dataSentB;
     private TurboSyncDataSent dataSentC;
 
-    private boolean continueProtocol = true;
+    private int cycleNumber = 0;
 
-    private long cycleNumber = 0;
+    private final int maxTipCount;
 
     /**
      * Constructor.
      *
      * @param platformContext          the platform context
+     * @param addressBook              the address book
      * @param selfId                   our ID
      * @param connection               the connection to the peer we are syncing with
      * @param executor                 the executor to use for parallel read/write operations
@@ -113,6 +115,7 @@ public class TurboSyncRunner {
      */
     public TurboSyncRunner(
             @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final Connection connection,
             @NonNull final ParallelExecutor executor,
@@ -132,6 +135,8 @@ public class TurboSyncRunner {
         this.latestEventTipsetTracker = Objects.requireNonNull(latestEventTipsetTracker);
         this.gossipEventConsumer = Objects.requireNonNull(gossipEventConsumer);
 
+        maxTipCount = addressBook.getSize() * 2;
+
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
         this.hashOnSyncThread = syncConfig.hashOnGossipThreads();
@@ -142,8 +147,9 @@ public class TurboSyncRunner {
      */
     public void run() throws IOException, ParallelExecutionException {
         try {
-            while (continueProtocol) {
+            while (shouldSyncProtocolContinue()) {
                 runProtocolIteration();
+                shiftDataWindow();
                 cycleNumber++;
             }
         } finally {
@@ -161,16 +167,25 @@ public class TurboSyncRunner {
     }
 
     /**
-     * Perform a single iteration of the protocol. Within a single iteration we will perform each of the three phases:
-     * A, B, and C.
+     * Check various boundary conditions and end the sync protocol if necessary.
      */
-    private void runProtocolIteration() throws ParallelExecutionException {
+    private boolean shouldSyncProtocolContinue() {
+        // TODO exit if if we or the peer have fallen behind
+        // TODO exit if we have too many events in the intake pipeline
+        // TODO exit if the intake queue is simply too full
+        return true;
+    }
 
-        // Move the data down the pipeline.
-        //  - C is replaced by B
-        //  - B is replaced by A
-        //  - A is nulled-out in preparation for this next iteration.
-
+    /**
+     * Shift the data window.
+     * <li>
+     *     <ul>data in C is cleaned up</ul>
+     *     <ul>C is replaced by B</ul>
+     *     <ul>B is replaced by A</ul>
+     *     <ul>A is nulled-out in preparation for the next iteration</ul>
+     * </li>
+     */
+    private void shiftDataWindow() {
         if (dataSentC != null) {
             dataSentC.release();
         }
@@ -182,29 +197,41 @@ public class TurboSyncRunner {
         dataReceivedC = dataReceivedB;
         dataReceivedB = dataReceivedA;
         dataReceivedA = null; // receiveData will write into this variable
+    }
 
+    /**
+     * Perform a single iteration of the protocol.
+     */
+    private void runProtocolIteration() throws ParallelExecutionException {
         executor.doParallel(this::receiveData, this::sendData, NO_OP);
-
-        // TODO break out of protocol if we fall behind or if intake fills up too much
     }
 
     /**
      * Send all data we intend to send during this iteration of the protocol.
      */
     private void sendData() throws IOException, SyncException {
-        // Sanity check
-        dataOutputStream.writeLong(cycleNumber);
+        // Sanity check: make sure both participants have aligned streams.
+        dataOutputStream.writeInt(cycleNumber);
 
         final List<EventImpl> tipsOfSendList = sendEvents();
         sendBooleans();
         final List<Hash> tipsSent = sendTips();
-        final ReservedGenerations reservedGenerations = sendGenerations();
 
-        dataOutputStream.flush();
+        final GenerationReservation generationReservation = shadowgraph.reserve();
+        final Generations generations;
+
+        try {
+            generations = getGenerations(generationReservation.getGeneration());
+            sendGenerations(generations);
+            dataOutputStream.flush();
+        } catch (final Throwable t) {
+            generationReservation.close();
+            return;
+        }
 
         dataSentA = new TurboSyncDataSent(
-                reservedGenerations.reservedGenerations(),
-                reservedGenerations.generationsSent(),
+                generationReservation,
+                generations,
                 tipsSent,
                 tipsOfSendList);
     }
@@ -214,8 +241,8 @@ public class TurboSyncRunner {
      */
     private void receiveData() throws IOException, InterruptedException {
 
-        // TODO decide if this is worth keeping as a sanity check
-        final long cycleNumber = dataInputStream.readLong();
+        // Sanity check: make sure both participants have aligned streams.
+        final int cycleNumber = dataInputStream.readInt();
         if (cycleNumber != this.cycleNumber) {
             throw new IOException("Expected cycle " + this.cycleNumber + ", got " + cycleNumber);
         }
@@ -276,11 +303,13 @@ public class TurboSyncRunner {
     private List<Hash> receiveTips() throws IOException {
         final int tipCount = dataInputStream.readInt();
 
-        // TODO throw if tip count is too high
+        if (tipCount > maxTipCount) {
+            throw new IOException("Peer sent too many tips: " + tipCount);
+        }
 
         final List<Hash> previousTips = dataReceivedB == null ? List.of() : dataReceivedB.theirTips();
 
-        final List<Hash> tips = new ArrayList<>();
+        final List<Hash> tips = new ArrayList<>(tipCount);
         for (int i = 0; i < tipCount; i++) {
             final int previousPosition = dataInputStream.readInt();
 
@@ -296,15 +325,10 @@ public class TurboSyncRunner {
     }
 
     /**
-     * Compute our current generations and send them to the peer.
+     * Send our generations to the peer.
      */
-    @NonNull
-    private ReservedGenerations sendGenerations() throws IOException {
-        final GenerationReservation generationReservation = shadowgraph.reserve();
-        final Generations generations = getGenerations(generationReservation.getGeneration());
+    private void sendGenerations(@NonNull final Generations generations) throws IOException {
         dataOutputStream.writeGenerations(generations);
-
-        return new ReservedGenerations(generationReservation, generations);
     }
 
     /**
@@ -457,7 +481,6 @@ public class TurboSyncRunner {
                 latestEventTipsetTracker.getTipsetOfLatestSelfEvent(eventsTheyMayNeed));
 
         SyncUtils.sort(sendList);
-
         return sendList;
     }
 
