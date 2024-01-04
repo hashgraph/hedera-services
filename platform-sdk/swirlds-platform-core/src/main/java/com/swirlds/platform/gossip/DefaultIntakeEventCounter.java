@@ -52,16 +52,12 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
      */
     private final Map<NodeId, AtomicInteger> unprocessedEventCounts;
 
-    // TODO test with numbers not 0
-
     /**
      * Constructor
      *
-     * @param addressBook                  the address book
-     * @param maximumPermissibleEventCount the maximum desired number of events from a single peer in the intake
-     *                                     pipeline
+     * @param addressBook the address book
      */
-    public DefaultIntakeEventCounter(@NonNull final AddressBook addressBook, final int maximumPermissibleEventCount) {
+    public DefaultIntakeEventCounter(@NonNull final AddressBook addressBook) {
         this.unprocessedEventCounts = new HashMap<>();
 
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
@@ -73,7 +69,7 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
      * {@inheritDoc}
      */
     @Override
-    public boolean hasTooManyUnprocessedEvents(@NonNull final NodeId peer) {
+    public boolean hasUnprocessedEvents(@NonNull final NodeId peer) {
         Objects.requireNonNull(peer);
 
         return unprocessedEventCounts.get(peer).get() > 0;

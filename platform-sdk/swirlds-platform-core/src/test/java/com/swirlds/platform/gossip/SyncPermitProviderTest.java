@@ -140,7 +140,7 @@ class SyncPermitProviderTest {
 
         final AddressBook addressBook = mock(AddressBook.class);
         Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId, otherNodeId));
-        final DefaultIntakeEventCounter intakeEventCounter = new DefaultIntakeEventCounter(addressBook, 0);
+        final DefaultIntakeEventCounter intakeEventCounter = new DefaultIntakeEventCounter(addressBook);
 
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakeEventCounter);

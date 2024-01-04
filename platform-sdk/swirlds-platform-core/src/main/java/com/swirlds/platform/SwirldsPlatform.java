@@ -717,8 +717,7 @@ public class SwirldsPlatform implements Platform {
 
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter =
-                    new DefaultIntakeEventCounter(currentAddressBook, syncConfig.maximumPermissibleEventsInIntake());
+            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
         } else {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }

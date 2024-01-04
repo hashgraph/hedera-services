@@ -40,30 +40,30 @@ class DefaultIntakeEventCounterTests {
         final AddressBook addressBook = mock(AddressBook.class);
         Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId1, nodeId2));
 
-        this.intakeCounter = new DefaultIntakeEventCounter(addressBook, 0);
+        this.intakeCounter = new DefaultIntakeEventCounter(addressBook);
     }
 
     @Test
     @DisplayName("Test unprocessed events check")
     void unprocessedEvents() {
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
 
         intakeCounter.eventEnteredIntakePipeline(nodeId1);
-        assertTrue(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId2));
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
 
         intakeCounter.eventEnteredIntakePipeline(nodeId1);
-        assertTrue(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId2));
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
 
         intakeCounter.eventExitedIntakePipeline(nodeId1);
-        assertTrue(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId2));
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
 
         intakeCounter.eventExitedIntakePipeline(nodeId1);
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId2));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
     }
 
     @Test
@@ -73,11 +73,11 @@ class DefaultIntakeEventCounterTests {
         intakeCounter.eventEnteredIntakePipeline(nodeId1);
         intakeCounter.eventEnteredIntakePipeline(nodeId2);
 
-        assertTrue(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
-        assertTrue(intakeCounter.hasTooManyUnprocessedEvents(nodeId2));
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertTrue(intakeCounter.hasUnprocessedEvents(nodeId2));
 
         intakeCounter.reset();
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId1));
-        assertFalse(intakeCounter.hasTooManyUnprocessedEvents(nodeId2));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId1));
+        assertFalse(intakeCounter.hasUnprocessedEvents(nodeId2));
     }
 }

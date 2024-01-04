@@ -70,7 +70,7 @@ public class SyncPermitProvider {
      * @return true if a permit was successfully acquired, otherwise false.
      */
     public boolean tryAcquire(@NonNull final NodeId peerId) {
-        return !intakeEventCounter.hasTooManyUnprocessedEvents(peerId) && syncPermits.tryAcquire();
+        return !intakeEventCounter.hasUnprocessedEvents(peerId) && syncPermits.tryAcquire();
     }
 
     /**

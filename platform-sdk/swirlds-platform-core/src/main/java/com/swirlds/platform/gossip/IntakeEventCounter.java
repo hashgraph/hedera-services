@@ -26,13 +26,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface IntakeEventCounter {
     /**
-     * Checks whether there are too many events from a given sender that have entered the intake pipeline, but aren't
-     * yet through it.
+     * Checks whether there are any events from a given sender that have entered the intake pipeline, but aren't yet
+     * through it.
      *
      * @param peer the peer to check for unprocessed events
-     * @return true if there are too many unprocessed events, false otherwise
+     * @return true if there are unprocessed events, false otherwise
      */
-    boolean hasTooManyUnprocessedEvents(@NonNull final NodeId peer);
+    boolean hasUnprocessedEvents(@NonNull final NodeId peer);
 
     /**
      * Indicates that an event from a given peer has entered the intake pipeline
