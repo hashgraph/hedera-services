@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
@@ -108,6 +109,11 @@ public class TestIntake implements LoadableFromSignedState {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
 
+        linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        linkedEventIntakeWiring
+                .nonAncientEventWindowOutput()
+                .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
+
         model.start();
     }
 
@@ -179,6 +185,11 @@ public class TestIntake implements LoadableFromSignedState {
 
         shadowGraph.clear();
         shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());
+    }
+
+    public void flush() {
+        linkerWiring.flushRunnable().run();
+        linkedEventIntakeWiring.flushRunnable().run();
     }
 
     public @NonNull ConsensusOutput getOutput() {

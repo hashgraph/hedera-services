@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -419,7 +419,12 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
                 previousEvent == null ? Instant.ofEpochSecond(0) : previousEvent.getTimeCreated();
 
         final boolean shouldRepeatTimestamp = getRandom().nextDouble() < simultaneousEventFraction;
-        if (!previousTimestampForSource.equals(previousTimestamp) && shouldRepeatTimestamp) {
+
+        // don't repeat a timestamp if the previous event has the same creator. doing so is illegal, and will cause
+        // the event to be discarded
+        if (!previousTimestampForSource.equals(previousTimestamp)
+                && shouldRepeatTimestamp
+                && !previousEvent.getCreatorId().equals(source.getNodeId())) {
             return previousTimestamp;
         } else {
             final double delta = Math.max(
