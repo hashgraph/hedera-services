@@ -119,8 +119,9 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                             var stakedNodeId = settings.getNodeToStake();
                             for (int i = 0; i < STAKED_CREATIONS; i++) {
                                 var stakedAccount = "stakedAccount" + i;
-                                if(settings.getExtraNodesToStake().length != 0){
-                                    stakedNodeId = settings.getExtraNodesToStake()[i % settings.getExtraNodesToStake().length];
+                                if (settings.getExtraNodesToStake().length != 0) {
+                                    stakedNodeId =
+                                            settings.getExtraNodesToStake()[i % settings.getExtraNodesToStake().length];
                                 }
                                 ops.add(cryptoCreate(stakedAccount)
                                         .payingWith("sender")

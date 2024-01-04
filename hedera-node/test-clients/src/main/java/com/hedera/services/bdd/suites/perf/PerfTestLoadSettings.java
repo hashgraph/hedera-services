@@ -25,8 +25,6 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAU
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class PerfTestLoadSettings {
     public static final int DEFAULT_TPS = 500;
