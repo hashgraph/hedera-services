@@ -124,20 +124,19 @@ public class InOrderLinker {
         this.missingParentAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "missingParents")
-                        .withDescription("Parent child relationships where a parent was missing")
-                        .withUnit("parent child relationships"));
+                        .withDescription("Parent child relationships where a parent was missing"));
         this.generationMismatchAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "parentGenerationMismatch")
-                        .withDescription(
-                                "Parent child relationships where claimed parent generation did not match actual parent generation")
-                        .withUnit("parent child relationships"));
+                .getOrCreate(
+                        new LongAccumulator.Config(PLATFORM_CATEGORY, "parentGenerationMismatch")
+                                .withDescription(
+                                        "Parent child relationships where claimed parent generation did not match actual parent generation"));
         this.timeCreatedMismatchAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
-                        .withDescription(
-                                "Parent child relationships where child time created wasn't strictly after parent time created")
-                        .withUnit("parent child relationships"));
+                .getOrCreate(
+                        new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
+                                .withDescription(
+                                        "Parent child relationships where child time created wasn't strictly after parent time created"));
     }
 
     /**

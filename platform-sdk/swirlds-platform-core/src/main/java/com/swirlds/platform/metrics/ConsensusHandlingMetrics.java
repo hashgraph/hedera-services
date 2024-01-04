@@ -46,7 +46,7 @@ public class ConsensusHandlingMetrics {
 
     private static final LongGauge.Config consensusTimeConfig = new LongGauge.Config(INTERNAL_CATEGORY, "consensusTime")
             .withDescription("The consensus timestamp of the round currently being handled.")
-            .withUnit("milliseconds since the epoch");
+            .withUnit("milliseconds");
     private final LongGauge consensusTime;
 
     private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(
