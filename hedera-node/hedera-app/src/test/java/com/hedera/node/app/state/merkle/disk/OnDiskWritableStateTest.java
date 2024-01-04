@@ -63,7 +63,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         @DisplayName("You must specify the virtual map")
         void nullMerkleMapThrows() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new OnDiskWritableKVState<>(fruitVirtualMetadata,  null,null))
+            assertThatThrownBy(() -> new OnDiskWritableKVState<>(fruitVirtualMetadata, null, null))
                     .isInstanceOf(NullPointerException.class);
         }
 
