@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,8 +100,8 @@ class ContextTransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, rootProxyWorldUpdater);
-        final var expectedResult =
-                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
+        final var expectedResult = new CallOutcome(
+                protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice(), null, null);
         assertEquals(expectedResult, subject.call());
     }
 
@@ -129,8 +129,8 @@ class ContextTransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(null, rootProxyWorldUpdater);
-        final var expectedResult =
-                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
+        final var expectedResult = new CallOutcome(
+                protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice(), null, null);
         assertEquals(expectedResult, subject.call());
     }
 

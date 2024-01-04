@@ -363,7 +363,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
         final var tcValue = 1_234L;
-        final var contract = "Create2FactoryWithSelfDestructingContract";
+        final var contract = "Create2SelfDestructContract";
         final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;

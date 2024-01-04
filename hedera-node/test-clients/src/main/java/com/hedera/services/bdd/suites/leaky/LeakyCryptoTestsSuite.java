@@ -110,7 +110,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_AC
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
@@ -191,6 +190,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     public static final String PAY_TXN = "payTxn";
     public static final String CREATE_TX = "createTX";
     public static final String V_0_34 = "v0.34";
+    private static final String SENDER_TXN = "senderTxn";
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
