@@ -132,12 +132,4 @@ public class NotConnectedConnection implements Connection {
     public String getDescription() {
         return "NotConnectedConnection";
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getConnectionId() {
-        return 0;
-    }
 }

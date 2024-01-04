@@ -87,18 +87,22 @@ public class LatestEventTipsetTracker {
      * @return The tipset of the latest self event in the list, or null if there are no known self events.
      */
     @Nullable
-    public synchronized Tipset getTipsetOfLatestSelfEvent(@NonNull final List<EventImpl> events) {
+    public Tipset getTipsetOfLatestSelfEvent(@NonNull final List<EventImpl> events) {
 
         // Iterate backwards over the list. The latest self event will be the first one found.
         for (int index = events.size() - 1; index >= 0; index--) {
             final EventImpl event = events.get(index);
             if (event.getCreatorId().equals(selfId)) {
-                return tipsetTracker.getTipset(event.getBaseEvent().getDescriptor());
+                synchronized (this) {
+                    return tipsetTracker.getTipset(event.getBaseEvent().getDescriptor());
+                }
             }
         }
 
-        // THere wasn't a self event in the list. Return the latest self event tipset.
-        return latestSelfEventTipset;
+        // There wasn't a self event in the list. Return the latest self event tipset.
+        synchronized (this) {
+            return latestSelfEventTipset;
+        }
     }
 
     /**
