@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
@@ -1005,7 +1006,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, ALLOW_SKIPPED_ENTITY_IDS),
+                        snapshotMode(
+                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                ALLOW_SKIPPED_ENTITY_IDS,
+                                NONDETERMINISTIC_ETHEREUM_DATA),
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",
