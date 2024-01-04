@@ -41,6 +41,8 @@ import org.apache.logging.log4j.Logger;
  */
 final class StaticPlatformBuilder {
 
+    public static final String LOG4J_FILE_NAME = "log4j2.xml";
+
     private static final Logger logger = LogManager.getLogger(StaticPlatformBuilder.class);
 
     // @formatter:off
@@ -81,7 +83,7 @@ final class StaticPlatformBuilder {
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         // Setup logging
-        final Path log4jPath = getAbsolutePath("log4j2.xml");
+        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
         try {
             Log4jSetup.startLoggingFramework(log4jPath).await();
         } catch (final InterruptedException e) {

@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.StaticPlatformBuilder.LOG4J_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -113,7 +114,7 @@ public class Browser {
             return;
         }
 
-        final Path log4jPath = getAbsolutePath("log4j2.xml");
+        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
         try {
             Log4jSetup.startLoggingFramework(log4jPath).await();
         } catch (final InterruptedException e) {
