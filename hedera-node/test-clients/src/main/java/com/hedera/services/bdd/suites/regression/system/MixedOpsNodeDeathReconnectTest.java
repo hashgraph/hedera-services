@@ -99,11 +99,11 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         // Kill node 2
                         shutDownNode("Carol"),
                         // Wait for it to shut down
-                        waitForNodeToShutDown("Carol", 75))
+                        waitForNodeToShutDown("Carol", 75),
+                        sleepFor(180_000L).logged())
                 .when(
                         // Submit operations when node 2 is down
                         inParallel(mixedOpsBurst.get()),
-                        sleepFor(180_000L).logged(),
                         // start all nodes
                         startNode("Carol"),
                         // wait for node 2 to go BEHIND
