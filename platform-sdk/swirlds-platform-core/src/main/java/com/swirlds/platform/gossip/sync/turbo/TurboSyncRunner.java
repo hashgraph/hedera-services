@@ -198,9 +198,7 @@ public class TurboSyncRunner {
             final Generations theirGenerations = dataReceivedB.theirGenerations();
 
             switch (SyncFallenBehindStatus.getStatus(myGenerations, theirGenerations)) {
-                case NONE_FALLEN_BEHIND -> {
-                    fallenBehindManager.reportNotFallenBehind(otherId);
-                }
+                case NONE_FALLEN_BEHIND -> fallenBehindManager.reportNotFallenBehind(otherId);
                 case SELF_FALLEN_BEHIND -> {
                     fallenBehindManager.reportFallenBehind(otherId);
                     return false;
@@ -211,6 +209,8 @@ public class TurboSyncRunner {
                 }
             }
         }
+
+        // TODO check the number of events in the intake pipeline from this peer
 
         return peerAgnosticSyncChecks.shouldSync();
     }
