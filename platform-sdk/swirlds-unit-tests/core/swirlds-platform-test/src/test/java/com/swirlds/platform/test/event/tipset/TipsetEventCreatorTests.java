@@ -906,7 +906,6 @@ class TipsetEventCreatorTests {
      * FUTURE WORK: Update this test to use RosterDiff instead of NonAncientEventWindow
      */
     @ParameterizedTest
-    // @ValueSource(booleans = {false, true})
     @CsvSource({"true, true", "true, false", "false, true", "false, false"})
     @DisplayName("Check setting of birthRound on new events.")
     void checkSettingEventBirthRound(final boolean advancingClock, final boolean useBirthRoundForAncient) {
