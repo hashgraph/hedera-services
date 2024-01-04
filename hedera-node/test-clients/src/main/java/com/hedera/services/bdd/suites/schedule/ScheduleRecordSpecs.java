@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.exactParticipants;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -107,7 +106,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
 
     @HapiTest
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
-        return onlyDefaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
+        return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         uploadDefaultFeeSchedules(GENESIS),

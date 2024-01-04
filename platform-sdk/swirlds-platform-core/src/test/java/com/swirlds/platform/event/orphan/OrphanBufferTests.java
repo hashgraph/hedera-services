@@ -286,8 +286,9 @@ class OrphanBufferTests {
                 // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
                 final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
                         ConsensusConstants.ROUND_FIRST,
-                        ConsensusConstants.ROUND_NEGATIVE_INFINITY,
-                        minimumGenerationNonAncient);
+                        ConsensusConstants.ROUND_FIRST,
+                        minimumGenerationNonAncient,
+                        false);
                 unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
             }
 
