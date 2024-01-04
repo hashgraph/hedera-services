@@ -133,8 +133,16 @@ public class SyncManagerImpl implements FallenBehindManager {
      * {@inheritDoc}
      */
     @Override
-    public void reportFallenBehind(final NodeId id) {
-        fallenBehindManager.reportFallenBehind(id);
+    public void reportFallenBehind(@NonNull final NodeId peerId) {
+        fallenBehindManager.reportFallenBehind(peerId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reportNotFallenBehind(@NonNull final NodeId peerId) {
+        fallenBehindManager.reportNotFallenBehind(peerId);
     }
 
     /**

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.gossip.sync.turbo;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -26,9 +24,10 @@ import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.SyncException;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
@@ -50,6 +49,8 @@ public class TurboSyncProtocol implements Protocol {
     private final PlatformContext platformContext;
     private final AddressBook addressBook;
     private final NodeId selfId;
+    private final FallenBehindManager fallenBehindManager;
+    private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
     private final ParallelExecutor executor;
     private final ShadowGraph shadowgraph;
     private final Supplier<GraphGenerations> generationsSupplier;
@@ -60,7 +61,11 @@ public class TurboSyncProtocol implements Protocol {
      * Constructor.
      *
      * @param platformContext          the platform context
+     * @param addressBook              the address book
      * @param selfId                   the id of this node
+     * @param fallenBehindManager      tracks if we are behind or not
+     * @param peerAgnosticSyncChecks   peer agnostic checks which are performed to determine whether this node should
+     *                                 sync or not
      * @param executor                 the executor to use for parallel read/write operations
      * @param shadowgraph              the shadow graph to sync
      * @param generationsSupplier      a supplier for the current graph generation
@@ -71,14 +76,19 @@ public class TurboSyncProtocol implements Protocol {
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
+            @NonNull final FallenBehindManager fallenBehindManager,
+            @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
             @NonNull final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer) {
+
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
+        this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
         this.executor = Objects.requireNonNull(executor);
         this.shadowgraph = Objects.requireNonNull(shadowgraph);
         this.generationsSupplier = Objects.requireNonNull(generationsSupplier);
@@ -91,8 +101,7 @@ public class TurboSyncProtocol implements Protocol {
      */
     @Override
     public boolean shouldInitiate() {
-        // TODO: sometimes there are reasons not to sync
-        return true;
+        return shouldSync();
     }
 
     /**
@@ -100,8 +109,7 @@ public class TurboSyncProtocol implements Protocol {
      */
     @Override
     public boolean shouldAccept() {
-        // TODO: sometimes there are reasons not to sync
-        return true;
+        return shouldSync();
     }
 
     /**
@@ -109,8 +117,11 @@ public class TurboSyncProtocol implements Protocol {
      */
     @Override
     public boolean acceptOnSimultaneousInitiate() {
-        // TODO: sometimes there are reasons not to sync
-        return true;
+        return shouldSync();
+    }
+
+    private boolean shouldSync() {
+        return !fallenBehindManager.hasFallenBehind() && peerAgnosticSyncChecks.shouldSync();
     }
 
     /**
@@ -125,6 +136,9 @@ public class TurboSyncProtocol implements Protocol {
                             platformContext,
                             addressBook,
                             selfId,
+                            connection.getOtherId(),
+                            fallenBehindManager,
+                            peerAgnosticSyncChecks,
                             connection,
                             executor,
                             shadowgraph,

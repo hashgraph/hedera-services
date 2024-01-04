@@ -26,10 +26,16 @@ public interface FallenBehindManager {
      * Notify the fallen behind manager that a node has reported that they don't have events we need. This means we have
      * probably fallen behind and will need to reconnect
      *
-     * @param id
-     * 		the id of the node who says we have fallen behind
+     * @param peerId the id of the node who says we have fallen behind
      */
-    void reportFallenBehind(NodeId id);
+    void reportFallenBehind(@NonNull NodeId peerId);
+
+    /**
+     * Notify the fallen behind manager that a node has reported that we are not behind.
+     *
+     * @param peerId the id of the node who says we are not behind
+     */
+    void reportNotFallenBehind(@NonNull NodeId peerId);
 
     /**
      * We have determined that we have not fallen behind, or we have reconnected, so reset everything to the initial
@@ -63,8 +69,7 @@ public interface FallenBehindManager {
     /**
      * Should I attempt a reconnect with this neighbor?
      *
-     * @param peerId
-     * 		the ID of the neighbor
+     * @param peerId the ID of the neighbor
      * @return true if I should attempt a reconnect
      */
     boolean shouldReconnectFrom(@NonNull NodeId peerId);

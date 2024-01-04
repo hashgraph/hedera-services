@@ -95,23 +95,34 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
         this.config = Objects.requireNonNull(config, "config must not be null");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public synchronized void reportFallenBehind(final NodeId id) {
+    public synchronized void reportFallenBehind(@NonNull final NodeId peerId) {
         final boolean previouslyFallenBehind = hasFallenBehind();
-        if (reportFallenBehind.add(id)) {
+        if (reportFallenBehind.add(peerId)) {
             if (numReportFallenBehind == 0) {
                 // we have received the first indication that we have fallen behind, so we need to check with other
                 // nodes to confirm
                 notYetReportFallenBehind.addAll(allNeighbors);
             }
             // we don't need to check with this node
-            notYetReportFallenBehind.remove(id);
+            notYetReportFallenBehind.remove(peerId);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
                 statusActionSubmitter.submitStatusAction(new FallenBehindAction());
                 fallenBehindCallback.run();
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reportNotFallenBehind(@NonNull final NodeId peerId) {
+        // TODO
     }
 
     @Override

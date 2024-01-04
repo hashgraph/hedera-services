@@ -28,16 +28,19 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.SyncFallenBehindStatus;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
@@ -62,11 +65,13 @@ import java.util.stream.Collectors;
  */
 public class TurboSyncRunner {
 
-    private static final Runnable NO_OP = () -> {
-    };
+    private static final Runnable NO_OP = () -> {};
 
     private final PlatformContext platformContext;
     private final NodeId selfId;
+    private final NodeId otherId;
+    private final FallenBehindManager fallenBehindManager;
+    private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
     private final Connection connection;
     private final SyncOutputStream dataOutputStream;
     private final SyncInputStream dataInputStream;
@@ -106,6 +111,10 @@ public class TurboSyncRunner {
      * @param platformContext          the platform context
      * @param addressBook              the address book
      * @param selfId                   our ID
+     * @param otherId                  the ID of the peer we are syncing with
+     * @param fallenBehindManager      tracks if we are behind or not
+     * @param peerAgnosticSyncChecks   peer agnostic checks which are performed to determine whether this node should
+     *                                 sync or not
      * @param connection               the connection to the peer we are syncing with
      * @param executor                 the executor to use for parallel read/write operations
      * @param shadowgraph              the shadowgraph, contains events we know about
@@ -117,6 +126,9 @@ public class TurboSyncRunner {
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
+            @NonNull final NodeId otherId,
+            @NonNull final FallenBehindManager fallenBehindManager,
+            @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final Connection connection,
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
@@ -126,6 +138,9 @@ public class TurboSyncRunner {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
+        this.otherId = Objects.requireNonNull(otherId);
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
+        this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
         this.connection = Objects.requireNonNull(connection);
         this.dataOutputStream = connection.getDos();
         this.dataInputStream = connection.getDis();
@@ -153,7 +168,6 @@ public class TurboSyncRunner {
                 cycleNumber++;
             }
         } finally {
-            // TODO I don't think this is thread safe...
             if (dataSentA != null) {
                 dataSentA.release();
             }
@@ -170,10 +184,35 @@ public class TurboSyncRunner {
      * Check various boundary conditions and end the sync protocol if necessary.
      */
     private boolean shouldSyncProtocolContinue() {
-        // TODO exit if if we or the peer have fallen behind
-        // TODO exit if we have too many events in the intake pipeline
-        // TODO exit if the intake queue is simply too full
-        return true;
+        if (fallenBehindManager.hasFallenBehind()) {
+            // We have fallen behind, stop syncing.
+            // We can't sync again until we reconnect.
+            return false;
+        }
+
+        // Determine if one of us is behind the other.
+        if (dataSentB != null) {
+            // The most recent exchanged generations will be in phase B.
+
+            final Generations myGenerations = dataSentB.generationsSent();
+            final Generations theirGenerations = dataReceivedB.theirGenerations();
+
+            switch (SyncFallenBehindStatus.getStatus(myGenerations, theirGenerations)) {
+                case NONE_FALLEN_BEHIND -> {
+                    fallenBehindManager.reportNotFallenBehind(otherId);
+                }
+                case SELF_FALLEN_BEHIND -> {
+                    fallenBehindManager.reportFallenBehind(otherId);
+                    return false;
+                }
+                case OTHER_FALLEN_BEHIND -> {
+                    // The peer will realize it has fallen behind and will stop syncing.
+                    return false;
+                }
+            }
+        }
+
+        return peerAgnosticSyncChecks.shouldSync();
     }
 
     /**
@@ -229,11 +268,7 @@ public class TurboSyncRunner {
             return;
         }
 
-        dataSentA = new TurboSyncDataSent(
-                generationReservation,
-                generations,
-                tipsSent,
-                tipsOfSendList);
+        dataSentA = new TurboSyncDataSent(generationReservation, generations, tipsSent, tipsOfSendList);
     }
 
     /**

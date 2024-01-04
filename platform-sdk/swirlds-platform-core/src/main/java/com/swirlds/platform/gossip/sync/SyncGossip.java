@@ -251,6 +251,8 @@ public class SyncGossip extends AbstractGossip {
                         platformContext,
                         addressBook,
                         selfId,
+                        fallenBehindManager,
+                        peerAgnosticSyncChecks,
                         shadowgraphExecutor,
                         shadowGraph,
                         consensusRef::get,
