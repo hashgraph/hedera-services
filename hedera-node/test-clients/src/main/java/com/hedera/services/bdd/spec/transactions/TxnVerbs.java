@@ -215,7 +215,6 @@ public class TxnVerbs {
         return new HapiTokenCreate(token).name(token);
     }
 
-    // Added by VVAIRAVA for CreatePartitionToken
     public static HapiPartitionCreate createNewPartitionDefinitions(String token) {
         return new HapiPartitionCreate(token);
     }
