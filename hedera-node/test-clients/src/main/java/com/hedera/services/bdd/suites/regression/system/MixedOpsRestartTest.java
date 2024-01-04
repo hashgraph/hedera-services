@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownAllNodes;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startAllNodes;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToBecomeActive;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
@@ -106,6 +107,7 @@ public class MixedOpsRestartTest extends HapiSuite {
                         shutDownAllNodes().logged(),
                         // wait for all nodes to be shut down
                         waitForNodesToShutDown(60).logged(),
+                        sleepFor(180_000L).logged(),
                         // start all nodes
                         startAllNodes().logged(),
                         // wait for all nodes to be ACTIVE
