@@ -76,8 +76,6 @@ class SyncProtocolTests {
 
         // node is not fallen behind
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
-        // only peer with ID 1 is needed for fallen behind
-        Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(1L)));
         // peer agnostic sync checks pass
         peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(() -> true));
 

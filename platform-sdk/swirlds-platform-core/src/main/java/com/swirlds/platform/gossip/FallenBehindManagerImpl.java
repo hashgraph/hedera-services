@@ -23,22 +23,14 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A thread-safe implementation of {@link FallenBehindManager}
  */
 public class FallenBehindManagerImpl implements FallenBehindManager {
-    /**
-     * a set of all neighbors of this node
-     */
-    private final HashSet<NodeId> allNeighbors;
+
     /**
      * the number of neighbors we have
      */
@@ -46,12 +38,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     /**
      * set of neighbors who report that this node has fallen behind
      */
-    private final HashSet<NodeId> reportFallenBehind;
-    /**
-     * set of neighbors that have not yet reported that we have fallen behind, only exists if someone reports we have
-     * fallen behind. This Set is made from a ConcurrentHashMap, so it needs no synchronization
-     */
-    private final Set<NodeId> notYetReportFallenBehind;
+    private final HashSet<NodeId> neighborsReportingWeAreBehind;
 
     /**
      * Enables submitting platform status actions
@@ -64,10 +51,6 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     private final Runnable fallenBehindCallback;
 
     private final ReconnectConfig config;
-    /**
-     * number of neighbors who think this node has fallen behind
-     */
-    volatile int numReportFallenBehind;
 
     public FallenBehindManagerImpl(
             @NonNull final AddressBook addressBook,
@@ -76,23 +59,17 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
-        Objects.requireNonNull(addressBook, "addressBook");
-        Objects.requireNonNull(selfId, "selfId");
-        Objects.requireNonNull(connectionGraph, "connectionGraph");
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(connectionGraph);
 
-        notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
-        reportFallenBehind = new HashSet<>();
-        allNeighbors = new HashSet<>();
+        neighborsReportingWeAreBehind = new HashSet<>();
         /* an array with all the neighbor ids */
         final int[] neighbors = connectionGraph.getNeighbors(addressBook.getIndexOfNodeId(selfId));
         numNeighbors = neighbors.length;
-        for (final int neighbor : neighbors) {
-            allNeighbors.add(addressBook.getNodeId(neighbor));
-        }
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.fallenBehindCallback =
-                Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
-        this.config = Objects.requireNonNull(config, "config must not be null");
+        this.fallenBehindCallback = Objects.requireNonNull(fallenBehindCallback);
+        this.config = Objects.requireNonNull(config);
     }
 
     /**
@@ -101,15 +78,8 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     @Override
     public synchronized void reportFallenBehind(@NonNull final NodeId peerId) {
         final boolean previouslyFallenBehind = hasFallenBehind();
-        if (reportFallenBehind.add(peerId)) {
-            if (numReportFallenBehind == 0) {
-                // we have received the first indication that we have fallen behind, so we need to check with other
-                // nodes to confirm
-                notYetReportFallenBehind.addAll(allNeighbors);
-            }
-            // we don't need to check with this node
-            notYetReportFallenBehind.remove(peerId);
-            numReportFallenBehind++;
+
+        if (neighborsReportingWeAreBehind.add(peerId)) {
             if (!previouslyFallenBehind && hasFallenBehind()) {
                 statusActionSubmitter.submitStatusAction(new FallenBehindAction());
                 fallenBehindCallback.run();
@@ -121,52 +91,43 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
      * {@inheritDoc}
      */
     @Override
-    public void reportNotFallenBehind(@NonNull final NodeId peerId) {
-        // TODO
+    public synchronized void reportNotFallenBehind(@NonNull final NodeId peerId) {
+        neighborsReportingWeAreBehind.remove(peerId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public List<NodeId> getNeededForFallenBehind() {
-        if (notYetReportFallenBehind.isEmpty()) {
-            return null;
-        }
-        final List<NodeId> ret = new ArrayList<>(notYetReportFallenBehind);
-        Collections.shuffle(ret);
-        return ret;
+    public synchronized boolean hasFallenBehind() {
+        return numNeighbors * config.fallenBehindThreshold() < neighborsReportingWeAreBehind.size();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean hasFallenBehind() {
-        return numNeighbors * config.fallenBehindThreshold() < numReportFallenBehind;
-    }
-
-    @Override
-    public synchronized List<NodeId> getNeighborsForReconnect() {
-        final List<NodeId> ret = new ArrayList<>(reportFallenBehind);
-        Collections.shuffle(ret);
-        return ret;
-    }
-
-    @Override
-    public boolean shouldReconnectFrom(final NodeId peerId) {
+    public synchronized boolean shouldReconnectFrom(@NonNull final NodeId peerId) {
         if (!hasFallenBehind()) {
             return false;
         }
-        synchronized (this) {
-            // if this neighbor has told me I have fallen behind, I will reconnect with him
-            return reportFallenBehind.contains(peerId);
-        }
+        // if this neighbor has told me I have fallen behind, I will reconnect with him
+        return neighborsReportingWeAreBehind.contains(peerId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public synchronized void resetFallenBehind() {
-        numReportFallenBehind = 0;
-        reportFallenBehind.clear();
-        notYetReportFallenBehind.clear();
+        neighborsReportingWeAreBehind.clear();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int numReportedFallenBehind() {
-        return numReportFallenBehind;
+    public synchronized int numReportedFallenBehind() {
+        return neighborsReportingWeAreBehind.size();
     }
 }
