@@ -24,6 +24,9 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAU
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class PerfTestLoadSettings {
     public static final int DEFAULT_TPS = 500;
@@ -131,8 +134,8 @@ public class PerfTestLoadSettings {
     private String upgradeFilePath = DEFAULT_UPGRADE_FILE_PATH;
     private String upgradeFileId = DEFAULT_UPGRADE_FILE_ID;
     private int upgradeFileAppendsPerBurst = DEFAULT_APPENDS_PER_BURST;
-
     private int nodeToStake = DEFAULT_NODE_TO_STAKE;
+    private Set<Integer> extraNodesToStake = Set.of();
     private HapiPropertySource ciProps = null;
 
     public PerfTestLoadSettings() {}
@@ -193,6 +196,10 @@ public class PerfTestLoadSettings {
 
     public int getNodeToStake() {
         return nodeToStake;
+    }
+
+    public Set<Integer> getExtraNodesToStake() {
+        return extraNodesToStake;
     }
 
     public int getTotalTopics() {
@@ -346,6 +353,11 @@ public class PerfTestLoadSettings {
         if (ciProps.has("nodeToStake")) {
             nodeToStake = ciProps.getInteger("nodeToStake");
         }
+        if (ciProps.has("extraNodesToStake")) {
+            extraNodesToStake = Arrays.stream(ciProps.get("extraNodesToStake").split("[+]"))
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toSet());
+        }
     }
 
     @Override
@@ -379,6 +391,7 @@ public class PerfTestLoadSettings {
                 .add("upgradeFileId", upgradeFileId)
                 .add("upgradeFileAppendsPerBurst", upgradeFileAppendsPerBurst)
                 .add("nodeToStake", nodeToStake)
+                .add("extraNodesToStake", extraNodesToStake)
                 .toString();
     }
 }
