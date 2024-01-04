@@ -331,7 +331,6 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    // Added by VVAIRAVA for CreatePartitionToken
     public Consumer<TokenCreatePartitionDefinitionTransactionBody.Builder>
             defaultDefTokenCreatePartitionDefinitionTransactionBody() {
         return builder -> {};
