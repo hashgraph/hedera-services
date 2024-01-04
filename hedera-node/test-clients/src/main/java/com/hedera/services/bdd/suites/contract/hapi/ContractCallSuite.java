@@ -1577,11 +1577,7 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("InvalidContract")
                 .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))))
                 .when()
-                .then(
-                        ifHapiTest(
-                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
-                        ifNotHapiTest(
-                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)));
+                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
