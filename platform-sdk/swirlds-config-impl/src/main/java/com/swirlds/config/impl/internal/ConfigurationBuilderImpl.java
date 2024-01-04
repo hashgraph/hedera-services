@@ -140,7 +140,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     @NonNull
     @Override
     @SuppressWarnings({"unchecked"})
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) {
         addConverter(getConverterType(converter.getClass()), converter);
         return this;
@@ -152,7 +152,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
      */
     @NonNull
     @Override
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) {
         Arrays.stream(converters).forEach(this::withConverter);
         return this;
