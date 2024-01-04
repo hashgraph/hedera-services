@@ -50,7 +50,7 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
         super(
-                platformContext,
+                platformContext.getConfiguration(),
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 in,

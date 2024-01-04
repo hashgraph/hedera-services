@@ -16,10 +16,10 @@
 
 package com.swirlds.common.merkle.synchronization.internal;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.views.StandardTeacherTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -33,20 +33,18 @@ public final class TeacherSubtree implements AutoCloseable {
     /**
      * Create a subtree with {@link StandardTeacherTreeView}.
      *
-     * @param root
-     * 		the root of the subtree
+     * @param configuration the configuration
+     * @param root          the root of the subtree
      */
-    public TeacherSubtree(@NonNull final PlatformContext platformContext, final MerkleNode root) {
-        this(root, new StandardTeacherTreeView(platformContext, root));
+    public TeacherSubtree(@NonNull final Configuration configuration, final MerkleNode root) {
+        this(root, new StandardTeacherTreeView(configuration, root));
     }
 
     /**
      * Create an object that tracks a subtree that needs to be sent by the teacher.
      *
-     * @param root
-     * 		the root of the subtree
-     * @param view
-     * 		the view to be used by the subtree
+     * @param root the root of the subtree
+     * @param view the view to be used by the subtree
      */
     public TeacherSubtree(final MerkleNode root, final TeacherTreeView<?> view) {
         this.root = root;

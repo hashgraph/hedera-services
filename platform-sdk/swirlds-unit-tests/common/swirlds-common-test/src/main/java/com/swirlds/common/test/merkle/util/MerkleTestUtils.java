@@ -1005,7 +1005,7 @@ public final class MerkleTestUtils {
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
                 teacher = new TeachingSynchronizer(
-                        platformContext,
+                        platformContext.getConfiguration(),
                         Time.getCurrent(),
                         getStaticThreadManager(),
                         streams.getTeacherInput(),

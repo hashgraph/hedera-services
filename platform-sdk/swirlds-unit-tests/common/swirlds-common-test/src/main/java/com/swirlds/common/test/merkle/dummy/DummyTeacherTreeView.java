@@ -18,9 +18,9 @@ package com.swirlds.common.test.merkle.dummy;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.views.StandardTeacherTreeView;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,11 +34,11 @@ public class DummyTeacherTreeView extends StandardTeacherTreeView {
     /**
      * Create a view for a standard merkle tree.
      *
-     * @param platformContext the platform context
-     * @param root            the root of the tree
+     * @param configuration the configuration
+     * @param root          the root of the tree
      */
-    public DummyTeacherTreeView(@NonNull final PlatformContext platformContext, final MerkleNode root) {
-        super(platformContext, root);
+    public DummyTeacherTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
+        super(configuration, root);
     }
 
     /**

@@ -221,7 +221,7 @@ public class ReconnectTeacher {
 
         final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
         final TeachingSynchronizer synchronizer = new TeachingSynchronizer(
-                platformContext,
+                platformContext.getConfiguration(),
                 time,
                 threadManager,
                 new MerkleDataInputStream(connection.getDis()),

@@ -35,6 +35,7 @@ import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.gui.model.GuiModel;
@@ -140,9 +141,14 @@ public class Browser {
             throws Exception {
         Objects.requireNonNull(commandLineArgs);
 
+        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
+                .withConfigDataType(PathsConfig.class)
+                .build()
+                .getConfigData(PathsConfig.class);
+
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
+                ApplicationDefinitionLoader.loadDefault(defaultPathsConfig, getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
 
         // Determine which nodes to run locally
         final List<NodeId> nodesToRun =

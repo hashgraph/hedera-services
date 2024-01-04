@@ -16,7 +16,6 @@
 
 package com.swirlds.common.merkle.synchronization.views;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -25,6 +24,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,13 +49,12 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
     /**
      * Create a view for a standard merkle tree.
      *
-     * @param platformContext the platform context
-     * @param root            the root of the tree
+     * @param configuration the configuration
+     * @param root          the root of the tree
      */
-    public StandardTeacherTreeView(@NonNull final PlatformContext platformContext, final MerkleNode root) {
+    public StandardTeacherTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
 
-        maxAckDelayMilliseconds = (int) platformContext
-                .getConfiguration()
+        maxAckDelayMilliseconds = (int) configuration
                 .getConfigData(ReconnectConfig.class)
                 .maxAckDelay()
                 .toMillis();

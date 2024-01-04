@@ -19,7 +19,6 @@ package com.swirlds.common.merkle.synchronization;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -36,6 +35,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.SocketException;
@@ -92,7 +92,7 @@ public class TeachingSynchronizer {
     /**
      * Create a new teaching synchronizer.
      *
-     * @param platformContext the platform context
+     * @param configuration   the configuration
      * @param threadManager   responsible for managing thread lifecycles
      * @param in              the input stream
      * @param out             the output stream
@@ -103,7 +103,7 @@ public class TeachingSynchronizer {
      * @param reconnectConfig reconnect configuration from platform
      */
     public TeachingSynchronizer(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final MerkleDataInputStream in,
@@ -118,7 +118,7 @@ public class TeachingSynchronizer {
         outputStream = Objects.requireNonNull(out, "out must not be null");
 
         subtrees = new LinkedList<>();
-        subtrees.add(new TeacherSubtree(platformContext, root));
+        subtrees.add(new TeacherSubtree(configuration, root));
 
         this.breakConnection = breakConnection;
         this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");

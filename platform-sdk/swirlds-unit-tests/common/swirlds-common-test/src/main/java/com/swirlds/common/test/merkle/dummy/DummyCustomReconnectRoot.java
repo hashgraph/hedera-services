@@ -73,7 +73,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
     public TeacherTreeView<NodeToSend> buildTeacherView() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final DummyTeacherTreeView view = new DummyTeacherTreeView(platformContext, this);
+        final DummyTeacherTreeView view = new DummyTeacherTreeView(platformContext.getConfiguration(), this);
         views.add(view);
         return view;
     }
