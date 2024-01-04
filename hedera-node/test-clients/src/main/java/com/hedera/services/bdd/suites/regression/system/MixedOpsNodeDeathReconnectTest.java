@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
@@ -102,6 +103,7 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                 .when(
                         // Submit operations when node 2 is down
                         inParallel(mixedOpsBurst.get()),
+                        sleepFor(180_000L).logged(),
                         // start all nodes
                         startNode("Carol"),
                         // wait for node 2 to go BEHIND
