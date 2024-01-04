@@ -106,6 +106,10 @@ public class WritableTopicStore {
         return topicState.modifiedKeys();
     }
 
+    /**
+     * Returns the Comparator used in the constructor. For unit test.
+     * @return the Comparator used in the constructor.
+     */
     public static Comparator<TopicID> getComparator() {
         return TOPIC_ID_COMPARATOR;
     }

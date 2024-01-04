@@ -61,7 +61,7 @@ class WritableTopicStoreTest extends ConsensusTestBase {
 
     @Test
     void testWritableStoreSorted() {
-        Topic topic = createTopic(4L);
+        topic = createTopic(4L);
         writableStore.put(topic);
         topic = createTopic(3L);
         writableStore.put(topic);
