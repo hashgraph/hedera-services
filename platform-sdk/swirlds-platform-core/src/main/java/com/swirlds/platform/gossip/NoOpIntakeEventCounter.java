@@ -36,6 +36,14 @@ public class NoOpIntakeEventCounter implements IntakeEventCounter {
      * {@inheritDoc}
      */
     @Override
+    public int getUnprocessedEventCount(@NonNull NodeId peer) {
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void eventEnteredIntakePipeline(@NonNull NodeId peer) {
         // no-op
     }

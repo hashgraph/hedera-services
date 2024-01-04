@@ -29,6 +29,7 @@ import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.GenerationReservation;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
@@ -69,9 +70,10 @@ public class TurboSyncRunner {
 
     private final PlatformContext platformContext;
     private final NodeId selfId;
-    private final NodeId otherId;
+    private final NodeId peerId;
     private final FallenBehindManager fallenBehindManager;
     private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
+    private final IntakeEventCounter intakeEventCounter;
     private final Connection connection;
     private final SyncOutputStream dataOutputStream;
     private final SyncInputStream dataInputStream;
@@ -104,6 +106,7 @@ public class TurboSyncRunner {
     private int cycleNumber = 0;
 
     private final int maxTipCount;
+    private final int maximumPermissibleEventsInIntake;
 
     /**
      * Constructor.
@@ -111,10 +114,12 @@ public class TurboSyncRunner {
      * @param platformContext          the platform context
      * @param addressBook              the address book
      * @param selfId                   our ID
-     * @param otherId                  the ID of the peer we are syncing with
+     * @param peerId                   the ID of the peer we are syncing with
      * @param fallenBehindManager      tracks if we are behind or not
      * @param peerAgnosticSyncChecks   peer agnostic checks which are performed to determine whether this node should
      *                                 sync or not
+     * @param intakeEventCounter       the intake event counter, counts how many events from each peer are in the intake
+     *                                 pipeline
      * @param connection               the connection to the peer we are syncing with
      * @param executor                 the executor to use for parallel read/write operations
      * @param shadowgraph              the shadowgraph, contains events we know about
@@ -126,9 +131,10 @@ public class TurboSyncRunner {
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final NodeId otherId,
+            @NonNull final NodeId peerId,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final Connection connection,
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
@@ -138,9 +144,10 @@ public class TurboSyncRunner {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
-        this.otherId = Objects.requireNonNull(otherId);
+        this.peerId = Objects.requireNonNull(peerId);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.connection = Objects.requireNonNull(connection);
         this.dataOutputStream = connection.getDos();
         this.dataInputStream = connection.getDis();
@@ -150,11 +157,12 @@ public class TurboSyncRunner {
         this.latestEventTipsetTracker = Objects.requireNonNull(latestEventTipsetTracker);
         this.gossipEventConsumer = Objects.requireNonNull(gossipEventConsumer);
 
-        maxTipCount = addressBook.getSize() * 2;
+        this.maxTipCount = addressBook.getSize() * 2;
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
         this.hashOnSyncThread = syncConfig.hashOnGossipThreads();
+        this.maximumPermissibleEventsInIntake = syncConfig.maximumPermissibleEventsInIntake();
     }
 
     /**
@@ -198,9 +206,9 @@ public class TurboSyncRunner {
             final Generations theirGenerations = dataReceivedB.theirGenerations();
 
             switch (SyncFallenBehindStatus.getStatus(myGenerations, theirGenerations)) {
-                case NONE_FALLEN_BEHIND -> fallenBehindManager.reportNotFallenBehind(otherId);
+                case NONE_FALLEN_BEHIND -> fallenBehindManager.reportNotFallenBehind(peerId);
                 case SELF_FALLEN_BEHIND -> {
-                    fallenBehindManager.reportFallenBehind(otherId);
+                    fallenBehindManager.reportFallenBehind(peerId);
                     return false;
                 }
                 case OTHER_FALLEN_BEHIND -> {
@@ -210,9 +218,8 @@ public class TurboSyncRunner {
             }
         }
 
-        // TODO check the number of events in the intake pipeline from this peer
-
-        return peerAgnosticSyncChecks.shouldSync();
+        return peerAgnosticSyncChecks.shouldSync()
+                && intakeEventCounter.getUnprocessedEventCount(peerId) < maximumPermissibleEventsInIntake;
     }
 
     /**

@@ -589,7 +589,6 @@ public final class SyncUtils {
 
                 final ShadowEvent shadowEvent = myTips.get(i);
                 if (shadowEvent != null) {
-                    // TODO: when I run turbo sync very fast, sometimes I am missing a shadow event
                     knownTips.add(myTips.get(i));
                 }
             }

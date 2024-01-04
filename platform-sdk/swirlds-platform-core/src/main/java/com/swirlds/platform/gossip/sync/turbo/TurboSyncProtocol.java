@@ -25,6 +25,7 @@ import com.swirlds.platform.Utilities;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
@@ -49,8 +50,10 @@ public class TurboSyncProtocol implements Protocol {
     private final PlatformContext platformContext;
     private final AddressBook addressBook;
     private final NodeId selfId;
+    private final NodeId peerId;
     private final FallenBehindManager fallenBehindManager;
     private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
+    private final IntakeEventCounter intakeEventCounter;
     private final ParallelExecutor executor;
     private final ShadowGraph shadowgraph;
     private final Supplier<GraphGenerations> generationsSupplier;
@@ -63,9 +66,12 @@ public class TurboSyncProtocol implements Protocol {
      * @param platformContext          the platform context
      * @param addressBook              the address book
      * @param selfId                   the id of this node
+     * @param peerId                   the id of the peer we are syncing with
      * @param fallenBehindManager      tracks if we are behind or not
      * @param peerAgnosticSyncChecks   peer agnostic checks which are performed to determine whether this node should
      *                                 sync or not
+     * @param intakeEventCounter       the intake event counter, counts how many events from each peer are in the intake
+     *                                 pipeline
      * @param executor                 the executor to use for parallel read/write operations
      * @param shadowgraph              the shadow graph to sync
      * @param generationsSupplier      a supplier for the current graph generation
@@ -76,8 +82,10 @@ public class TurboSyncProtocol implements Protocol {
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
+            @NonNull final NodeId peerId,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
@@ -87,8 +95,10 @@ public class TurboSyncProtocol implements Protocol {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
+        this.peerId = Objects.requireNonNull(peerId);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.executor = Objects.requireNonNull(executor);
         this.shadowgraph = Objects.requireNonNull(shadowgraph);
         this.generationsSupplier = Objects.requireNonNull(generationsSupplier);
@@ -121,7 +131,9 @@ public class TurboSyncProtocol implements Protocol {
     }
 
     private boolean shouldSync() {
-        return !fallenBehindManager.hasFallenBehind() && peerAgnosticSyncChecks.shouldSync();
+        return !fallenBehindManager.hasFallenBehind()
+                && peerAgnosticSyncChecks.shouldSync()
+                && !intakeEventCounter.hasUnprocessedEvents(peerId);
     }
 
     /**
@@ -136,9 +148,10 @@ public class TurboSyncProtocol implements Protocol {
                             platformContext,
                             addressBook,
                             selfId,
-                            connection.getOtherId(),
+                            peerId,
                             fallenBehindManager,
                             peerAgnosticSyncChecks,
+                            intakeEventCounter,
                             connection,
                             executor,
                             shadowgraph,

@@ -20,8 +20,6 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;
 
-// TODO test with new settings disabled
-
 /**
  * Configuration of the sync gossip algorithm
  *
@@ -37,11 +35,10 @@ import java.time.Duration;
  *                                         event intake thread.
  * @param waitForEventsInIntake            if true, wait for events to be processed by the intake pipeline before
  *                                         starting a new sync
- * @param maximumPermissibleEventsInIntake ignored if {@link #waitForEventsInIntake} is false. If true, then this number
- *                                         of events from the peer that is acceptable to be in the intake pipeline
- *                                         before starting a new sync with the peer. If the number of events in the
- *                                         intake pipeline exceeds this number for the peer, then no new syncs will be
- *                                         started with that peer.
+ * @param maximumPermissibleEventsInIntake ignored if {@link #waitForEventsInIntake} is false or if turbo sync in
+ *                                         disabled. If true, then if the number of events in the intake pipeline is
+ *                                         seen to be greater than this value, then the ongoing sync will be aborted
+ *                                         until the number of events in the intake pipeline goes down to zero.
  * @param filterLikelyDuplicates           if true then do not send events that are likely to be duplicates when they
  *                                         are received by the peer, this setting is ignored if turbo sync is enabled
  * @param nonAncestorFilterThreshold       ignored if {@link #filterLikelyDuplicates} is false. For each event that is
@@ -63,7 +60,7 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
-        @ConfigProperty(defaultValue = "200") int maximumPermissibleEventsInIntake, // TODO reconsider this
+        @ConfigProperty(defaultValue = "200") int maximumPermissibleEventsInIntake,
         @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,

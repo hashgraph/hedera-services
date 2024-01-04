@@ -77,8 +77,6 @@ public class LatestEventTipsetTracker {
         return latestSelfEventTipset;
     }
 
-    // TODO test and javadoc a bit better maybe
-
     /**
      * Get the tipset of the latest self event in a list of events. If there are no self events in this list, return the
      * tipset of the latest self event. Event list is in topological order from left to right.

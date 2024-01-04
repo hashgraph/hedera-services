@@ -35,6 +35,15 @@ public interface IntakeEventCounter {
     boolean hasUnprocessedEvents(@NonNull final NodeId peer);
 
     /**
+     * Returns the number of events from a given sender that have entered the intake pipeline, but aren't yet through
+     * it.
+     *
+     * @param peer the peer to check for unprocessed events
+     * @return the number of unprocessed events
+     */
+    int getUnprocessedEventCount(@NonNull final NodeId peer);
+
+    /**
      * Indicates that an event from a given peer has entered the intake pipeline
      *
      * @param peer the peer that sent the event
