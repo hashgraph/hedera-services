@@ -44,15 +44,15 @@ import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
+import com.swirlds.platform.event.preconsensus.PcesConfig_;
+import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
+import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -98,7 +98,7 @@ class PcesWriterTests {
     private PlatformContext platformContext;
     private StandardGraphGenerator generator;
     private int generationsUntilAncient;
-    private PreconsensusEventStreamSequencer sequencer;
+    private PcesSequencer sequencer;
     private PcesFileTracker pcesFiles;
     private PcesWriter writer;
     private EventDurabilityNexus eventDurabilityNexus;
@@ -129,7 +129,7 @@ class PcesWriterTests {
                 false);
 
         // Verify that the events were written correctly
-        final PreconsensusEventMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
+        final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
         for (final GossipEvent event : events) {
             assertTrue(eventsIterator.hasNext());
             assertEquals(event, eventsIterator.next());
@@ -155,7 +155,7 @@ class PcesWriterTests {
         assertFalse(eventsIterator3.hasNext());
 
         // Do basic validation on event files
-        final List<PreconsensusEventFile> files = new ArrayList<>();
+        final List<PcesFile> files = new ArrayList<>();
         pcesFiles.getFileIterator(0, 0).forEachRemaining(files::add);
 
         // There should be at least 2 files.
@@ -167,7 +167,7 @@ class PcesWriterTests {
         Instant previousTimestamp = Instant.MIN;
         long previousMinimum = Long.MIN_VALUE;
         long previousMaximum = Long.MIN_VALUE;
-        for (final PreconsensusEventFile file : files) {
+        for (final PcesFile file : files) {
             assertEquals(nextSequenceNumber, file.getSequenceNumber());
             nextSequenceNumber++;
             assertTrue(isGreaterThanOrEqualTo(file.getTimestamp(), previousTimestamp));
@@ -244,7 +244,7 @@ class PcesWriterTests {
         final Random random = RandomUtils.getRandomPrintSeed();
         generator = buildGraphGenerator(random);
         generationsUntilAncient = random.nextInt(50, 100);
-        sequencer = new PreconsensusEventStreamSequencer();
+        sequencer = new PcesSequencer();
         pcesFiles = new PcesFileTracker();
 
         time = new FakeTime(Duration.ofMillis(1));
@@ -260,8 +260,8 @@ class PcesWriterTests {
 
     private PlatformContext buildContext() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(PreconsensusEventStreamConfig_.DATABASE_DIRECTORY, testDirectory)
-                .withValue(PreconsensusEventStreamConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
+                .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory)
+                .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_BYTES_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_COUNT_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, Integer.MAX_VALUE)
@@ -409,8 +409,8 @@ class PcesWriterTests {
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreconsensusEventFile> it = pcesFiles.getFileIterator(0, 0); it.hasNext(); ) {
-            final PreconsensusEventFile file = it.next();
+        for (final Iterator<PcesFile> it = pcesFiles.getFileIterator(0, 0); it.hasNext(); ) {
+            final PcesFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
     }
@@ -491,9 +491,9 @@ class PcesWriterTests {
 
         if (truncateLastFile) {
             // Remove a single byte from the last file. This will corrupt the last event that was written.
-            final Iterator<PreconsensusEventFile> it = pcesFiles.getFileIterator(NO_MINIMUM_GENERATION, 0);
+            final Iterator<PcesFile> it = pcesFiles.getFileIterator(NO_MINIMUM_GENERATION, 0);
             while (it.hasNext()) {
-                final PreconsensusEventFile file = it.next();
+                final PcesFile file = it.next();
                 if (!it.hasNext()) {
                     FileManipulation.truncateNBytesFromFile(file.getPath(), 1);
                 }
@@ -597,9 +597,8 @@ class PcesWriterTests {
         // Since we were very careful to always advance the first non-ancient generation, we should
         // find lots of files with a minimum generation exceeding 0.
         boolean foundNonZeroMinimumGeneration = false;
-        for (final Iterator<PreconsensusEventFile> fileIterator = pcesFiles.getFileIterator(0, 0);
-                fileIterator.hasNext(); ) {
-            final PreconsensusEventFile file = fileIterator.next();
+        for (final Iterator<PcesFile> fileIterator = pcesFiles.getFileIterator(0, 0); fileIterator.hasNext(); ) {
+            final PcesFile file = fileIterator.next();
             if (file.getMinimumGeneration() > 0) {
                 foundNonZeroMinimumGeneration = true;
                 break;

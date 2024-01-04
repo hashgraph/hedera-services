@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import com.swirlds.platform.event.GossipEvent;
  * Responsible for assigning stream sequence numbers to events. All events that are written
  * to the preconsensus event stream must be assigned a sequence number.
  */
-public class PreconsensusEventStreamSequencer {
+public class PcesSequencer {
 
     private long nextStreamSequenceNumber = 0;
 

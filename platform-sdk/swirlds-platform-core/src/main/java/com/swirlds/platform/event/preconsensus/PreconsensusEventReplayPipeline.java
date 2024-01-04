@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,7 @@ public class PreconsensusEventReplayPipeline {
         this.unhashedEventIterator = Objects.requireNonNull(unhashedEventIterator);
         this.intakeHandler = Objects.requireNonNull(intakeHandler);
 
-        final PreconsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         intakeQueue = new QueueThreadConfiguration<EventBeingHashed>(threadManager)
                 .setThreadName("EventReplayPipeline-Ingest")

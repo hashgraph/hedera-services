@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,17 +25,17 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("PreconsensusEventStreamSequencer Tests")
-class PreconsensusEventStreamSequencerTests {
+@DisplayName("PcesSequencer Tests")
+class PcesSequencerTests {
 
     @Test
     @DisplayName("Standard Behavior Test")
     void standardBehaviorTest() {
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
 
         long prev = -1;
         for (int i = 0; i < 1000; i++) {
@@ -58,7 +58,7 @@ class PreconsensusEventStreamSequencerTests {
     @Test
     @DisplayName("Set Value Twice Test")
     void setValueTwiceTest() {
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
 
         final GossipEvent event = new GossipEvent();
 
@@ -69,7 +69,7 @@ class PreconsensusEventStreamSequencerTests {
     @Test
     @DisplayName("Set Stale Test")
     void setStaleTest() {
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
 
         final GossipEvent event = new GossipEvent();
 

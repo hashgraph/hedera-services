@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -286,8 +286,9 @@ class OrphanBufferTests {
                 // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
                 final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
                         ConsensusConstants.ROUND_FIRST,
-                        ConsensusConstants.ROUND_NEGATIVE_INFINITY,
-                        minimumGenerationNonAncient);
+                        ConsensusConstants.ROUND_FIRST,
+                        minimumGenerationNonAncient,
+                        false);
                 unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
             }
 

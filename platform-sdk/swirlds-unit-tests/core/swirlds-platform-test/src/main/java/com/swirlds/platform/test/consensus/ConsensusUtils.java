@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.test.consensus;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -60,11 +62,16 @@ public abstract class ConsensusUtils {
     }
 
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
-        final ConsensusConfig consensusConfig = ConfigurationBuilder.create()
+
+        final Configuration defaultConfiguration = ConfigurationBuilder.create()
                 .withConfigDataType(ConsensusConfig.class)
-                .build()
-                .getConfigData(ConsensusConfig.class);
-        return new ConsensusImpl(consensusConfig, NOOP_CONSENSUS_METRICS, addressBook);
+                .build();
+
+        final ConsensusConfig consensusConfig = defaultConfiguration.getConfigData(ConsensusConfig.class);
+        final EventConfig eventConfig = defaultConfiguration.getConfigData(EventConfig.class);
+
+        return new ConsensusImpl(
+                consensusConfig, NOOP_CONSENSUS_METRICS, addressBook, eventConfig.useBirthRoundAncientThreshold());
     }
 
     public static void loadEventsIntoGenerator(

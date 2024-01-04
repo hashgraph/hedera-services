@@ -340,7 +340,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         }
 
         final var configuration = builder.build();
-        ConfigurationHolder.setConfiguration(configuration);
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
         return configuration;
     }
 
