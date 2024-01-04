@@ -27,10 +27,10 @@ import java.util.Objects;
 /**
  * Iterates over events from a sequence of preconsensus event files.
  */
-public class PreconsensusEventMultiFileIterator implements IOIterator<GossipEvent> {
+public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
 
-    private final Iterator<PreconsensusEventFile> fileIterator;
-    private PreconsensusEventFileIterator currentIterator;
+    private final Iterator<PcesFile> fileIterator;
+    private PcesFileIterator currentIterator;
     private final long minimumGeneration;
     private GossipEvent next;
     private int truncatedFileCount = 0;
@@ -44,8 +44,7 @@ public class PreconsensusEventMultiFileIterator implements IOIterator<GossipEven
      * @param fileIterator
      * 		an iterator that walks over event files
      */
-    public PreconsensusEventMultiFileIterator(
-            final long minimumGeneration, @NonNull final Iterator<PreconsensusEventFile> fileIterator) {
+    public PcesMultiFileIterator(final long minimumGeneration, @NonNull final Iterator<PcesFile> fileIterator) {
 
         this.fileIterator = Objects.requireNonNull(fileIterator);
         this.minimumGeneration = minimumGeneration;
@@ -65,7 +64,7 @@ public class PreconsensusEventMultiFileIterator implements IOIterator<GossipEven
                     break;
                 }
 
-                currentIterator = new PreconsensusEventFileIterator(fileIterator.next(), minimumGeneration);
+                currentIterator = new PcesFileIterator(fileIterator.next(), minimumGeneration);
             } else {
                 next = currentIterator.next();
             }

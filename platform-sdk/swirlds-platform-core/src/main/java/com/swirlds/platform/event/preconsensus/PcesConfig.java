@@ -102,7 +102,7 @@ import java.time.Duration;
  *                                                        in production.
  */
 @ConfigData("event.preconsensus")
-public record PreconsensusEventStreamConfig(
+public record PcesConfig(
         @ConfigProperty(defaultValue = "1000") int writeQueueCapacity,
         @ConfigProperty(defaultValue = "1h") Duration minimumRetentionPeriod,
         @ConfigProperty(defaultValue = "10") int preferredFileSizeMegabytes,
