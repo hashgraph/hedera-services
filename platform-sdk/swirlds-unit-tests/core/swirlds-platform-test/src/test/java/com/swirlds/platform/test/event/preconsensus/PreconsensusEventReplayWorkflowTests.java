@@ -77,7 +77,7 @@ class PreconsensusEventReplayWorkflowTests {
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
         final int eventCount = 1000;
         for (int i = 0; i < eventCount; i++) {
-            final EventImpl event = graphGenerator.generateEvent();
+            final EventImpl event = graphGenerator.generateEventWithoutDescriptor();
             events.add(event.getBaseEvent());
         }
         final Iterator<GossipEvent> eventIterator = events.iterator();
