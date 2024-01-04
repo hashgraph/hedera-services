@@ -37,7 +37,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.health.clock;
     exports com.swirlds.platform.health.entropy;
     exports com.swirlds.platform.health.filesystem;
-    exports com.swirlds.platform.intake;
     exports com.swirlds.platform.listeners;
     exports com.swirlds.platform.metrics;
     exports com.swirlds.platform.network;
