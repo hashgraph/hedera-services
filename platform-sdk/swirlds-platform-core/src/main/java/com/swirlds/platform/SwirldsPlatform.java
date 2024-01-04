@@ -765,7 +765,11 @@ public class SwirldsPlatform implements Platform {
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
-                getAddressBook()));
+                getAddressBook(),
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .useBirthRoundAncientThreshold()));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -782,13 +786,8 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
-                    initialState.getRound(),
-                    initialMinimumGenerationNonAncient,
-                    platformContext
-                            .getConfiguration()
-                            .getConfigData(ConsensusConfig.class)
-                            .roundsNonAncient()));
+            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                    initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
             platformWiring.updateMinimumGenerationNonAncient(initialState.getMinRoundGeneration());
 
             // We don't want to invoke these callbacks until after we are starting up.
@@ -973,13 +972,8 @@ public class SwirldsPlatform implements Platform {
                     .inject(new AddressBookUpdate(
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
-            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
-                    signedState.getRound(),
-                    signedState.getMinRoundGeneration(),
-                    platformContext
-                            .getConfiguration()
-                            .getConfigData(ConsensusConfig.class)
-                            .roundsNonAncient()));
+            platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                    signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
             platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);

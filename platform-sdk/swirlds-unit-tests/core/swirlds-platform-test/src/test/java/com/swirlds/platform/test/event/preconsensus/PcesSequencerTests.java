@@ -29,7 +29,7 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("PreconsensusEventStreamSequencer Tests")
+@DisplayName("PcesSequencer Tests")
 class PcesSequencerTests {
 
     @Test

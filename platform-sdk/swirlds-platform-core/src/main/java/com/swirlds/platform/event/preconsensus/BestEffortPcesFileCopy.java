@@ -64,7 +64,7 @@ public final class BestEffortPcesFileCopy {
      *                                    state that is being written
      * @param round                       the round of the state that is being written
      */
-    public static void copyPreconsensusEventStreamFilesRetryOnFailure(
+    public static void copyPcesFilesRetryOnFailure(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Path destinationDirectory,
@@ -89,7 +89,7 @@ public final class BestEffortPcesFileCopy {
             try {
                 executeAndRename(
                         pcesDestination,
-                        temporaryDirectory -> copyPreconsensusEventStreamFiles(
+                        temporaryDirectory -> copyPcesFiles(
                                 platformContext, selfId, temporaryDirectory, minimumGenerationNonAncient));
 
                 return;
@@ -128,14 +128,14 @@ public final class BestEffortPcesFileCopy {
      * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
      *                                    state that is being written
      */
-    private static void copyPreconsensusEventStreamFiles(
+    private static void copyPcesFiles(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Path destinationDirectory,
             final long minimumGenerationNonAncient)
             throws IOException {
 
-        final List<PcesFile> allFiles = gatherPreconsensusFilesOnDisk(selfId, platformContext);
+        final List<PcesFile> allFiles = gatherPcesFilesOnDisk(selfId, platformContext);
         if (allFiles.isEmpty()) {
             return;
         }
@@ -144,12 +144,12 @@ public final class BestEffortPcesFileCopy {
         Collections.sort(allFiles);
 
         // Discard all files that either have an incorrect origin or that do not contain non-ancient events.
-        final List<PcesFile> filesToCopy = getRequiredPreconsensusFiles(allFiles, minimumGenerationNonAncient);
+        final List<PcesFile> filesToCopy = getRequiredPcesFiles(allFiles, minimumGenerationNonAncient);
         if (filesToCopy.isEmpty()) {
             return;
         }
 
-        copyPreconsensusFileList(filesToCopy, destinationDirectory);
+        copyPcesFileList(filesToCopy, destinationDirectory);
     }
 
     /**
@@ -162,7 +162,7 @@ public final class BestEffortPcesFileCopy {
      * @return the list of files to copy
      */
     @NonNull
-    private static List<PcesFile> getRequiredPreconsensusFiles(
+    private static List<PcesFile> getRequiredPcesFiles(
             @NonNull final List<PcesFile> allFiles, final long minimumGenerationNonAncient) {
 
         final List<PcesFile> filesToCopy = new ArrayList<>();
@@ -216,10 +216,11 @@ public final class BestEffortPcesFileCopy {
      * @return a list of all PCES files on disk
      */
     @NonNull
-    private static List<PcesFile> gatherPreconsensusFilesOnDisk(
+    private static List<PcesFile> gatherPcesFilesOnDisk(
             @NonNull final NodeId selfId, @NonNull final PlatformContext platformContext) throws IOException {
         final List<PcesFile> allFiles = new ArrayList<>();
-        final Path preconsensusEventStreamDirectory = PcesUtilities.getDatabaseDirectory(platformContext, selfId);
+        final Path preconsensusEventStreamDirectory =
+                PcesUtilities.getDatabaseDirectory(platformContext, selfId);
         try (final Stream<Path> stream = Files.walk(preconsensusEventStreamDirectory)) {
             stream.filter(Files::isRegularFile).forEach(path -> {
                 try {
@@ -260,8 +261,8 @@ public final class BestEffortPcesFileCopy {
      * @param filesToCopy     the files to copy
      * @param pcesDestination the directory where the files should be copied
      */
-    private static void copyPreconsensusFileList(
-            @NonNull final List<PcesFile> filesToCopy, @NonNull final Path pcesDestination) throws IOException {
+    private static void copyPcesFileList(@NonNull final List<PcesFile> filesToCopy, @NonNull final Path pcesDestination)
+            throws IOException {
         logger.info(STATE_TO_DISK.getMarker(), "Copying {} preconsensus event file(s)", filesToCopy.size());
 
         // Copy files from newest to oldest. Newer files are more likely to be modified concurrently by the

@@ -421,7 +421,9 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                addressBook.getRound(),
+                nonAncientEventWindow.useBirthRoundForAncient()
+                        ? nonAncientEventWindow.pendingConsensusRound()
+                        : addressBook.getRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);

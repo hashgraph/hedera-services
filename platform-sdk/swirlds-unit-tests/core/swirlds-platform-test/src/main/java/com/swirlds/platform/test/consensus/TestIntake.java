@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
@@ -75,7 +76,8 @@ public class TestIntake implements LoadableFromSignedState {
         output = new ConsensusOutput(time);
         this.consensusConfig = consensusConfig;
 
-        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook);
+        // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
+        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, false);
         shadowGraph =
                 new ShadowGraph(Time.getCurrent(), mock(SyncMetrics.class), mock(AddressBook.class), new NodeId(0));
 
@@ -107,6 +109,11 @@ public class TestIntake implements LoadableFromSignedState {
 
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
+
+        linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        linkedEventIntakeWiring
+                .nonAncientEventWindowOutput()
+                .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
 
         model.start();
     }
@@ -170,15 +177,24 @@ public class TestIntake implements LoadableFromSignedState {
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         consensus.loadSnapshot(snapshot);
 
+        // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
+        // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
+        // production.
         linkerWiring
                 .nonAncientEventWindowInput()
                 .put(NonAncientEventWindow.createUsingRoundsNonAncient(
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
-                        consensusConfig.roundsNonAncient()));
+                        consensusConfig.roundsNonAncient(),
+                        false));
 
         shadowGraph.clear();
         shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());
+    }
+
+    public void flush() {
+        linkerWiring.flushRunnable().run();
+        linkedEventIntakeWiring.flushRunnable().run();
     }
 
     public @NonNull ConsensusOutput getOutput() {
