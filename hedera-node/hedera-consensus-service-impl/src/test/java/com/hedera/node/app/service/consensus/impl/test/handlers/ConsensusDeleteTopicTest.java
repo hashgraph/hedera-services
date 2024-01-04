@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,8 +86,8 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
     void setUp() {
         subject = new ConsensusDeleteTopicHandler();
 
-        writableTopicState = writableTopicStateWithOneKey();
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        writableTopicKVState = writableTopicStateWithOneKey(comparator);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableTopicKVState);
         writableStore = new WritableTopicStore(writableStates);
 
         lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
@@ -163,8 +163,8 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         final var txn = newDeleteTxn();
         given(handleContext.body()).willReturn(txn);
 
-        writableTopicState = emptyWritableTopicState();
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        writableTopicKVState = emptyWritableTopicState(comparator);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableTopicKVState);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
@@ -190,8 +190,8 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
                 null,
                 null);
 
-        writableTopicState = writableTopicStateWithOneKey();
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        writableTopicKVState = writableTopicStateWithOneKey(comparator);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableTopicKVState);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 

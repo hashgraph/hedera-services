@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -44,10 +46,13 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
      *
      * @param md the state metadata
      * @param virtualMap the backing merkle data structure to use
+     * @param comparator the comparator to use for the keys
      */
     public OnDiskWritableKVState(
-            @NonNull final StateMetadata<K, V> md, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
-        super(md.stateDefinition().stateKey());
+            @NonNull final StateMetadata<K, V> md,
+            @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap,
+            @Nullable Comparator<K> comparator) {
+        super(md.stateDefinition().stateKey(), comparator);
         this.md = md;
         this.virtualMap = Objects.requireNonNull(virtualMap);
     }

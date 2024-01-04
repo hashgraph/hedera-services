@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -69,6 +71,13 @@ public class WrappedWritableStates implements WritableStates {
     public <K, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         return (WritableKVState<K, V>)
                 writableKVStateMap.computeIfAbsent(stateKey, s -> new WrappedWritableKVState<>(delegate.get(stateKey)));
+    }
+
+    @Override
+    @NonNull
+    public <K, V> WritableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator) {
+        return (WritableKVState<K, V>) writableKVStateMap.computeIfAbsent(
+                stateKey, s -> new WrappedWritableKVState<>(delegate.get(stateKey), comparator));
     }
 
     @SuppressWarnings("unchecked")

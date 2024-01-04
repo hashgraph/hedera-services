@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,7 +202,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertEquals(anotherKey, newTopic.adminKey());
     }
 
@@ -222,7 +222,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertNotNull(newTopic.adminKey());
     }
 
@@ -242,7 +242,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertNull(newTopic.adminKey());
     }
 
@@ -262,7 +262,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertNotNull(newTopic.adminKey());
     }
 
@@ -295,7 +295,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertEquals(anotherKey, newTopic.submitKey());
     }
 
@@ -330,7 +330,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertEquals(newMemo, newTopic.memo());
     }
 
@@ -372,7 +372,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertEquals(123L, newTopic.expirationSecond());
     }
 
@@ -414,7 +414,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertEquals(123L, newTopic.autoRenewPeriod());
     }
 
@@ -465,7 +465,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertEquals(autoRenewAccount, newTopic.autoRenewAccountId());
     }
 
@@ -483,7 +483,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicId);
+        final var newTopic = writableTopicKVState.get(topicId);
         assertEquals(topic, newTopic);
     }
 

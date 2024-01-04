@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,11 @@
 
 package com.hedera.node.app.service.consensus.impl.test.codecs;
 
-import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -38,7 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
+class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
     @Mock
     protected WritableStates writableStates;
 
@@ -105,9 +101,6 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
                         com.hedera.node.app.service.mono.utils.EntityNum,
                         com.hedera.node.app.service.mono.state.merkle.MerkleTopic>
                 monoTopics = new MerkleMap<>();
-        writableTopicState = emptyWritableTopicState();
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        WritableTopicStore appTopics = new WritableTopicStore(writableStates);
 
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic = getMerkleTopic(
                 (com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
@@ -117,10 +110,9 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
                         com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
                                 .orElse(null));
         monoTopics.put(topicEntityNum, merkleTopic);
-        refreshStoresWithCurrentTopicOnlyInReadable();
-        ConsensusServiceStateTranslator.migrateFromMerkleToPbj(monoTopics, appTopics);
+        ConsensusServiceStateTranslator.migrateFromMerkleToPbj(monoTopics, writableStore);
 
-        final Optional<Topic> convertedTopic = appTopics.get(topicId);
+        final Optional<Topic> convertedTopic = writableStore.get(topicId);
 
         assertEquals(createTopic(), convertedTopic.get());
     }

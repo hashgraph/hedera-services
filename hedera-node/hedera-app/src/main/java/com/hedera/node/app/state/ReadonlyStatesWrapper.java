@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Set;
 
 /**
@@ -45,6 +47,12 @@ public class ReadonlyStatesWrapper implements ReadableStates {
     @Override
     public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         return new ReadonlyKVStateWrapper<>(delegate.get(stateKey));
+    }
+
+    @NonNull
+    @Override
+    public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator) {
+        return new ReadonlyKVStateWrapper<>(delegate.get(stateKey, comparator));
     }
 
     @NonNull

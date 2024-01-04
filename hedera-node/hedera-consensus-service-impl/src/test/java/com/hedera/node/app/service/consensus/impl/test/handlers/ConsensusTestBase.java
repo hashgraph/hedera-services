@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.spy;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -42,6 +43,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Comparator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -88,11 +90,13 @@ public class ConsensusTestBase {
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
 
-    protected MapReadableKVState<TopicID, Topic> readableTopicState;
-    protected MapWritableKVState<TopicID, Topic> writableTopicState;
+    protected MapReadableKVState<TopicID, Topic> readableTopicKVState;
+    protected MapWritableKVState<TopicID, Topic> writableTopicKVState;
 
     protected ReadableTopicStore readableStore;
     protected WritableTopicStore writableStore;
+
+    protected Comparator<TopicID> comparator;
 
     @BeforeEach
     void commonSetUp() {
@@ -101,35 +105,39 @@ public class ConsensusTestBase {
     }
 
     protected void refreshStoresWithCurrentTopicOnlyInReadable() {
-        readableTopicState = readableTopicState();
-        writableTopicState = emptyWritableTopicState();
-        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        readableTopicKVState = readableTopicState();
+        comparator = WritableTopicStore.getComparator();
+        writableTopicKVState = emptyWritableTopicState(comparator);
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicKVState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableTopicKVState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentTopicInBothReadableAndWritable() {
-        readableTopicState = readableTopicState();
-        writableTopicState = writableTopicStateWithOneKey();
-        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        readableTopicKVState = readableTopicState();
+        comparator = WritableTopicStore.getComparator();
+        writableTopicKVState = writableTopicStateWithOneKey(comparator);
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicKVState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableTopicKVState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
+        writableStore = spy(writableStore);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     @NonNull
-    protected MapWritableKVState<TopicID, Topic> emptyWritableTopicState() {
-        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY).build();
+    protected MapWritableKVState<TopicID, Topic> emptyWritableTopicState(Comparator<TopicID> comparator) {
+        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY, comparator)
+                .buildWithComparator();
     }
 
     @NonNull
-    protected MapWritableKVState<TopicID, Topic> writableTopicStateWithOneKey() {
-        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY)
+    protected MapWritableKVState<TopicID, Topic> writableTopicStateWithOneKey(Comparator<TopicID> comparator) {
+        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY, comparator)
                 .value(topicId, topic)
-                .build();
+                .buildWithComparator();
     }
 
     @NonNull
@@ -189,6 +197,21 @@ public class ConsensusTestBase {
     protected Topic createTopic() {
         return new Topic.Builder()
                 .topicId(topicId)
+                .adminKey(key)
+                .submitKey(key)
+                .autoRenewPeriod(autoRenewSecs)
+                .autoRenewAccountId(autoRenewId)
+                .expirationSecond(expirationTime)
+                .sequenceNumber(sequenceNumber)
+                .memo(memo)
+                .deleted(true)
+                .runningHash(Bytes.wrap(runningHash))
+                .build();
+    }
+
+    protected Topic createTopic(long topicId) {
+        return new Topic.Builder()
+                .topicId(TopicID.newBuilder().topicNum(topicId).build())
                 .adminKey(key)
                 .submitKey(key)
                 .autoRenewPeriod(autoRenewSecs)

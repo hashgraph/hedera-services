@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -404,9 +404,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var submitKey = SIMPLE_KEY_B;
         final var txnBody = newCreateTxn(adminKey, submitKey, true);
         given(handleContext.body()).willReturn(txnBody);
-        final var writableState = writableTopicStateWithOneKey();
+        final var writableState = writableTopicStateWithOneKey(comparator);
 
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
@@ -432,10 +432,10 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var submitKey = SIMPLE_KEY_B;
         final var txnBody = newCreateTxn(adminKey, submitKey, true);
         given(handleContext.body()).willReturn(txnBody);
-        final var writableState = writableTopicStateWithOneKey();
+        final var writableState = writableTopicStateWithOneKey(comparator);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
 

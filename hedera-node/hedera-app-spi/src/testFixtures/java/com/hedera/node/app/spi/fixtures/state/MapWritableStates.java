@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,9 @@ import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +52,17 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
     @NonNull
     @Override
     public <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
+        final var state = states.get(requireNonNull(stateKey));
+        if (state == null) {
+            throw new IllegalArgumentException("Unknown k/v state key " + stateKey);
+        }
+
+        return (WritableKVState<K, V>) state;
+    }
+
+    @Override
+    @NonNull
+    public <K, V> WritableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator) {
         final var state = states.get(requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown k/v state key " + stateKey);

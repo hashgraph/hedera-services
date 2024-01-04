@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,8 +64,10 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -476,7 +478,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
         @NonNull
         @Override
-        public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+        public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator) {
             final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) kvInstances.get(stateKey);
             if (instance != null) {
                 return instance;
@@ -489,11 +491,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
             final var node = findNode(md);
             if (node instanceof VirtualMap v) {
-                final var ret = createReadableKVState(md, v);
+                final ReadableKVState<K, V> ret = createReadableKVState(md, v, comparator);
                 kvInstances.put(stateKey, ret);
                 return ret;
             } else if (node instanceof MerkleMap m) {
-                final var ret = createReadableKVState(md, m);
+                final ReadableKVState<K, V> ret = createReadableKVState(md, m, comparator);
                 kvInstances.put(stateKey, ret);
                 return ret;
             } else {
@@ -504,8 +506,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
         @NonNull
         @Override
-        public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
-            final ReadableSingletonState<T> instance = (ReadableSingletonState<T>) singletonInstances.get(stateKey);
+        public <V> ReadableSingletonState<V> getSingleton(@NonNull String stateKey) {
+            final ReadableSingletonState<V> instance = (ReadableSingletonState<V>) singletonInstances.get(stateKey);
             if (instance != null) {
                 return instance;
             }
@@ -528,8 +530,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
         @NonNull
         @Override
-        public <E> ReadableQueueState<E> getQueue(@NonNull String stateKey) {
-            final ReadableQueueState<E> instance = (ReadableQueueState<E>) queueInstances.get(stateKey);
+        public <V> ReadableQueueState<V> getQueue(@NonNull String stateKey) {
+            final ReadableQueueState<V> instance = (ReadableQueueState<V>) queueInstances.get(stateKey);
             if (instance != null) {
                 return instance;
             }
@@ -562,18 +564,20 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         }
 
         @NonNull
-        protected abstract ReadableKVState createReadableKVState(@NonNull StateMetadata md, @NonNull VirtualMap v);
+        protected abstract <K, V> ReadableKVState<K, V> createReadableKVState(
+                @NonNull StateMetadata md, @NonNull VirtualMap v, @Nullable Comparator<K> comparator);
 
         @NonNull
-        protected abstract ReadableKVState createReadableKVState(@NonNull StateMetadata md, @NonNull MerkleMap m);
+        protected abstract <K, V> ReadableKVState<K, V> createReadableKVState(
+                @NonNull StateMetadata md, @NonNull MerkleMap m, @Nullable Comparator<K> comparator);
 
         @NonNull
-        protected abstract ReadableSingletonState createReadableSingletonState(
-                @NonNull StateMetadata md, @NonNull SingletonNode<?> s);
+        protected abstract <V> ReadableSingletonState<V> createReadableSingletonState(
+                @NonNull StateMetadata md, @NonNull SingletonNode<V> s);
 
         @NonNull
-        protected abstract ReadableQueueState createReadableQueueState(
-                @NonNull StateMetadata md, @NonNull QueueNode<?> q);
+        protected abstract <V> ReadableQueueState<V> createReadableQueueState(
+                @NonNull StateMetadata md, @NonNull QueueNode<V> q);
 
         /**
          * Utility method for finding and returning the given node. Will throw an ISE if such a node
@@ -615,28 +619,31 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
         @Override
         @NonNull
-        protected ReadableKVState<?, ?> createReadableKVState(
-                @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
+        // comparator is not used for readable states, so we can ignore it
+        protected <K, V> ReadableKVState<K, V> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final VirtualMap v, @Nullable Comparator<K> comparator) {
             return new OnDiskReadableKVState<>(md, v);
         }
 
         @Override
         @NonNull
-        protected ReadableKVState<?, ?> createReadableKVState(
-                @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
+        // comparator is not used for readable states, so we can ignore it
+        protected <K, V> ReadableKVState<K, V> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final MerkleMap m, @Nullable Comparator<K> comparator) {
             return new InMemoryReadableKVState<>(md, m);
         }
 
         @Override
         @NonNull
-        protected ReadableSingletonState<?> createReadableSingletonState(
-                @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
+        protected <V> ReadableSingletonState<V> createReadableSingletonState(
+                @NonNull final StateMetadata md, @NonNull final SingletonNode<V> s) {
             return new ReadableSingletonStateImpl<>(md, s);
         }
 
         @NonNull
         @Override
-        protected ReadableQueueState createReadableQueueState(@NonNull StateMetadata md, @NonNull QueueNode<?> q) {
+        protected <V> ReadableQueueState<V> createReadableQueueState(
+                @NonNull StateMetadata md, @NonNull QueueNode<V> q) {
             return new ReadableQueueStateImpl(md, q);
         }
     }
@@ -653,6 +660,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
          */
         MerkleWritableStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             super(stateMetadata);
+        }
+
+        @NonNull
+        @Override
+        public <K, V> WritableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator) {
+            return (WritableKVState<K, V>) super.get(stateKey, comparator);
         }
 
         @NonNull
@@ -675,29 +688,29 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
         @Override
         @NonNull
-        protected WritableKVState<?, ?> createReadableKVState(
-                @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
-            return new OnDiskWritableKVState<>(md, v);
+        protected <K, V> WritableKVState<K, V> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final VirtualMap v, @Nullable Comparator<K> comparator) {
+            return new OnDiskWritableKVState<>(md, v, comparator);
         }
 
         @Override
         @NonNull
-        protected WritableKVState<?, ?> createReadableKVState(
-                @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
-            return new InMemoryWritableKVState<>(md, m);
+        protected <K, V> WritableKVState<K, V> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final MerkleMap m, @Nullable Comparator<K> comparator) {
+            return new InMemoryWritableKVState<>(md, m, comparator);
         }
 
         @Override
         @NonNull
-        protected WritableSingletonState<?> createReadableSingletonState(
-                @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
+        protected <V> WritableSingletonState<V> createReadableSingletonState(
+                @NonNull final StateMetadata md, @NonNull final SingletonNode<V> s) {
             return new WritableSingletonStateImpl<>(md, s);
         }
 
         @NonNull
         @Override
-        protected WritableQueueState<?> createReadableQueueState(
-                @NonNull final StateMetadata md, @NonNull final QueueNode<?> q) {
+        protected <V> WritableQueueState<V> createReadableQueueState(
+                @NonNull final StateMetadata md, @NonNull final QueueNode<V> q) {
             return new WritableQueueStateImpl<>(md, q);
         }
 

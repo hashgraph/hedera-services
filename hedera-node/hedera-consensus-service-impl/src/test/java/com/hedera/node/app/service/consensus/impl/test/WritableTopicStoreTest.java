@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,25 +50,29 @@ class WritableTopicStoreTest extends ConsensusTestBase {
     @Test
     void commitsTopicChanges() {
         topic = createTopic();
-        assertFalse(writableTopicState.contains(topicId));
+        assertFalse(writableTopicKVState.contains(topicId));
 
         writableStore.put(topic);
 
-        assertTrue(writableTopicState.contains(topicId));
-        final var writtenTopic = writableTopicState.get(topicId);
+        assertTrue(writableTopicKVState.contains(topicId));
+        final var writtenTopic = writableTopicKVState.get(topicId);
         assertEquals(topic, writtenTopic);
     }
 
     @Test
-    void getReturnsTopic() {
-        topic = createTopic();
+    void testWritableStoreSorted() {
+        Topic topic = createTopic(4L);
+        writableStore.put(topic);
+        topic = createTopic(3L);
+        writableStore.put(topic);
+        topic = createTopic(6L);
         writableStore.put(topic);
 
-        final var maybeReadTopic = writableStore.get(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
-
-        assertTrue(maybeReadTopic.isPresent());
-        final var readTopic = maybeReadTopic.get();
-        assertEquals(topic, readTopic);
+        final var topicIds = writableStore.modifiedTopics();
+        assertThat(topicIds)
+                .containsSequence(
+                        TopicID.newBuilder().topicNum(3L).build(),
+                        TopicID.newBuilder().topicNum(4L).build(),
+                        TopicID.newBuilder().topicNum(6L).build());
     }
 }

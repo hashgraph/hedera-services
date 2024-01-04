@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,6 +55,17 @@ public class FilteredReadableStates implements ReadableStates {
         }
 
         return delegate.get(stateKey);
+    }
+
+    @NonNull
+    @Override
+    public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator) {
+        Objects.requireNonNull(stateKey);
+        if (!contains(stateKey)) {
+            throw new IllegalArgumentException("Could not find k/v state " + stateKey);
+        }
+
+        return delegate.get(stateKey, comparator);
     }
 
     @NonNull

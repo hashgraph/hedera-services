@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.fixtures.state;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -41,6 +42,8 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     /** Represents the backing storage for this state */
     private final Map<K, V> backingStore;
 
+    private Comparator<K> comparator = null;
+
     /**
      * Create an instance using a HashMap as the backing store.
      *
@@ -48,6 +51,15 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
      */
     public MapWritableKVState(@NonNull final String stateKey) {
         this(stateKey, new HashMap<>());
+    }
+
+    public MapWritableKVState(
+            @NonNull final String stateKey,
+            @NonNull final Map<K, V> backingStore,
+            @Nullable final Comparator<K> comparator) {
+        super(stateKey, comparator);
+        this.backingStore = Objects.requireNonNull(backingStore);
+        this.comparator = comparator;
     }
 
     /**
@@ -61,6 +73,11 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     public MapWritableKVState(@NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
         super(stateKey);
         this.backingStore = Objects.requireNonNull(backingStore);
+    }
+
+    // for unit tests
+    public Comparator<K> getComparator() {
+        return comparator;
     }
 
     @Override
@@ -114,16 +131,27 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
         return new Builder<>(stateKey);
     }
 
+    public static <K, V> Builder<K, V> builder(
+            @NonNull final String stateKey, @NonNull final Comparator<K> comparator) {
+        return new Builder<>(stateKey, comparator);
+    }
+
     /**
      * A convenient builder for creating instances of {@link
      * com.hedera.node.app.spi.fixtures.state.MapWritableKVState}.
      */
     public static final class Builder<K, V> {
         private final Map<K, V> backingStore = new HashMap<>();
+        private Comparator<K> comparator = null;
         private final String stateKey;
 
         public Builder(@NonNull final String stateKey) {
             this.stateKey = stateKey;
+        }
+
+        public Builder(@NonNull final String stateKey, @NonNull final Comparator<K> comparator) {
+            this.stateKey = stateKey;
+            this.comparator = comparator;
         }
 
         /**
@@ -146,6 +174,15 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
          */
         public MapWritableKVState<K, V> build() {
             return new MapWritableKVState<>(stateKey, new HashMap<>(backingStore));
+        }
+
+        /**
+         * Builds the state with comparator.
+         *
+         * @return an instance of the state, preloaded with whatever key-value pairs were defined.
+         */
+        public MapWritableKVState<K, V> buildWithComparator() {
+            return new MapWritableKVState<>(stateKey, new HashMap<>(backingStore), comparator);
         }
     }
 }

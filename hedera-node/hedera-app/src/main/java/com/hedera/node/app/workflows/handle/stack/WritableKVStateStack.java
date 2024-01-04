@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,8 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
     private final WritableStatesStack writableStatesStack;
     private final String stateKey;
 
+    private Comparator<K> comparator = null;
+
     /**
      * Constructs a {@link WritableKVStateStack} that delegates to the current {@link WritableKVState} in
      * the given {@link WritableStatesStack} for the given state key. A {@link WritableStatesStack} is an implementation
@@ -59,6 +61,15 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
             @NonNull final WritableStatesStack writableStatesStack, @NonNull final String stateKey) {
         this.writableStatesStack = requireNonNull(writableStatesStack, "writableStatesStack must not be null");
         this.stateKey = requireNonNull(stateKey, "stateKey must not be null");
+    }
+
+    public WritableKVStateStack(
+            @NonNull final WritableStatesStack writableStatesStack,
+            @NonNull final String stateKey,
+            @Nullable final Comparator<K> comparator) {
+        this.writableStatesStack = requireNonNull(writableStatesStack, "writableStatesStack must not be null");
+        this.stateKey = requireNonNull(stateKey, "stateKey must not be null");
+        this.comparator = comparator;
     }
 
     @NonNull
@@ -124,8 +135,7 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
         return getCurrent().size();
     }
 
-    @Override
-    public void updateComparator(@NonNull final Comparator<K> comparator) {
-        getCurrent().updateComparator(comparator);
+    public Comparator<K> getComparator(@NonNull final Comparator<K> comparator) {
+        return comparator;
     }
 }

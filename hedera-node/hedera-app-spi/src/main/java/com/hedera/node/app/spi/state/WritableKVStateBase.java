@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,20 +27,23 @@ import java.util.*;
  * @param <V> The value type
  */
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
-    /** A sorted map of all modified values buffered in this mutable state. This imposes a deterministic ordering.
-     * Change to TreeMap when all other types of Key Comparator are implemented.
-     *
-     * private SortedMap<K, V> modifications = new TreeMap<>();
-     */
-    private Map<K, V> modifications = new LinkedHashMap<>();
+    /** A map of all modified values buffered in this mutable state */
+    private final Map<K, V> modifications;
 
     /**
      * Create a new StateBase.
      *
      * @param stateKey The state key. Cannot be null.
      */
-    protected WritableKVStateBase(@NonNull final String stateKey) {
+    // @todo("10153") make comparator nonnull and make modifications a SortedMap
+    protected WritableKVStateBase(@NonNull final String stateKey, @Nullable final Comparator<K> comparator) {
         super(stateKey);
+        if (comparator != null) modifications = new TreeMap<>(comparator);
+        else modifications = new LinkedHashMap<>();
+    }
+
+    protected WritableKVStateBase(@NonNull final String stateKey) {
+        this(stateKey, null);
     }
 
     /**
@@ -172,17 +175,6 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @Override
     public final Set<K> modifiedKeys() {
         return modifications.keySet();
-    }
-
-    /** {@inheritDoc}
-     * To add the comparator to the underlying data source, we create a new TreeMap with the Comparator
-     * This should be called on each writable store constructor until all other types of Key Comparator are implemented.
-     * */
-    @Override
-    public final void updateComparator(@NonNull final Comparator<K> comparator) {
-        final var tmp = new TreeMap<K, V>(comparator);
-        tmp.putAll(modifications);
-        this.modifications = tmp;
     }
 
     /**

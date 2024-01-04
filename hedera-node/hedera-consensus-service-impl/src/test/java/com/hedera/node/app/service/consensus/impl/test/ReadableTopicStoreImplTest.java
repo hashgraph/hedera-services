@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,8 +66,8 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
     void getsTopicIfTopicExistsWithNoAutoRenewAccount() {
         final var accountId = AccountID.newBuilder().accountNum(0L).build();
         givenValidTopic(accountId);
-        readableTopicState = readableTopicState();
-        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        readableTopicKVState = readableTopicState();
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicKVState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         subject = new ReadableTopicStoreImpl(readableStates);
 
@@ -88,7 +88,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
     @Test
     void missingTopicIsNull() {
-        readableTopicState.reset();
+        readableTopicKVState.reset();
         final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
         given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
         subject = new ReadableTopicStoreImpl(readableStates);

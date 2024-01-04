@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -49,6 +51,15 @@ public final class InMemoryWritableKVState<K, V> extends WritableKVStateBase<K, 
     public InMemoryWritableKVState(
             @NonNull final StateMetadata<K, V> md, @NonNull MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkleMap) {
         super(md.stateDefinition().stateKey());
+        this.md = md;
+        this.merkle = Objects.requireNonNull(merkleMap);
+    }
+
+    public InMemoryWritableKVState(
+            @NonNull final StateMetadata<K, V> md,
+            @NonNull MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkleMap,
+            @Nullable Comparator<K> comparator) {
+        super(md.stateDefinition().stateKey(), comparator);
         this.md = md;
         this.merkle = Objects.requireNonNull(merkleMap);
     }

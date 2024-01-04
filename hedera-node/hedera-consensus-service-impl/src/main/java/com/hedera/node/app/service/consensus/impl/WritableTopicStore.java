@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,6 +38,7 @@ import java.util.Set;
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableTopicStore {
+    private static final TopicIdComparator TOPIC_ID_COMPARATOR = new TopicIdComparator();
     /** The underlying data storage class that holds the topic data. */
     private final WritableKVState<TopicID, Topic> topicState;
 
@@ -47,8 +49,7 @@ public class WritableTopicStore {
      */
     public WritableTopicStore(@NonNull final WritableStates states) {
         requireNonNull(states);
-        this.topicState = states.get(TOPICS_KEY);
-        topicState.updateComparator(new TopicIdComparator());
+        this.topicState = states.get(TOPICS_KEY, TOPIC_ID_COMPARATOR);
     }
 
     /**
@@ -103,5 +104,9 @@ public class WritableTopicStore {
      */
     public Set<TopicID> modifiedTopics() {
         return topicState.modifiedKeys();
+    }
+
+    public static Comparator<TopicID> getComparator() {
+        return TOPIC_ID_COMPARATOR;
     }
 }

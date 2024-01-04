@@ -125,7 +125,7 @@ class OnDiskTest extends MerkleTestBase {
     @Test
     void populateTheMapAndFlushToDiskAndReadBack() throws IOException {
         // Populate the data set and flush it all to disk
-        final var ws = new OnDiskWritableKVState<>(md, virtualMap);
+        final var ws = new OnDiskWritableKVState<>(md, virtualMap, null);
         for (int i = 0; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()
@@ -168,7 +168,7 @@ class OnDiskTest extends MerkleTestBase {
 
     @Test
     void populateFlushToDisk() {
-        final var ws = new OnDiskWritableKVState<>(md, virtualMap);
+        final var ws = new OnDiskWritableKVState<>(md, virtualMap, null);
         for (int i = 1; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     @Test
     @DisplayName("Topic Id is needed during validate")
     void validatesQueryIfInvalidTopic() throws Throwable {
-        readableTopicState.reset();
+        readableTopicKVState.reset();
         final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
         given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
         final var store = new ReadableTopicStoreImpl(readableStates);
@@ -143,7 +143,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     @Test
     @DisplayName("Topic Id in transaction is needed during validate")
     void validatesQueryIfInvalidTopicInTrans() throws Throwable {
-        readableTopicState.reset();
+        readableTopicKVState.reset();
         final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
         given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
         final var store = new ReadableTopicStoreImpl(readableStates);
@@ -161,8 +161,8 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     @DisplayName("deleted topic is not valid")
     void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId, true);
-        readableTopicState = readableTopicState();
-        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        readableTopicKVState = readableTopicState();
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicKVState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());

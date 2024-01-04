@@ -18,7 +18,6 @@ package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -101,11 +100,6 @@ public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
      */
     @NonNull
     Set<K> modifiedKeys();
-
-    /**
-     * To add the comparator to the underlying data source
-     */
-    void updateComparator(@NonNull final Comparator<K> comparator);
 
     /**
      * Returns {@code true} if this {@link WritableKVState} has been modified since it was created

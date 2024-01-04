@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 
 /** Essentially, a map of {@link WritableKVState}s. Each state may be retrieved by key. */
 public interface WritableStates extends ReadableStates {
@@ -36,6 +38,10 @@ public interface WritableStates extends ReadableStates {
     @Override
     @NonNull
     <K, V> WritableKVState<K, V> get(@NonNull String stateKey);
+
+    @Override
+    @NonNull
+    <K, V> WritableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator);
 
     @Override
     @NonNull

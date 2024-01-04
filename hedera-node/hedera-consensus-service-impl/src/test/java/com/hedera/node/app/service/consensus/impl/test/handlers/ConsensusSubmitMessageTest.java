@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,9 +102,9 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
 
-        writableTopicState = writableTopicStateWithOneKey();
-        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        writableTopicKVState = writableTopicStateWithOneKey(comparator);
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicKVState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY, comparator)).willReturn(writableTopicKVState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         given(handleContext.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
         writableStore = new WritableTopicStore(writableStates);
@@ -142,8 +142,8 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     @DisplayName("Topic not found returns error")
     void topicIdNotFound() throws PreCheckException {
         mockPayerLookup();
-        readableTopicState = emptyReadableTopicState();
-        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        readableTopicKVState = emptyReadableTopicState();
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicKVState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
         context.registerStore(ReadableTopicStore.class, readableStore);
@@ -173,10 +173,10 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(consensusTimestamp);
 
-        final var initialTopic = writableTopicState.get(topicId);
+        final var initialTopic = writableTopicKVState.get(topicId);
         subject.handle(handleContext);
 
-        final var expectedTopic = writableTopicState.get(topicId);
+        final var expectedTopic = writableTopicKVState.get(topicId);
         assertNotEquals(initialTopic, expectedTopic);
         assertEquals(initialTopic.sequenceNumber() + 1, expectedTopic.sequenceNumber());
         assertNotEquals(
@@ -193,10 +193,10 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(null);
 
-        final var initialTopic = writableTopicState.get(topicId);
+        final var initialTopic = writableTopicKVState.get(topicId);
         subject.handle(handleContext);
 
-        final var expectedTopic = writableTopicState.get(topicId);
+        final var expectedTopic = writableTopicKVState.get(topicId);
         assertNotEquals(initialTopic, expectedTopic);
         assertEquals(initialTopic.sequenceNumber() + 1, expectedTopic.sequenceNumber());
         assertNotEquals(

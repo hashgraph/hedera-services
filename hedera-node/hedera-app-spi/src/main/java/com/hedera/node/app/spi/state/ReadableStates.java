@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Set;
 
 /** Essentially, a map of {@link ReadableKVState}s. Each state may be retrieved by key. */
@@ -31,6 +33,7 @@ public interface ReadableStates {
      * ReadableKVState} instance is returned.
      *
      * @param stateKey The key used for looking up state
+     * @param comparator The comparator to use for the keys in the state. If null, use insertion order.
      * @return The state for that key. This will never be null.
      * @param <K> The key type in the state.
      * @param <V> The value type in the state.
@@ -38,7 +41,14 @@ public interface ReadableStates {
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @NonNull
-    <K, V> ReadableKVState<K, V> get(@NonNull String stateKey);
+    <K, V> ReadableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator);
+
+    // @todo("10153") remove this overload method when all services writable stores are updated.
+    @NonNull
+    @Deprecated
+    default <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+        return get(stateKey, null);
+    }
 
     @NonNull
     <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey);
@@ -50,7 +60,7 @@ public interface ReadableStates {
      * Gets whether the given state key is a member of this set.
      *
      * @param stateKey The state key
-     * @return true if a subsequent call to {@link #get(String)} with this state key would succeed.
+     * @return true if a subsequent call to {@link #get(String, Comparator)} with this state key would succeed.
      */
     boolean contains(@NonNull String stateKey);
 

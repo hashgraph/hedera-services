@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -914,14 +914,15 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         assertThat(state.getOriginalValue(F_KEY)).isNull();
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("test updateComparator works as expected ")
-    void testUpdateComparator() {
+    @DisplayName("test comparator works as expected ")
+    void testComparator() {
+        state = new MapWritableKVState(state.getStateKey(), backingMap, Comparator.reverseOrder());
         state.put(C_KEY, CHERRY);
         state.put(E_KEY, EGGPLANT);
         state.put(D_KEY, DATE);
         state.put(F_KEY, FIG);
-        state.updateComparator(Comparator.reverseOrder());
 
         final var keys = state.modifiedKeys();
         assertThat(keys).containsSequence(F_KEY, E_KEY, D_KEY, C_KEY);
