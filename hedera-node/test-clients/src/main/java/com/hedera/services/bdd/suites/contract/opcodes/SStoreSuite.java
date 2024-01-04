@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -36,6 +37,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import java.math.BigInteger;
@@ -77,7 +79,10 @@ public class SStoreSuite extends HapiSuite {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
         return HapiSpec.defaultHapiSpec("multipleSStoreOpsSucceed")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var step = 16;
                     List<HapiSpecOperation> subOps = new ArrayList<>();
@@ -112,7 +117,10 @@ public class SStoreSuite extends HapiSuite {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
                     final var kbPerStep = 16;
@@ -180,6 +188,7 @@ public class SStoreSuite extends HapiSuite {
         return defaultHapiSpec("benchmarkSingleSetter")
                 .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
+                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         contractCreate(contract)
                                 .payingWith("payer")
                                 .via("creationTx")
