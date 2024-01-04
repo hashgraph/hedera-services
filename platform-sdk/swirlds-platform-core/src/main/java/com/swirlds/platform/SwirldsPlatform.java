@@ -885,7 +885,11 @@ public class SwirldsPlatform implements Platform {
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
-                getAddressBook()));
+                getAddressBook(),
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .useBirthRoundAncientThreshold()));
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -903,13 +907,8 @@ public class SwirldsPlatform implements Platform {
             if (eventConfig.useLegacyIntake()) {
                 eventLinker.loadFromSignedState(initialState);
             } else {
-                platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
-                        initialState.getRound(),
-                        initialMinimumGenerationNonAncient,
-                        platformContext
-                                .getConfiguration()
-                                .getConfigData(ConsensusConfig.class)
-                                .roundsNonAncient()));
+                platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                        initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
             }
 
             // We don't want to invoke these callbacks until after we are starting up.
@@ -1059,13 +1058,10 @@ public class SwirldsPlatform implements Platform {
         }
 
         try {
-            eventCreator.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+            eventCreator.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
                     signedState.getRound(),
                     signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
-                    platformContext
-                            .getConfiguration()
-                            .getConfigData(ConsensusConfig.class)
-                            .roundsNonAncient()));
+                    platformContext));
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while loading state into event creator", e);
@@ -1162,13 +1158,8 @@ public class SwirldsPlatform implements Platform {
                             .inject(new AddressBookUpdate(
                                     signedState.getState().getPlatformState().getPreviousAddressBook(),
                                     signedState.getState().getPlatformState().getAddressBook()));
-                    platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
-                            signedState.getRound(),
-                            signedState.getMinRoundGeneration(),
-                            platformContext
-                                    .getConfiguration()
-                                    .getConfigData(ConsensusConfig.class)
-                                    .roundsNonAncient()));
+                    platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                            signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
                 }
             } finally {
                 intakeQueue.resume();
