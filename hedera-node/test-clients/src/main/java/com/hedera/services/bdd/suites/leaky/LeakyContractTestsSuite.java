@@ -169,6 +169,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexed
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.SENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -1882,8 +1883,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                         12L)
                                 .payingWith(GENESIS)
                                 .gas(300_000L)
-                                // This will fail the semantics validity check that verifies existence of the contract,
-                                .hasPrecheck(INVALID_CONTRACT_ID)
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
                                 .via(callTxn)));
     }
 
