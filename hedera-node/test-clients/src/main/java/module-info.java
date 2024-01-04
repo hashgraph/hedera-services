@@ -30,6 +30,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.platform.core;
     requires com.swirlds.test.framework;
     requires grpc.netty;
+    requires grpc.stub;
     requires io.netty.handler;
     requires java.net.http;
     requires org.apache.commons.lang3;
