@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,10 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PcesConfig_;
+import com.swirlds.platform.event.preconsensus.PcesFile;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -88,8 +88,8 @@ class SyncPreconsensusEventWriterTests {
 
     private PlatformContext buildContext() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(PreconsensusEventStreamConfig_.DATABASE_DIRECTORY, testDirectory)
-                .withValue(PreconsensusEventStreamConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
+                .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory)
+                .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_BYTES_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_COUNT_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, Integer.MAX_VALUE)
@@ -121,7 +121,7 @@ class SyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
@@ -177,7 +177,7 @@ class SyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
@@ -233,7 +233,7 @@ class SyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
@@ -306,7 +306,7 @@ class SyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
@@ -326,8 +326,8 @@ class SyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager2 = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        for (final Iterator<PreconsensusEventFile> it = fileManager2.getFileIterator(0); it.hasNext(); ) {
-            final PreconsensusEventFile file = it.next();
+        for (final Iterator<PcesFile> it = fileManager2.getFileIterator(0); it.hasNext(); ) {
+            final PcesFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
     }
@@ -352,7 +352,7 @@ class SyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
@@ -410,7 +410,7 @@ class SyncPreconsensusEventWriterTests {
         final PreconsensusEventFileManager fileManager = new PreconsensusEventFileManager(
                 platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0), 0);
 
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PcesSequencer sequencer = new PcesSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();

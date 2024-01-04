@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -239,12 +239,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
-        // Do some sanity checking in advance to ensure that the target is a valid contract
-        // Missing entity num is a valid target for lazy create.  Tokens are also valid targets
         final var target = targetOf(op);
-        if (!target.equals(EntityNum.MISSING_NUM)
-                && !entityAccess.isTokenAccount(target.toId().asEvmAddress())
-                && op.getAmount() == 0) {
+        if (possiblySanityCheckOp(op, target)) {
             try {
                 final var receiver = accountStore.loadContract(target.toId());
                 validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
@@ -253,6 +249,23 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             }
         }
         return OK;
+    }
+
+    // Determine if the operation should be sanity checked.
+    private boolean possiblySanityCheckOp(final ContractCallTransactionBody op, final EntityNum target) {
+        // Tokens are valid targets
+        if (entityAccess.isTokenAccount(target.toId().asEvmAddress())) {
+            return false;
+        }
+
+        // Check for possible lazy create
+        if (((target.equals(EntityNum.MISSING_NUM)
+                        && isOfEvmAddressSize(op.getContractID().getEvmAddress()))
+                || op.getAmount() > 0)) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override

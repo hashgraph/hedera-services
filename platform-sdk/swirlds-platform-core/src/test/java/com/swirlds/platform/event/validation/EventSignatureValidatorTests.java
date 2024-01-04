@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -254,8 +254,9 @@ class EventSignatureValidatorTests {
         assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event));
         assertEquals(0, exitedIntakePipelineCount.get());
 
-        validatorWithTrueVerifier.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 100L));
+        // FUTURE WORK: expand to handle birthRound comparison for ancient.
+        validatorWithTrueVerifier.setNonAncientEventWindow(
+                new NonAncientEventWindow(ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, 100L, false));
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
