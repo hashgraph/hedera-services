@@ -75,15 +75,17 @@ public class NftTransferSuite extends HapiSuite {
 
     private static HapiSpecOperation mintTokensFor(String tokenName, int numTokens) {
         return mintToken(
-                tokenName,
-                IntStream.range(0, numTokens)
-                        .mapToObj(id -> ByteString.copyFromUtf8("nft" + id))
-                        .toList());
+                        tokenName,
+                        IntStream.range(0, numTokens)
+                                .mapToObj(id -> ByteString.copyFromUtf8("nft" + id))
+                                .toList())
+                .noLogging();
     }
 
     private static HapiSpecOperation createAccounts(String prefix, int numAccounts) {
         // Create user accounts to partake in crypto transfers
-        return parFor(0, numAccounts, id -> cryptoCreate(prefix + id).balance(ONE_HUNDRED_HBARS));
+        return parFor(
+                0, numAccounts, id -> cryptoCreate(prefix + id).noLogging().balance(ONE_HUNDRED_HBARS));
     }
 
     private static String userAccountName(int id) {
@@ -106,18 +108,21 @@ public class NftTransferSuite extends HapiSuite {
                         .supplyKey(NftTransferSuite.KEY)
                         .initialSupply(0L)
                         .treasury(tokenTreasuryName(id))
+                        .noLogging()
                         .withCustom(fixedHbarFee(1L, NftTransferSuite.FEE_COLLECTOR))));
     }
 
     private static HapiSpecOperation createBasicAccounts() {
-        return blockingOrder(newKeyNamed(KEY), cryptoCreate(FEE_COLLECTOR).balance(0L));
+        return blockingOrder(
+                newKeyNamed(KEY), cryptoCreate(FEE_COLLECTOR).noLogging().balance(0L));
     }
 
     private static HapiSpecOperation associateAccountsWithTokenTypes() {
         String[] tokenNames = IntStream.range(0, NftTransferSuite.NUM_TOKEN_TYPES)
                 .mapToObj(NftTransferSuite::tokenTypeName)
                 .toArray(String[]::new);
-        return parFor(0, NftTransferSuite.NUM_ACCOUNTS, id -> tokenAssociate(userAccountName(id), tokenNames));
+        return parFor(0, NftTransferSuite.NUM_ACCOUNTS, id -> tokenAssociate(userAccountName(id), tokenNames)
+                .noLogging());
     }
 
     private static HapiSpecOperation createAccountsAndNfts() {
@@ -149,7 +154,8 @@ public class NftTransferSuite extends HapiSuite {
                 .mapToObj(accountId -> opsFor(0, NftTransferSuite.NUM_TOKEN_TYPES, tokenId -> cryptoTransfer(
                                 TokenMovement.movingUnique(tokenTypeName(tokenId), accountId + 1)
                                         .between(tokenTreasuryName(tokenId), userAccountName(accountId)))
-                        .payingWith(GENESIS)))
+                        .payingWith(GENESIS)
+                        .noLogging()))
                 .flatMap(List::stream)
                 .toArray(HapiSpecOperation[]::new));
     }
