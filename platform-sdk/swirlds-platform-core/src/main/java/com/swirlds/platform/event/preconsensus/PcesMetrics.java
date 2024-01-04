@@ -70,13 +70,13 @@ public class PcesMetrics {
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG = new LongGauge.Config(
                     CATEGORY, "preconsensusEventFileOldestGeneration")
-            .withUnit("oldest generation")
+            .withUnit("generation")
             .withDescription("The oldest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileOldestGeneration;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_YOUNGEST_GENERATION_CONFIG = new LongGauge.Config(
                     CATEGORY, "preconsensusEventFileYoungestGeneration")
-            .withUnit("youngest generation")
+            .withUnit("generation")
             .withDescription("The youngest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileYoungestGeneration;
 
