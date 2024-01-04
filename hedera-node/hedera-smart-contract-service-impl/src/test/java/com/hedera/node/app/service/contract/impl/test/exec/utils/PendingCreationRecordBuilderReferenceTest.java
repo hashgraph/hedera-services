@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * This exception is thrown when a preconsensus event file is renamed, which prevents a preconsensus event file from
- * being copied.
- */
-public class PreconsensusEventFileRenamed extends RuntimeException {
-
-    /**
-     * Constructor.
-     * @param cause the cause
-     */
-    public PreconsensusEventFileRenamed(@NonNull final Throwable cause) {
-        super(cause);
-    }
-}
+class PendingCreationRecordBuilderReferenceTest {}

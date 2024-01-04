@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 /**
  * Metrics for preconsensus events.
  */
-public class PreconsensusEventMetrics {
+public class PcesMetrics {
 
     private static final String CATEGORY = "platform";
 
@@ -70,13 +70,13 @@ public class PreconsensusEventMetrics {
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG = new LongGauge.Config(
                     CATEGORY, "preconsensusEventFileOldestGeneration")
-            .withUnit("oldest generation")
+            .withUnit("generation")
             .withDescription("The oldest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileOldestGeneration;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_YOUNGEST_GENERATION_CONFIG = new LongGauge.Config(
                     CATEGORY, "preconsensusEventFileYoungestGeneration")
-            .withUnit("youngest generation")
+            .withUnit("generation")
             .withDescription("The youngest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileYoungestGeneration;
 
@@ -91,7 +91,7 @@ public class PreconsensusEventMetrics {
      *
      * @param metrics the metrics manager for the platform
      */
-    public PreconsensusEventMetrics(final Metrics metrics) {
+    public PcesMetrics(final Metrics metrics) {
         preconsensusEventFileCount = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_COUNT_CONFIG);
         preconsensusEventFileAverageSizeMB = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_AVERAGE_SIZE_MB_CONFIG);
         preconsensusEventFileTotalSizeGB = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_TOTAL_SIZE_GB_CONFIG);

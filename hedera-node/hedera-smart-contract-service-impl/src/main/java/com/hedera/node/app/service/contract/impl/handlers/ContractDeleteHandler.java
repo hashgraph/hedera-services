@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -32,11 +33,17 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalseP
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractDeleteResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.api.TokenServiceApi.FreeAliasOnDeletion;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -99,7 +106,12 @@ public class ContractDeleteHandler implements TransactionHandler {
         final var recordBuilder = context.recordBuilder(ContractDeleteRecordBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
         context.serviceApi(TokenServiceApi.class)
-                .deleteAndTransfer(deletedId, obtainer.accountIdOrThrow(), context.expiryValidator(), recordBuilder);
+                .deleteAndTransfer(
+                        deletedId,
+                        obtainer.accountIdOrThrow(),
+                        context.expiryValidator(),
+                        recordBuilder,
+                        FreeAliasOnDeletion.YES);
         recordBuilder.contractID(asNumericContractId(deletedId));
     }
 
@@ -108,5 +120,15 @@ public class ContractDeleteHandler implements TransactionHandler {
         return op.hasTransferAccountID()
                 ? accountStore.getAccountById(op.transferAccountIDOrThrow())
                 : accountStore.getContractById(op.transferContractIDOrThrow());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractDeleteResourceUsage(
+                        new SmartContractFeeBuilder())
+                .usageGiven(fromPbj(op), sigValueObj, null));
     }
 }

@@ -21,17 +21,16 @@ import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.filterLikelyDupl
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getMyTipsTheyKnow;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getTheirTipsIHave;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readEventsINeed;
-import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readMyTipsTheyHaveAndUpdatedTips;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readMyTipsTheyHave;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readTheirTipsAndGenerations;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.sendEventsTheyNeed;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeFirstByte;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeMyTipsAndGenerations;
-import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIHaveAndResendTips;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIHave;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
@@ -86,10 +85,6 @@ public class ShadowGraphSynchronizer {
      */
     private final LatestEventTipsetTracker latestEventTipsetTracker;
     /**
-     * Tracks the latest events sent to each peer. Null if feature is not enabled.
-     */
-    private final LatestTransmittedEventTracker latestTransmittedEventTracker;
-    /**
      * Number of member nodes in the network for this sync
      */
     private final int numberOfNodes;
@@ -140,19 +135,6 @@ public class ShadowGraphSynchronizer {
     private final boolean filterLikelyDuplicates;
 
     /**
-     * if true, then look up generations again after the first phase of the sync is completed and send the latest events
-     * to the peer. If false, only consider events we know about at the beginning of the sync protocol.
-     */
-    private final boolean sendLatestGenerations;
-
-    /**
-     * If true then resend during the second phase of the sync. In situations with high latency, each peer will have
-     * learned about new events in the time it takes for the first phase to complete, and it's a lot easier to resend
-     * tips than it is to send a bunch of duplicate events.
-     */
-    private final boolean resendTips;
-
-    /**
      * For events that are neither self events nor ancestors of self events, we must have had this event for at least
      * this amount of time before it is eligible to be sent. Ignored if {@link #filterLikelyDuplicates} is false.
      */
@@ -163,7 +145,6 @@ public class ShadowGraphSynchronizer {
             @NonNull final Time time,
             @NonNull final ShadowGraph shadowGraph,
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
-            @Nullable final LatestTransmittedEventTracker latestTransmittedEventTracker,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
@@ -197,10 +178,6 @@ public class ShadowGraphSynchronizer {
         if (filterLikelyDuplicates) {
             Objects.requireNonNull(latestEventTipsetTracker);
         }
-        this.latestTransmittedEventTracker = latestTransmittedEventTracker;
-
-        sendLatestGenerations = syncConfig.sendLatestGenerations();
-        resendTips = syncConfig.resendTips();
     }
 
     /**
@@ -325,62 +302,19 @@ public class ShadowGraphSynchronizer {
             // Step 2: each peer tells the other which of the other's tips it already has.
 
             timing.setTimePoint(2);
-
-            final List<Hash> myUpdatedTips;
-            if (resendTips) {
-                myUpdatedTips =
-                        getTips().stream().map(ShadowEvent::getEventBaseHash).collect(Collectors.toList());
-            } else {
-                myUpdatedTips = null;
-            }
-
-            final TheirBooleansAndUpdatedTips theirBooleansAndUpdatedTips = readWriteParallel(
-                    readMyTipsTheyHaveAndUpdatedTips(connection, myTips.size(), resendTips, numberOfNodes),
-                    writeTheirTipsIHaveAndResendTips(connection, theirTipsIHave, myUpdatedTips),
+            final List<Boolean> theirBooleans = readWriteParallel(
+                    readMyTipsTheyHave(connection, myTips.size()),
+                    writeTheirTipsIHave(connection, theirTipsIHave),
                     connection);
             timing.setTimePoint(3);
 
             // Add each tip they know to the known set
-            final List<ShadowEvent> knownTips =
-                    getMyTipsTheyKnow(connection, myTips, theirBooleansAndUpdatedTips.theirBooleans());
+            final List<ShadowEvent> knownTips = getMyTipsTheyKnow(connection, myTips, theirBooleans);
             eventsTheyHave.addAll(knownTips);
 
-            if (latestTransmittedEventTracker != null) {
-                // Add the tips we sent in the previous sync. Helps avoid duplicate events if they haven't put those
-                // events into their shadow graph yet.
-                final List<Hash> previouslySentTips = latestTransmittedEventTracker.getLatestTransmittedEvents(
-                        connection.getOtherId(), connection.getConnectionId());
-                eventsTheyHave.addAll(shadowGraph.shadows(previouslySentTips));
-            }
-
-            if (resendTips) {
-                // Add the latest tips they sent us to the known set
-                eventsTheyHave.addAll(shadowGraph.shadowsIfPresent(theirBooleansAndUpdatedTips.theirUpdatedTips()));
-            }
-
-            if (sendLatestGenerations) {
-                // Create a send list based on the known set. Get the latest generations since
-                // there may be a lot of events we've learned about in the time it has taken for the previous round
-                // trip communication.
-                try (final GenerationReservation updatedReservation = shadowGraph.reserve()) {
-                    sendList = createSendList(
-                            connection.getSelfId(),
-                            eventsTheyHave,
-                            getGenerations(updatedReservation.getGeneration()),
-                            theirTipsAndGenerations.getGenerations());
-                }
-            } else {
-                sendList = createSendList(
-                        connection.getSelfId(),
-                        eventsTheyHave,
-                        myGenerations,
-                        theirTipsAndGenerations.getGenerations());
-            }
-        }
-
-        if (latestTransmittedEventTracker != null) {
-            latestTransmittedEventTracker.setLatestTransmittedEvents(
-                    connection.getOtherId(), connection.getConnectionId(), sendList);
+            // create a send list based on the known set
+            sendList = createSendList(
+                    connection.getSelfId(), eventsTheyHave, myGenerations, theirTipsAndGenerations.getGenerations());
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -485,9 +419,6 @@ public class ShadowGraphSynchronizer {
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
             final long startFilterTime = time.nanoTime();
-
-            // TODO is it possible to guarantee that we use the tipset of the last event in the send set?
-
             sendList = filterLikelyDuplicates(
                     selfId,
                     nonAncestorFilterThreshold,

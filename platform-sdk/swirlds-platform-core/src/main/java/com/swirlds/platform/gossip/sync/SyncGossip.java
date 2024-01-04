@@ -47,7 +47,6 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
-import com.swirlds.platform.gossip.shadowgraph.LatestTransmittedEventTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -125,7 +124,6 @@ public class SyncGossip extends AbstractGossip {
      * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param latestEventTipsetTracker      tracks the tipset of the latest self event
-     * @param latestTransmittedEventTracker tracks the latest events that have been sent to each peer
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
@@ -151,7 +149,6 @@ public class SyncGossip extends AbstractGossip {
             @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
-            @Nullable final LatestTransmittedEventTracker latestTransmittedEventTracker,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
@@ -175,7 +172,6 @@ public class SyncGossip extends AbstractGossip {
                 intakeQueue,
                 swirldStateManager,
                 latestCompleteState,
-                syncMetrics,
                 platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -189,14 +185,11 @@ public class SyncGossip extends AbstractGossip {
 
         final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
         thingsToStart.add(shadowgraphExecutor);
-
-        // TODO don't instantiate if we don't need it
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 platformContext,
                 time,
                 shadowGraph,
                 latestEventTipsetTracker,
-                latestTransmittedEventTracker,
                 addressBook.getSize(),
                 syncMetrics,
                 consensusRef::get,
