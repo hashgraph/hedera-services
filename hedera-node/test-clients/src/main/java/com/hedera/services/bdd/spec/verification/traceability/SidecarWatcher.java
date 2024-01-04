@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,13 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
+import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -43,7 +47,7 @@ public class SidecarWatcher {
     private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
     private static final Pattern SIDECAR_FILE_REGEX =
             Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
-    private static final int POLLING_INTERVAL_MS = 250;
+    private static final int POLLING_INTERVAL_MS = 500;
 
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
 
@@ -64,7 +68,7 @@ public class SidecarWatcher {
             public void onFileCreate(File file) {
                 final var newFilePath = file.getPath();
                 if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                    log.info("New sidecar file: {}", newFilePath);
+                    log.info("New sidecar file: {}", file.getAbsolutePath());
                     var retryCount = 0;
                     while (true) {
                         retryCount++;
@@ -73,25 +77,15 @@ public class SidecarWatcher {
                             onNewSidecarFile(sidecarFile);
                             return;
                         } catch (IOException e) {
-                            // given that there is a slight chance we poll the
-                            // file system at the exact time the file is being created,
-                            // *but not yet finished*, and we try reading it in this
-                            // unfinished state, which will throw an exception,
-                            // we wait 250ms and try reading the file again
-                            // we wait for a maximum of 1s for the file to be finished
-                            log.warn(
-                                    "Attempt #{} - an error occurred trying to parse" + " sidecar file {} - {}.",
-                                    retryCount,
-                                    newFilePath,
-                                    e);
-                            if (retryCount < 4) {
+                            // Some number of retries are expected to be necessary due to incomplete files on disk
+                            if (retryCount < 8) {
                                 try {
                                     Thread.sleep(POLLING_INTERVAL_MS);
                                 } catch (InterruptedException ignored) {
                                     Thread.currentThread().interrupt();
                                 }
                             } else {
-                                log.fatal("Could not read sidecar file {} - {}, exiting now.", newFilePath, e);
+                                log.error("Could not read sidecar file {}, exiting now.", newFilePath, e);
                                 throw new IllegalStateException();
                             }
                         }
@@ -138,18 +132,70 @@ public class SidecarWatcher {
         }
     }
 
-    private void assertIncomingSidecar(final TransactionSidecarRecord actualSidecar) {
+    private void assertIncomingSidecar(final TransactionSidecarRecord actualSidecarRecord) {
         // there should always be an expected sidecar at this point;
         // if a NPE is thrown here, the specs have missed a sidecar
         // and must be updated to account for it
         final var expectedSidecar = expectedSidecars.poll();
         final var expectedSidecarRecord = expectedSidecar.expectedSidecarRecord();
 
-        if (!actualSidecar.equals(expectedSidecarRecord)) {
+        if (!areEqualUpToIntrinsicGasVariation(expectedSidecarRecord, actualSidecarRecord)) {
             final var spec = expectedSidecar.spec();
             failedSidecars.computeIfAbsent(spec, k -> new ArrayList<>());
-            failedSidecars.get(spec).add(new MismatchedSidecar(expectedSidecarRecord, actualSidecar));
+            failedSidecars.get(spec).add(new MismatchedSidecar(expectedSidecarRecord, actualSidecarRecord));
         }
+    }
+
+    private boolean areEqualUpToIntrinsicGasVariation(
+            @NonNull final TransactionSidecarRecord expected, @NonNull final TransactionSidecarRecord actual) {
+        requireNonNull(expected, "Expected sidecar");
+        requireNonNull(actual, "Actual sidecar");
+        if (actual.equals(expected)) {
+            return true;
+        } else {
+            // Depending on the addresses used in TraceabilitySuite, the hard-coded gas values may vary
+            // slightly from observed results. For example, the actual sidecar may have an intrinsic gas
+            // cost differing from that of the expected sidecar by a value of 12 * X, where X is the
+            // difference in the number of zero bytes in the transaction payload used between the actual
+            // and hard-coded transactions (because the payload includes addresses with different numbers
+            // of zeros in their hex encoding). So we allow for a variation of up to 32L gas between
+            // expected and actual.
+            if (actual.hasActions() && expected.hasActions()) {
+                final var variedActual = actual.toBuilder()
+                        .setActions(withZeroedGasValues(actual.getActions()))
+                        .build();
+                final var variedExpected = expected.toBuilder()
+                        .setActions(withZeroedGasValues(expected.getActions()))
+                        .build();
+                if (variedExpected.equals(variedActual)) {
+                    return maxGasDeltaBetween(actual.getActions(), expected.getActions()) <= 32L;
+                }
+            }
+            return false;
+        }
+    }
+
+    private long maxGasDeltaBetween(@NonNull final ContractActions a, @NonNull final ContractActions b) {
+        final var aActions = a.getContractActionsList();
+        final var bActions = b.getContractActionsList();
+        if (aActions.size() != bActions.size()) {
+            throw new IllegalArgumentException("Arguments should be equal up to gas usage");
+        }
+        var maxGasDelta = 0L;
+        for (int i = 0, n = aActions.size(); i < n; i++) {
+            final var aAction = aActions.get(i);
+            final var bAction = bActions.get(i);
+            maxGasDelta = Math.max(maxGasDelta, Math.abs(aAction.getGas() - bAction.getGas()));
+        }
+        return maxGasDelta;
+    }
+
+    private ContractActions withZeroedGasValues(@NonNull final ContractActions actions) {
+        final var perturbedAction = ContractActions.newBuilder();
+        actions.getContractActionsList()
+                .forEach(action -> perturbedAction.addContractActions(
+                        action.toBuilder().setGas(0L).build()));
+        return perturbedAction.build();
     }
 
     public void waitUntilFinished() {

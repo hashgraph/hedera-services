@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.exec.utils.PropagatedCallFailureReference;
+import com.hedera.node.app.service.contract.impl.exec.utils.PropagatedCallFailureRef;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
@@ -94,7 +94,7 @@ class FrameRunnerTest {
     @Mock
     private CustomGasCalculator gasCalculator;
 
-    private final PropagatedCallFailureReference propagatedCallFailure = new PropagatedCallFailureReference();
+    private final PropagatedCallFailureRef propagatedCallFailure = new PropagatedCallFailureRef();
 
     private FrameRunner subject;
 
