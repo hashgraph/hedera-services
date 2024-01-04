@@ -441,12 +441,10 @@ public class SwirldsPlatform implements Platform {
 
         this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId);
 
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final LatestEventTipsetTracker latestEventTipsetTracker;
-        final boolean enableEventFiltering = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .filterLikelyDuplicates();
-        if (enableEventFiltering) {
+        if (syncConfig.filterLikelyDuplicates() || syncConfig.turbo()) {
             latestEventTipsetTracker = new LatestEventTipsetTracker(time, currentAddressBook, selfId);
         } else {
             latestEventTipsetTracker = null;
@@ -717,7 +715,6 @@ public class SwirldsPlatform implements Platform {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
             intakeEventCounter =
