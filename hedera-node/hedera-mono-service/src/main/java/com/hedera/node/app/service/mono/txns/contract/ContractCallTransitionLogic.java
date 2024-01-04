@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -228,16 +229,21 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         // Do some sanity checking in advance to ensure that the target is a valid contract
         // Missing entity num is a valid target for lazy create.  Tokens are also valid targets
         final var target = targetOf(op);
-        if (!target.equals(EntityNum.MISSING_NUM)
-                && !entityAccess.isTokenAccount(target.toId().asEvmAddress())
-                && op.getAmount() == 0) {
-            try {
-                final var receiver = accountStore.loadContract(target.toId());
-                validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
-            } catch (InvalidTransactionException e) {
-                return e.getResponseCode();
+        if (!properties.evmVersion().equals(EVM_VERSION_0_46)
+                || !properties.allowCallsToNonContractAccounts()
+                || properties.grandfatherContracts().contains(target.toId().asEvmAddress())) {
+            if (!target.equals(EntityNum.MISSING_NUM)
+                    && !entityAccess.isTokenAccount(target.toId().asEvmAddress())
+                    && op.getAmount() == 0) {
+                try {
+                    final var receiver = accountStore.loadContract(target.toId());
+                    validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
+                } catch (InvalidTransactionException e) {
+                    return e.getResponseCode();
+                }
             }
         }
+
         return OK;
     }
 
