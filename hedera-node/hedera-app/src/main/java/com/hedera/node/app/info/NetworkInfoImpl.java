@@ -88,6 +88,7 @@ public class NetworkInfoImpl implements NetworkInfo {
 
     @Nullable
     private NodeInfo nodeInfo(@NonNull final NodeId nodeId) {
+        logger.info("DIFF-TEST: shouldn't see!!: checking nodeId {}", nodeId.id());
         if (nodeId.id() == selfNode.nodeId()) {
             return selfNode;
         }

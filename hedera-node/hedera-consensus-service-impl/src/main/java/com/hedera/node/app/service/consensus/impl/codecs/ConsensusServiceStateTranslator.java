@@ -71,9 +71,8 @@ public class ConsensusServiceStateTranslator {
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
         topicBuilder.deleted(monoTopic.isDeleted());
-        topicBuilder.topicId(TopicID.newBuilder()
-                .topicNum(monoTopic.getKey().longValue())
-                .build());
+        topicBuilder.topicId(
+                TopicID.newBuilder().topicNum(monoTopic.getKey().longValue()).build());
 
         return topicBuilder.build();
     }

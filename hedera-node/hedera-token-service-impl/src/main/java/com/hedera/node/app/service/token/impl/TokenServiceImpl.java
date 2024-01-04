@@ -131,7 +131,8 @@ public class TokenServiceImpl implements TokenService {
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
         requireNonNull(registry);
         // We intentionally ignore the given (i.e. passed-in) version in this method
-        registry.register(new TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, RELEASE_045_VERSION));
+        registry.register(
+                new TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, RELEASE_045_VERSION));
 
         //        if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
@@ -156,25 +157,26 @@ public class TokenServiceImpl implements TokenService {
                                                     .serialNumber(nftId.getTokenSerial())
                                                     .build();
                                             var fromNft = entry.right();
-                                    var fromNft2 = new MerkleUniqueToken(fromNft.getOwner(),
-                                            fromNft.getMetadata(), fromNft.getCreationTime());
-                                    var translated = NftStateTranslator.nftFromMerkleUniqueToken(
-                                            fromNft2);
+                                            var fromNft2 = new MerkleUniqueToken(
+                                                    fromNft.getOwner(),
+                                                    fromNft.getMetadata(),
+                                                    fromNft.getCreationTime());
+                                            var translated = NftStateTranslator.nftFromMerkleUniqueToken(fromNft2);
                                             nftsToState.put(toNftId, translated);
                                         },
                                         1);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                        if (nftsToState.isModified()) ((WritableKVStateBase) nftsToState).commit();
-                        System.out.println("BBM: finished nfts");
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
+                    if (nftsToState.isModified()) ((WritableKVStateBase) nftsToState).commit();
+                    System.out.println("BBM: finished nfts");
+                }
 
                 // ---------- Token Rels/Associations
                 if (true) {
                     System.out.println("BBM: doing token rels...");
                     var tokenRelsToState = ctx.newStates().<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY);
-                        try {
+                    try {
                         VirtualMapLike.from(trFs)
                                 .extractVirtualMapData(
                                         AdHocThreadManager.getStaticThreadManager(),
@@ -200,12 +202,12 @@ public class TokenServiceImpl implements TokenService {
                                             tokenRelsToState.put(newPair, translated);
                                         },
                                         1);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    if (tokenRelsToState.isModified()) ((WritableKVStateBase) tokenRelsToState).commit();
-                        System.out.println("BBM: finished token rels");
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
+                    if (tokenRelsToState.isModified()) ((WritableKVStateBase) tokenRelsToState).commit();
+                    System.out.println("BBM: finished token rels");
+                }
 
                 // ---------- Accounts
                 if (true) {
@@ -227,35 +229,30 @@ public class TokenServiceImpl implements TokenService {
                                                     toAcct);
                                         },
                                         1);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                        if (acctsToState.isModified())
-                            ((WritableKVStateBase) acctsToState).commit();
-                        System.out.println("BBM: finished accts");
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
+                    if (acctsToState.isModified()) ((WritableKVStateBase) acctsToState).commit();
+                    System.out.println("BBM: finished accts");
+                }
 
                 // ---------- Tokens
                 if (true) {
                     System.out.println("BBM: starting tokens (both fung and non-fung)");
                     var tokensToState = ctx.newStates().<TokenID, Token>get(TOKENS_KEY);
-                        MerkleMapLike.from(tFs).forEachNode(
-                                new BiConsumer<EntityNum, MerkleToken>() {
-                                    @Override
-                                    public void accept(EntityNum entityNum,
-                                            MerkleToken merkleToken) {
-                                        var toToken = TokenStateTranslator.tokenFromMerkle(
-                                                merkleToken);
-                                        tokensToState.put(
+                    MerkleMapLike.from(tFs).forEachNode(new BiConsumer<EntityNum, MerkleToken>() {
+                        @Override
+                        public void accept(EntityNum entityNum, MerkleToken merkleToken) {
+                            var toToken = TokenStateTranslator.tokenFromMerkle(merkleToken);
+                            tokensToState.put(
                                     TokenID.newBuilder()
                                             .tokenNum(entityNum.longValue())
                                             .build(),
-                                                toToken);
-                                    }
-                                });
-                        if (tokensToState.isModified())
-                            ((WritableKVStateBase) tokensToState).commit();
-                        System.out.println("BBM: finished tokens (fung and non-fung)");
+                                    toToken);
+                        }
+                    });
+                    if (tokensToState.isModified()) ((WritableKVStateBase) tokensToState).commit();
+                    System.out.println("BBM: finished tokens (fung and non-fung)");
                 }
 
                 // ---------- Staking Info

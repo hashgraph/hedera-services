@@ -32,7 +32,7 @@ import javax.inject.Singleton;
 public abstract class InfoInjectionModule {
     @Binds
     @Singleton
-    abstract NetworkInfo provideNetworkInfo(@NonNull final NetworkInfoImpl impl);
+    abstract NetworkInfo provideNetworkInfo(@NonNull final DifferentialTestingNetworkInfo impl);
 
     @Binds
     @Singleton

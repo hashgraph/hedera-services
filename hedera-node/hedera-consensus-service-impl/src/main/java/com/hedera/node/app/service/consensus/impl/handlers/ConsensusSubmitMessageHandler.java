@@ -103,15 +103,15 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      */
     @Override
     public void handle(@NonNull final HandleContext handleContext) {
-        log.info("BBM:consensus handle called {}", Instant.now());
+        //        log.info("BBM:consensus handle called {}", Instant.now());
         requireNonNull(handleContext);
 
         final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
-        log.info(
-                "BBM:handling submitted message: (time {}) [{}]",
-                Instant.now(),
-                handleContext.body().consensusSubmitMessageOrThrow().message());
+        //        log.info(
+        //                "BBM:handling submitted message: (time {}) [{}]",
+        //                Instant.now(),
+        //                handleContext.body().consensusSubmitMessageOrThrow().message());
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));

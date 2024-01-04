@@ -46,6 +46,13 @@ public final class BlockInfoTranslator {
                 .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo())
                 .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
         if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {
+            blockInfoBuilder.firstConsTimeOfCurrentBlock(Timestamp.newBuilder()
+                    // Hack: subtract 5 in order to make the new block period on startup greater than this current block
+                    // period, otherwise the record stream writer complains. We'll want to consider what this means in a
+                    // reconnect scenario mid-block: how will the record stream writer be instantiated?
+                    .seconds(merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() - 5)
+                    .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())
+                    .build());
             blockInfoBuilder.firstConsTimeOfLastBlock(Timestamp.newBuilder()
                     .seconds(merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond())
                     .nanos(merkleNetworkContext.firstConsTimeOfCurrentBlock().getNano())

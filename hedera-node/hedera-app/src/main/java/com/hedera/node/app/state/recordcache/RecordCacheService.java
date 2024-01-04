@@ -20,7 +20,9 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -88,7 +90,8 @@ public class RecordCacheService implements Service {
                     var fromTxnId = fromRec.getTxnId();
                     var fromTransactionValidStart = fromTxnId.getValidStart();
 
-                    //                    fromRec.getExpiry();  //??? where should this go? is it needed?
+                    // Note: fromRec.getExpiry() isn't needed because RecordCacheImpl uses its own mechanism to expire
+                    // its entries
                     var toTxnValidStart = Timestamp.newBuilder()
                             .seconds(fromTransactionValidStart.getSeconds())
                             .nanos(fromTransactionValidStart.getNanos());
@@ -102,6 +105,10 @@ public class RecordCacheService implements Service {
                             .build();
                     var toRec = TransactionRecordEntry.newBuilder()
                             .transactionRecord(TransactionRecord.newBuilder()
+                                    .receipt(TransactionReceipt.newBuilder()
+                                            .status(PbjConverter.toPbj(
+                                                    fromRec.getReceipt().getEnumStatus()))
+                                            .build())
                                     .consensusTimestamp(toConsensusTime)
                                     .transactionID(toTxnId)
                                     .build())

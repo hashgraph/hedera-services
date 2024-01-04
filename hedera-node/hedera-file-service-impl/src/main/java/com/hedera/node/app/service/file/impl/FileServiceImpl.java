@@ -103,6 +103,7 @@ public final class FileServiceImpl implements FileService {
                                         .build(),
                                 toFile);
                     } else {
+                        // todo: copy over contract bytecode
                         System.out.println("BBM: WARN: no meta for fileid: " + fromFileId);
                     }
                 });

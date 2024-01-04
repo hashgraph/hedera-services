@@ -49,6 +49,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -57,6 +58,7 @@ import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -270,8 +272,16 @@ public class HandleWorkflow {
         // but for compatibility with the current implementation, we adjust it as follows.
         final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
-        // handle user transaction
-        handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
+        // For differential testing only: get the last handled txn timestamp from the state, and compare that with the consensus
+        // time of the event. We do this to avoid re-processing transactions.
+        var currentBlockInfo = state.createReadableStates(BlockRecordService.NAME)
+                .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        var lastHandledTxnTime = currentBlockInfo.get().consTimeOfLastHandledTxn();
+        var lastHandledTxnInstant = Instant.ofEpochSecond(lastHandledTxnTime.seconds(), lastHandledTxnTime.nanos());
+        if (consensusNow.isAfter(lastHandledTxnInstant)) {
+            // handle user transaction
+            handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
+        }
     }
 
     private void handleUserTransaction(
@@ -800,10 +810,11 @@ public class HandleWorkflow {
             // This should be impossible since the Platform contract guarantees that SwirldState.preHandle()
             // is always called before SwirldState.handleTransaction(); and our preHandle() implementation
             // always sets the metadata to a PreHandleResult
-            logger.error(
-                    "Received transaction without PreHandleResult metadata from node {} (was {})",
-                    creator.nodeId(),
-                    metadata);
+            // Hack: disable this logging statement because it dramatically slows down handling speed
+            //            logger.error(
+            //                    "Received transaction without PreHandleResult metadata from node {} (was {})",
+            //                    creator.nodeId(),
+            //                    metadata);
             previousResult = null;
         }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
