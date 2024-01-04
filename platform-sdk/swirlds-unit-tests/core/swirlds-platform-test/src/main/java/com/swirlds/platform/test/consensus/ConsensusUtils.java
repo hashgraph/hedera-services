@@ -18,17 +18,14 @@ package com.swirlds.platform.test.consensus;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
@@ -36,7 +33,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -45,26 +41,11 @@ public abstract class ConsensusUtils {
 
     public static final ConsensusMetrics NOOP_CONSENSUS_METRICS = new NoOpConsensusMetrics();
 
-    public static List<ConsensusRound> applyEventsToConsensus(
-            final EventEmitter<?> emitter, final Consensus consensus, final long numberOfEvents) {
-
-        final List<ConsensusRound> allConsensusRounds = new LinkedList<>();
-
-        for (int i = 0; i < numberOfEvents; i++) {
-            final IndexedEvent genEvent = emitter.emitEvent();
-            final List<ConsensusRound> rounds = consensus.addEvent(genEvent);
-            if (rounds != null) {
-                allConsensusRounds.addAll(rounds);
-            }
-        }
-
-        return allConsensusRounds;
-    }
-
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
 
         final Configuration defaultConfiguration = ConfigurationBuilder.create()
                 .withConfigDataType(ConsensusConfig.class)
+                .withConfigDataType(EventConfig.class)
                 .build();
 
         final ConsensusConfig consensusConfig = defaultConfiguration.getConfigData(ConsensusConfig.class);
