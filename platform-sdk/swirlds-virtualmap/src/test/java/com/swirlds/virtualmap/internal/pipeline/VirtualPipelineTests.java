@@ -848,7 +848,7 @@ class VirtualPipelineTests {
                 .withValue(VirtualMapConfig_.FLUSH_THROTTLE_STEP_SIZE, throttleStepSize + "ms")
                 .withValue(VirtualMapConfig_.MAXIMUM_FLUSH_THROTTLE_PERIOD, maxThrottle + "ms")
                 .getOrCreateConfig();
-        ConfigurationHolder.setConfiguration(config);
+        ConfigurationHolder.getInstance().setConfiguration(config);
 
         final Deque<DummyVirtualRoot> copies = new LinkedList<>();
 

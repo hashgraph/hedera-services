@@ -95,7 +95,7 @@ public abstract class BaseBench {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .build();
-        ConfigurationHolder.setConfiguration(configuration);
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         final StringBuilder settingsUsed = new StringBuilder();
         ConfigExport.addConfigContents(configuration, settingsUsed);

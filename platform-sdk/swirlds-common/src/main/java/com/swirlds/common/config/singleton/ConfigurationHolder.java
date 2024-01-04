@@ -22,6 +22,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * The old Settings API used several static holder classes to support to change the configuration for tests. Next to
@@ -33,14 +34,14 @@ import java.util.Set;
  * is not thread safe!
  * <p>
  * The class is defined as a singleton that provides the current configuration. By default the configuration has no
- * config sources. Therefore the default values will be used for all values of config data records (see
- * {@link ConfigData}). A new config can be set by calling the {@link #setConfiguration(Configuration)} method. That
- * should be done once in the browser or for unit tests and nowhere else!
+ * config sources. Therefore the default values will be used for all values of config data records (see {@link
+ * ConfigData}). A new config can be set by calling the {@link #setConfiguration(Configuration)} method. That should be
+ * done once in the browser or for unit tests and nowhere else!
  *
  * @deprecated Will be removed once we have the Platform Context in place or all mentioned problems have been refactored
  */
 @Deprecated(forRemoval = true)
-public final class ConfigurationHolder {
+public final class ConfigurationHolder implements Supplier<Configuration> {
 
     private static final ConfigurationHolder INSTANCE = new ConfigurationHolder();
 
@@ -57,22 +58,32 @@ public final class ConfigurationHolder {
     }
 
     /**
-     * Sets the configuration. This method should only be called in the browser at startup or at unit tests.
-     *
-     * @param configuration the new configuration
-     */
-    public static void setConfiguration(final Configuration configuration) {
-        INSTANCE.setConfigurationInstance(configuration);
-    }
-
-    /**
      * Sets the config. This method should only be called in the browser at startup or at unit tests
      *
      * @param configuration the new configuration
      * @throws NullPointerException in case {@code configuration} parameter is {@code null}
      */
-    private void setConfigurationInstance(final Configuration configuration) {
+    public void setConfiguration(final Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+    }
+
+    /**
+     * Returns the configuration
+     *
+     * @return the configuration
+     */
+    @Override
+    public Configuration get() {
+        return configuration;
+    }
+
+    /**
+     * Returns the singleton instance
+     *
+     * @return the singleton instance
+     */
+    public static ConfigurationHolder getInstance() {
+        return INSTANCE;
     }
 
     /**
@@ -83,6 +94,6 @@ public final class ConfigurationHolder {
      * @return the data instance
      */
     public static <T extends Record> T getConfigData(final Class<T> type) {
-        return INSTANCE.configuration.getConfigData(type);
+        return getInstance().get().getConfigData(type);
     }
 }

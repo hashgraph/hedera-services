@@ -396,7 +396,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
-        ConfigurationHolder.setConfiguration(configuration);
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 

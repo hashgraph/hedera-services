@@ -65,7 +65,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
                 .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_BUFFER, "1000")
                 .getOrCreateConfig();
 
-        ConfigurationHolder.setConfiguration(config);
+        ConfigurationHolder.getInstance().setConfiguration(config);
     }
 
     @Test
