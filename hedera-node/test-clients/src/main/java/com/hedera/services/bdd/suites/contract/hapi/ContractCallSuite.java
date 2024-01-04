@@ -1575,13 +1575,14 @@ public class ContractCallSuite extends HapiSuite {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
         return defaultHapiSpec("InvalidContract")
-                .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))))
-                .when()
-                .then(
+                .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.2"))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
                         ifHapiTest(
                                 contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
                         ifNotHapiTest(
-                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)));
+                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
+                .then();
     }
 
     @HapiTest
