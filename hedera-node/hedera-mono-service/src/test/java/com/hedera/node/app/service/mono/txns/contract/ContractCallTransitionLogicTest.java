@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.txns.contract;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -785,6 +786,7 @@ class ContractCallTransitionLogicTest {
     void acceptsOkSyntax() {
         givenValidTxnCtx();
         given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
         contractAccount.setSmartContract(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
@@ -793,6 +795,7 @@ class ContractCallTransitionLogicTest {
     @Test
     void failsIfNotSmartContractSyntax() {
         givenValidTxnCtxWithNoAmount();
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);
