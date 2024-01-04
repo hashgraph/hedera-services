@@ -35,8 +35,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -85,7 +85,7 @@ class PreconsensusEventReplayWorkflowTests {
 
         final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
         when(preconsensusEventFileManager.getEventIterator(anyLong())).thenAnswer(invocation -> {
-            final PreconsensusEventMultiFileIterator it = mock(PreconsensusEventMultiFileIterator.class);
+            final PcesMultiFileIterator it = mock(PcesMultiFileIterator.class);
             when(it.hasNext()).thenAnswer(invocation2 -> eventIterator.hasNext());
             when(it.next()).thenAnswer(invocation2 -> eventIterator.next());
             return it;

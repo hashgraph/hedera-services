@@ -59,7 +59,7 @@ import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.creation.EventCreationConfig;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
@@ -166,7 +166,7 @@ public final class BootstrapUtils {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreconsensusEventStreamConfig.class)
+                .withConfigDataType(PcesConfig.class)
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
