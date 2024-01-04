@@ -16,13 +16,7 @@
 
 package com.swirlds.common.crypto;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-
-import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -31,19 +25,6 @@ public interface Cryptography {
     boolean DEFAULT_SET_HASH = true;
     /** The default digest type */
     DigestType DEFAULT_DIGEST_TYPE = DigestType.SHA_384;
-
-    /**
-     * Creates a new {@link Cryptography} instance using the given configuration.
-     *
-     * @param configuration
-     * 		the configuration to use
-     * @return a new {@link Cryptography} instance
-     */
-    @NonNull
-    static Cryptography create(@NonNull final Configuration configuration) {
-        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
-        return new CryptoEngine(getStaticThreadManager(), cryptoConfig);
-    }
 
     /**
      * Computes a cryptographic hash (message digest) for the given message. The resulting hash value will be returned

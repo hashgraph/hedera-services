@@ -52,9 +52,9 @@ public class MerkleCryptoFactory {
     private MerkleCryptoFactory() {}
 
     /**
-     * Setup cryptography. Intended only to be invoked by unit tests.
+     * Setup cryptography. Only needed to support unit tests that do not go through the proper setup procedures.
      */
-    private static void defaultTestSetup() {
+    private static void init() {
         // This exception is intended to intentionally fail validators for deployments that do not set up
         // this class correctly. This won't cause a problem during unit tests, which are the biggest offender
         // w.r.t. not setting this up correctly.
@@ -63,7 +63,7 @@ public class MerkleCryptoFactory {
         final Configuration defaultConfiguration = ConfigurationBuilder.create()
                 .withConfigDataType(CryptoConfig.class)
                 .build();
-        merkleCryptography = MerkleCryptography.create(defaultConfiguration, CryptographyHolder.get());
+        merkleCryptography = MerkleCryptographyFactory.create(defaultConfiguration, CryptographyHolder.get());
     }
 
     /**
@@ -85,7 +85,7 @@ public class MerkleCryptoFactory {
     public static MerkleCryptography getInstance() {
         try (final Locked ignored = lock.lock()) {
             if (merkleCryptography == null) {
-                defaultTestSetup();
+                init();
             }
             return merkleCryptography;
         }

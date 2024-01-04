@@ -35,10 +35,12 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -200,8 +202,8 @@ public final class PlatformBuilder {
     public Platform build() {
         final Configuration configuration = buildConfiguration();
 
-        final Cryptography cryptography = Cryptography.create(configuration);
-        final MerkleCryptography merkleCryptography = MerkleCryptography.create(configuration, cryptography);
+        final Cryptography cryptography = CryptographyFactory.create(configuration);
+        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
 
         // For backwards compatibility with the old static access pattern.
         CryptographyHolder.set(cryptography);

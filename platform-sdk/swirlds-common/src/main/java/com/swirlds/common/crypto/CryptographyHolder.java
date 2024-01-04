@@ -65,9 +65,9 @@ public final class CryptographyHolder {
     }
 
     /**
-     * Setup cryptography. Intended only to be invoked by unit tests.
+     * Setup cryptography. Only needed to support unit tests that do not go through the proper setup procedures.
      */
-    private static void defaultTestSetup() {
+    private static void init() {
         // This exception is intended to intentionally fail validators for deployments that do not set up
         // cryptography correctly. This won't cause a problem during unit tests, which are the biggest offender
         // w.r.t. not setting up cryptography correctly.
@@ -77,7 +77,7 @@ public final class CryptographyHolder {
                 .withConfigDataType(CryptoConfig.class)
                 .build();
 
-        cryptography = Cryptography.create(defaultConfiguration);
+        cryptography = CryptographyFactory.create(defaultConfiguration);
     }
 
     /**
@@ -89,7 +89,7 @@ public final class CryptographyHolder {
     public static Cryptography get() {
         try (final Locked ignored = lock.lock()) {
             if (cryptography == null) {
-                defaultTestSetup();
+                init();
             }
             return cryptography;
         }

@@ -21,7 +21,6 @@ plugins {
 
 testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.config.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
     requiresStatic("com.github.spotbugs.annotations")

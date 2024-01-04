@@ -18,7 +18,6 @@ package com.swirlds.common.merkle.crypto;
 
 import static com.swirlds.common.crypto.Cryptography.DEFAULT_DIGEST_TYPE;
 import static com.swirlds.common.crypto.Cryptography.DEFAULT_SET_HASH;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyException;
@@ -26,13 +25,9 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.crypto.internal.MerkleCryptoEngine;
-import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -40,20 +35,6 @@ import java.util.concurrent.Future;
  * Cryptography service that provides specific functions for merkle classes.
  */
 public interface MerkleCryptography {
-
-    /**
-     * Create a new merkle crypto engine.
-     *
-     * @param configuration the configuration
-     * @param cryptography  the cryptography
-     * @return the new merkle crypto engine
-     */
-    @NonNull
-    static MerkleCryptography create(
-            @NonNull final Configuration configuration, @NonNull final Cryptography cryptography) {
-        return new MerkleCryptoEngine(
-                getStaticThreadManager(), cryptography, configuration.getConfigData(CryptoConfig.class));
-    }
 
     /**
      * Computes a cryptographic hash for the {@link MerkleInternal} instance. The hash is passed to the object by

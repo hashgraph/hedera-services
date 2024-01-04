@@ -36,7 +36,8 @@ class ApplicationDefinitionLoaderTest {
                 .build()
                 .getConfigData(PathsConfig.class);
 
-        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(defaultPathsConfig, null));
+        Assertions.assertThrows(
+                NullPointerException.class, () -> ApplicationDefinitionLoader.load(defaultPathsConfig, null));
     }
 
     @Test

@@ -56,9 +56,8 @@ public final class ApplicationDefinitionLoader {
      * @return an {@link ApplicationDefinition} specifying the application to be loaded and all related configuration
      * @throws ConfigurationException if the configuration cannot be loaded
      */
-    public static @NonNull ApplicationDefinition loadDefault(@NonNull final PathsConfig pathsConfig,
-            @NonNull final Path configPath)
-            throws ConfigurationException {
+    public static @NonNull ApplicationDefinition loadDefault(
+            @NonNull final PathsConfig pathsConfig, @NonNull final Path configPath) throws ConfigurationException {
         return load(pathsConfig, LegacyConfigPropertiesLoader.loadConfigFile(configPath));
     }
 
@@ -71,9 +70,7 @@ public final class ApplicationDefinitionLoader {
      * @throws ConfigurationException if the configuration cannot be loaded
      */
     public static @NonNull ApplicationDefinition load(
-            @NonNull final PathsConfig pathsConfig,
-            @NonNull final LegacyConfigProperties configurationProperties)
-
+            @NonNull final PathsConfig pathsConfig, @NonNull final LegacyConfigProperties configurationProperties)
             throws ConfigurationException {
         Objects.requireNonNull(configurationProperties, "configurationProperties must not be null");
 
@@ -95,8 +92,7 @@ public final class ApplicationDefinitionLoader {
     }
 
     private static @NonNull AppStartParams convertToStartParams(
-            @NonNull final PathsConfig pathsConfig,
-            @NonNull final JarAppConfig appConfig) {
+            @NonNull final PathsConfig pathsConfig, @NonNull final JarAppConfig appConfig) {
         final String[] appParameters = appConfig.params();
         // the line is: app, jarFilename, optionalParameters
         final String appJarFilename = appConfig.jarName();

@@ -54,10 +54,8 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
      */
     public StandardTeacherTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
 
-        maxAckDelayMilliseconds = (int) configuration
-                .getConfigData(ReconnectConfig.class)
-                .maxAckDelay()
-                .toMillis();
+        maxAckDelayMilliseconds = (int)
+                configuration.getConfigData(ReconnectConfig.class).maxAckDelay().toMillis();
 
         this.root = new NodeToSend(root, maxAckDelayMilliseconds);
 
