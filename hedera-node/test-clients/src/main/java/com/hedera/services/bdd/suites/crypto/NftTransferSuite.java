@@ -108,6 +108,7 @@ public class NftTransferSuite extends HapiSuite {
                         .supplyKey(NftTransferSuite.KEY)
                         .initialSupply(0L)
                         .treasury(tokenTreasuryName(id))
+                        .noLogging()
                         .withCustom(fixedHbarFee(1L, NftTransferSuite.FEE_COLLECTOR))));
     }
 
@@ -190,7 +191,6 @@ public class NftTransferSuite extends HapiSuite {
         return blockingOrder(createBasicAccounts(), createAccountsAndNfts());
     }
 
-    //    @HapiTest
     final HapiSpec transferNfts() {
         return defaultHapiSpec("TransferNfts")
                 .given(setupNftTest(), transferInitial())

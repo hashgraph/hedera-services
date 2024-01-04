@@ -32,13 +32,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -125,23 +125,24 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new HapiEngineDescriptor(uniqueId);
-        final SortedSet<ClassTestDescriptor> orderedSuites = new TreeSet<>(SUITE_DESCRIPTOR_COMPARATOR);
+        final List<ClassTestDescriptor> suites = new ArrayList<>();
 
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, orderedSuites);
+            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, suites);
         });
 
         discoveryRequest.getSelectorsByType(ClassSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, orderedSuites);
+            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, suites);
         });
 
         discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
-            appendSuitesInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest, orderedSuites);
+            appendSuitesInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest, suites);
         });
 
-        orderedSuites.forEach(engineDescriptor::addChild);
+        suites.sort(SUITE_DESCRIPTOR_COMPARATOR);
+        suites.forEach(engineDescriptor::addChild);
 
         return engineDescriptor;
     }
@@ -150,7 +151,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             @NonNull final Class<?> javaClass,
             @NonNull final EngineDiscoveryRequest discoveryRequest,
             @NonNull final EngineDescriptor engineDescriptor,
-            @NonNull final SortedSet<ClassTestDescriptor> orderedSuites) {
+            @NonNull final List<ClassTestDescriptor> orderedSuites) {
         if (IS_HAPI_TEST_SUITE.test(javaClass)) {
             final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
             if (!classDescriptor.skip) {
@@ -163,7 +164,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             @NonNull final URI uri,
             @NonNull final TestDescriptor engineDescriptor,
             @NonNull final EngineDiscoveryRequest discoveryRequest,
-            SortedSet<ClassTestDescriptor> orderedSuites) {
+            List<ClassTestDescriptor> orderedSuites) {
         ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
                 .filter(aClass -> discoveryRequest.getFiltersByType(PackageNameFilter.class).stream()
                         .map(Filter::toPredicate)
