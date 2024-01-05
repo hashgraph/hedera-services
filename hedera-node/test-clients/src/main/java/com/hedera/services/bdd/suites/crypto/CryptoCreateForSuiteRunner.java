@@ -86,7 +86,7 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                                     .withRecharging()
                                     .rechargeWindow(3)
                                     .key(DEFAULT_PAYER)
-                                    .payingWith(DEFAULT_PAYER)
+                                    .payingWith(GENESIS)
                                     .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
                                     .via("txn")
                                     .ensuringResolvedStatusIsntFromDuplicate();
@@ -120,6 +120,7 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                         try {
                             var payerAccountInfo = getAccountInfo("payerAccount")
                                     .savingSnapshot("payerAccountInfo")
+                                    .payingWith(GENESIS)
                                     .logged();
                             allRunFor(spec, payerAccountInfo);
                             gotPayerInfo = true;
