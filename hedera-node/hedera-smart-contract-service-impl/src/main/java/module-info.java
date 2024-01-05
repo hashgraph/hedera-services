@@ -51,7 +51,8 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app.service.contract.impl.test;
 
     exports com.hedera.node.app.service.contract.impl.exec.failure to
-            com.hedera.node.app.service.contract.impl.test;
+            com.hedera.node.app.service.contract.impl.test,
+            com.hedera.node.app.service.contract.impl.test.exec.scope;
     exports com.hedera.node.app.service.contract.impl.exec;
     exports com.hedera.node.app.service.contract.impl.exec.operations to
             com.hedera.node.app.service.contract.impl.test;

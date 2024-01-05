@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -41,11 +40,13 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.SyncPermitProvider;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -120,6 +121,7 @@ public class SyncGossip extends AbstractGossip {
      * @param appVersion                    the version of the app
      * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
+     * @param latestEventTipsetTracker      tracks the tipset of the latest self event
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
@@ -144,6 +146,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final SoftwareVersion appVersion,
             @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
+            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
@@ -167,7 +170,6 @@ public class SyncGossip extends AbstractGossip {
                 intakeQueue,
                 swirldStateManager,
                 latestCompleteState,
-                syncMetrics,
                 platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -185,6 +187,7 @@ public class SyncGossip extends AbstractGossip {
                 platformContext,
                 time,
                 shadowGraph,
+                latestEventTipsetTracker,
                 addressBook.getSize(),
                 syncMetrics,
                 consensusRef::get,

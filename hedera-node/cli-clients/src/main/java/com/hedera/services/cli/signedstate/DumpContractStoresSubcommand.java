@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Map.Entry.comparingByKey;
@@ -259,7 +260,7 @@ public class DumpContractStoresSubcommand {
 
         // Start the migration with a clean, writable KV store.  Using the in-memory store here.
 
-        final var contractSchema = new ContractSchema();
+        final var contractSchema = new ContractSchema(RELEASE_045_VERSION);
         final var contractSchemas = contractSchema.statesToCreate();
         final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
                 .filter(sd -> sd.stateKey().equals(ContractSchema.STORAGE_KEY))

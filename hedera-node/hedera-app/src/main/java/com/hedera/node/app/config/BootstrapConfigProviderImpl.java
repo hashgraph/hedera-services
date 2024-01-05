@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
-import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -60,7 +59,6 @@ public class BootstrapConfigProviderImpl extends ConfigProviderBase {
                 .withConfigDataType(LedgerConfig.class)
                 .withConverter(new BytesConverter())
                 .withConverter(new SemanticVersionConverter())
-                .withConverter(new ProfileConverter())
                 .withConverter(new LongPairConverter());
 
         try {

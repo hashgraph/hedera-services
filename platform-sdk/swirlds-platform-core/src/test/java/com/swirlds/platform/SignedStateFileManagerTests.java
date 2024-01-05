@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -276,10 +276,7 @@ class SignedStateFileManagerTests {
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         final SavedStateController controller =
-                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class), (rss) -> {
-                    lastResult.set(manager.saveStateTask(rss));
-                    return lastResult.get() != null;
-                });
+                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class));
 
         Instant timestamp;
         final long firstRound;
@@ -317,12 +314,13 @@ class SignedStateFileManagerTests {
                     .setRound(round)
                     .build();
 
-            controller.maybeSaveState(signedState);
+            controller.markSavedState(signedState.reserve("markSavedState"));
 
             if (signedState.isStateToSave()) {
                 assertTrue(
                         nextBoundary == null || CompareTo.isGreaterThanOrEqualTo(timestamp, nextBoundary),
                         "timestamp should be after the boundary");
+                manager.saveStateTask(signedState.reserve("save to disk"));
 
                 savedStates.add(signedState);
 

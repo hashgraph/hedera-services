@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
@@ -216,7 +215,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public long getRound() {
-        return state.getPlatformState().getPlatformData().getRound();
+        return state.getPlatformState().getRound();
     }
 
     /**
@@ -225,7 +224,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this is the genesis state
      */
     public boolean isGenesisState() {
-        return state.getPlatformState().getPlatformData().getRound() == GENESIS_ROUND;
+        return state.getPlatformState().getRound() == GENESIS_ROUND;
     }
 
     /**
@@ -438,7 +437,7 @@ public class SignedState implements SignedStateInfo {
      * @return the consensus timestamp for this signed state.
      */
     public @NonNull Instant getConsensusTimestamp() {
-        return state.getPlatformState().getPlatformData().getConsensusTimestamp();
+        return state.getPlatformState().getConsensusTimestamp();
     }
 
     /**
@@ -458,21 +457,12 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Get events in the platformState.
-     *
-     * @return events in the platformState
-     */
-    public @Nullable EventImpl[] getEvents() {
-        return state.getPlatformState().getPlatformData().getEvents();
-    }
-
-    /**
      * Get the hash of the consensus events in this state.
      *
      * @return the hash of the consensus events in this state
      */
     public @NonNull Hash getHashEventsCons() {
-        return state.getPlatformState().getPlatformData().getHashEventsCons();
+        return state.getPlatformState().getRunningEventHash();
     }
 
     /**
@@ -481,7 +471,7 @@ public class SignedState implements SignedStateInfo {
      * @return the minimum generation of famous witnesses per round
      */
     public @NonNull List<MinGenInfo> getMinGenInfo() {
-        return state.getPlatformState().getPlatformData().getMinGenInfo();
+        return state.getPlatformState().getMinGenInfo();
     }
 
     /**
@@ -493,7 +483,7 @@ public class SignedState implements SignedStateInfo {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        return getState().getPlatformState().getPlatformData().getMinGen(round);
+        return getState().getPlatformState().getMinGen(round);
     }
 
     /**
@@ -502,7 +492,7 @@ public class SignedState implements SignedStateInfo {
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
-        return getState().getPlatformState().getPlatformData().getMinRoundGeneration();
+        return getState().getPlatformState().getMinRoundGeneration();
     }
 
     /**

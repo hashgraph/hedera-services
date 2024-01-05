@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,14 +39,30 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BEGIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATION;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.INSOLVENT_PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.OTHER_PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYING_SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_UPDATE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_XFER_SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_NODE_REWARD_PERCENTAGE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TRIGGER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.UNWILLING_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.scheduledVersionOf;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -70,20 +86,6 @@ import org.apache.logging.log4j.Logger;
 @HapiTestSuite
 public class ScheduleRecordSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
-    private static final String TWO_SIG_XFER = "twoSigXfer";
-    private static final String BEGIN = "begin";
-    private static final String SIMPLE_XFER_SCHEDULE = "simpleXferSchedule";
-    private static final String ADMIN = "admin";
-    private static final String CREATION = "creation";
-    private static final String PAYER = "payer";
-    private static final String PAYING_SENDER = "payingSender";
-    private static final String OTHER_PAYER = "otherPayer";
-    private static final String SIMPLE_UPDATE = "SimpleUpdate";
-    private static final String TRIGGER = "trigger";
-    private static final String INSOLVENT_PAYER = "insolventPayer";
-    private static final String SCHEDULE = "schedule";
-    private static final String UNWILLING_PAYER = "unwillingPayer";
-    private static final String RECEIVER = "receiver";
 
     public static void main(String... args) {
         new ScheduleRecordSpecs().runSuiteAsync();
@@ -102,10 +104,12 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 schedulingTxnIdFieldsNotAllowed()));
     }
 
+    @HapiTest
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
         return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
+                        uploadDefaultFeeSchedules(GENESIS),
                         uploadInitCode(SIMPLE_UPDATE),
                         cryptoCreate(OTHER_PAYER),
                         cryptoCreate(PAYING_SENDER),
@@ -156,6 +160,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                         validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
     }
 
+    @HapiTest
     public HapiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
                 .given(cryptoCreate(UNWILLING_PAYER))
@@ -176,6 +181,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 .status(INSUFFICIENT_TX_FEE)));
     }
 
+    @HapiTest
     public HapiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
                 .given(cryptoCreate(INSOLVENT_PAYER).balance(0L))
@@ -193,6 +199,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 .status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
+    @HapiTest
     public HapiSpec canScheduleChunkedMessages() {
         String ofGeneralInterest = "Scotch";
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
@@ -263,10 +270,6 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_NODE_REWARD_PERCENTAGE),
                                 STAKING_FEES_STAKING_REWARD_PERCENTAGE,
                                 HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_STAKING_REWARD_PERCENTAGE))));
-    }
-
-    static TransactionID scheduledVersionOf(TransactionID txnId) {
-        return txnId.toBuilder().setScheduled(true).build();
     }
 
     @HapiTest

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountBalanceStress() {
+    final HapiSpec getAccountBalanceStress() {
         return defaultHapiSpec("getAccountBalanceStress")
                 .given()
                 .when()
@@ -79,7 +79,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountInfoStress() {
+    final HapiSpec getAccountInfoStress() {
         return defaultHapiSpec("getAccountInfoStress")
                 .given()
                 .when()
@@ -91,7 +91,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getAccountRecordsStress() {
+    final HapiSpec getAccountRecordsStress() {
         return defaultHapiSpec("getAccountRecordsStress")
                 .given()
                 .when()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.state.MinGenInfo;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -229,13 +228,11 @@ class OrphanBufferingLinkerTest {
         final SignedState signedState = mock(SignedState.class);
         final State state = mock(State.class);
         final PlatformState platformState = mock(PlatformState.class);
-        final PlatformData platformData = mock(PlatformData.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
-        when(platformState.getPlatformData()).thenReturn(platformData);
-        when(platformData.getRound()).thenReturn(roundGenStart);
-        when(platformData.getMinGen(Mockito.anyLong())).thenCallRealMethod();
-        when(platformData.getMinGenInfo()).thenReturn(minGenInfos);
+        when(platformState.getRound()).thenReturn(roundGenStart);
+        when(platformState.getMinGen(Mockito.anyLong())).thenCallRealMethod();
+        when(platformState.getMinGenInfo()).thenReturn(minGenInfos);
         when(signedState.getRound()).thenReturn(roundGenEnd);
         when(signedState.getMinGenInfo()).thenReturn(minGenInfos);
         when(signedState.getMinGen(Mockito.anyLong())).thenCallRealMethod();

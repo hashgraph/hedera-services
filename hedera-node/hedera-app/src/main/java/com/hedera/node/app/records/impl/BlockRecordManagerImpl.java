@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * {@inheritDoc}
      */
-    public void startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
             // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
             // and the current consensus time to now
@@ -162,7 +162,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                     .build();
             persistLastBlockInfo(state);
             streamFileProducer.switchBlocks(-1, 0, consensusTime);
-            return;
+            return true;
         }
 
         // Check to see if we are at the boundary between blocks and should create a new one. Each block is covered
@@ -196,7 +196,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             }
 
             switchBlocksAt(consensusTime);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -291,6 +293,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     @Override
     public Instant firstConsTimeOfLastBlock() {
         return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    }
+
+    @Override
+    public @NonNull Timestamp currentBlockTimestamp() {
+        return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();
     }
 
     /**

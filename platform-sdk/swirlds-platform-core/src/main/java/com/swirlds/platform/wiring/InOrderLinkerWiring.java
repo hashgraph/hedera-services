@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
@@ -28,15 +29,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link InOrderLinker}.
  *
- * @param eventInput                       the input wire for events to be linked
- * @param minimumGenerationNonAncientInput the input wire for the minimum generation non-ancient
- * @param clearInput                       the input wire to clear the internal state of the linker
- * @param eventOutput                      the output wire for linked events
- * @param flushRunnable                    the runnable to flush the linker
+ * @param eventInput                 the input wire for events to be linked
+ * @param nonAncientEventWindowInput the input wire for the minimum generation non-ancient
+ * @param clearInput                 the input wire to clear the internal state of the linker
+ * @param eventOutput                the output wire for linked events
+ * @param flushRunnable              the runnable to flush the linker
  */
 public record InOrderLinkerWiring(
         @NonNull InputWire<GossipEvent> eventInput,
-        @NonNull InputWire<Long> minimumGenerationNonAncientInput,
+        @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput,
         @NonNull InputWire<ClearTrigger> clearInput,
         @NonNull OutputWire<EventImpl> eventOutput,
         @NonNull Runnable flushRunnable) {
@@ -50,7 +51,7 @@ public record InOrderLinkerWiring(
     public static InOrderLinkerWiring create(@NonNull final TaskScheduler<EventImpl> taskScheduler) {
         return new InOrderLinkerWiring(
                 taskScheduler.buildInputWire("unlinked events"),
-                taskScheduler.buildInputWire("minimum generation non ancient"),
+                taskScheduler.buildInputWire("non-ancient event window"),
                 taskScheduler.buildInputWire("clear"),
                 taskScheduler.getOutputWire(),
                 taskScheduler::flush);
@@ -63,8 +64,8 @@ public record InOrderLinkerWiring(
      */
     public void bind(@NonNull final InOrderLinker inOrderLinker) {
         ((BindableInputWire<GossipEvent, EventImpl>) eventInput).bind(inOrderLinker::linkEvent);
-        ((BindableInputWire<Long, EventImpl>) minimumGenerationNonAncientInput)
-                .bind(inOrderLinker::setMinimumGenerationNonAncient);
+        ((BindableInputWire<NonAncientEventWindow, EventImpl>) nonAncientEventWindowInput)
+                .bind(inOrderLinker::setNonAncientEventWindow);
         ((BindableInputWire<ClearTrigger, EventImpl>) clearInput).bind(inOrderLinker::clear);
     }
 }

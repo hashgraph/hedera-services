@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class ZeroStakeNodeTest extends HapiSuite {
      * node ids of the network with zero stake nodes. Assumes that node 0.0.7 and node 0.0.8 are
      * started with zero stake in a 6 node network.
      */
-    private HapiSpec zeroStakeBehavesAsExpectedJRS() {
+    final HapiSpec zeroStakeBehavesAsExpectedJRS() {
         return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
                 .given(
                         cryptoCreate("sponsor"),

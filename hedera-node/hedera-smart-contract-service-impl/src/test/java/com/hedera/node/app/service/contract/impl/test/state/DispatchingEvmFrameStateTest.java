@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -118,6 +119,9 @@ class DispatchingEvmFrameStateTest {
 
     @Mock
     private ContractStateStore contractStateStore;
+
+    @Mock
+    private MessageFrame frame;
 
     private DispatchingEvmFrameState subject;
 
@@ -427,7 +431,8 @@ class DispatchingEvmFrameStateTest {
     void missingAccountsCannotBeBeneficiaries() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).expiredAndPendingRemoval(true));
 
-        final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, LONG_ZERO_ADDRESS);
+        final var reasonToHaltDeletion =
+                subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, LONG_ZERO_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
@@ -545,7 +550,8 @@ class DispatchingEvmFrameStateTest {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberTreasuryTitles(1));
         givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
 
-        final var reasonToHaltDeletion = subject.tryTrackingDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
+        final var reasonToHaltDeletion =
+                subject.tryTrackingSelfDestructBeneficiary(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(CONTRACT_IS_TREASURY, reasonToHaltDeletion.get());
@@ -556,7 +562,8 @@ class DispatchingEvmFrameStateTest {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberPositiveBalances(1));
         givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
 
-        final var reasonToHaltDeletion = subject.tryTrackingDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
+        final var reasonToHaltDeletion =
+                subject.tryTrackingSelfDestructBeneficiary(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(CONTRACT_STILL_OWNS_NFTS, reasonToHaltDeletion.get());
@@ -567,15 +574,16 @@ class DispatchingEvmFrameStateTest {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
         givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
 
-        final var reasonToHaltDeletion = subject.tryTrackingDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
+        final var reasonToHaltDeletion =
+                subject.tryTrackingSelfDestructBeneficiary(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isEmpty());
-        verify(nativeOperations).trackDeletion(ACCOUNT_NUM, BENEFICIARY_NUM);
+        verify(nativeOperations).trackSelfDestructBeneficiary(ACCOUNT_NUM, BENEFICIARY_NUM, frame);
     }
 
     @Test
     void beneficiaryCannotBeSelf() {
-        final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, EVM_ADDRESS);
+        final var reasonToHaltDeletion = subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, EVM_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF, reasonToHaltDeletion.get());
@@ -585,7 +593,7 @@ class DispatchingEvmFrameStateTest {
     void tokenAccountsCannotBeBeneficiaries() {
         givenWellKnownToken();
 
-        final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, TOKEN_ADDRESS);
+        final var reasonToHaltDeletion = subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, TOKEN_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
@@ -595,7 +603,7 @@ class DispatchingEvmFrameStateTest {
     void senderAccountMustBeC() {
         givenWellKnownToken();
 
-        final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, TOKEN_ADDRESS);
+        final var reasonToHaltDeletion = subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, TOKEN_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());

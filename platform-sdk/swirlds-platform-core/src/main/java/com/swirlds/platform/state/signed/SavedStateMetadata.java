@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLO
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -175,23 +174,22 @@ public record SavedStateMetadata(
         Objects.requireNonNull(now, "now must not be null");
 
         final PlatformState platformState = signedState.getState().getPlatformState();
-        final PlatformData platformData = platformState.getPlatformData();
 
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
 
-        final Hash epochHash = platformData.getEpochHash();
+        final Hash epochHash = platformState.getEpochHash();
 
         return new SavedStateMetadata(
                 signedState.getRound(),
                 signedState.getState().getHash(),
                 signedState.getState().getHash().toMnemonic(),
-                platformData.getSnapshot().nextConsensusNumber(),
+                platformState.getSnapshot().nextConsensusNumber(),
                 signedState.getConsensusTimestamp(),
-                platformData.getHashEventsCons(),
-                platformData.getHashEventsCons().toMnemonic(),
-                platformData.getMinimumGenerationNonAncient(),
-                convertToString(platformData.getCreationSoftwareVersion()),
+                platformState.getRunningEventHash(),
+                platformState.getRunningEventHash().toMnemonic(),
+                platformState.getMinimumGenerationNonAncient(),
+                convertToString(platformState.getCreationSoftwareVersion()),
                 now,
                 selfId,
                 signingNodes,

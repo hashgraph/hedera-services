@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,11 +76,6 @@ public class XTestConstants {
             AccountID.newBuilder().accountNum(987654321L).build();
     public static final AccountID INVALID_ID =
             AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
-    public static final Key INVALID_CONTRACT_ID_KEY = Key.newBuilder()
-            .contractID(ContractID.newBuilder()
-                    .contractNum(SENDER_ID.accountNumOrThrow())
-                    .build())
-            .build();
     public static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(RECEIVER_ID.accountNumOrThrow()));
     public static final com.esaulpaugh.headlong.abi.Address LAZY_CREATE_TARGET_1_HEADLONG_ADDRESS =

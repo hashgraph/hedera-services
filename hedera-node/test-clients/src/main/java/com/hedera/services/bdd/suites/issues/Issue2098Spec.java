@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,28 +57,31 @@ public class Issue2098Spec extends HapiSuite {
         });
     }
 
-    private HapiSpec txnApiPermissionsChangeImmediately() {
+    @HapiTest
+    final HapiSpec txnApiPermissionsChangeImmediately() {
         return defaultHapiSpec("TxnApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)
                         .payingWith(ADDRESS_BOOK_CONTROL)
-                        .erasingProps(Set.of(CRYPTO_TRANSFER)))
+                        .overridingProps(Map.of(CRYPTO_TRANSFER, "0-1")))
                 .then(
                         cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1L))
                                 .payingWith(CIVILIAN)
-                                .hasPrecheck(NOT_SUPPORTED),
+                                .hasPrecheckFrom(NOT_SUPPORTED, OK)
+                                .hasKnownStatus(UNAUTHORIZED),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(CRYPTO_TRANSFER, "0-*")),
                         cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1L)).payingWith(CIVILIAN));
     }
 
-    private HapiSpec queryApiPermissionsChangeImmediately() {
+    @HapiTest
+    final HapiSpec queryApiPermissionsChangeImmediately() {
         return defaultHapiSpec("QueryApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
                         .payingWith(ADDRESS_BOOK_CONTROL)
-                        .erasingProps(Set.of(GET_TOPIC_INFO)))
+                        .overridingProps(Map.of(GET_TOPIC_INFO, "0-1")))
                 .then(
                         getTopicInfo("misc").payingWith(CIVILIAN).hasAnswerOnlyPrecheck(NOT_SUPPORTED),
                         fileUpdate(API_PERMISSIONS)
@@ -85,12 +90,13 @@ public class Issue2098Spec extends HapiSuite {
                         getTopicInfo("misc").payingWith(CIVILIAN));
     }
 
-    private HapiSpec adminsCanQueryNoMatterPermissions() {
+    @HapiTest
+    final HapiSpec adminsCanQueryNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanQueryNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
                         .payingWith(ADDRESS_BOOK_CONTROL)
-                        .erasingProps(Set.of(GET_TOPIC_INFO)))
+                        .overridingProps(Map.of(GET_TOPIC_INFO, "0-1")))
                 .then(
                         getTopicInfo("misc").payingWith(CIVILIAN).hasAnswerOnlyPrecheck(NOT_SUPPORTED),
                         getTopicInfo("misc"),
@@ -99,16 +105,18 @@ public class Issue2098Spec extends HapiSuite {
                                 .overridingProps(Map.of(GET_TOPIC_INFO, "0-*")));
     }
 
-    private HapiSpec adminsCanTransactNoMatterPermissions() {
+    @HapiTest
+    final HapiSpec adminsCanTransactNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanTransactNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)
                         .payingWith(ADDRESS_BOOK_CONTROL)
-                        .erasingProps(Set.of(CRYPTO_TRANSFER)))
+                        .overridingProps(Map.of(CRYPTO_TRANSFER, "0-1")))
                 .then(
                         cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1L))
                                 .payingWith(CIVILIAN)
-                                .hasPrecheck(NOT_SUPPORTED),
+                                .hasPrecheckFrom(NOT_SUPPORTED, OK)
+                                .hasKnownStatus(UNAUTHORIZED),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)

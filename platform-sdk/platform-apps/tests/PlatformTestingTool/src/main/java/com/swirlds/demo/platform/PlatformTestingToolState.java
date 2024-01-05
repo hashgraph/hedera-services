@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,11 +70,11 @@ import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -648,7 +648,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final Instant previousTransTimestampPlusIncr = previousTimestamp.plusNanos(minTransTimestampIncrNanos);
             if (timestamp.isBefore(previousTransTimestampPlusIncr)) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         "Transaction has timestamp {} which is earlier than previous timestamp {} plus {} nanos: "
                                 + "{}",
                         timestamp,
@@ -706,7 +706,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         } catch (final InvalidProtocolBufferException ex) {
             exceptionRateLimiter.handle(
-                    ex, (error) -> logger.error(LOGM_EXCEPTION, "InvalidProtocolBufferException", error));
+                    ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
             return Optional.empty();
         }
     }
@@ -724,7 +724,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                     purgeExpiredRecords(timestamp.getEpochSecond());
                 } catch (final Throwable ex) {
                     exceptionRateLimiter.handle(
-                            ex, (error) -> logger.error(LOGM_EXCEPTION, "Failed to purge expired records", error));
+                            ex,
+                            (error) -> logger.error(EXCEPTION.getMarker(), "Failed to purge expired records", error));
                 }
             }
         }
@@ -755,7 +756,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final long seq = Utilities.toLong(bytesTransaction.getData().toByteArray());
             if (getNextSeqCons().get(nodeIndex).getValue() != seq) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         platform.getSelfId() + " error, new (id=" + id
                                 + ") seq should be " + getNextSeqCons().get(nodeIndex)
                                 + " but is " + seq);
@@ -829,7 +830,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             } else if (activityType == Activity.ActivityType.SAVE_EXPECTED_MAP) {
                 logger.info(LOGM_DEMO_INFO, "Received SAVE_EXPECTED_MAP transaction from node {}", id);
             } else {
-                logger.info(LOGM_EXCEPTION, "unknown Activity type");
+                logger.info(EXCEPTION.getMarker(), "unknown Activity type");
             }
             return;
         }
@@ -849,7 +850,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         if ((keys.isEmpty() && entityType != EntityType.NFT) || transactionType == null || entityType == null) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "Invalid Transaction: keys: {}, transactionType: {}, entityType: {}",
                     keys,
                     transactionType,
@@ -868,7 +869,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         // which is set when generating this FCMTransaction, it denotes an error
         if (getConfig().isAppendSig() && invalidSig != fcmTransaction.getInvalidSig()) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "Unexpected signature verification result: " + "actual: {}; expected:{}",
                     () -> (invalidSig ? "INVALID" : "VALID"),
                     () -> (fcmTransaction.getInvalidSig() ? "INVALID" : "VALID"));
@@ -919,7 +920,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             exceptionRateLimiter.handle(
                     ex,
                     (error) -> logger.error(
-                            LOGM_EXCEPTION,
+                            EXCEPTION.getMarker(),
                             "Exceptions while handling transaction: {} {} for {}, originId:{}",
                             transactionType,
                             entityType,
@@ -1036,9 +1037,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     /**
      * Handle the freeze transaction type.
      */
-    private void handleFreezeTransaction(final TestTransaction testTransaction, final SwirldDualState swirldDualState) {
+    private void handleFreezeTransaction(final TestTransaction testTransaction, final PlatformState platformState) {
         final FreezeTransaction freezeTx = testTransaction.getFreezeTransaction();
-        FreezeTransactionHandler.freeze(freezeTx, swirldDualState);
+        FreezeTransactionHandler.freeze(freezeTx, platformState);
     }
 
     /**
@@ -1056,7 +1057,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public synchronized void handleConsensusRound(final Round round, final PlatformState platformState) {
         throwIfImmutable();
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
@@ -1064,7 +1065,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         delay();
         updateTransactionCounters();
         round.forEachEventTransaction((event, transaction) ->
-                handleConsensusTransaction(event, transaction, swirldDualState, round.getRoundNum()));
+                handleConsensusTransaction(event, transaction, platformState, round.getRoundNum()));
     }
 
     /**
@@ -1088,12 +1089,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private void handleConsensusTransaction(
             final ConsensusEvent event,
             final ConsensusTransaction trans,
-            final SwirldDualState dualState,
+            final PlatformState platformState,
             final long roundNum) {
         try {
             waitForSignatureValidation(trans);
             handleTransaction(
-                    event.getCreatorId(), event.getTimeCreated(), trans.getConsensusTimestamp(), trans, dualState);
+                    event.getCreatorId(), event.getTimeCreated(), trans.getConsensusTimestamp(), trans, platformState);
         } catch (final InterruptedException e) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
@@ -1122,7 +1123,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             @NonNull final Instant timeCreated,
             @NonNull final Instant timestamp,
             @NonNull final ConsensusTransaction trans,
-            @NonNull final SwirldDualState swirldDualState) {
+            @NonNull final PlatformState platformState) {
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper =
@@ -1176,7 +1177,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 exceptionRateLimiter.handle(
                         ex,
                         (error) -> logger.error(
-                                LOGM_EXCEPTION, "" + "InvalidProtocolBufferException while chekcing signature", error));
+                                EXCEPTION.getMarker(),
+                                "" + "InvalidProtocolBufferException while chekcing signature",
+                                error));
             }
         }
 
@@ -1208,7 +1211,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 handleControlTransaction(testTransaction.get(), id, timestamp);
                 break;
             case FREEZETRANSACTION:
-                handleFreezeTransaction(testTransaction.get(), swirldDualState);
+                handleFreezeTransaction(testTransaction.get(), platformState);
                 break;
             case SIMPLEACTION:
                 handleSimpleAction(testTransaction.get().getSimpleAction());
@@ -1217,7 +1220,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 handleVirtualMerkleTransaction(testTransaction.get().getVirtualMerkleTransaction(), id, timeCreated);
                 break;
             default:
-                logger.error(LOGM_EXCEPTION, "Unrecognized transaction!");
+                logger.error(EXCEPTION.getMarker(), "Unrecognized transaction!");
         }
 
         //////////// end timing/////////////
@@ -1257,7 +1260,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState swirldDualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
 
@@ -1286,7 +1289,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         initializeExpirationQueueAndAccountsSet();
 
         logger.info(LOGM_DEMO_INFO, "Dual state received in init function {}", () -> new ApplicationDualStatePayload(
-                        swirldDualState.getFreezeTime(), swirldDualState.getLastFrozenTime())
+                        platformState.getFreezeTime(), platformState.getLastFrozenTime())
                 .toString());
 
         logger.info(LOGM_STARTUP, () -> new SoftwareVersionPayload(
@@ -1367,7 +1370,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
             } catch (final InvalidProtocolBufferException ex) {
                 exceptionRateLimiter.handle(
-                        ex, (error) -> logger.error(LOGM_EXCEPTION, "InvalidProtocolBufferException", error));
+                        ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
             }
         }
     }
@@ -1426,7 +1429,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         final Future<Void> future = signature.waitForFuture();
                         future.get();
                     } catch (final ExecutionException | InterruptedException ex) {
-                        logger.info(LOGM_EXCEPTION, "Error when verifying signature", ex);
+                        logger.info(EXCEPTION.getMarker(), "Error when verifying signature", ex);
                     }
                 }
                 if (VerificationStatus.INVALID.equals(signature.getSignatureStatus())) {
@@ -1554,7 +1557,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public void rebuildExpirationQueue() {
         final FCMFamily fcmFamily = getFcmFamily();
         if (fcmFamily == null || fcmFamily.getAccountFCQMap() == null) {
-            logger.error(LOGM_EXCEPTION, "FCMFamily is null, so could not rebuild Expiration Queue");
+            logger.error(EXCEPTION.getMarker(), "FCMFamily is null, so could not rebuild Expiration Queue");
             return;
         }
         if (fcmFamily.getAccountFCQMap().size() == 0) {

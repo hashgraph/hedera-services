@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -69,15 +70,41 @@ public record PreHandleResult(
         @Nullable PreHandleResult innerResult,
         long configVersion) {
 
-    public Set<Key> getRequiredKeys() {
+    /**
+     * Returns whether this result's verification results are valid for the given context. This is <b>only</b>
+     * true if all keys linked to the transaction are exactly the same as those determined to be necessary
+     * in the given context.
+     *
+     * <p>Any change at all in a linked key means we must re-compute the verification results.
+     *
+     * @param context the context that might be able to reuse our verification results
+     * @return whether our verification results are reusable in the given context
+     */
+    public boolean hasReusableVerificationResultsFor(@NonNull final PreHandleContext context) {
+        return getPayerKey().equals(context.payerKey())
+                && getRequiredKeys().equals(context.requiredNonPayerKeys())
+                && getOptionalKeys().equals(context.optionalNonPayerKeys())
+                && getHollowAccounts().equals(context.requiredHollowAccounts());
+    }
+
+    /**
+     * Returns the key verifications for this result; or an empty map if none could be computed.
+     *
+     * @return the key verifications for this result; or an empty map if none could be computed.
+     */
+    public @NonNull Map<Key, SignatureVerificationFuture> getVerificationResults() {
+        return verificationResults == null ? Collections.emptyMap() : verificationResults;
+    }
+
+    public @NonNull Set<Key> getRequiredKeys() {
         return requiredKeys == null ? Collections.emptySet() : requiredKeys;
     }
 
-    public Set<Key> getOptionalKeys() {
+    public @NonNull Set<Key> getOptionalKeys() {
         return optionalKeys == null ? Collections.emptySet() : optionalKeys;
     }
 
-    public Key getPayerKey() {
+    public @NonNull Key getPayerKey() {
         return payerKey == null ? IMMUTABILITY_SENTINEL_KEY : payerKey;
     }
 
@@ -141,13 +168,15 @@ public record PreHandleResult(
      * @param node The node that is responsible for paying for this due diligence failure.
      * @param responseCode The response code of the failure.
      * @param txInfo The transaction info, if available.
+     * @param configVersion The version of the configuration that was used to compute the result
      * @return A new {@link PreHandleResult} with the given parameters.
      */
     @NonNull
     public static PreHandleResult nodeDueDiligenceFailure(
             @NonNull final AccountID node,
             @NonNull final ResponseCodeEnum responseCode,
-            @Nullable final TransactionInfo txInfo) {
+            @Nullable final TransactionInfo txInfo,
+            final long configVersion) {
         return new PreHandleResult(
                 node,
                 null,
@@ -159,7 +188,7 @@ public record PreHandleResult(
                 null,
                 null,
                 null,
-                UNKNOWN_VERSION);
+                configVersion);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoDeleteAllowanceTransaction(payerId);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(payerId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
@@ -124,6 +125,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoDeleteAllowanceTransaction(payerId);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(payerId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
@@ -175,6 +177,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
 
         final var txn = cryptoDeleteAllowanceTransaction(payerId);
+        given(handleContext.payer()).willReturn(payerId);
         given(handleContext.body()).willReturn(txn);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
@@ -206,6 +209,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = txnWithAllowance(payerId, nftAllowance);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(payerId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
@@ -235,6 +239,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = txnWithAllowance(payerId, nftAllowance);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(payerId);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
         assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
@@ -261,6 +266,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = txnWithAllowance(payerId, nftAllowance);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(payerId);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
         assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(payerId);

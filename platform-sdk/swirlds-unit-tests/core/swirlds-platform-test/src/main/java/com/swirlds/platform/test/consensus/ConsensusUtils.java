@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
@@ -62,19 +62,10 @@ public abstract class ConsensusUtils {
 
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
         return new ConsensusImpl(
-                ConfigurationHolder.getConfigData(ConsensusConfig.class), NOOP_CONSENSUS_METRICS, addressBook);
-    }
-
-    /**
-     * Load events from a signed state into a generator, so that they can be used as other parents
-     *
-     * @param signedState the source of events
-     * @param generator the generator to load into to
-     * @param random a source of randomness
-     */
-    public static void loadEventsIntoGenerator(
-            final SignedState signedState, final GraphGenerator<?> generator, final Random random) {
-        loadEventsIntoGenerator(signedState.getEvents(), generator, random);
+                ConfigurationHolder.getConfigData(ConsensusConfig.class),
+                NOOP_CONSENSUS_METRICS,
+                addressBook,
+                ConfigurationHolder.getConfigData(EventConfig.class).useBirthRoundAncientThreshold());
     }
 
     public static void loadEventsIntoGenerator(

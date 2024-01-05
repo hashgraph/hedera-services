@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transactionsWithOnlySigMap() {
+    final HapiSpec transactionsWithOnlySigMap() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("TransactionsWithOnlySigMap")
                 .given(
@@ -87,7 +87,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
+    final HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
                 .given()
                 .when(createTopic("testTopic")
@@ -98,7 +98,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
+    final HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
                 .when(cryptoCreate("testAccount")

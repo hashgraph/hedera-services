@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.hedera.node.app.service.file.impl.schemas;
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -34,6 +33,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NodeAddress;
 import com.hedera.hapi.node.base.NodeAddressBook;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
@@ -84,8 +84,8 @@ public class FileGenesisSchema extends Schema {
     private final ConfigProvider configProvider;
 
     /** Create a new instance */
-    public FileGenesisSchema(@NonNull final ConfigProvider configProvider) {
-        super(RELEASE_045_VERSION);
+    public FileGenesisSchema(final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
+        super(version);
         this.configProvider = requireNonNull(configProvider);
     }
 

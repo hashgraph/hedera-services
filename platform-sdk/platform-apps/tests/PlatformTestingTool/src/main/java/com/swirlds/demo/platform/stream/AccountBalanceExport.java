@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.demo.platform.stream;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
@@ -103,7 +105,7 @@ public class AccountBalanceExport {
         try {
             Files.createDirectories(exportDir);
         } catch (IOException ex) {
-            logger.error("{} doesn't exist and cannot be created", exportDir);
+            logger.error(EXCEPTION.getMarker(), "{} doesn't exist and cannot be created", exportDir);
             throw new IllegalStateException(ex);
         }
 
@@ -153,6 +155,7 @@ public class AccountBalanceExport {
             }
         } catch (IOException e) {
             logger.error(
+                    EXCEPTION.getMarker(),
                     "Exception occurred while Exporting Accounts to File.. continuing without saving!! {}",
                     e.getMessage());
         }
@@ -196,13 +199,13 @@ public class AccountBalanceExport {
             try {
                 array = Files.readAllBytes(Paths.get(fileName));
             } catch (IOException e) {
-                logger.error("Exception ", e);
+                logger.error(EXCEPTION.getMarker(), "Exception ", e);
             }
             byte[] fileHash = md.digest(array);
             return fileHash;
 
         } catch (NoSuchAlgorithmException e) {
-            logger.error("Exception ", e);
+            logger.error(EXCEPTION.getMarker(), "Exception ", e);
             return null;
         }
     }
@@ -243,7 +246,7 @@ public class AccountBalanceExport {
         } catch (IOException e) {
             final String message =
                     "generateSigFile :: Fail to generate signature file for %s. Exception:".formatted(fileName);
-            logger.error(message, e);
+            logger.error(EXCEPTION.getMarker(), message, e);
             return null;
         }
     }

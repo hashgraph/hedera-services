@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public final class NetworkUtils {
             String formattedException = NetworkUtils.formatException(e);
             logger.warn(marker, "Connection broken: {} {}", description, formattedException);
         } else {
-            logger.error(marker, "Connection broken: {}", description, e);
+            logger.error(EXCEPTION.getMarker(), "Connection broken: {}", description, e);
         }
     }
 

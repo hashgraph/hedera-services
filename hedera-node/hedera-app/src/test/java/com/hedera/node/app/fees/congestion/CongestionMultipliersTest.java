@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ class CongestionMultipliersTest {
     @Test
     void testMaxCurrentMultiplier() {
         when(throttleMultiplier.currentMultiplier()).thenReturn(2L);
-        when(entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory))
+        when(entityUtilizationMultiplier.currentMultiplier(txnInfo.txBody(), txnInfo.functionality(), storeFactory))
                 .thenReturn(3L);
 
         long maxMultiplier = congestionMultipliers.maxCurrentMultiplier(txnInfo, storeFactory);

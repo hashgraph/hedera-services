@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.throttle;
 import static com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema.readThrottleDefinitionsBytes;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
@@ -48,8 +49,8 @@ public class CongestionThrottleService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(RELEASE_045_VERSION) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new Schema(version) {
             /** {@inheritDoc} */
             @NonNull
             @Override

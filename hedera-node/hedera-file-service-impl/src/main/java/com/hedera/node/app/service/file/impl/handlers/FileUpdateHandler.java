@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,11 +189,12 @@ public class FileUpdateHandler implements TransactionHandler {
             fileStore.resetFileContents(fileId);
             fileStore.addUpgradeContent(fileId, fileUpdate.contents());
         }
+        // Note that upgrade file memos are generated programmatically
+        // as the SHA-384 hash of their contents
         final var file = new File.Builder()
                 .fileId(fileId)
                 .deleted(false)
                 .expirationSecond(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
-                .memo(fileUpdate.memo())
                 .build();
         fileStore.add(file);
     }

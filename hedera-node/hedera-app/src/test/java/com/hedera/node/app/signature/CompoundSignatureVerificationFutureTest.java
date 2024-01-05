@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -247,7 +247,7 @@ final class CompoundSignatureVerificationFutureTest implements Scenarios {
             th.start();
 
             // Then it doesn't complete yet
-            assertThat(aboutToBlock.await(50, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(aboutToBlock.await(250, TimeUnit.MILLISECONDS)).isTrue();
             assertThat(futureIsDone.getCount()).isEqualTo(1);
 
             // And when the final future completes, then the get method returns

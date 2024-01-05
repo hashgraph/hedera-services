@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class ContractCreateV1SecurityModelSuite extends HapiSuite {
         return false;
     }
 
-    private HapiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
+    final HapiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
         final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
         final var justSendContract = "JustSend";
         final var beneficiary = "civilian";

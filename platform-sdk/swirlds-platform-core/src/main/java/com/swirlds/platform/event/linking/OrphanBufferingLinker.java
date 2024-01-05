@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 package com.swirlds.platform.event.linking;
 
-import com.swirlds.common.config.ConsensusConfig;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -117,7 +119,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
 
         if (orphanMap.put(event.getDescriptor(), childEvent) != null) {
             // this should never happen
-            logger.error(LogMarker.INVALID_EVENT_ERROR.getMarker(), "duplicate orphan: {}", event);
+            logger.error(EXCEPTION.getMarker(), "duplicate orphan: {}", event);
         }
 
         if (childEvent.isMissingSelfParent()) {
@@ -134,7 +136,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         final Set<ChildEvent> childSet = missingParents.computeIfAbsent(parentDescriptor, d -> new HashSet<>());
         if (childSet == null) {
             logger.error(
-                    LogMarker.INVALID_EVENT_ERROR.getMarker(),
+                    EXCEPTION.getMarker(),
                     "Orphan event {} is missing {} parent outside of missing parent window ({}-{})",
                     () -> childEvent.getChild().toMediumString(),
                     () -> missingSelfParent ? "self" : "other",

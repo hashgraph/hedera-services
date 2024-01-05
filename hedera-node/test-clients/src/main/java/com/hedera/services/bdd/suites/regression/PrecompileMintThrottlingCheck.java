@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -54,7 +53,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-@HapiTestSuite
 public class PrecompileMintThrottlingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(PrecompileMintThrottlingCheck.class);
@@ -76,7 +74,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec precompileNftMintsAreLimitedByConsThrottle() {
+    final HapiSpec precompileNftMintsAreLimitedByConsThrottle() {
         var mainnetLimits = protoDefsFromResource("testSystemFiles/mainnet-throttles.json");
         return propertyPreservingHapiSpec("PrecompileNftMintsAreLimitedByConsThrottle")
                 .preserving("contracts.throttle.throttleByGas")

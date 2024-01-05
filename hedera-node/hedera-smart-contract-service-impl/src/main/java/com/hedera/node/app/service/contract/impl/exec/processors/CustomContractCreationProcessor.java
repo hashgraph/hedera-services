@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,16 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPendingCreationMetadata;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasBytecodeSidecarsEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -79,6 +84,9 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
             halt(frame, tracer, COLLISION_HALT_REASON);
         } else {
             final var updater = proxyUpdaterFor(frame);
+            if (isHollow(contract)) {
+                updater.finalizeHollowAccount(addressToCreate, frame.getSenderAddress());
+            }
             // A contract creation is never a delegate call, hence the false argument below
             final var maybeReasonToHalt = updater.tryTransfer(
                     frame.getSenderAddress(), addressToCreate, frame.getValue().toLong(), false);
@@ -94,6 +102,31 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         }
     }
 
+    @Override
+    public void codeSuccess(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
+        super.codeSuccess(requireNonNull(frame), requireNonNull(tracer));
+        // TODO - check if a code rule failed before proceeding
+        if (hasBytecodeSidecarsEnabled(frame)) {
+            final var recipient = proxyUpdaterFor(frame).getHederaAccount(frame.getRecipientAddress());
+            final var recipientId = requireNonNull(recipient).hederaContractId();
+            final var pendingCreationMetadata = getAndClearPendingCreationMetadata(frame, recipientId);
+            final var contractBytecode = ContractBytecode.newBuilder()
+                    .contractId(recipientId)
+                    .runtimeBytecode(tuweniToPbjBytes(recipient.getCode()));
+            if (pendingCreationMetadata.externalizeInitcodeOnSuccess()) {
+                contractBytecode.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
+            }
+            pendingCreationMetadata.recordBuilder().addContractBytecode(contractBytecode.build(), false);
+        }
+    }
+
+    @Override
+    protected void revert(final MessageFrame frame) {
+        super.revert(frame);
+        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
+        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
+    }
+
     private void halt(
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer,
@@ -101,9 +134,17 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
         frame.setExceptionalHaltReason(reason);
         tracer.traceAccountCreationResult(frame, reason);
+        // TODO - should we revert child records here?
     }
 
     private boolean alreadyCreated(final MutableAccount account) {
         return account.getNonce() > 0 || account.getCode().size() > 0;
+    }
+
+    private boolean isHollow(@NonNull final MutableAccount account) {
+        if (account instanceof ProxyEvmAccount proxyEvmAccount) {
+            return proxyEvmAccount.isHollow();
+        }
+        throw new IllegalArgumentException("Creation target not a ProxyEvmAccount - " + account);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
         return List.of(runAccountBalancesClientSaveLoadTest());
     }
 
-    private HapiSpec runAccountBalancesClientSaveLoadTest() {
+    final HapiSpec runAccountBalancesClientSaveLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         var throttlesForJRS = protoDefsFromResource("testSystemFiles/throttles-for-acct-balances-tests.json");
         return defaultHapiSpec("AccountBalancesClientSaveLoadTest")
@@ -178,13 +178,16 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                                             continue;
                                         }
                                         var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
+                                                .payingWith(GENESIS)
                                                 .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
                                                 .persists(true)
                                                 .noLogging();
                                         ops.add(op);
                                         lastGoodAcct = acctName;
                                     }
-                                    ops.add(getAccountInfo(lastGoodAcct).fee(ONE_HBAR));
+                                    ops.add(getAccountInfo(lastGoodAcct)
+                                            .payingWith(GENESIS)
+                                            .fee(ONE_HBAR));
                                     allRunFor(spec, ops);
                                     acctProcessed += batchSize;
                                 }

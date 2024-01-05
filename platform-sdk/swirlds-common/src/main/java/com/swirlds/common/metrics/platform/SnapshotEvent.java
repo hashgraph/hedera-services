@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,16 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.platform.NodeId;
 import java.util.Collection;
+import java.util.Objects;
 
 public record SnapshotEvent(NodeId nodeId, Collection<Snapshot> snapshots) {
 
+    /**
+     * @throws NullPointerException in case {@code snapshots} parameter is {@code null}
+     */
     public SnapshotEvent {
-        throwArgNull(snapshots, "snapshots");
+        Objects.requireNonNull(snapshots, "snapshots must not be null");
     }
 }

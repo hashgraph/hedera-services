@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,7 +172,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.doReturn(testKeys).when(spiedContext).allKeysForTransaction(any(), any());
         final Set<Key> keysObtained = testHandler.allKeysForTransaction(scheduleInState, spiedContext);
         assertThat(keysObtained).isNotEmpty();
-        assertThat(keysObtained).containsExactly(otherKey, optionKey, payerKey, adminKey);
+        assertThat(keysObtained).containsExactly(adminKey, optionKey, otherKey, payerKey);
     }
 
     @Test
@@ -200,7 +200,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             // Note, however, we exclude the schedulerKey because it paid for the original create, so it
             //    is "deemed valid" and not included.
             assertThat(keysRequired).isNotEmpty().hasSize(1).containsExactly(optionKey);
-            assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactly(payerKey, adminKey);
+            assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactly(adminKey, payerKey);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,14 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public UInt256 getOriginalStorageValue(@NonNull final UInt256 key) {
         return UInt256.ZERO;
+    }
+
+    /**
+     * Since a token is not actually a native Hedera account, always throws {@link UnsupportedOperationException}.
+     */
+    @Override
+    public com.hedera.hapi.node.state.token.Account toNativeAccount() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

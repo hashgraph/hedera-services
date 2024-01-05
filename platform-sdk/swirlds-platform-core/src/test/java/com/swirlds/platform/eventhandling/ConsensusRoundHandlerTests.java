@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.EventConfig_;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
@@ -37,8 +36,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.state.DualStateImpl;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -194,15 +191,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         when(platformState.getAddressBook()).thenReturn(addressBook);
 
         state.setPlatformState(platformState);
-
-        final DualStateImpl platformDualState = mock(DualStateImpl.class);
-        when(platformDualState.getClassId()).thenReturn(DualStateImpl.CLASS_ID);
-        when(platformDualState.copy()).thenReturn(platformDualState);
-
-        state.setDualState(platformDualState);
-
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.MAX_EVENT_QUEUE_FOR_CONS, 500)

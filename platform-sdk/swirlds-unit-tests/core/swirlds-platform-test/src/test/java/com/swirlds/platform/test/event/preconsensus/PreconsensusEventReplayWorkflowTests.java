@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,9 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -86,7 +85,7 @@ class PreconsensusEventReplayWorkflowTests {
 
         final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
         when(preconsensusEventFileManager.getEventIterator(anyLong())).thenAnswer(invocation -> {
-            final PreconsensusEventMultiFileIterator it = mock(PreconsensusEventMultiFileIterator.class);
+            final PcesMultiFileIterator it = mock(PcesMultiFileIterator.class);
             when(it.hasNext()).thenAnswer(invocation2 -> eventIterator.hasNext());
             when(it.next()).thenAnswer(invocation2 -> eventIterator.next());
             return it;
@@ -152,14 +151,12 @@ class PreconsensusEventReplayWorkflowTests {
                 .when(preconsensusEventWriter)
                 .beginStreamingNewEvents();
 
-        final StateManagementComponent stateManagementComponent = mock(StateManagementComponent.class);
         final ReservedSignedState latestImmutableState = mock(ReservedSignedState.class);
         when(latestImmutableState.isNull()).thenReturn(false);
         final SignedState signedState = mock(SignedState.class);
         when(signedState.getRound()).thenReturn(random.nextLong(1, 10000));
         when(signedState.getConsensusTimestamp()).thenReturn(randomInstant(random));
         when(latestImmutableState.get()).thenReturn(signedState);
-        when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -174,8 +171,8 @@ class PreconsensusEventReplayWorkflowTests {
                 eventIntakeTaskQueueThread,
                 consensusRoundHandler,
                 stateHashSignQueue,
-                stateManagementComponent,
                 minimumGenerationNonAncient,
+                () -> latestImmutableState,
                 () -> {});
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());

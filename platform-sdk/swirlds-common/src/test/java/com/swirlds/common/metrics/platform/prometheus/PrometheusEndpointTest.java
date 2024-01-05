@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,9 +109,9 @@ class PrometheusEndpointTest {
         final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer);
 
         // then
-        assertThatThrownBy(() -> new PrometheusEndpoint(null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> endpoint.handleMetricsChange(null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> endpoint.handleSnapshots(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new PrometheusEndpoint(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> endpoint.handleMetricsChange(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> endpoint.handleSnapshots(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

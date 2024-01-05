@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.TokenBalance;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
@@ -56,6 +57,8 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -263,6 +266,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
+        given(token1.decimals()).willReturn(100);
         final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(asToken(3L), token1)
                 .build();
@@ -306,12 +310,12 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var accountBalanceResponse = response.cryptogetAccountBalance();
         assertEquals(ResponseCodeEnum.OK, accountBalanceResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo.tinybarBalance(), accountBalanceResponse.balance());
-        assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+        assertIterableEquals(getExpectedTokenBalance(3L), accountBalanceResponse.tokenBalances());
     }
 
     @Test
-    @DisplayName("Returns empty token relations in response")
-    void returnEmptyRelations() {
+    @DisplayName("check maxRelsPerInfoQuery in TokenConfig is correctly handled")
+    void checkConfigmaxRelsPerInfoQuery() {
         givenValidAccount(accountNum);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -324,6 +328,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
+        given(token1.decimals()).willReturn(100);
+        given(token2.decimals()).willReturn(50);
         final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(asToken(3L), token1)
                 .value(asToken(4L), token2)
@@ -403,11 +409,40 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var accountBalanceResponse = response.cryptogetAccountBalance();
         assertEquals(ResponseCodeEnum.OK, accountBalanceResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo.tinybarBalance(), accountBalanceResponse.balance());
-        assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+        assertIterableEquals(getExpectedTokenBalances(), accountBalanceResponse.tokenBalances());
+        assertEquals(2, accountBalanceResponse.tokenBalances().size());
     }
 
     private Account getExpectedInfo() {
         return Account.newBuilder().accountId(id).tinybarBalance(payerBalance).build();
+    }
+
+    private List<TokenBalance> getExpectedTokenBalance(long tokenNum) {
+        var ret = new ArrayList<TokenBalance>();
+        final var tokenBalance = TokenBalance.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())
+                .balance(1000)
+                .decimals(100)
+                .build();
+        ret.add(tokenBalance);
+        return ret;
+    }
+
+    private List<TokenBalance> getExpectedTokenBalances() {
+        var ret = new ArrayList<TokenBalance>();
+        final var tokenBalance1 = TokenBalance.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(3L).build())
+                .balance(1000)
+                .decimals(100)
+                .build();
+        final var tokenBalance2 = TokenBalance.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(4L).build())
+                .balance(100)
+                .decimals(50)
+                .build();
+        ret.add(tokenBalance1);
+        ret.add(tokenBalance2);
+        return ret;
     }
 
     private Query createGetAccountBalanceQuery(final long accountId) {

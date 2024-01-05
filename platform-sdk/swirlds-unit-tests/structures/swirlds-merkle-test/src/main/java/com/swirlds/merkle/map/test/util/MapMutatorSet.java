@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.merkle.map.test.util;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.MerkleNode;
@@ -76,7 +78,7 @@ public class MapMutatorSet {
                 insertKeyFCQIntoMap(startIndex, endIndex, fcm);
                 break;
             default:
-                logger.error(FCM_TEST, () -> "Invalid ValueType");
+                logger.error(EXCEPTION.getMarker(), () -> "Invalid ValueType");
         }
     }
 

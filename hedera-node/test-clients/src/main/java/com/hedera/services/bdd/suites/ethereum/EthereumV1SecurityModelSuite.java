@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                 setApproveForAllUsingLocalNodeSetupPasses());
     }
 
-    private HapiSpec setApproveForAllUsingLocalNodeSetupPasses() {
+    final HapiSpec setApproveForAllUsingLocalNodeSetupPasses() {
         final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
         final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
         final AtomicReference<String> erc721ContractID = new AtomicReference<>();
@@ -310,7 +310,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {}));
     }
 
-    private HapiSpec etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
+    final HapiSpec etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -365,7 +365,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))));
     }
 
-    private HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
+    final HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -423,7 +423,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))));
     }
 
-    private HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
+    final HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollectorAndAutoRenew = "feeCollectorAndAutoRenew";
         final var contract = "TokenCreateContract";

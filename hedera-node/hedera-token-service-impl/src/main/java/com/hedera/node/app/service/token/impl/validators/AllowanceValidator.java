@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,13 +70,10 @@ public class AllowanceValidator {
      */
     public static int aggregateApproveNftAllowances(final List<NftAllowance> nftAllowances) {
         int nftAllowancesTotal = 0;
-        final var setOfSerials = new HashSet<Long>();
-
         for (final var allowances : nftAllowances) {
-            setOfSerials.addAll(allowances.serialNumbers());
-            if (!setOfSerials.isEmpty()) {
-                nftAllowancesTotal += setOfSerials.size();
-                setOfSerials.clear();
+            // each serial is counted as an allowance
+            if (!allowances.serialNumbers().isEmpty()) {
+                nftAllowancesTotal += allowances.serialNumbers().size();
             } else {
                 nftAllowancesTotal++;
             }

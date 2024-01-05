@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import static com.hedera.node.app.service.mono.context.properties.EntityType.TOK
 import static com.hedera.node.app.service.mono.context.properties.EntityType.TOPIC;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -66,12 +68,19 @@ public class EntityUtilizationMultiplier {
      */
     public long currentMultiplier(
             @NonNull final TransactionInfo txnInfo, @NonNull final ReadableStoreFactory storeFactory) {
+        return currentMultiplier(txnInfo.txBody(), txnInfo.functionality(), storeFactory);
+    }
+
+    public long currentMultiplier(
+            @NonNull final TransactionBody body,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final ReadableStoreFactory storeFactory) {
         final var throttleMultiplier = delegate.currentMultiplier();
         final var configuration = configProvider.getConfiguration();
         final var entityScaleFactors =
                 configuration.getConfigData(FeesConfig.class).percentUtilizationScaleFactors();
 
-        return switch (txnInfo.functionality()) {
+        return switch (functionality) {
             case CRYPTO_CREATE -> entityScaleFactors
                     .scaleForNew(ACCOUNT, roundedAccountPercentUtil(storeFactory))
                     .scaling((int) throttleMultiplier);
@@ -83,7 +92,7 @@ public class EntityUtilizationMultiplier {
                     .scaling((int) throttleMultiplier);
             case TOKEN_MINT -> {
                 final var mintsWithMetadata =
-                        !txnInfo.txBody().tokenMint().metadata().isEmpty();
+                        !body.tokenMintOrThrow().metadata().isEmpty();
                 yield mintsWithMetadata
                         ? entityScaleFactors
                                 .scaleForNew(NFT, roundedNftPercentUtil(storeFactory))

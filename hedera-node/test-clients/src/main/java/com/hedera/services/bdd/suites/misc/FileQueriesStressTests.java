@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getFileContentsStress() {
+    final HapiSpec getFileContentsStress() {
         return defaultHapiSpec("getFileContentsStress")
                 .given()
                 .when()
@@ -74,7 +74,7 @@ public class FileQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getFileInfoStress() {
+    final HapiSpec getFileInfoStress() {
         return defaultHapiSpec("getFileInfoStress")
                 .given()
                 .when()

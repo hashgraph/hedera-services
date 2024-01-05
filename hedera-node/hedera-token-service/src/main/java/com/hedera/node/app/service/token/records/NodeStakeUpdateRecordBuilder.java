@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,4 +31,13 @@ public interface NodeStakeUpdateRecordBuilder {
      */
     @NonNull
     NodeStakeUpdateRecordBuilder transaction(@NonNull final Transaction transaction);
+
+    /**
+     * Sets the record's memo.
+     *
+     * @param memo the memo
+     * @return the builder
+     */
+    @NonNull
+    NodeStakeUpdateRecordBuilder memo(@NonNull final String memo);
 }

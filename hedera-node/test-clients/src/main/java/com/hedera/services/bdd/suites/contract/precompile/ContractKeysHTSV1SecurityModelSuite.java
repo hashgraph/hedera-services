@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                 burnTokenWithFullPrefixAndPartialPrefixKeys());
     }
 
-    private HapiSpec transferWithKeyAsPartOf2OfXThreshold() {
+    final HapiSpec transferWithKeyAsPartOf2OfXThreshold() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -178,7 +178,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
-    private HapiSpec delegateCallForTransferWithContractKey() {
+    final HapiSpec delegateCallForTransferWithContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -240,7 +240,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0));
     }
 
-    private HapiSpec burnTokenWithFullPrefixAndPartialPrefixKeys() {
+    final HapiSpec burnTokenWithFullPrefixAndPartialPrefixKeys() {
         final var firstBurnTxn = "firstBurnTxn";
         final var secondBurnTxn = "secondBurnTxn";
         final var amount = 99L;

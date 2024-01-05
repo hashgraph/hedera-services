@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Utilities for preconsensus events.
+ * <p>
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public final class PreconsensusEventUtilities {
 
@@ -51,12 +53,12 @@ public final class PreconsensusEventUtilities {
      * @return the new compacted PCES file.
      */
     @NonNull
-    public static PreconsensusEventFile compactPreconsensusEventFile(
-            @NonNull final PreconsensusEventFile originalFile, final long previousMaximumGeneration) {
+    public static PcesFile compactPreconsensusEventFile(
+            @NonNull final PcesFile originalFile, final long previousMaximumGeneration) {
 
         // Find the maximum generation in the file.
         long maxGeneration = originalFile.getMinimumGeneration();
-        try (final IOIterator<GossipEvent> iterator = new PreconsensusEventFileIterator(originalFile, 0)) {
+        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0)) {
 
             while (iterator.hasNext()) {
                 final GossipEvent next = iterator.next();
@@ -78,7 +80,7 @@ public final class PreconsensusEventUtilities {
         }
 
         // Now, compact the generational span of the file using the newly discovered maximum generation.
-        final PreconsensusEventFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
+        final PcesFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
         try {
             Files.move(originalFile.getPath(), newFile.getPath(), StandardCopyOption.ATOMIC_MOVE);
         } catch (final IOException e) {
@@ -101,11 +103,11 @@ public final class PreconsensusEventUtilities {
      * @param rootPath the root of the directory tree
      */
     public static void compactPreconsensusEventFiles(@NonNull final Path rootPath) {
-        final List<PreconsensusEventFile> files = new ArrayList<>();
+        final List<PcesFile> files = new ArrayList<>();
         try (final Stream<Path> fileStream = Files.walk(rootPath)) {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
-                    .filter(f -> f.toString().endsWith(PreconsensusEventFile.EVENT_FILE_EXTENSION))
+                    .filter(f -> f.toString().endsWith(PcesFile.EVENT_FILE_EXTENSION))
                     .map(PreconsensusEventFileManager::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
@@ -115,8 +117,8 @@ public final class PreconsensusEventUtilities {
         }
 
         long previousMaximumGeneration = 0;
-        for (final PreconsensusEventFile file : files) {
-            final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
+        for (final PcesFile file : files) {
+            final PcesFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
             previousMaximumGeneration = compactedFile.getMaximumGeneration();
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     @HapiTest
     // In this transactionFee is not set in mono-service record, because it fails in node due diligence.
     // But it feels right to set it. So setting this HIGHLY_NONDETERMINISTIC_TRANSACTION_FEES
-    private HapiSpec deletedAccountCannotBePayer() {
+    final HapiSpec deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
         String BENEFICIARY_ACCOUNT = "beneficiaryAccountForDeletedAccount";
@@ -119,7 +119,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canQueryForRecordsWithDeletedPayers() {
+    final HapiSpec canQueryForRecordsWithDeletedPayers() {
         final var stillQueryableTxn = "stillQueryableTxn";
         return defaultHapiSpec("CanQueryForRecordsWithDeletedPayers")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
@@ -132,7 +132,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec fundsTransferOnDelete() {
+    final HapiSpec fundsTransferOnDelete() {
         long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
         return defaultHapiSpec("FundsTransferOnDelete")
@@ -151,7 +151,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
+    final HapiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
         return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
                 .given(
                         newKeyNamed("admin"),
@@ -189,7 +189,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotDeleteAlreadyDeletedAccount() {
+    final HapiSpec cannotDeleteAlreadyDeletedAccount() {
         return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED), cryptoCreate(TRANSFER_ACCOUNT))
                 .when(cryptoDelete(ACCOUNT_TO_BE_DELETED)
@@ -201,7 +201,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotDeleteAccountWithSameBeneficiary() {
+    final HapiSpec cannotDeleteAccountWithSameBeneficiary() {
         return defaultHapiSpec("CannotDeleteAccountWithSameBeneficiary")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
                 .when()
@@ -211,7 +211,7 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec cannotDeleteTreasuryAccount() {
+    final HapiSpec cannotDeleteTreasuryAccount() {
         return defaultHapiSpec("CannotDeleteTreasuryAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(TREASURY), cryptoCreate(TRANSFER_ACCOUNT))
                 .when(tokenCreate("toBeTransferred")

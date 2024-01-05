@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec duplicatedTxnsSameTypeDetected() {
+    final HapiSpec duplicatedTxnsSameTypeDetected() {
         long initialBalance = 10_000L;
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDetected")
@@ -69,7 +69,7 @@ public class Issue310Suite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec duplicatedTxnsDifferentTypesDetected() {
+    final HapiSpec duplicatedTxnsDifferentTypesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDetected")
                 .given(
                         cryptoCreate("acct2").via("txnId2"),
@@ -85,7 +85,7 @@ public class Issue310Suite extends HapiSuite {
 
     // This test requires multiple nodes
     @HapiTest
-    private HapiSpec duplicatedTxnsSameTypeDifferentNodesDetected() {
+    final HapiSpec duplicatedTxnsSameTypeDifferentNodesDetected() {
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
                 .given(
@@ -101,7 +101,7 @@ public class Issue310Suite extends HapiSuite {
 
     // This test requires multiple nodes
     @HapiTest
-    private HapiSpec duplicatedTxnsDifferentTypesDifferentNodesDetected() {
+    final HapiSpec duplicatedTxnsDifferentTypesDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDifferentNodesDetected")
                 .given(
                         cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
@@ -128,7 +129,6 @@ public class PlatformTestingToolMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolMain.class);
 
     private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
-    private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
     private static final Marker LOGM_STARTUP = MarkerManager.getMarker("STARTUP");
     private static final Marker LOGM_SUBMIT_DETAIL = MarkerManager.getMarker("SUBMIT_DETAIL");
     private static final Marker LOGM_DEMO_QUORUM = MarkerManager.getMarker("DEMO_QUORUM");
@@ -305,7 +305,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         List<String> jvmArgs = runtimeMXBean.getInputArguments();
         if (jvmArgs.size() == 0) {
-            logger.error(LOGM_STARTUP, "No JVM ARGS!");
+            logger.error(EXCEPTION.getMarker(), "No JVM ARGS!");
         }
         for (String arg : jvmArgs) {
             logger.info(LOGM_STARTUP, "JVM arg: {}", arg);
@@ -352,7 +352,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, false, isActive, submittedPayloadTriple, payloadConfig);
                 } catch (InterruptedException e) {
-                    logger.error(LOGM_EXCEPTION, "", e);
+                    logger.error(EXCEPTION.getMarker(), "", e);
                 }
                 return false;
             } else {
@@ -524,7 +524,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             }
         } catch (IOException e) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "ERROR in getting PayloadCfgSimple, please check JSON file syntax. Stack Trace =",
                     e);
             exit(-2);
@@ -658,7 +658,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     initializeAppClient(parameters, objectMapper);
                 } catch (NullPointerException | IOException e) {
                     logger.error(
-                            LOGM_EXCEPTION,
+                            EXCEPTION.getMarker(),
                             "ERROR in parsing JSON configuration file, please check JSON file syntax. Stack Trace =",
                             e);
                     exit(-2);
@@ -667,7 +667,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             state.setProgressCfg(progressCfg);
         } catch (final NullPointerException e) {
-            logger.error(LOGM_EXCEPTION, "ERROR in parsing JSON configuration file. ", e);
+            logger.error(EXCEPTION.getMarker(), "ERROR in parsing JSON configuration file. ", e);
             exit(-2);
         }
 
@@ -808,7 +808,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                         try {
                             Thread.sleep(50);
                         } catch (InterruptedException e) {
-                            logger.error(LOGM_EXCEPTION, "", e);
+                            logger.error(EXCEPTION.getMarker(), "", e);
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -935,7 +935,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                 Thread.sleep(3000);
             }
         } catch (Exception e) {
-            logger.error(LOGM_EXCEPTION, "error(ERROR queryRecord", e);
+            logger.error(EXCEPTION.getMarker(), "error(ERROR queryRecord", e);
         }
     }
 
@@ -1257,7 +1257,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
             } catch (ExecutionException ex) {
-                logger.error(LOGM_EXCEPTION, "Got Exception in queryInState() ", ex);
+                logger.error(EXCEPTION.getMarker(), "Got Exception in queryInState() ", ex);
             }
         });
         queryInStateThread.setName("queryInState_node" + selfId);

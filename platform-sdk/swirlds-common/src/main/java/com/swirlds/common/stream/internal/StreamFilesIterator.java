@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.common.stream.internal;
+
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
@@ -183,14 +185,14 @@ public class StreamFilesIterator<T extends SelfSerializable> implements Iterator
         currentFileIterator = LinkedObjectStreamUtilities.parseStreamFile(files[idx], streamType);
         if (!currentFileIterator.hasNext()) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     () -> new StreamParseErrorPayload(String.format("Fail to parse %s", files[idx].getName())));
             return false;
         }
         T hash = currentFileIterator.next();
         if (!(hash instanceof Hash)) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     () -> new StreamParseErrorPayload(
                             String.format("The first item %s in %s is not Hash", hash, files[idx].getName())));
             return false;
@@ -202,7 +204,7 @@ public class StreamFilesIterator<T extends SelfSerializable> implements Iterator
         // validate startRunningHash against endRunningHash of previous file
         if (!startRunningHash.equals(endRunningHash)) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     () -> new StreamParseErrorPayload(String.format(
                             "startRunningHash %s in %s doesn't match endRunningHash %s in %s",
                             startRunningHash, files[idx].getName(), endRunningHash, files[idx - 1].getName())));
@@ -210,7 +212,7 @@ public class StreamFilesIterator<T extends SelfSerializable> implements Iterator
         } else if (!currentFileIterator.hasNext()) {
             // log error if the file is ended
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     () -> new StreamParseErrorPayload(
                             String.format("file %s only contains startRunningHash", files[idx].getName())));
             return false;

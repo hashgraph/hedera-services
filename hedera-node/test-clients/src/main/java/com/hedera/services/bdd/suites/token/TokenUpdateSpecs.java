@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesNewExpiry() {
+    final HapiSpec validatesNewExpiry() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
@@ -150,7 +150,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesAlreadyDeletedToken() {
+    final HapiSpec validatesAlreadyDeletedToken() {
         return defaultHapiSpec("ValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed("adminKey"),
@@ -162,7 +162,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
+    final HapiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
         final var mutableForNow = "mutableForNow";
         return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
                 .given(
@@ -181,7 +181,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec standardImmutabilitySemanticsHold() {
+    final HapiSpec standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";
         return defaultHapiSpec("StandardImmutabilitySemanticsHold")
@@ -194,7 +194,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesMissingRef() {
+    final HapiSpec validatesMissingRef() {
         return defaultHapiSpec("ValidatesMissingRef")
                 .given(cryptoCreate(PAYER))
                 .when()
@@ -212,7 +212,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec validatesMissingAdminKey() {
+    final HapiSpec validatesMissingAdminKey() {
         return defaultHapiSpec("ValidatesMissingAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -620,7 +620,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
+    final HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
         final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
         final var hbarCollector = "hbarFee";
         final var beneficiary = "luckyOne";
@@ -666,7 +666,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec customFeesOnlyUpdatableWithKey() {
+    final HapiSpec customFeesOnlyUpdatableWithKey() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
 

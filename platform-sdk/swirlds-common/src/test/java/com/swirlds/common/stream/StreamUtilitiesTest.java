@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static com.swirlds.common.stream.internal.StreamValidationResult.STREAM_F
 import static com.swirlds.common.stream.internal.StreamValidationResult.STREAM_FILE_MISS_START_HASH;
 import static com.swirlds.common.test.fixtures.stream.ObjectForTestStream.getRandomObjectForTestStream;
 import static com.swirlds.common.test.fixtures.stream.TestStreamType.TEST_STREAM;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -121,7 +122,7 @@ class StreamUtilitiesTest {
             resource = classLoader.getResource(path);
             return new File(resource.getPath());
         } catch (Exception ex) {
-            logger.error(LOGM_EXCEPTION, "resource: {}", resource, ex);
+            logger.error(EXCEPTION.getMarker(), "resource: {}", resource, ex);
             return null;
         }
     }

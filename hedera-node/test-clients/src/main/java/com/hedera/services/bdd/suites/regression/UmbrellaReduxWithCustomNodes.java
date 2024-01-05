@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
         return List.of(runUmbrellaReduxWithCustomNodes(), messageSubmissionSimple());
     }
 
-    private HapiSpec messageSubmissionSimple() {
+    final HapiSpec messageSubmissionSimple() {
         return HapiSpec.customHapiSpec(MESSAGE_SUBMISSION_SIMPLE)
                 .withProperties(Map.of(
                         "default.topic.runningHash.version", topic_running_hash_version,
@@ -110,7 +110,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
                                         .checkTopicRunningHashVersion(topic_running_hash_version)));
     }
 
-    private HapiSpec runUmbrellaReduxWithCustomNodes() {
+    final HapiSpec runUmbrellaReduxWithCustomNodes() {
         return HapiSpec.customHapiSpec("RunUmbrellaReduxWithCustomNodes")
                 .withProperties(Map.of(
                         "status.wait.timeout.ms",

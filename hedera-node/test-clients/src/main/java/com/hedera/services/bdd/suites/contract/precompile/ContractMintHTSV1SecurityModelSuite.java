@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                 happyPathZeroUnitFungibleTokenMint());
     }
 
-    private HapiSpec happyPathZeroUnitFungibleTokenMint() {
+    final HapiSpec happyPathZeroUnitFungibleTokenMint() {
         final var amount = 0L;
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -169,7 +169,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                 .newTotalSupply(0)));
     }
 
-    private HapiSpec helloWorldFungibleMint() {
+    final HapiSpec helloWorldFungibleMint() {
         final var amount = 1_234_567L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -217,7 +217,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         changingFungibleBalances().including(FUNGIBLE_TOKEN, DEFAULT_PAYER, amount))));
     }
 
-    private HapiSpec helloWorldNftMint() {
+    final HapiSpec helloWorldNftMint() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("helloWorldNftMint")
@@ -280,7 +280,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         .serialNos(List.of(2L))));
     }
 
-    private HapiSpec happyPathFungibleTokenMint() {
+    final HapiSpec happyPathFungibleTokenMint() {
         final var amount = 10L;
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -334,7 +334,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         .newTotalSupply(10)));
     }
 
-    private HapiSpec happyPathNonFungibleTokenMint() {
+    final HapiSpec happyPathNonFungibleTokenMint() {
         final var totalSupply = 2;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -391,7 +391,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         .serialNos(Arrays.asList(1L, 2L))));
     }
 
-    private HapiSpec rollbackOnFailedAssociateAfterNonFungibleMint() {
+    final HapiSpec rollbackOnFailedAssociateAfterNonFungibleMint() {
         final var nestedMintTxn = "nestedMintTxn";
 
         return propertyPreservingHapiSpec("rollbackOnFailedAssociateAfterNonFungibleMint")
@@ -449,7 +449,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                                         htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))));
     }
 
-    private HapiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
+    final HapiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
         final var amount = 10L;
         final var baselineMintWithEnoughGas = "baselineMintWithEnoughGas";
 

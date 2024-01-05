@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,9 @@ package com.swirlds.platform.components.state;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.platform.state.signed.StateToDiskReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -41,20 +36,7 @@ import java.util.List;
  * </ul>
  */
 public interface StateManagementComponent
-        extends PlatformComponent,
-                SignedStateFinder,
-                SignedStateToLoadConsumer,
-                NewSignedStateFromTransactionsConsumer {
-
-    /**
-     * Get a reserved instance of the latest immutable signed state. May be unhashed, may or may not have all required
-     * signatures. State is returned with a reservation.
-     *
-     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
-     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @return a reserved signed state, may contain null if none currently in memory are complete
-     */
-    ReservedSignedState getLatestImmutableState(@NonNull final String reason);
+        extends PlatformComponent, SignedStateToLoadConsumer, NewSignedStateFromTransactionsConsumer {
 
     /**
      * Get the latest signed states stored by this component. This method creates a copy, so no changes to the array
@@ -66,32 +48,6 @@ public interface StateManagementComponent
      */
     @Deprecated
     List<SignedStateInfo> getSignedStateInfo();
-
-    /**
-     * Dump the latest immutable state if it is available.
-     *
-     * @param reason   the reason why the state is being dumped
-     * @param blocking if true then block until the state dump is complete
-     */
-    void dumpLatestImmutableState(@NonNull StateToDiskReason reason, boolean blocking);
-
-    /**
-     * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
-     * total consensus time that this node has been operating for.
-     *
-     * @return the consensus timestamp of the first state ingested by the signed state manager, or null if no states
-     * have been ingested yet
-     */
-    @Nullable
-    Instant getFirstStateTimestamp();
-
-    /**
-     * Get the round of the first state ingested by the signed state manager. Useful for computing the total number of
-     * elapsed rounds since startup.
-     *
-     * @return the round of the first state ingested by the signed state manager, or -1 if no states have been ingested
-     */
-    long getFirstStateRound();
 
     /**
      * Get the signed state manager.

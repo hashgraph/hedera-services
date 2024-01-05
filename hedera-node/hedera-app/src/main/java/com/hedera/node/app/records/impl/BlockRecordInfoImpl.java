@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.records.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -77,6 +78,12 @@ public final class BlockRecordInfoImpl implements BlockRecordInfo {
     @Override
     public Bytes lastBlockHash() {
         return BlockRecordInfoUtils.lastBlockHash(blockInfo);
+    }
+
+    @Override
+    public @NonNull Timestamp currentBlockTimestamp() {
+        // There should always be a current block and a first consensus time within it
+        return blockInfo.firstConsTimeOfCurrentBlockOrThrow();
     }
 
     /** {@inheritDoc} */

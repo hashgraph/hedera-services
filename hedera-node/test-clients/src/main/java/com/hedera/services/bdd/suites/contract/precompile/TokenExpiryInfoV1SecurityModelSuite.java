@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
 
     @SuppressWarnings({"java:S5960", "java:S1192"
     }) // using `assertThat` in production code - except this isn't production code
-    private HapiSpec updateExpiryInfoForToken() {
+    final HapiSpec updateExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
@@ -251,7 +251,7 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S1192") // "use already defined const instead of copying its value here" - not this time
-    private HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
+    final HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();

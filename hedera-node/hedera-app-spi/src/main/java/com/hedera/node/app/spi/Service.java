@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,9 @@ public interface Service {
      * Registers the schemas this service really uses with the given {@link SchemaRegistry}.
      *
      * @param registry the registry to register the schemas with
+     * @param version the current services version
      */
-    default void registerSchemas(@NonNull SchemaRegistry registry) {
+    default void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         // No-op
     }
 }
