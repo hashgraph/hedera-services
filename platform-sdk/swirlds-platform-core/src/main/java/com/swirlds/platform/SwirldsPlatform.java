@@ -91,6 +91,7 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
+import com.swirlds.platform.event.preconsensus.PcesFileType;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
@@ -436,12 +437,22 @@ public class SwirldsPlatform implements Platform {
         try {
             final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
+            // When we perform the migration to using birth round bounding, we will need to read
+            // the old type and start writing the new type.
+            final PcesFileType currentFileType = platformContext
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .useBirthRoundAncientThreshold()
+                    ? PcesFileType.BIRTH_ROUND_BOUND
+                    : PcesFileType.GENERATION_BOUND;
+
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
                     recycleBin,
                     databaseDirectory,
                     initialState.getRound(),
-                    preconsensusEventStreamConfig.permitGaps());
+                    preconsensusEventStreamConfig.permitGaps(),
+                    currentFileType);
 
             preconsensusEventFileManager = new PcesFileManager(
                     platformContext, Time.getCurrent(), initialPcesFiles, selfId, initialState.getRound());

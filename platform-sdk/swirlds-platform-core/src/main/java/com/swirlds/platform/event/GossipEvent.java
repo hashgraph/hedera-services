@@ -202,9 +202,32 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         this.descriptor = hashedData.createEventDescriptor();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getGeneration() {
         return hashedData.getGeneration();
+    }
+
+    /**
+     * Get the birth round of the event.
+     *
+     * @return the birth round of the event
+     */
+    public long getBirthRound() {
+        return hashedData.getBirthRound();
+    }
+
+    /**
+     * Get the value used to determine if this event is ancient or not. Will be the event's generation prior to
+     * migration, and the event's birth round after migration.
+     *
+     * @return the value used to determine if this event is ancient or not
+     */
+    public long getAncientSequenceNumber() {
+        // TODO this needs to switch over after the migration
+        return getGeneration();
     }
 
     /**

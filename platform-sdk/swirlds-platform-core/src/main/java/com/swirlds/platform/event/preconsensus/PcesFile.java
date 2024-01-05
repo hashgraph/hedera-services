@@ -452,14 +452,15 @@ public final class PcesFile implements Comparable<PcesFile> {
 
     /**
      * Get an iterator that walks over the events in this file. The iterator will only return events that have a
-     * generation equal to or greater to the minimum generation.
+     * are not sequentially preceding the lower bound.
      *
-     * @param minimumGeneration the minimum generation of the events to return
+     * @param lowerBound lower bound of the events to return, will be either a generation or a birth round depending on
+     *                   the {@link PcesFileType}.
      * @return an iterator over the events in this file
      */
     @NonNull
-    public PcesFileIterator iterator(final long minimumGeneration) throws IOException {
-        return new PcesFileIterator(this, minimumGeneration);
+    public PcesFileIterator iterator(final long lowerBound) throws IOException {
+        return new PcesFileIterator(this, lowerBound);
     }
 
     /**
@@ -524,6 +525,16 @@ public final class PcesFile implements Comparable<PcesFile> {
     @NonNull
     public String getFileName() {
         return path.getFileName().toString();
+    }
+
+    /**
+     * Get the type of this file.
+     *
+     * @return the type of this file
+     */
+    @NonNull
+    public PcesFileType getFileType() {
+        return fileType;
     }
 
     /**

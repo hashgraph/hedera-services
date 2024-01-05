@@ -53,6 +53,7 @@ public class PcesFileReader {
      * @param databaseDirectory the directory to scan for files
      * @param startingRound     the round to start reading from
      * @param permitGaps        if gaps are permitted in sequence number
+     * @param typeToRead        the type of file to read, files of other types will be ignored
      * @return the files read from disk
      * @throws IOException if there is an error reading the files
      */
@@ -61,7 +62,8 @@ public class PcesFileReader {
             @NonNull final RecycleBin recycleBin,
             @NonNull final Path databaseDirectory,
             final long startingRound,
-            final boolean permitGaps)
+            final boolean permitGaps,
+            final PcesFileType typeToRead)
             throws IOException {
 
         Objects.requireNonNull(platformContext);
@@ -74,16 +76,17 @@ public class PcesFileReader {
                     .filter(f -> !Files.isDirectory(f))
                     .map(PcesUtilities::parseFile)
                     .filter(Objects::nonNull)
+                    .filter(f -> f.getFileType() == typeToRead)
                     .sorted()
                     .forEachOrdered(buildFileHandler(files, permitGaps));
         }
 
         final PcesConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PcesConfig.class);
-        final boolean doInitialGenerationalCompaction = preconsensusEventStreamConfig.compactLastFileOnStartup();
+        final boolean doInitialSpanCompaction = preconsensusEventStreamConfig.compactLastFileOnStartup();
 
-        if (files.getFileCount() != 0 && doInitialGenerationalCompaction) {
-            compactGenerationalSpanOfLastFile(files);
+        if (files.getFileCount() != 0 && doInitialSpanCompaction) {
+            compactSpanOfLastFile(files);
         }
 
         resolveDiscontinuities(databaseDirectory, recycleBin, files, startingRound);
@@ -93,22 +96,22 @@ public class PcesFileReader {
 
     /**
      * It's possible (if not probable) that the node was shut down prior to the last file being closed and having its
-     * generational span compaction. This method performs that compaction if necessary.
+     * span compaction completed. This method performs that compaction if necessary.
      */
-    private static void compactGenerationalSpanOfLastFile(@NonNull final PcesFileTracker files) {
+    private static void compactSpanOfLastFile(@NonNull final PcesFileTracker files) {
         Objects.requireNonNull(files);
 
         final PcesFile lastFile = files.getFile(files.getFileCount() - 1);
 
-        final long previousMaximumGeneration;
+        final long previousMaximumBound;
         if (files.getFileCount() > 1) {
             final PcesFile secondToLastFile = files.getFile(files.getFileCount() - 2);
-            previousMaximumGeneration = secondToLastFile.getUpperBound();
+            previousMaximumBound = secondToLastFile.getUpperBound();
         } else {
-            previousMaximumGeneration = 0;
+            previousMaximumBound = 0;
         }
 
-        final PcesFile compactedFile = compactPreconsensusEventFile(lastFile, previousMaximumGeneration);
+        final PcesFile compactedFile = compactPreconsensusEventFile(lastFile, previousMaximumBound);
         files.setFile(files.getFileCount() - 1, compactedFile);
     }
 
@@ -122,8 +125,8 @@ public class PcesFileReader {
     @NonNull
     private static Consumer<PcesFile> buildFileHandler(@NonNull final PcesFileTracker files, final boolean permitGaps) {
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
-        final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);
-        final ValueReference<Long> previousMaximumGeneration = new ValueReference<>(-1L);
+        final ValueReference<Long> previousMinimumBound = new ValueReference<>(-1L);
+        final ValueReference<Long> previousMaximumBound = new ValueReference<>(-1L);
         final ValueReference<Long> previousOrigin = new ValueReference<>(-1L);
         final ValueReference<Instant> previousTimestamp = new ValueReference<>();
 
@@ -132,16 +135,16 @@ public class PcesFileReader {
                 fileSanityChecks(
                         permitGaps,
                         previousSequenceNumber.getValue(),
-                        previousMinimumGeneration.getValue(),
-                        previousMaximumGeneration.getValue(),
+                        previousMinimumBound.getValue(),
+                        previousMaximumBound.getValue(),
                         previousOrigin.getValue(),
                         previousTimestamp.getValue(),
                         descriptor);
             }
 
             previousSequenceNumber.setValue(descriptor.getSequenceNumber());
-            previousMinimumGeneration.setValue(descriptor.getLowerBound());
-            previousMaximumGeneration.setValue(descriptor.getUpperBound());
+            previousMinimumBound.setValue(descriptor.getLowerBound());
+            previousMaximumBound.setValue(descriptor.getUpperBound());
             previousTimestamp.setValue(descriptor.getTimestamp());
 
             // If the sequence number is good then add it to the collection of tracked files

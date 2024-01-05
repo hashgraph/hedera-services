@@ -20,6 +20,7 @@ import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_MINIMUM_GENERATION;
+import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -126,7 +127,8 @@ class PcesWriterTests {
                 TestRecycleBin.getInstance(),
                 PcesUtilities.getDatabaseDirectory(platformContext, selfId),
                 0,
-                false);
+                false,
+                GENERATION_BOUND); // TODO
 
         // Verify that the events were written correctly
         final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
@@ -587,7 +589,8 @@ class PcesWriterTests {
                 TestRecycleBin.getInstance(),
                 PcesUtilities.getDatabaseDirectory(platformContext, selfId),
                 0,
-                false);
+                false,
+                GENERATION_BOUND); // TODO
 
         pcesFiles
                 .getFileIterator(NO_MINIMUM_GENERATION, 0)
