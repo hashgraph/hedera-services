@@ -100,6 +100,9 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         shutDownNode("Carol"),
                         // Wait for it to shut down
                         waitForNodeToShutDown("Carol", 75),
+                        // This sleep is needed, since the ports of shutdown node may still be in time_wait status,
+                        // which will cause an error that address is already in use when restarting nodes.
+                        // Sleep long enough so restarting nodes succeeds.
                         sleepFor(180_000L).logged())
                 .when(
                         // Submit operations when node 2 is down
