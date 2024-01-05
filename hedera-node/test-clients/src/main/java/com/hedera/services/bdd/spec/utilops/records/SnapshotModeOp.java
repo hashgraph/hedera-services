@@ -72,6 +72,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -202,9 +203,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     public SnapshotModeOp(@NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... specialMatchModes) {
         this.mode = requireNonNull(mode);
-        this.matchModes = specialMatchModes.length > 0
-                ? EnumSet.copyOf(Arrays.asList(specialMatchModes))
-                : EnumSet.noneOf(SnapshotMatchMode.class);
+        this.matchModes = computeMatchModesIncluding(specialMatchModes);
         // Each snapshot should have a unique placeholder memo so that we can take multiple snapshots
         // without clearing the record streams directory in between
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -777,5 +776,23 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             log.error("Could not write readable items to txt", e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    private Set<SnapshotMatchMode> computeMatchModesIncluding(@NonNull final SnapshotMatchMode... specialMatchModes) {
+        final Set<SnapshotMatchMode> modes = new HashSet<>(Arrays.asList(specialMatchModes));
+        if (isProbablyNonLocalEnv()) {
+            // In CI the presence of end-of-staking-period records makes all
+            // nonces non-deterministic (as any transaction may or may not
+            // trigger an end-of-period record, which consumes a nonce)
+            modes.add(NONDETERMINISTIC_NONCE);
+        }
+        return modes.isEmpty() ? EnumSet.noneOf(SnapshotMatchMode.class) : EnumSet.copyOf(modes);
+    }
+
+    private boolean isProbablyNonLocalEnv() {
+        final var osName = Optional.ofNullable(System.getProperty("os.name"))
+                .map(String::toLowerCase)
+                .orElse("");
+        return Stream.of("nix", "nux", "aix").anyMatch(osName::contains);
     }
 }
