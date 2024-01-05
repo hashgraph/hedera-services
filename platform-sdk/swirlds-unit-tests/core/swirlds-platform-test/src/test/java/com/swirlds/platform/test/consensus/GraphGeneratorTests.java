@@ -731,8 +731,9 @@ public class GraphGeneratorTests {
 
         final double repeatRatio = ((double) repeatCount) / numberOfEvents;
 
-        // Multiply expected ratio by 3/4 since we never repeat timestamps on two events from the same node.
-        final double expectedRepeatRatio = generator.getSimultaneousEventFraction() * 3 / 4;
+        // Multiply expected ratio by 1/2 since we never repeat timestamp if either of the parents of the event was
+        // the most recently emitted event
+        final double expectedRepeatRatio = generator.getSimultaneousEventFraction() * 1 / 2;
         final double deviation = Math.abs(repeatRatio - expectedRepeatRatio);
 
         assertTrue(deviation < 0.01, "OOB");
