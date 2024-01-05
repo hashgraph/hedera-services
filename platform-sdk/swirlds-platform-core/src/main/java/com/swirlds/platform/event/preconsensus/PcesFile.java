@@ -460,7 +460,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      */
     @NonNull
     public PcesFileIterator iterator(final long lowerBound) throws IOException {
-        return new PcesFileIterator(this, lowerBound);
+        return new PcesFileIterator(this, lowerBound, fileType);
     }
 
     /**

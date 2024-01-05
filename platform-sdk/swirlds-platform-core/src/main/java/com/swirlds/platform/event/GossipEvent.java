@@ -22,6 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.event.preconsensus.PcesFileType;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -225,9 +226,11 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      *
      * @return the value used to determine if this event is ancient or not
      */
-    public long getAncientSequenceNumber() {
-        // TODO this needs to switch over after the migration
-        return getGeneration();
+    public long getAncientIdentifier(@NonNull final PcesFileType fileType) {
+        return switch (fileType) {
+            case GENERATION_BOUND -> getGeneration();
+            case BIRTH_ROUND_BOUND -> getBirthRound();
+        };
     }
 
     /**

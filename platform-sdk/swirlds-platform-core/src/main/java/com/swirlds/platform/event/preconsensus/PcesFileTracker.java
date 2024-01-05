@@ -46,6 +46,17 @@ public class PcesFileTracker {
      */
     private final RandomAccessDeque<PcesFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
 
+    private final PcesFileType fileType;
+
+    /**
+     * Constructor.
+     *
+     * @param fileType the type of file to track
+     */
+    public PcesFileTracker(@NonNull final PcesFileType fileType) {
+        this.fileType = Objects.requireNonNull(fileType);
+    }
+
     /**
      * Get the first file in the file list.
      *
@@ -124,6 +135,7 @@ public class PcesFileTracker {
      * @param index the index of the file to get
      * @return the file at the specified index
      */
+    @NonNull
     public PcesFile getFile(final int index) {
         return files.get(index);
     }
@@ -147,13 +159,15 @@ public class PcesFileTracker {
      *
      * @param minimumGeneration the desired minimum generation, iterator is guaranteed to return all available events
      *                          with a generation greater or equal to this value. No events with a smaller generation
-     *                          will be returned. A value of {@link PcesFileManager ::NO_MINIMUM_GENERATION}
-     *                          will cause the returned iterator to walk over all available events.
+     *                          will be returned. A value of {@link PcesFileManager ::NO_MINIMUM_GENERATION} will cause
+     *                          the returned iterator to walk over all available events.
      * @param startingRound     the round to start iterating from
      * @return an iterator that walks over events
      */
-    public @NonNull PcesMultiFileIterator getEventIterator(final long minimumGeneration, final long startingRound) {
-        return new PcesMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration, startingRound));
+    @NonNull
+    public PcesMultiFileIterator getEventIterator(final long minimumGeneration, final long startingRound) {
+        return new PcesMultiFileIterator(
+                minimumGeneration, getFileIterator(minimumGeneration, startingRound), fileType);
     }
 
     /**
@@ -164,12 +178,13 @@ public class PcesFileTracker {
      *
      * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
      *                          contain events with a generation greater or equal to this value. A value of
-     *                          {@link PcesFileManager#NO_MINIMUM_GENERATION} will cause the returned
-     *                          iterator to walk over all available event files.
+     *                          {@link PcesFileManager#NO_MINIMUM_GENERATION} will cause the returned iterator to walk
+     *                          over all available event files.
      * @param startingRound     the round to start iterating from
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
+    @NonNull
+    public Iterator<PcesFile> getFileIterator(final long minimumGeneration, final long startingRound) {
         final int firstFileIndex = getFirstRelevantFileIndex(startingRound);
 
         // Edge case: we want all events regardless of generation

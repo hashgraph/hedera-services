@@ -30,6 +30,7 @@ import java.util.Objects;
 public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
 
     private final Iterator<PcesFile> fileIterator;
+    private final PcesFileType fileType;
     private PcesFileIterator currentIterator;
     private final long minimumGeneration;
     private GossipEvent next;
@@ -38,16 +39,19 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
     /**
      * Create an iterator that walks over events in a series of event files.
      *
-     * @param minimumGeneration
-     * 		the minimum generation of events to return, events with lower
-     * 		generations are not returned
-     * @param fileIterator
-     * 		an iterator that walks over event files
+     * @param minimumGeneration the minimum generation of events to return, events with lower generations are not
+     *                          returned
+     * @param fileIterator      an iterator that walks over event files
+     * @param fileType          the type of file to read
      */
-    public PcesMultiFileIterator(final long minimumGeneration, @NonNull final Iterator<PcesFile> fileIterator) {
+    public PcesMultiFileIterator(
+            final long minimumGeneration,
+            @NonNull final Iterator<PcesFile> fileIterator,
+            @NonNull final PcesFileType fileType) {
 
         this.fileIterator = Objects.requireNonNull(fileIterator);
         this.minimumGeneration = minimumGeneration;
+        this.fileType = Objects.requireNonNull(fileType);
     }
 
     /**
@@ -64,7 +68,7 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
                     break;
                 }
 
-                currentIterator = new PcesFileIterator(fileIterator.next(), minimumGeneration);
+                currentIterator = new PcesFileIterator(fileIterator.next(), minimumGeneration, fileType);
             } else {
                 next = currentIterator.next();
             }
@@ -84,6 +88,7 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public GossipEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException("iterator is empty, can not get next element");
@@ -96,8 +101,8 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
     }
 
     /**
-     * Get the number of files that had partial event data at the end. This can happen if JVM is shut down
-     * abruptly while and event is being written to disk.
+     * Get the number of files that had partial event data at the end. This can happen if JVM is shut down abruptly
+     * while and event is being written to disk.
      *
      * @return the number of files that had partial event data at the end that have been encountered so far
      */

@@ -59,13 +59,15 @@ public final class PcesUtilities {
     public static PcesFile compactPreconsensusEventFile(
             @NonNull final PcesFile originalFile, final long previousUpperBound) {
 
+        final PcesFileType fileType = originalFile.getFileType();
+
         // Find the true upper bound in the file.
         long newUpperBound = originalFile.getLowerBound();
-        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0)) {
+        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0, fileType)) {
 
             while (iterator.hasNext()) {
                 final GossipEvent next = iterator.next();
-                newUpperBound = Math.max(newUpperBound, next.getAncientSequenceNumber());
+                newUpperBound = Math.max(newUpperBound, next.getAncientIdentifier(fileType));
             }
 
         } catch (final IOException e) {

@@ -247,7 +247,7 @@ class PcesWriterTests {
         generator = buildGraphGenerator(random);
         generationsUntilAncient = random.nextInt(50, 100);
         sequencer = new PcesSequencer();
-        pcesFiles = new PcesFileTracker();
+        pcesFiles = new PcesFileTracker(GENERATION_BOUND); // TODO
 
         time = new FakeTime(Duration.ofMillis(1));
         final PcesFileManager fileManager = new PcesFileManager(platformContext, time, pcesFiles, selfId, 0);

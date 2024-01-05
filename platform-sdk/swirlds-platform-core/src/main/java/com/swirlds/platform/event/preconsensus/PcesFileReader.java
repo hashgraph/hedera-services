@@ -69,7 +69,7 @@ public class PcesFileReader {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(databaseDirectory);
 
-        final PcesFileTracker files = new PcesFileTracker();
+        final PcesFileTracker files = new PcesFileTracker(typeToRead);
 
         try (final Stream<Path> fileStream = Files.walk(databaseDirectory)) {
             fileStream
