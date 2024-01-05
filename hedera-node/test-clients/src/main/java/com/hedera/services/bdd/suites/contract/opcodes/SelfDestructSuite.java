@@ -27,9 +27,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -38,8 +39,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,7 +46,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class SelfDestructSuite extends HapiSuite {
 
@@ -82,13 +81,8 @@ public class SelfDestructSuite extends HapiSuite {
     final HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
-        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
-                .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA),
-                        cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract))
+        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks", NONDETERMINISTIC_LOG_DATA)
+                .given(cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .balance(3 * ONE_HBAR)
@@ -110,11 +104,8 @@ public class SelfDestructSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec hscsEvm008SelfDestructWhenCalling() {
-        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
+        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))
                 .when(contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT)
@@ -133,7 +124,6 @@ public class SelfDestructSuite extends HapiSuite {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
                 .given(
-                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         cryptoCreate(BENEFICIARY)
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(true)
