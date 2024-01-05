@@ -46,5 +46,13 @@ class TopicIdComparatorTest {
                         TopicID.newBuilder().topicNum(4L).build(),
                         TopicID.newBuilder().topicNum(3L).build())
                 > 0);
+        assertTrue(subject.compare(
+                        TopicID.newBuilder().shardNum(1).topicNum(1L).build(),
+                        TopicID.newBuilder().shardNum(2).topicNum(1L).build())
+                < 0);
+        assertTrue(subject.compare(
+                        TopicID.newBuilder().realmNum(1).topicNum(1L).build(),
+                        TopicID.newBuilder().realmNum(2).topicNum(1L).build())
+                < 0);
     }
 }
