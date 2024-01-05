@@ -141,15 +141,15 @@ public class PcesFileManager {
         totalFileByteCount = files.getTotalFileByteCount();
 
         if (files.getFileCount() > 0) {
-            metrics.getPreconsensusEventFileOldestGeneration()
+            metrics.getPreconsensusEventFileOldestIdentifier()
                     .set(files.getFirstFile().getLowerBound());
-            metrics.getPreconsensusEventFileYoungestGeneration()
+            metrics.getPreconsensusEventFileYoungestIdentifier()
                     .set(files.getLastFile().getUpperBound());
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         } else {
-            metrics.getPreconsensusEventFileOldestGeneration().set(NO_LOWER_BOUND);
-            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_LOWER_BOUND);
+            metrics.getPreconsensusEventFileOldestIdentifier().set(NO_LOWER_BOUND);
+            metrics.getPreconsensusEventFileYoungestIdentifier().set(NO_LOWER_BOUND);
             metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
         updateFileSizeMetrics();
@@ -242,7 +242,7 @@ public class PcesFileManager {
         }
 
         files.addFile(descriptor);
-        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getUpperBound());
+        metrics.getPreconsensusEventFileYoungestIdentifier().set(descriptor.getUpperBound());
 
         return descriptor;
     }
@@ -295,7 +295,7 @@ public class PcesFileManager {
         }
 
         if (files.getFileCount() > 0) {
-            metrics.getPreconsensusEventFileOldestGeneration()
+            metrics.getPreconsensusEventFileOldestIdentifier()
                     .set(files.getFirstFile().getLowerBound());
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
