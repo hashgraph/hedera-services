@@ -18,7 +18,6 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -57,12 +56,6 @@ public class WrappedHederaState implements HederaState {
         return false;
     }
 
-    @Override
-    @NonNull
-    public ReadableStates createReadableStates(@NonNull String serviceName) {
-        return new ReadonlyStatesWrapper(createWritableStates(serviceName));
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -71,9 +64,9 @@ public class WrappedHederaState implements HederaState {
      */
     @Override
     @NonNull
-    public WritableStates createWritableStates(@NonNull String serviceName) {
+    public WritableStates getWritableStates(@NonNull String serviceName) {
         return writableStatesMap.computeIfAbsent(
-                serviceName, s -> new WrappedWritableStates(delegate.createWritableStates(s)));
+                serviceName, s -> new WrappedWritableStates(delegate.getWritableStates(s)));
     }
 
     /**

@@ -20,8 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
-import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -94,11 +92,6 @@ import org.apache.logging.log4j.Logger;
 public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState, HederaState {
     private static final Logger logger = LogManager.getLogger(MerkleHederaState.class);
 
-    /** Used when asked for a service's readable states that we don't have */
-    private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
-    /** Used when asked for a service's writable states that we don't have */
-    private static final WritableStates EMPTY_WRITABLE_STATES = new EmptyWritableStates();
-
     // For serialization
     /**
      * This class ID is returned IF the default constructor was used. This is a nasty workaround for
@@ -155,6 +148,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * instance. The key is the "service-name.state-key".
      */
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
+
+    /**
+     * Maintains a map of service name to the {@link WritableStates} for that service. This is
+     * lazily populated as needed.
+     */
+    private final Map<String, MerkleWritableStates> writableStatesMap = new HashMap<>();
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
@@ -298,20 +297,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     @Override
     @NonNull
-    public ReadableStates createReadableStates(@NonNull final String serviceName) {
-        final var stateMetadata = services.get(serviceName);
-        return stateMetadata == null ? EMPTY_READABLE_STATES : new MerkleReadableStates(stateMetadata);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public WritableStates createWritableStates(@NonNull final String serviceName) {
+    public WritableStates getWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
-        final var stateMetadata = services.get(serviceName);
-        return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
+        return writableStatesMap.computeIfAbsent(serviceName, s -> {
+            final var stateMetadata = services.get(s);
+            return stateMetadata == null ? new MerkleWritableStates(Map.of()) : new MerkleWritableStates(stateMetadata);
+        });
     }
 
     /** {@inheritDoc} */
@@ -422,6 +413,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         final var stateMetadata = services.get(serviceName);
         if (stateMetadata != null) {
             stateMetadata.remove(stateKey);
+        }
+
+        // Eventually remove the cached WritableState
+        final var writableStates = writableStatesMap.get(serviceName);
+        if (writableStates != null) {
+            writableStates.remove(stateKey);
         }
 
         // Remove the node
@@ -596,6 +593,19 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             return getChild(index);
+        }
+
+        /**
+         * This method is called when a state is removed from the state merkle tree. It is used to
+         * remove the cached instances of the state.
+         *
+         * @param stateKey the state key
+         */
+        public void remove(String stateKey) {
+            stateMetadata.remove(stateKey);
+            kvInstances.remove(stateKey);
+            singletonInstances.remove(stateKey);
+            queueInstances.remove(stateKey);
         }
     }
 

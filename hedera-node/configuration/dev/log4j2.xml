@@ -116,7 +116,7 @@
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="INFO" additivity="false">
+    <Logger name="com.swirlds" level="WARN" additivity="false">
       <AppenderRef ref="fileLog">
         <Filters>
           <!-- MerkleDb & Virtual Merkle -->
@@ -238,11 +238,11 @@
     </Logger>
 
     <!-- Send transaction state logs to their own appender   -->
-    <Logger name="com.hedera.node.app.state.logging.TransactionStateLogger" level="trace" additivity="false">
+    <Logger name="com.hedera.node.app.state.logging.TransactionStateLogger" level="warn" additivity="false">
       <AppenderRef ref="TransactionStateLogs"/>
     </Logger>
 
-    <Logger name="com.hedera" level="info" additivity="false">
+    <Logger name="com.hedera" level="warn" additivity="false">
       <AppenderRef ref="Console"/>
       <AppenderRef ref="RollingFile"/>
     </Logger>
@@ -258,7 +258,7 @@
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.netty" level="info" additivity="false">
+    <Logger name="com.hedera.services.legacy.netty" level="warn" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
@@ -274,7 +274,7 @@
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.utils.UnzipUtility" level="info" additivity="false">
+    <Logger name="com.hedera.services.utils.UnzipUtility" level="warn" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>

@@ -22,7 +22,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -120,18 +119,12 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      */
     @NonNull
     public ReadableStates rootStates(@NonNull final String serviceName) {
-        return root.createReadableStates(serviceName);
+        return root.getReadableStates(serviceName);
     }
 
     @Override
     @NonNull
-    public ReadableStates createReadableStates(@NonNull final String serviceName) {
-        return new ReadonlyStatesWrapper(createWritableStates(serviceName));
-    }
-
-    @Override
-    @NonNull
-    public WritableStates createWritableStates(@NonNull final String serviceName) {
+    public WritableStates getWritableStates(@NonNull final String serviceName) {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }

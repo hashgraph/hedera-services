@@ -128,7 +128,7 @@ public class ReadableStoreFactory {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {
-            final var readableStates = state.createReadableStates(entry.name);
+            final var readableStates = state.getReadableStates(entry.name);
             final var store = entry.factory.apply(readableStates);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
