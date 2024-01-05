@@ -50,6 +50,15 @@ public class WrappedWritableKVState<K, V> extends WritableKVStateBase<K, V> {
         this.delegate = Objects.requireNonNull(delegate);
     }
 
+    /**
+     * Create a new instance that will treat the given {@code delegate} as the backend data source.
+     * Note that the lifecycle of the delegate <b>MUST</b> be as long as, or longer than, the
+     * lifecycle of this instance. If the delegate is reset or decommissioned while being used as a
+     * delegate, bugs will occur.
+     *
+     * @param delegate The delegate. Must not be null.
+     * @param comparator The comparator to use for the keys
+     */
     public WrappedWritableKVState(
             @NonNull final WritableKVState<K, V> delegate, @Nullable final Comparator<K> comparator) {
         super(delegate.getStateKey(), comparator);

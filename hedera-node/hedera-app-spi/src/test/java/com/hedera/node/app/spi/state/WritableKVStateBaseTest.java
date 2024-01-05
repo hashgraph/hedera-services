@@ -71,7 +71,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
     }
 
     protected WritableKVStateBase<String, String> createFruitState(@NonNull final Map<String, String> map) {
-        this.state = Mockito.spy(new MapWritableKVState<>(FRUIT_STATE_KEY, map));
+        this.state = Mockito.spy(new MapWritableKVState<>(FRUIT_STATE_KEY, map, Comparator.naturalOrder()));
         return state;
     }
 

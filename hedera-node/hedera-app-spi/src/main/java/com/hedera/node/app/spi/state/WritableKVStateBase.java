@@ -34,8 +34,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * Create a new StateBase.
      *
      * @param stateKey The state key. Cannot be null.
+     * @param comparator The comparator to use for the keys
      */
-    // @todo("10153") make comparator nonnull and make modifications a SortedMap
+    // @todo("10532") make comparator nonnull and make modifications a SortedMap
     protected WritableKVStateBase(@NonNull final String stateKey, @Nullable final Comparator<K> comparator) {
         super(stateKey);
         if (comparator != null) modifications = new TreeMap<>(comparator);

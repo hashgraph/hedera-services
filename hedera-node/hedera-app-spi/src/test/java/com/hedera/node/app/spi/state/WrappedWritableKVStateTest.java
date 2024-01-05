@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Comparator;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -36,7 +37,7 @@ class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
     private WritableKVStateBase<String, String> delegate;
 
     protected WritableKVStateBase<String, String> createFruitState(@NonNull final Map<String, String> map) {
-        this.delegate = new MapWritableKVState<>(FRUIT_STATE_KEY, map);
+        this.delegate = new MapWritableKVState<>(FRUIT_STATE_KEY, map, Comparator.naturalOrder());
         this.state = Mockito.spy(new WrappedWritableKVState<>(delegate));
         return this.state;
     }

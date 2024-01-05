@@ -53,6 +53,15 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
         this(stateKey, new HashMap<>());
     }
 
+    /**
+     * Create an instance using the given map as the backing store. This is useful when you want to
+     * pre-populate the map, or if you want to use Mockito to mock it or cause it to throw
+     * exceptions when certain keys are accessed, etc.
+     *
+     * @param stateKey The state key for this state
+     * @param backingStore The backing store to use
+     * @param comparator The comparator to use for the keys
+     */
     public MapWritableKVState(
             @NonNull final String stateKey,
             @NonNull final Map<K, V> backingStore,

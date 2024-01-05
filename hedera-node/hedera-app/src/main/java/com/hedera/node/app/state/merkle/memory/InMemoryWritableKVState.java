@@ -55,6 +55,13 @@ public final class InMemoryWritableKVState<K, V> extends WritableKVStateBase<K, 
         this.merkle = Objects.requireNonNull(merkleMap);
     }
 
+    /**
+     * Create a new instance.
+     *
+     * @param md the state metadata
+     * @param merkleMap The backing merkle map
+     * @param comparator the comparator to use for the keys
+     */
     public InMemoryWritableKVState(
             @NonNull final StateMetadata<K, V> md,
             @NonNull MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkleMap,

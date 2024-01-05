@@ -43,7 +43,7 @@ public interface ReadableStates {
     @NonNull
     <K, V> ReadableKVState<K, V> get(@NonNull String stateKey, @Nullable Comparator<K> comparator);
 
-    // @todo("10153") remove this overload method when all services writable stores are updated.
+    // @todo("10531") remove this overload method when all services writable stores are updated.
     @NonNull
     @Deprecated
     default <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {

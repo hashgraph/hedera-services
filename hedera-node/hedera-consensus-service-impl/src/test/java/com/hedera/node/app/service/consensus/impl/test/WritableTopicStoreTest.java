@@ -67,12 +67,15 @@ class WritableTopicStoreTest extends ConsensusTestBase {
         writableStore.put(topic);
         topic = createTopic(6L);
         writableStore.put(topic);
+        topic = createTopic(5L);
+        writableStore.put(topic);
 
         final var topicIds = writableStore.modifiedTopics();
         assertThat(topicIds)
                 .containsSequence(
                         TopicID.newBuilder().topicNum(3L).build(),
                         TopicID.newBuilder().topicNum(4L).build(),
+                        TopicID.newBuilder().topicNum(5L).build(),
                         TopicID.newBuilder().topicNum(6L).build());
     }
 }
