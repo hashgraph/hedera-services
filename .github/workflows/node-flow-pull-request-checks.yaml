@@ -232,7 +232,8 @@ jobs:
     name: HAPI Tests (Restart)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
-      - build
+      - dependency-check
+      - spotless
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -251,7 +252,8 @@ jobs:
     name: HAPI Tests (Node Death Reconnect)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
-      - build
+      - dependency-check
+      - spotless
     with:
       custom-job-label: Standard
       enable-unit-tests: false

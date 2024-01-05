@@ -51,15 +51,7 @@ public abstract class LifecycleOp extends UtilOp {
 
         // Run the op for each node, and if ANY node returns "true", then the test is over and we should also
         // return true. If they all return false, then we also return false.
-        final var isPassed = nodes.stream().anyMatch(this::run);
-        if (verboseLoggingOn) {
-            log.info(
-                    "LifecycleOp {} - {}, with nodes size {}",
-                    this.toString(),
-                    isPassed ? "passed" : "failed",
-                    nodes.size());
-        }
-        return isPassed;
+        return nodes.stream().anyMatch(this::run);
     }
 
     /**

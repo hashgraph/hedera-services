@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToShutDo
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.PAYER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
@@ -92,14 +93,15 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
+                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(TREASURY),
-                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         // Kill node 2
-                        shutDownNode("Carol"),
+                        shutDownNode("Carol").logged(),
                         // Wait for it to shut down
-                        waitForNodeToShutDown("Carol", 75),
+                        waitForNodeToShutDown("Carol", 75).logged(),
                         // This sleep is needed, since the ports of shutdown node may still be in time_wait status,
                         // which will cause an error that address is already in use when restarting nodes.
                         // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
@@ -109,19 +111,20 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         // Submit operations when node 2 is down
                         inParallel(mixedOpsBurst.get()),
                         // start all nodes
-                        startNode("Carol"),
+                        startNode("Carol").logged(),
                         // wait for node 2 to go BEHIND
-                        waitForNodeToBeBehind("Carol", 60),
+                        waitForNodeToBeBehind("Carol", 60).logged(),
                         // Node 2 will try to reconnect and comes to RECONNECT_COMPLETE
-                        waitForNodeToFinishReconnect("Carol", 60),
+                        waitForNodeToFinishReconnect("Carol", 60).logged(),
                         // Node 2 successfully reconnects and becomes ACTIVE
-                        waitForNodeToBecomeActive("Carol", 60))
+                        waitForNodeToBecomeActive("Carol", 60).logged())
                 .then(
                         // Once node 2 come back ACTIVE, submit some operations again
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         inParallel(mixedOpsBurst.get()));
     }
 }

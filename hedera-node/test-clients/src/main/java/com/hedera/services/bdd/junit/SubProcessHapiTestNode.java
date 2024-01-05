@@ -188,8 +188,8 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             Long.toString(nodeId))
                     .directory(workingDir.toFile())
                     .redirectOutput(stdout.toFile())
-                    .redirectError(stderr.toFile())
-                    .inheritIO();
+                    .redirectError(stderr.toFile());
+            //                    .inheritIO();
             handle = builder.start().toHandle();
         } catch (Exception e) {
             throw new RuntimeException("node " + nodeId + ": Unable to start!", e);
@@ -432,7 +432,6 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         String statusKey = "";
         try {
             final var response = httpClient.send(prometheusRequest, HttpResponse.BodyHandlers.ofString());
-            logger.info("node {}: prometheus response {}", nodeId, response.body());
             final var reader = new BufferedReader(new StringReader(response.body()));
             String line;
             while ((line = reader.readLine()) != null) {

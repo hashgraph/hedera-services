@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutD
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.PAYER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
@@ -93,10 +94,11 @@ public class MixedOpsRestartTest extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
-                        cryptoCreate(TREASURY),
-                        cryptoCreate(SENDER),
-                        cryptoCreate(RECEIVER),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).logged(),
+                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(TREASURY).payingWith(PAYER),
+                        cryptoCreate(SENDER).payingWith(PAYER),
+                        cryptoCreate(RECEIVER).payingWith(PAYER),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         inParallel(mixedOpsBurst.get()))
                 .when(
                         // freeze nodes
@@ -118,10 +120,11 @@ public class MixedOpsRestartTest extends HapiSuite {
                         waitForNodesToBecomeActive(60).logged())
                 .then(
                         // Once nodes come back ACTIVE, submit some operations again
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         inParallel(mixedOpsBurst.get()));
     }
 }
