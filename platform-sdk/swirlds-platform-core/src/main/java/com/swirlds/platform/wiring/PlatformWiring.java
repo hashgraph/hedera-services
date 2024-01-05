@@ -164,10 +164,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
+        eventHasherWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
         internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
         eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
         eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(pcesSequencerWiring.eventInput());
+        pcesSequencerWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+        pcesSequencerWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
         inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
         eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
