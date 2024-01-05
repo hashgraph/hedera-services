@@ -22,10 +22,12 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
@@ -33,9 +35,13 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
+import com.swirlds.platform.event.preconsensus.PcesReplayer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -48,6 +54,11 @@ import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
+import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.PcesReplayerWiring;
+import com.swirlds.platform.wiring.components.PcesSequencerWiring;
+import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -57,6 +68,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final WiringModel model;
 
+    private final EventHasherWiring eventHasherWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final EventDeduplicatorWiring eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
@@ -66,6 +78,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
+    private final PcesReplayerWiring pcesReplayerWiring;
+    private final PcesWriterWiring pcesWriterWiring;
+    private final PcesSequencerWiring pcesSequencerWiring;
+    private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
 
@@ -91,6 +107,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         eventCreationManagerWiring =
                 EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
+        pcesSequencerWiring = PcesSequencerWiring.create(schedulers.pcesSequencerScheduler());
 
         applicationTransactionPrehandlerWiring =
                 ApplicationTransactionPrehandlerWiring.create(schedulers.applicationTransactionPrehandlerScheduler());
@@ -108,9 +125,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring);
 
+        eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
+        pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
+        pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
+        eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
         wire();
     }
@@ -156,6 +177,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
         solderNonAncientEventWindow();
+        linkedEventIntakeWiring
+                .minimumGenerationNonAncientOutput()
+                .solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
+
+        pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
+        pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        pcesWriterWiring
+                .latestDurableSequenceNumberOutput()
+                .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
+
+        signedStateFileManagerWiring
+                .oldestMinimumGenerationOnDiskOutputWire()
+                .solderTo(pcesWriterWiring.minimumGenerationToStoreInputWire());
     }
 
     /**
@@ -164,22 +198,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Future work: as more components are moved to the framework, this method should shrink, and eventually be
      * removed.
      *
-     * @param preconsensusEventWriter   the preconsensus event writer to wire
      * @param statusManager             the status manager to wire
      * @param appCommunicationComponent the app communication component to wire
      * @param transactionPool           the transaction pool to wire
      */
     public void wireExternalComponents(
-            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
             @NonNull final TransactionPool transactionPool) {
 
-        signedStateFileManagerWiring
-                .oldestMinimumGenerationOnDiskOutputWire()
-                .solderTo(
-                        "PCES minimum generation to store",
-                        preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
         signedStateFileManagerWiring
                 .stateWrittenToDiskOutputWire()
                 .solderTo("status manager", statusManager::submitStatusAction);
@@ -202,6 +229,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
      * @param eventCreationManager    the event creation manager to bind
+     * @param pcesSequencer           the PCES sequencer to bind
      * @param swirldStateManager      the swirld state manager to bind
      * @param signedStateManager      the signed state manager to bind
      */
@@ -213,6 +241,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake,
             @NonNull final EventCreationManager eventCreationManager,
+            @NonNull final PcesSequencer pcesSequencer,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateManager signedStateManager) {
 
@@ -223,6 +252,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
         eventCreationManagerWiring.bind(eventCreationManager);
+        pcesSequencerWiring.bind(pcesSequencer);
         applicationTransactionPrehandlerWiring.bind(swirldStateManager);
         stateSignatureCollectorWiring.bind(signedStateManager);
     }
@@ -230,13 +260,27 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Bind components to the wiring.
      *
+     * @param eventHasher            the event hasher to bind
      * @param signedStateFileManager the signed state file manager to bind
      * @param stateSigner            the state signer to bind
+     * @param pcesReplayer           the PCES replayer to bind
+     * @param pcesWriter             the PCES writer to bind
+     * @param eventDurabilityNexus   the event durability nexus to bind
      */
     public void bind(
-            @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner) {
+            @NonNull final EventHasher eventHasher,
+            @NonNull final SignedStateFileManager signedStateFileManager,
+            @NonNull final StateSigner stateSigner,
+            @NonNull final PcesReplayer pcesReplayer,
+            @NonNull final PcesWriter pcesWriter,
+            @NonNull final EventDurabilityNexus eventDurabilityNexus) {
+
+        eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
+        pcesReplayerWiring.bind(pcesReplayer);
+        pcesWriterWiring.bind(pcesWriter);
+        eventDurabilityNexusWiring.bind(eventDurabilityNexus);
 
         // FUTURE WORK: bind all the things!
     }
@@ -306,6 +350,69 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * Get the input wire for passing a PCES iterator to the replayer.
+     *
+     * @return the input wire for passing a PCES iterator to the replayer
+     */
+    public InputWire<IOIterator<GossipEvent>> getPcesReplayerIteratorInput() {
+        return pcesReplayerWiring.pcesIteratorInputWire();
+    }
+
+    /**
+     * Get the output wire that the replayer uses to pass events from file into the intake pipeline.
+     *
+     * @return the output wire that the replayer uses to pass events from file into the intake pipeline
+     */
+    public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
+        return pcesReplayerWiring.eventOutput();
+    }
+
+    /**
+     * Get the input wire for the PCES writer minimum generation to store
+     *
+     * @return the input wire for the PCES writer minimum generation to store
+     */
+    public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
+        return pcesWriterWiring.minimumGenerationToStoreInputWire();
+    }
+
+    /**
+     * Get the input wire for the PCES writer to register a discontinuity
+     *
+     * @return the input wire for the PCES writer to register a discontinuity
+     */
+    public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
+        return pcesWriterWiring.discontinuityInputWire();
+    }
+
+    /**
+     * Get the input wire for the PCES writer to update the minimum generation non-ancient
+     *
+     * @return the input wire for the PCES writer to update the minimum generation non-ancient
+     */
+    public InputWire<Long> getPcesWriterMinimumGenerationNonAncientInput() {
+        return pcesWriterWiring.minimumGenerationNonAncientInput();
+    }
+
+    /**
+     * Get the input wire for passing events to the PCES writer.
+     *
+     * @return the input wire for passing events to the PCES writer
+     */
+    public InputWire<GossipEvent> getPcesWriterEventInput() {
+        return pcesWriterWiring.eventInputWire();
+    }
+
+    /**
+     * Get the runnable that will flush the PCES writer.
+     *
+     * @return the runnable that will flush the PCES writer
+     */
+    public Runnable getPcesWriterFlushRunnable() {
+        return pcesWriterWiring.flushRunnable();
+    }
+
+    /**
      * Inject a new non-ancient event window into all components that need it.
      * <p>
      * Future work: this is a temporary hook to allow the components to get the non-ancient event window during startup.
@@ -319,6 +426,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
+    }
+
+    /**
+     * Inject a new minimum generation non-ancient on all components that need it.
+     *
+     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     */
+    public void updateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        pcesWriterWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 
     /**

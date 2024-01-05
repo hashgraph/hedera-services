@@ -8,12 +8,15 @@ pcli diagram \
     -s 'getNonAncientEventWindow:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
+    -s 'applicationTransactionPrehandler:futures:★' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow' \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
-    -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
+    -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
+    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
 
 ########################################################################################################################
@@ -26,14 +29,22 @@ pcli diagram \
     -s 'getNonAncientEventWindow:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
+    -s 'applicationTransactionPrehandler:futures:★' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow' \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
-    -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
+    -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
+    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
     -c 'State File Management' \
     -c 'State Signature Collection'
+
+
+
+
+        -s 'pcesReplayer:done streaming pces:✓' \

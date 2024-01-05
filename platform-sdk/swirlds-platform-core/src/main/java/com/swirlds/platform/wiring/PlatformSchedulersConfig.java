@@ -23,33 +23,41 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Contains configuration values for the platform schedulers.
  *
+ * @param eventHasherSchedulerType                          the event hasher scheduler type
+ * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher scheduler
  * @param internalEventValidatorSchedulerType               the internal event validator scheduler type
- * @param internalEventValidatorUnhandledCapacity           number of unhandled events allowed in the internal event
- *                                                          validator scheduler
+ * @param internalEventValidatorUnhandledCapacity           number of unhandled events allowed in the internal event validator
+ *                                                          scheduler
  * @param eventDeduplicatorSchedulerType                    the event deduplicator scheduler type
  * @param eventDeduplicatorUnhandledCapacity                number of unhandled tasks allowed in the event deduplicator
  *                                                          scheduler
  * @param eventSignatureValidatorSchedulerType              the event signature validator scheduler type
- * @param eventSignatureValidatorUnhandledCapacity          number of unhandled tasks allowed in the event signature
- *                                                          validator scheduler
+ * @param eventSignatureValidatorUnhandledCapacity          number of unhandled tasks allowed in the event signature validator
+ *                                                          scheduler
  * @param orphanBufferSchedulerType                         the orphan buffer scheduler type
- * @param orphanBufferUnhandledCapacity                     number of unhandled tasks allowed in the orphan buffer
- *                                                          scheduler
+ * @param orphanBufferUnhandledCapacity                     number of unhandled tasks allowed in the orphan buffer scheduler
  * @param inOrderLinkerSchedulerType                        the in-order linker scheduler type
- * @param inOrderLinkerUnhandledCapacity                    number of unhandled tasks allowed in the in-order linker
- *                                                          scheduler
+ * @param inOrderLinkerUnhandledCapacity                    number of unhandled tasks allowed in the in-order linker scheduler
  * @param linkedEventIntakeSchedulerType                    the linked event intake scheduler type
  * @param linkedEventIntakeUnhandledCapacity                number of unhandled tasks allowed in the linked event intake
  *                                                          scheduler
  * @param eventCreationManagerSchedulerType                 the event creation manager scheduler type
- * @param eventCreationManagerUnhandledCapacity             number of unhandled tasks allowed in the event creation
- *                                                          manager scheduler
+ * @param eventCreationManagerUnhandledCapacity             number of unhandled tasks allowed in the event creation manager
+ *                                                          scheduler
  * @param signedStateFileManagerSchedulerType               the signed state file manager scheduler type
- * @param signedStateFileManagerUnhandledCapacity           number of unhandled tasks allowed in the signed state file
- *                                                          manager scheduler
+ * @param signedStateFileManagerUnhandledCapacity           number of unhandled tasks allowed in the signed state file manager
+ *                                                          scheduler
  * @param stateSignerSchedulerType                          the state signer scheduler type
- * @param stateSignerUnhandledCapacity                      number of unhandled tasks allowed in the state signer
- *                                                          scheduler, default is -1 (unlimited)
+ * @param stateSignerUnhandledCapacity                      number of unhandled tasks allowed in the state signer scheduler,
+ *                                                          default is -1 (unlimited)
+ * @param pcesWriterSchedulerType                           the preconsensus event writer scheduler type
+ * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus event writer
+ *                                                          scheduler
+ * @param pcesSequencerSchedulerType                        the preconsensus event sequencer scheduler type
+ * @param pcesSequencerUnhandledTaskCapacity                number of unhandled tasks allowed in the preconsensus event
+ *                                                          sequencer scheduler
+ * @param eventDurabilityNexusSchedulerType                 the durability nexus scheduler type
+ * @param eventDurabilityNexusUnhandledTaskCapacity         number of unhandled tasks allowed in the durability nexus scheduler
  * @param applicationTransactionPrehandlerSchedulerType     the application transaction prehandler scheduler type
  * @param applicationTransactionPrehandlerUnhandledCapacity number of unhandled tasks allowed for the application
  *                                                          transaction prehandler
@@ -59,6 +67,8 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
+        @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType eventHasherSchedulerType,
+        @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
@@ -77,6 +87,12 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
+        @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType pcesSequencerSchedulerType,
+        @ConfigProperty(defaultValue = "-1") int pcesSequencerUnhandledTaskCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType eventDurabilityNexusSchedulerType,
+        @ConfigProperty(defaultValue = "-1") int eventDurabilityNexusUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,

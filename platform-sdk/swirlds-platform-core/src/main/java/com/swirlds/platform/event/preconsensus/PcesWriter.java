@@ -34,6 +34,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This object is responsible for writing events to the database.
+ * <p>
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public class PcesWriter {
 
