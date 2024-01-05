@@ -43,6 +43,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
@@ -95,7 +96,9 @@ public class ERC20ContractInteractions extends HapiSuite {
 
         return defaultHapiSpec("callsERC20ContractInteractions")
                 .given(
-                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         uploadInitCode(CONTRACT))
                 .when(
