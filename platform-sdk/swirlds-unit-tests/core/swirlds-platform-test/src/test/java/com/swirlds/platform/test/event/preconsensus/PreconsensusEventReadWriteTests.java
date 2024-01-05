@@ -449,15 +449,13 @@ class PreconsensusEventReadWriteTests {
         }
 
         mutableFile.close();
-        final PcesFile compressedFile = mutableFile.compressGenerationalSpan(0);
+        final PcesFile compressedFile = mutableFile.compressSpan(0);
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
         assertEquals(file.getLowerBound(), compressedFile.getLowerBound());
         assertTrue(maximumGeneration > compressedFile.getUpperBound());
-        assertEquals(
-                mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.getUpperBound() - compressedFile.getLowerBound());
+        assertEquals(mutableFile.getUtilizedSpan(), compressedFile.getUpperBound() - compressedFile.getLowerBound());
         assertNotEquals(file.getPath(), compressedFile.getPath());
         assertNotEquals(file.getUpperBound(), compressedFile.getUpperBound());
         assertTrue(Files.exists(compressedFile.getPath()));
@@ -516,14 +514,14 @@ class PreconsensusEventReadWriteTests {
         }
 
         mutableFile.close();
-        final PcesFile compressedFile = mutableFile.compressGenerationalSpan(maximumEventGeneration + uncompressedSpan);
+        final PcesFile compressedFile = mutableFile.compressSpan(maximumEventGeneration + uncompressedSpan);
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
         assertEquals(file.getLowerBound(), compressedFile.getLowerBound());
         assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.getUpperBound());
         assertEquals(
-                mutableFile.getUtilizedGenerationalSpan(),
+                mutableFile.getUtilizedSpan(),
                 compressedFile.getUpperBound() - compressedFile.getLowerBound() - uncompressedSpan);
         assertNotEquals(file.getPath(), compressedFile.getPath());
         assertNotEquals(file.getUpperBound(), compressedFile.getUpperBound());

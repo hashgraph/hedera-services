@@ -294,7 +294,7 @@ public class PcesWriter {
      */
     private void closeFile() {
         try {
-            previousGenerationalSpan = currentMutableFile.getUtilizedGenerationalSpan();
+            previousGenerationalSpan = currentMutableFile.getUtilizedSpan();
             if (!bootstrapMode) {
                 averageGenerationalSpanUtilization.add(previousGenerationalSpan);
             }
