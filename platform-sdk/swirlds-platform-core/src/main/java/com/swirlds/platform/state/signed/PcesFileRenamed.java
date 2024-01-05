@@ -22,13 +22,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * This exception is thrown when a preconsensus event file is renamed, which prevents a preconsensus event file from
  * being copied.
  */
-public class PreconsensusEventFileRenamed extends RuntimeException {
+public class PcesFileRenamed extends RuntimeException {
 
     /**
      * Constructor.
      * @param cause the cause
      */
-    public PreconsensusEventFileRenamed(@NonNull final Throwable cause) {
+    public PcesFileRenamed(@NonNull final Throwable cause) {
         super(cause);
     }
 }

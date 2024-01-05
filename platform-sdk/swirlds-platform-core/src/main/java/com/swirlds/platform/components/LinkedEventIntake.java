@@ -19,7 +19,6 @@ package com.swirlds.platform.components;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -63,7 +62,11 @@ public class LinkedEventIntake {
 
     private final EventIntakeMetrics metrics;
     private final Time time;
-    private final Long roundsNonAncient;
+    /**
+     * FUTURE WORK: If nothing else is using it, delete platformContext when we switch to permanently using birthRound
+     * for determining Ancient.
+     */
+    private final PlatformContext platformContext;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -97,7 +100,7 @@ public class LinkedEventIntake {
             @NonNull final ShadowGraph shadowGraph,
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final IntakeEventCounter intakeEventCounter) {
-
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
@@ -107,10 +110,6 @@ public class LinkedEventIntake {
 
         this.paused = false;
         metrics = new EventIntakeMetrics(platformContext, () -> -1);
-        this.roundsNonAncient = (long) platformContext
-                .getConfiguration()
-                .getConfigData(ConsensusConfig.class)
-                .roundsNonAncient();
     }
 
     /**
@@ -159,10 +158,10 @@ public class LinkedEventIntake {
                 if (latestEventTipsetTracker != null) {
                     // FUTURE WORK: When this class is refactored, it should not be constructing the
                     // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
-                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingRoundsNonAncient(
+                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
                             consensusSupplier.get().getLastRoundDecided(),
                             minimumGenerationNonAncient,
-                            roundsNonAncient));
+                            platformContext));
                 }
             }
 

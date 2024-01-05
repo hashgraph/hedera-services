@@ -124,8 +124,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
         Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.writer = Objects.requireNonNull(writer, "writer must not be null");
 
-        final PreconsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         handleThread = new MultiQueueThreadConfiguration(threadManager)
                 .setComponent("preconsensus")

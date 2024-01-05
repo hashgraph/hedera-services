@@ -254,8 +254,9 @@ class EventSignatureValidatorTests {
         assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event));
         assertEquals(0, exitedIntakePipelineCount.get());
 
-        validatorWithTrueVerifier.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 100L));
+        // FUTURE WORK: expand to handle birthRound comparison for ancient.
+        validatorWithTrueVerifier.setNonAncientEventWindow(
+                new NonAncientEventWindow(ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, 100L, false));
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());

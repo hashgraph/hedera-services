@@ -20,6 +20,7 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -61,7 +62,10 @@ public abstract class ConsensusUtils {
 
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
         return new ConsensusImpl(
-                ConfigurationHolder.getConfigData(ConsensusConfig.class), NOOP_CONSENSUS_METRICS, addressBook);
+                ConfigurationHolder.getConfigData(ConsensusConfig.class),
+                NOOP_CONSENSUS_METRICS,
+                addressBook,
+                ConfigurationHolder.getConfigData(EventConfig.class).useBirthRoundAncientThreshold());
     }
 
     public static void loadEventsIntoGenerator(
