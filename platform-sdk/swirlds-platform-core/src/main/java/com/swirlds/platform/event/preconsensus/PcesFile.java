@@ -41,12 +41,18 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *    TODO fix this javadoc
- * Files have the following format. Deviation from this format is not allowed. A {@link PcesFileManager} will be unable
- * to correctly read files with a different format.
+ * Prior to the birth round migration, files have the following format. Deviation from this format is not allowed. A
+ * {@link PcesFileManager} will be unable to correctly read files with a different format.
  * </p>
  * <pre>
  * [Instant.toString().replace(":", "+")]-seq[sequence number]-ming[minimum legal generation]-maxg[maximum legal generation]-orgn[origin round].pces
+ * </pre>
+ * <p>
+ * After the birth round migration, files have the following format. Deviation from this format is not allowed. A
+ * {@link PcesFileManager} will be unable to correctly read files with a different format.
+ * </p>
+ * <pre>
+ * [Instant.toString().replace(":", "+")]-seq[sequence number]-minr[minimum legal birth round]-maxr[maximum legal birth round]-orgn[origin round].pces
  * </pre>
  * <p>
  * By default, files are stored with the following directory structure. Note that files are not required to be stored
@@ -242,15 +248,7 @@ public final class PcesFile implements Comparable<PcesFile> {
         }
 
         final String fileName = filePath.getFileName().toString();
-
-        final PcesFileType fileType;
-        if (fileName.contains(MINIMUM_GENERATION_PREFIX) && fileName.contains(MAXIMUM_GENERATION_PREFIX)) {
-            fileType = GENERATION_BOUND;
-        } else if (fileName.contains(MINIMUM_BIRTH_ROUND_PREFIX) && fileName.contains(MAXIMUM_BIRTH_ROUND_PREFIX)) {
-            fileType = BIRTH_ROUND_BOUND;
-        } else {
-            throw new IOException("Unable to determine file type from " + filePath);
-        }
+        final PcesFileType fileType = determineFileType(fileName);
 
         final String[] elements = fileName.substring(0, fileName.length() - EVENT_FILE_EXTENSION.length())
                 .split(EVENT_FILE_SEPARATOR);
@@ -259,18 +257,13 @@ public final class PcesFile implements Comparable<PcesFile> {
             throw new IOException("Unable to parse fields from " + filePath);
         }
 
-        final String lowerBoundPrefix =
-                fileType == GENERATION_BOUND ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX;
-        final String upperBoundPrefix =
-                fileType == GENERATION_BOUND ? MAXIMUM_GENERATION_PREFIX : MAXIMUM_BIRTH_ROUND_PREFIX;
-
         try {
             return new PcesFile(
                     fileType,
                     parseSanitizedTimestamp(elements[0]),
                     Long.parseLong(elements[1].replace(SEQUENCE_NUMBER_PREFIX, "")),
-                    Long.parseLong(elements[2].replace(lowerBoundPrefix, "")),
-                    Long.parseLong(elements[3].replace(upperBoundPrefix, "")),
+                    Long.parseLong(elements[2].replace(getLowerBoundPrefix(fileType), "")),
+                    Long.parseLong(elements[3].replace(getUpperBoundPrefix(fileType), "")),
                     Long.parseLong(elements[4].replace(ORIGIN_PREFIX, "")),
                     filePath);
         } catch (final DateTimeParseException | IllegalArgumentException ex) {
@@ -279,29 +272,71 @@ public final class PcesFile implements Comparable<PcesFile> {
     }
 
     /**
+     * Determine the type of the pces file based on its file name.
+     *
+     * @param fileName the name of the file
+     * @return the type of the file
+     * @throws IOException if the file type could not be determined
+     */
+    @NonNull
+    private static PcesFileType determineFileType(@NonNull final String fileName) throws IOException {
+        if (fileName.contains(MINIMUM_GENERATION_PREFIX) && fileName.contains(MAXIMUM_GENERATION_PREFIX)) {
+            return GENERATION_BOUND;
+        } else if (fileName.contains(MINIMUM_BIRTH_ROUND_PREFIX) && fileName.contains(MAXIMUM_BIRTH_ROUND_PREFIX)) {
+            return BIRTH_ROUND_BOUND;
+        } else {
+            throw new IOException("Unable to determine file type from " + fileName);
+        }
+    }
+
+    /**
+     * Get the prefix used to identify the lower bound in the file name.
+     *
+     * @param fileType the type of the file
+     * @return the prefix used to identify the lower bound in the file name
+     */
+    @NonNull
+    private static String getLowerBoundPrefix(@NonNull final PcesFileType fileType) {
+        return fileType == GENERATION_BOUND ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX;
+    }
+
+    /**
+     * Get the prefix used to identify the upper bound in the file name.
+     *
+     * @param fileType the type of the file
+     * @return the prefix used to identify the upper bound in the file name
+     */
+    @NonNull
+    private static String getUpperBoundPrefix(@NonNull final PcesFileType fileType) {
+        return fileType == GENERATION_BOUND ? MAXIMUM_GENERATION_PREFIX : MAXIMUM_BIRTH_ROUND_PREFIX;
+    }
+
+    /**
      * Create a new event file descriptor for span compaction.
      *
-     * @param maximumGenerationInFile the maximum generation that is actually in the file
+     * @param maximumBoundaryValueInFile the maximum boundary value for events actually present in the file. Will be
+     *                                   either a generation or a birth round depending on the {@link PcesFileType}.
      * @return a description of the new file
      */
     @NonNull
-    public PcesFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
-        if (maximumGenerationInFile < lowerBound) {
-            throw new IllegalArgumentException("maximumGenerationInFile " + maximumGenerationInFile
-                    + " is less than minimumGeneration " + lowerBound);
+    public PcesFile buildFileWithCompressedSpan(final long maximumBoundaryValueInFile) {
+        if (maximumBoundaryValueInFile < lowerBound) {
+            throw new IllegalArgumentException("maximumBoundaryValueInFile " + maximumBoundaryValueInFile
+                    + " is less than lowerBound " + lowerBound);
         }
 
-        if (maximumGenerationInFile > upperBound) {
-            throw new IllegalArgumentException("maximumGenerationInFile " + maximumGenerationInFile
-                    + " is greater than maximumGeneration " + upperBound);
+        if (maximumBoundaryValueInFile > upperBound) {
+            throw new IllegalArgumentException("maximumBoundaryValueInFile " + maximumBoundaryValueInFile
+                    + " is greater than upperBound " + upperBound);
         }
 
         final Path parentDirectory = path.getParent();
         final String fileName =
-                buildFileName(fileType, timestamp, sequenceNumber, lowerBound, maximumGenerationInFile, origin);
+                buildFileName(fileType, timestamp, sequenceNumber, lowerBound, maximumBoundaryValueInFile, origin);
         final Path newPath = parentDirectory.resolve(fileName);
 
-        return new PcesFile(fileType, timestamp, sequenceNumber, lowerBound, maximumGenerationInFile, origin, newPath);
+        return new PcesFile(
+                fileType, timestamp, sequenceNumber, lowerBound, maximumBoundaryValueInFile, origin, newPath);
     }
 
     /**
@@ -469,10 +504,10 @@ public final class PcesFile implements Comparable<PcesFile> {
                 .append(SEQUENCE_NUMBER_PREFIX)
                 .append(sequenceNumber)
                 .append(EVENT_FILE_SEPARATOR)
-                .append(fileType == GENERATION_BOUND ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX)
+                .append(getLowerBoundPrefix(fileType))
                 .append(minimumBound)
                 .append(EVENT_FILE_SEPARATOR)
-                .append(fileType == BIRTH_ROUND_BOUND ? MAXIMUM_GENERATION_PREFIX : MAXIMUM_BIRTH_ROUND_PREFIX)
+                .append(getUpperBoundPrefix(fileType))
                 .append(maximumBound)
                 .append(EVENT_FILE_SEPARATOR)
                 .append(ORIGIN_PREFIX)
