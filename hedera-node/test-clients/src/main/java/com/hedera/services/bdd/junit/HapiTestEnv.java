@@ -106,7 +106,7 @@ public class HapiTestEnv {
     public void start() throws TimeoutException {
         started = true;
         for (final var node : nodes) {
-            logger.info("Started node {}", node.getName());
+            logger.info("Starting node {}", node.getName());
             try {
                 node.start();
             } catch (RuntimeException e) {
@@ -117,13 +117,10 @@ public class HapiTestEnv {
         }
         for (final var node : nodes) {
             try {
-                logger.info("Wiatimng for node to become active{}", node.getName());
                 node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
             } catch (TimeoutException e) {
                 logger.error(
-                        "Node {} failed to become active within {} seconds",
-                        node.getName(),
-                        CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                        "Node {} failed to ACTIVE within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
                 throw e;
             }
         }

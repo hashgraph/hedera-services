@@ -46,7 +46,7 @@ public class WaitForActiveOp extends LifecycleOp {
             logger.info("Node {} started and is active", node);
             return false; // Do not stop the test, all is well.
         } catch (TimeoutException e) {
-            logger.info("Node {} did not become active within {}s with error {}", node, waitSeconds, e);
+            logger.info("Node {} did not become active within {}s", node, waitSeconds);
             return true; // Stop the test, we're toast.
         }
     }
