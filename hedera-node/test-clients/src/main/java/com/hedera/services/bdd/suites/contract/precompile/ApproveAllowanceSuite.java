@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -60,6 +61,8 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -75,7 +78,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ApproveAllowanceSuite extends HapiSuite {
 
@@ -99,7 +102,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     public static final String CALL_TO = "callTo";
 
     public static void main(String... args) {
-        new ApproveAllowanceSuite().runSuiteAsync();
+        new ApproveAllowanceSuite().runSuiteSync();
     }
 
     @Override
@@ -185,6 +188,10 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("htsTokenApproveToInnerContract")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(theSpender),
@@ -251,6 +258,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("htsTokenAllowance")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(theSpender),
@@ -308,6 +318,10 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("htsTokenApprove")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(theSpender),
@@ -369,6 +383,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("hapiNftIsApprovedForAll")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
@@ -458,6 +475,10 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("hapiNftGetApproved")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(theSpender),
@@ -518,6 +539,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("hapiNftSetApprovalForAll")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(theSpender),
@@ -607,6 +633,12 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("testIndirectApprovalWith" + testName)
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES,
+                                SnapshotMatchMode.NONDETERMINISTIC_NONCE),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(PRETEND_ATTACKER)
                                 .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
