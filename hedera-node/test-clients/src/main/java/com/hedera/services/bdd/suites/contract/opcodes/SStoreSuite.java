@@ -37,6 +37,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -60,7 +61,7 @@ public class SStoreSuite extends HapiSuite {
     private static final String GET_CHILD_VALUE = "getChildValue";
 
     public static void main(String... args) {
-        new SStoreSuite().runSuiteAsync();
+        new SStoreSuite().runSuiteSync();
     }
 
     @Override
@@ -70,7 +71,11 @@ public class SStoreSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
+        return List.of(
+                multipleSStoreOpsSucceed(),
+                benchmarkSingleSetter(),
+                childStorage()
+        );
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
@@ -80,7 +85,11 @@ public class SStoreSuite extends HapiSuite {
         final var GAS_TO_OFFER = 6_000_000L;
         return HapiSpec.defaultHapiSpec("multipleSStoreOpsSucceed")
                 .given(
-                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES
+                        ),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
@@ -118,7 +127,10 @@ public class SStoreSuite extends HapiSuite {
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage")
                 .given(
-                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES
+                        ),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
@@ -186,9 +198,13 @@ public class SStoreSuite extends HapiSuite {
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
                 .toArray();
         return defaultHapiSpec("benchmarkSingleSetter")
-                .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
+                .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES
+                        ),
+                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
-                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         contractCreate(contract)
                                 .payingWith("payer")
                                 .via("creationTx")
