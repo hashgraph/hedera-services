@@ -389,33 +389,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get the input wire for the PCES writer to update the minimum generation non-ancient
-     *
-     * @return the input wire for the PCES writer to update the minimum generation non-ancient
-     */
-    public InputWire<Long> getPcesWriterMinimumGenerationNonAncientInput() {
-        return pcesWriterWiring.minimumGenerationNonAncientInput();
-    }
-
-    /**
-     * Get the input wire for passing events to the PCES writer.
-     *
-     * @return the input wire for passing events to the PCES writer
-     */
-    public InputWire<GossipEvent> getPcesWriterEventInput() {
-        return pcesWriterWiring.eventInputWire();
-    }
-
-    /**
-     * Get the runnable that will flush the PCES writer.
-     *
-     * @return the runnable that will flush the PCES writer
-     */
-    public Runnable getPcesWriterFlushRunnable() {
-        return pcesWriterWiring.flushRunnable();
-    }
-
-    /**
      * Inject a new non-ancient event window into all components that need it.
      * <p>
      * Future work: this is a temporary hook to allow the components to get the non-ancient event window during startup.
