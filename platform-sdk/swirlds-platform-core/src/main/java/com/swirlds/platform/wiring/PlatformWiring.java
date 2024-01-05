@@ -97,6 +97,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
+        eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
         eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
@@ -115,17 +116,18 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
 
         platformCoordinator = new PlatformCoordinator(
+                eventHasherWiring,
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,
                 orphanBufferWiring,
+                pcesSequencerWiring,
                 inOrderLinkerWiring,
                 linkedEventIntakeWiring,
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring);
 
-        eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());

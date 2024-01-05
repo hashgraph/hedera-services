@@ -18,6 +18,8 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
+import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -26,10 +28,12 @@ import java.util.Objects;
  * Responsible for coordinating the clearing of the platform wiring objects.
  */
 public class PlatformCoordinator {
+    private final EventHasherWiring eventHasherWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final EventDeduplicatorWiring eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
+    private final PcesSequencerWiring pcesSequencerWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
@@ -39,10 +43,12 @@ public class PlatformCoordinator {
     /**
      * Constructor
      *
+     * @param eventHasherWiring                      the event hasher wiring
      * @param internalEventValidatorWiring           the internal event validator wiring
      * @param eventDeduplicatorWiring                the event deduplicator wiring
      * @param eventSignatureValidatorWiring          the event signature validator wiring
      * @param orphanBufferWiring                     the orphan buffer wiring
+     * @param pcesSequencerWiring                    the pces sequencer wiring
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param linkedEventIntakeWiring                the linked event intake wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
@@ -50,20 +56,24 @@ public class PlatformCoordinator {
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
      */
     public PlatformCoordinator(
+            @NonNull final EventHasherWiring eventHasherWiring,
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
             @NonNull final EventDeduplicatorWiring eventDeduplicatorWiring,
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
             @NonNull final OrphanBufferWiring orphanBufferWiring,
+            @NonNull final PcesSequencerWiring pcesSequencerWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring) {
 
+        this.eventHasherWiring = Objects.requireNonNull(eventHasherWiring);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
         this.orphanBufferWiring = Objects.requireNonNull(orphanBufferWiring);
+        this.pcesSequencerWiring = Objects.requireNonNull(pcesSequencerWiring);
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
@@ -75,11 +85,13 @@ public class PlatformCoordinator {
      * Flushes the intake pipeline
      */
     public void flushIntakePipeline() {
+        eventHasherWiring.flushRunnable().run();
         internalEventValidatorWiring.flushRunnable().run();
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();
         orphanBufferWiring.flushRunnable().run();
         eventCreationManagerWiring.flush();
+        pcesSequencerWiring.flushRunnable().run();
         inOrderLinkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
         applicationTransactionPrehandlerWiring.flushRunnable().run();

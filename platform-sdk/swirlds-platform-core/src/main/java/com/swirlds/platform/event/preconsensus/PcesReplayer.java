@@ -73,7 +73,7 @@ public class PcesReplayer {
     }
 
     /**
-     * Write information about the replay to disk.
+     * Log information about the replay
      *
      * @param timestampBeforeReplay the consensus timestamp before replay
      * @param roundBeforeReplay     the round before replay
