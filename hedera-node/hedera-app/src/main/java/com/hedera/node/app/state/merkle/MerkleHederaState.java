@@ -367,6 +367,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
         stateMetadata.put(def.stateKey(), md);
 
+        // We also need to add/update the metadata of the service in the writableStatesMap so that
+        // it isn't stale or incomplete (e.g. in a genesis case)
+        writableStatesMap.put(md.serviceName(), new MerkleWritableStates(stateMetadata));
+
         // Look for a node, and if we don't find it, then insert the one we were given
         // If there is not a node there, then set it. I don't want to overwrite the existing node,
         // because it may have been loaded from state on disk, and the node provided here in this
