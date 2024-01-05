@@ -49,6 +49,7 @@ public record PcesWriterWiring(
      * @param taskScheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
+    @NonNull
     public static PcesWriterWiring create(@NonNull final TaskScheduler<Long> taskScheduler) {
         return new PcesWriterWiring(
                 taskScheduler.buildInputWire("done streaming pces"),

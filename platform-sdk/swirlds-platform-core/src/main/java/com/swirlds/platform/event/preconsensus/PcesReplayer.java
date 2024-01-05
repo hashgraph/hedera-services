@@ -135,6 +135,7 @@ public class PcesReplayer {
      * @param eventIterator an iterator over the events in the preconsensus stream
      * @return a trigger object indicating when the replay is complete
      */
+    @NonNull
     public DoneStreamingPcesTrigger replayPces(@NonNull final IOIterator<GossipEvent> eventIterator) {
         Objects.requireNonNull(eventIterator);
 
