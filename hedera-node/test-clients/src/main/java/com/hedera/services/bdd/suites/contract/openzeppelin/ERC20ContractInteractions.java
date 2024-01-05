@@ -30,8 +30,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddressInTopic;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
@@ -43,8 +43,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -53,7 +51,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ERC20ContractInteractions extends HapiSuite {
 
@@ -94,13 +92,8 @@ public class ERC20ContractInteractions extends HapiSuite {
         final var amount = BigInteger.valueOf(1_000);
         final var initialAmount = BigInteger.valueOf(5_000);
 
-        return defaultHapiSpec("callsERC20ContractInteractions")
-                .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
-                        uploadInitCode(CONTRACT))
+        return defaultHapiSpec("callsERC20ContractInteractions", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(), uploadInitCode(CONTRACT))
                 .when(
                         getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         contractCreate(CONTRACT, initialAmount)
