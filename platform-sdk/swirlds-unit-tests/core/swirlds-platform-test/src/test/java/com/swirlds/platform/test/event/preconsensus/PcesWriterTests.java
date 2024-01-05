@@ -19,7 +19,7 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
-import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_MINIMUM_GENERATION;
+import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
 import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -442,9 +442,8 @@ class PcesWriterTests {
         assertTrue(eventDurabilityNexus.isEventDurable(events.get(events.size() - 1)));
 
         // We shouldn't find any events in the stream.
-        assertFalse(() -> pcesFiles
-                .getFileIterator(PcesFileManager.NO_MINIMUM_GENERATION, 0)
-                .hasNext());
+        assertFalse(() ->
+                pcesFiles.getFileIterator(PcesFileManager.NO_LOWER_BOUND, 0).hasNext());
 
         writer.closeCurrentMutableFile();
     }
@@ -494,7 +493,7 @@ class PcesWriterTests {
 
         if (truncateLastFile) {
             // Remove a single byte from the last file. This will corrupt the last event that was written.
-            final Iterator<PcesFile> it = pcesFiles.getFileIterator(NO_MINIMUM_GENERATION, 0);
+            final Iterator<PcesFile> it = pcesFiles.getFileIterator(NO_LOWER_BOUND, 0);
             while (it.hasNext()) {
                 final PcesFile file = it.next();
                 if (!it.hasNext()) {
@@ -593,7 +592,7 @@ class PcesWriterTests {
                 GENERATION_BOUND); // TODO
 
         pcesFiles
-                .getFileIterator(NO_MINIMUM_GENERATION, 0)
+                .getFileIterator(NO_LOWER_BOUND, 0)
                 .forEachRemaining(file -> assertTrue(file.getUpperBound() >= minimumGenerationToStore));
 
         writer.closeCurrentMutableFile();

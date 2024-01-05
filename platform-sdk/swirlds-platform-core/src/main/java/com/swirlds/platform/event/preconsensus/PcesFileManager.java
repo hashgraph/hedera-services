@@ -48,9 +48,9 @@ public class PcesFileManager {
     private static final Logger logger = LogManager.getLogger(PcesFileManager.class);
 
     /**
-     * This constant can be used when the caller wants all events, regardless of generation.
+     * This constant can be used when the caller wants all events, regardless of the lower bound.
      */
-    public static final long NO_MINIMUM_GENERATION = -1;
+    public static final long NO_LOWER_BOUND = -1;
 
     /**
      * Provides the wall clock time.
@@ -134,8 +134,8 @@ public class PcesFileManager {
             final Duration age = Duration.between(files.getFirstFile().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         } else {
-            metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
-            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileOldestGeneration().set(NO_LOWER_BOUND);
+            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_LOWER_BOUND);
             metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
         updateFileSizeMetrics();
