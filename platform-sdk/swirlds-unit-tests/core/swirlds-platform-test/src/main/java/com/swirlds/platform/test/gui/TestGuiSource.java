@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.gui;
 
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
@@ -25,6 +26,7 @@ import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.FlowLayout;
 import java.util.LinkedList;
@@ -45,7 +47,9 @@ public class TestGuiSource {
         graphGenerator = new StandardGraphGenerator(seed, generateSources(numNodes));
         graphGenerator.reset();
 
-        intake = new TestIntake(graphGenerator.getAddressBook());
+        intake = new TestIntake(
+                graphGenerator.getAddressBook(),
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
 
         guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }

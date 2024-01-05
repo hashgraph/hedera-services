@@ -116,11 +116,16 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 .logging(),
                         withOpContext((spec, opLog) -> {
                             List<HapiSpecOperation> ops = new ArrayList<>();
+                            var stakedNodeId = settings.getNodeToStake();
                             for (int i = 0; i < STAKED_CREATIONS; i++) {
                                 var stakedAccount = "stakedAccount" + i;
+                                if (settings.getExtraNodesToStake().length != 0) {
+                                    stakedNodeId =
+                                            settings.getExtraNodesToStake()[i % settings.getExtraNodesToStake().length];
+                                }
                                 ops.add(cryptoCreate(stakedAccount)
                                         .payingWith("sender")
-                                        .stakedNodeId(settings.getNodeToStake())
+                                        .stakedNodeId(stakedNodeId)
                                         .fee(ONE_HBAR)
                                         .deferStatusResolution()
                                         .signedBy("sender", DEFAULT_PAYER));

@@ -16,15 +16,10 @@
 
 package com.swirlds.platform.event.creation;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.BackpressureRule;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
@@ -32,9 +27,6 @@ import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.eventhandling.TransactionPool;
-import com.swirlds.platform.observers.ConsensusRoundObserver;
-import com.swirlds.platform.observers.EventObserverDispatcher;
-import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -45,91 +37,11 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /**
- * A factory for creating {@link AsyncEventCreationManager} instances.
+ * A factory for creating {@link EventCreationManager} instances.
  */
 public final class EventCreationManagerFactory {
 
     private EventCreationManagerFactory() {}
-
-    /**
-     * Create a new event creation manager (legacy pre-wiring version).
-     *
-     * @param platformContext         the platform's context
-     * @param threadManager           manages the creation of new threads
-     * @param time                    provides the wall clock time
-     * @param signer                  can sign with this node's key
-     * @param addressBook             the current address book
-     * @param selfId                  the ID of this node
-     * @param appVersion              the current application version
-     * @param transactionPool         provides transactions to be added to new events
-     * @param eventIntakeQueue        the queue to which new events should be added
-     * @param eventObserverDispatcher wires together event intake logic
-     * @param platformStatusSupplier  provides the current platform status
-     * @param latestReconnectRound    provides the latest reconnect round
-     * @return a new event creation manager
-     */
-    @NonNull
-    public static AsyncEventCreationManager buildLegacyEventCreationManager(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
-            @NonNull final Signer signer,
-            @NonNull final AddressBook addressBook,
-            @NonNull final NodeId selfId,
-            @NonNull final SoftwareVersion appVersion,
-            @NonNull final TransactionPool transactionPool,
-            @NonNull final QueueThread<GossipEvent> eventIntakeQueue,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final Supplier<Long> latestReconnectRound) {
-
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(time);
-        Objects.requireNonNull(signer);
-        Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(selfId);
-        Objects.requireNonNull(appVersion);
-        Objects.requireNonNull(transactionPool);
-        Objects.requireNonNull(eventIntakeQueue);
-        Objects.requireNonNull(eventObserverDispatcher);
-        Objects.requireNonNull(platformStatusSupplier);
-        Objects.requireNonNull(latestReconnectRound);
-
-        final EventCreator eventCreator = new TipsetEventCreator(
-                platformContext,
-                time,
-                new Random() /* does not need to be cryptographically secure */,
-                signer,
-                addressBook,
-                selfId,
-                appVersion,
-                transactionPool);
-
-        final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
-                new MaximumRateRule(platformContext, time),
-                new BackpressureRule(platformContext, eventIntakeQueue::size),
-                new PlatformStatusRule(platformStatusSupplier, transactionPool));
-
-        final SyncEventCreationManager syncEventCreationManager = new SyncEventCreationManager(
-                platformContext, time, eventCreator, eventCreationRules, eventIntakeQueue::offer);
-
-        final AsyncEventCreationManager manager =
-                new AsyncEventCreationManager(platformContext, threadManager, syncEventCreationManager);
-
-        eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
-                manager::registerEvent,
-                event,
-                "Interrupted while attempting to register event with tipset event creator"));
-
-        eventObserverDispatcher.addObserver((ConsensusRoundObserver) round -> abortAndThrowIfInterrupted(
-                manager::setNonAncientEventWindow,
-                round.getNonAncientEventWindow(),
-                "Interrupted while attempting to register minimum generation "
-                        + "non-ancient with tipset event creator"));
-
-        return manager;
-    }
 
     /**
      * Create a new event creation manager.

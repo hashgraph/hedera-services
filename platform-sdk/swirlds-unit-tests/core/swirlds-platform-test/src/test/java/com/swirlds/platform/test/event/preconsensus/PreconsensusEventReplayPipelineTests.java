@@ -27,17 +27,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayPipeline;
-import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -184,20 +183,15 @@ class PreconsensusEventReplayPipelineTests {
         final List<GossipEvent> receivedEvents = new ArrayList<>(eventCount);
         final AtomicInteger count = new AtomicInteger(0);
 
-        final EventValidator eventValidator = mock(EventValidator.class);
-        doAnswer((invocation) -> {
-                    final GossipEvent event = invocation.getArgument(0);
-                    assertNotNull(event.getHashedData().getHash());
-                    assertNotNull(event.getDescriptor());
-                    receivedEvents.add(event);
-                    count.getAndIncrement();
-                    return null;
-                })
-                .when(eventValidator)
-                .validateEvent(any());
+        final InterruptableConsumer<GossipEvent> intakeHandler = event -> {
+            assertNotNull(event.getHashedData().getHash());
+            assertNotNull(event.getDescriptor());
+            receivedEvents.add(event);
+            count.getAndIncrement();
+        };
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
+                platformContext, threadManager, buildIOIterator(events), intakeHandler);
 
         pipeline.replayEvents();
 
@@ -252,20 +246,15 @@ class PreconsensusEventReplayPipelineTests {
         final List<GossipEvent> receivedEvents = new ArrayList<>(eventCount);
         final AtomicInteger count = new AtomicInteger(0);
 
-        final EventValidator eventValidator = mock(EventValidator.class);
-        doAnswer((invocation) -> {
-                    final GossipEvent event = invocation.getArgument(0);
-                    assertNotNull(event.getHashedData().getHash());
-                    assertNotNull(event.getDescriptor());
-                    receivedEvents.add(event);
-                    count.getAndIncrement();
-                    return null;
-                })
-                .when(eventValidator)
-                .validateEvent(any());
+        final InterruptableConsumer<GossipEvent> intakeHandler = event -> {
+            assertNotNull(event.getHashedData().getHash());
+            assertNotNull(event.getDescriptor());
+            receivedEvents.add(event);
+            count.getAndIncrement();
+        };
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
+                platformContext, threadManager, buildIOIterator(events), intakeHandler);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
 
@@ -315,25 +304,19 @@ class PreconsensusEventReplayPipelineTests {
         final AtomicInteger count = new AtomicInteger(0);
         final BaseEventHashedData errorEvent = events.get(eventCount / 2).getHashedData();
 
-        final EventValidator eventValidator = mock(EventValidator.class);
-        doAnswer((invocation) -> {
-                    final GossipEvent event = invocation.getArgument(0);
+        final InterruptableConsumer<GossipEvent> intakeHandler = event -> {
+            if (event.getHashedData() == errorEvent) {
+                throw new RuntimeException("Intentional Exception");
+            }
 
-                    if (event.getHashedData() == errorEvent) {
-                        throw new RuntimeException("Intentional Exception");
-                    }
-
-                    assertNotNull(event.getHashedData().getHash());
-                    assertNotNull(event.getDescriptor());
-                    receivedEvents.add(event);
-                    count.getAndIncrement();
-                    return null;
-                })
-                .when(eventValidator)
-                .validateEvent(any());
+            assertNotNull(event.getHashedData().getHash());
+            assertNotNull(event.getDescriptor());
+            receivedEvents.add(event);
+            count.getAndIncrement();
+        };
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
+                platformContext, threadManager, buildIOIterator(events), intakeHandler);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
 
@@ -382,23 +365,15 @@ class PreconsensusEventReplayPipelineTests {
         final List<GossipEvent> receivedEvents = new ArrayList<>(eventCount);
         final AtomicInteger count = new AtomicInteger(0);
 
-        final EventValidator eventValidator = mock(EventValidator.class);
-        doAnswer((invocation) -> {
-                    final GossipEvent event = invocation.getArgument(0);
-                    assertNotNull(event.getHashedData().getHash());
-                    assertNotNull(event.getDescriptor());
-                    receivedEvents.add(event);
-                    count.getAndIncrement();
-                    return null;
-                })
-                .when(eventValidator)
-                .validateEvent(any());
+        final InterruptableConsumer<GossipEvent> intakeHandler = event -> {
+            assertNotNull(event.getHashedData().getHash());
+            assertNotNull(event.getDescriptor());
+            receivedEvents.add(event);
+            count.getAndIncrement();
+        };
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext,
-                threadManager,
-                buildThrowingIOIterator(events, eventCount / 2),
-                eventValidator::validateEvent);
+                platformContext, threadManager, buildThrowingIOIterator(events, eventCount / 2), intakeHandler);
 
         assertThrows(UncheckedIOException.class, pipeline::replayEvents);
 

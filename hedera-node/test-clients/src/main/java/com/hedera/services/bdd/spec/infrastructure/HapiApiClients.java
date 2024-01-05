@@ -277,6 +277,7 @@ public class HapiApiClients {
         if (channelPools.isEmpty()) {
             return;
         }
+        shutdownChannels();
         channelPools.clear();
     }
 
