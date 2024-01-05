@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.validation;
+package com.swirlds.platform.state.signed;
 
-import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Validates a {@link GossipEvent} received from a peer
+ * This exception is thrown when a preconsensus event file is renamed, which prevents a preconsensus event file from
+ * being copied.
  */
-public interface GossipEventValidator {
-    /**
-     * Validate an event
-     *
-     * @param event
-     * 		the event to validate
-     * @return true if the event is valid, false otherwise
-     */
-    boolean isEventValid(@NonNull GossipEvent event);
+public class PcesFileRenamed extends RuntimeException {
 
     /**
-     * @return The name of the validator
+     * Constructor.
+     * @param cause the cause
      */
-    default @NonNull String validatorName() {
-        return this.getClass().getSimpleName();
+    public PcesFileRenamed(@NonNull final Throwable cause) {
+        super(cause);
     }
 }

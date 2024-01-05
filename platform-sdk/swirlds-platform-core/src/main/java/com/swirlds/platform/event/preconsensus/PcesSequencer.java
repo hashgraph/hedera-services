@@ -14,29 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.event.validation;
+package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.GossipEventValidator;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class TestGossipEventValidator implements GossipEventValidator {
-    private final boolean validation;
-    private final String name;
+/**
+ * Responsible for assigning stream sequence numbers to events. All events that are written
+ * to the preconsensus event stream must be assigned a sequence number.
+ */
+public class PcesSequencer {
 
-    public TestGossipEventValidator(final boolean validation, @NonNull final String name) {
-        this.validation = validation;
-        this.name = name;
-    }
+    private long nextStreamSequenceNumber = 0;
 
-    @Override
-    public boolean isEventValid(@NonNull GossipEvent event) {
-        return validation;
-    }
-
-    @NonNull
-    @Override
-    public String validatorName() {
-        return name;
+    /**
+     * Set the stream sequence number of an event.
+     * @param event an event that needs a sequence number
+     */
+    public void assignStreamSequenceNumber(final GossipEvent event) {
+        event.setStreamSequenceNumber(nextStreamSequenceNumber++);
     }
 }

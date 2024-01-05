@@ -147,7 +147,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 // If some random exception happened, then we should not charge the node for it. Instead,
                 // we will just record the exception and try again during handle. Then if we fail again
                 // at handle, then we will throw away the transaction (hopefully, deterministically!)
-                logger.error("Unexpected error while pre handling a transaction!", unexpectedException);
+                logger.error(
+                        "Possibly CATASTROPHIC failure while running the pre-handle workflow", unexpectedException);
                 tx.setMetadata(unknownFailure());
             }
         });
