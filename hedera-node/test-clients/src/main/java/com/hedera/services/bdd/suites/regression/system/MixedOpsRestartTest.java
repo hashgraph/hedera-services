@@ -109,7 +109,8 @@ public class MixedOpsRestartTest extends HapiSuite {
                         waitForNodesToShutDown(60).logged(),
                         // This sleep is needed, since the ports of shutdown nodes may still be in time_wait status,
                         // which will cause an error that address is already in use when restarting nodes.
-                        // Sleep long enough so restarting nodes succeeds.
+                        // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
+                        // kernel settings), so restarting nodes succeeds.
                         sleepFor(180_000L).logged(),
                         // start all nodes
                         startAllNodes().logged(),
