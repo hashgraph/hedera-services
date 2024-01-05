@@ -83,9 +83,12 @@ public class SelfDestructSuite extends HapiSuite {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
         return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
-                .given(snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA)
-                        ,cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
+                .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA),
+                        cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .balance(3 * ONE_HBAR)
@@ -108,9 +111,10 @@ public class SelfDestructSuite extends HapiSuite {
     @HapiTest
     final HapiSpec hscsEvm008SelfDestructWhenCalling() {
         return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
-                .given(snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
-                        ,
+                .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))
                 .when(contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT)
@@ -128,8 +132,8 @@ public class SelfDestructSuite extends HapiSuite {
     final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
-                .given(snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS)
-                        ,
+                .given(
+                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         cryptoCreate(BENEFICIARY)
                                 .balance(ONE_HUNDRED_HBARS)
                                 .receiverSigRequired(true)
