@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
@@ -44,6 +45,8 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -98,6 +101,11 @@ public class ContractHTSSuite extends HapiSuite {
         final var theSecondReceiver = "somebody2";
         return defaultHapiSpec("NonZeroTransfersFail")
                 .given(
+                        snapshotMode(
+                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                                SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER),
