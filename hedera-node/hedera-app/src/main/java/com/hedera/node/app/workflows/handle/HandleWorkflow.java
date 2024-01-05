@@ -237,7 +237,7 @@ public class HandleWorkflow {
                     }
                 } catch (final Exception e) {
                     logger.fatal(
-                            "Possibly CATASTROPHIC failure during transaction handling. "
+                            "Possibly CATASTROPHIC failure while running the handle workflow. "
                                     + "While this node may not die right away, it is in a bad way, most likely fatally.",
                             e);
                 }
@@ -543,7 +543,7 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
-            logger.error("Possibly CATASTROPHIC failure", e);
+            logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
