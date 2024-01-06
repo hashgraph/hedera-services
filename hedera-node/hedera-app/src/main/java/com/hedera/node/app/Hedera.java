@@ -81,8 +81,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
@@ -564,9 +562,13 @@ public final class Hedera implements SwirldMain {
                     return finishedStore;
                 }
             };
+            // For contract storage migration:
             CONTRACT_SERVICE.setFromState(fromStore);
             CONTRACT_SERVICE.setToState(toStore.get());
             CONTRACT_SERVICE.setFlusher(flusher);
+
+            // For contract bytecode migration:
+            CONTRACT_SERVICE.setFileFs(() -> VirtualMapLike.from(state.getChild(STORAGE)));
         }
 
         // --------------------- STAKING_INFO (12)

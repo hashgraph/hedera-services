@@ -60,7 +60,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.services.cli,
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app,
-            com.hedera.node.app.service.file.impl;
+            com.hedera.node.app.service.file.impl,
+            com.hedera.node.app.service.contract.impl;
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,

@@ -77,34 +77,22 @@ public final class FileServiceImpl implements FileService {
                 var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
 
                 System.out.println("BBM: running file migration...");
-                List<com.hederahashgraph.api.proto.java.FileID> fileIds = new ArrayList<>();
-                try {
-                    fss.get()
-                            .extractVirtualMapData(
-                                    AdHocThreadManager.getStaticThreadManager(),
-                                    entry -> {
-                                        fileIds.add(com.hederahashgraph.api.proto.java.FileID.newBuilder()
-                                                .setFileNum(entry.left().getEntityNumCode())
-                                                .build());
-                                    },
-                                    1);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-                fileIds.forEach(fromFileId -> {
+                var allFileIds = extractFileIds(fss.get());
+                var migratedFileIds = new ArrayList<Long>();
+                allFileIds.forEach(fromFileIdRaw -> {
+                    var fromFileId = com.hederahashgraph.api.proto.java.FileID.newBuilder().setFileNum(fromFileIdRaw).build();
                     var fromFileMeta = fileAttrs.get(fromFileId);
+                    // Note: if the file meta is null, then this file is more specialized
+                    // (e.g. contract bytecode) and will be migrated elsewhere
                     if (fromFileMeta != null) {
-                        var toFile = FileServiceStateTranslator.stateToPbj(
+                        File toFile = FileServiceStateTranslator.stateToPbj(
                                 fileContents.get(fromFileId), fromFileMeta, fromFileId);
                         ts.put(
                                 FileID.newBuilder()
                                         .fileNum(fromFileId.getFileNum())
                                         .build(),
                                 toFile);
-                    } else {
-                        // todo: copy over contract bytecode
-                        System.out.println("BBM: WARN: no meta for fileid: " + fromFileId);
+                        migratedFileIds.add(fromFileIdRaw);
                     }
                 });
 
@@ -114,8 +102,23 @@ public final class FileServiceImpl implements FileService {
                 fileContents = null;
                 fileAttrs = null;
 
-                System.out.println("BBM:finished file migration");
+                System.out.println("BBM:finished file migration. Migrated files: " + migratedFileIds);
             }
         });
+    }
+
+    private List<Long> extractFileIds(VirtualMapLike<VirtualBlobKey, VirtualBlobValue> fileStorage) {
+        final var fileIds = new ArrayList<Long>();
+        try {
+            fileStorage.extractVirtualMapData(
+                            AdHocThreadManager.getStaticThreadManager(),
+                            entry -> {
+                                fileIds.add((long) entry.left().getEntityNumCode());
+                            },
+                            1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return fileIds;
     }
 }
