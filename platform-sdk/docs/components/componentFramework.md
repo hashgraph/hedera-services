@@ -62,7 +62,7 @@ If a component is wired to another component such that data is passed from one t
 is scheduling the next component's task.
 
 The details of how a task is scheduled changes with the task scheduler type. Some examples of such scheduling include
-adding the task to a concurrent queue which a dedicated thread pulls from, or submitting the task to the `ForkJoinPoin`.
+adding the task to a concurrent queue which a dedicated thread pulls from, or submitting the task to the `ForkJoinPool`.
 The Direct task scheduler does not really "schedule" at all; rather, it executes the task on the calling thread
 immediately. The type of task scheduler determines the concurrency of the tasks. See `TaskSchedulerType.java` for a
 complete list of scheduler types, descriptions, and limitations. Below is a diagram that illustrates the threads of
