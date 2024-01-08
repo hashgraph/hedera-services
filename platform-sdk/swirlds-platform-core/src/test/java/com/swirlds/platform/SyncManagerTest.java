@@ -84,7 +84,7 @@ class SyncManagerTest {
 
             syncManager = new SyncManagerImpl(
                     platformContext,
-                    () -> 0L,
+                    hashgraph::getEventIntakeQueueSize,
                     new FallenBehindManagerImpl(
                             addressBook,
                             selfId,

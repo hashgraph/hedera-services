@@ -30,6 +30,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -48,6 +49,7 @@ import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.wiring.InOrderLinkerWiring;
 import com.swirlds.platform.wiring.LinkedEventIntakeWiring;
 import com.swirlds.platform.wiring.PlatformSchedulers;
+import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,6 +67,7 @@ public class TestIntake implements LoadableFromSignedState {
 
     private final ConsensusConfig consensusConfig;
 
+    private final EventHasherWiring hasherWiring;
     private final InOrderLinkerWiring linkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
 
@@ -88,6 +91,10 @@ public class TestIntake implements LoadableFromSignedState {
         final WiringModel model = WiringModel.create(platformContext, time);
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
+        final EventHasher eventHasher = new EventHasher(platformContext);
+        hasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
+        hasherWiring.bind(eventHasher);
+
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final InOrderLinker linker = new InOrderLinker(platformContext, time, intakeEventCounter);
         linkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
@@ -110,6 +117,7 @@ public class TestIntake implements LoadableFromSignedState {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
 
+        hasherWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
         linkedEventIntakeWiring
                 .nonAncientEventWindowOutput()
@@ -124,7 +132,7 @@ public class TestIntake implements LoadableFromSignedState {
      * @param event the event to add
      */
     public void addEvent(@NonNull final GossipEvent event) {
-        linkerWiring.eventInput().put(event);
+        hasherWiring.eventInput().put(event);
     }
 
     /**

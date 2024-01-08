@@ -193,19 +193,15 @@ public class SyncNode {
      */
     public void drainReceivedEventQueue() {
         receivedEventQueue.drainTo(receivedEvents);
-        receivedEvents.forEach(e -> CryptographyHolder.get().digestSync(((GossipEvent) e).getHashedData()));
+        receivedEvents.forEach(e -> CryptographyHolder.get().digestSync((e).getHashedData()));
     }
 
     /**
      * Creates a new instance of {@link ShadowGraphSynchronizer} with the current {@link SyncNode} settings and
      * returns it.
      */
-    public ShadowGraphSynchronizer getSynchronizer() throws InterruptedException {
+    public ShadowGraphSynchronizer getSynchronizer() {
         final Consumer<GossipEvent> eventHandler = event -> {
-            if (event.getHashedData().getHash() == null) {
-                throw new IllegalStateException("expected event to be hashed on the gossip thread");
-            }
-
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
                     Thread.sleep(sleepAfterEventReadMillis.get());
