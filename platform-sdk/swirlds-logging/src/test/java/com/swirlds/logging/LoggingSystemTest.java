@@ -119,17 +119,17 @@ public class LoggingSystemTest {
         final boolean rootNullWarnEnabled = loggingSystem.isEnabled(null, Level.WARN, null);
         final boolean rootNullErrorEnabled = loggingSystem.isEnabled(null, Level.ERROR, null);
 
-        final boolean testTraceEnabled = loggingSystem.isEnabled("test", Level.TRACE, null);
-        final boolean testDebugEnabled = loggingSystem.isEnabled("test", Level.DEBUG, null);
-        final boolean testInfoEnabled = loggingSystem.isEnabled("test", Level.INFO, null);
-        final boolean testWarnEnabled = loggingSystem.isEnabled("test", Level.WARN, null);
-        final boolean testErrorEnabled = loggingSystem.isEnabled("test", Level.ERROR, null);
+        final boolean testTraceEnabled = loggingSystem.isEnabled("test.Class", Level.TRACE, null);
+        final boolean testDebugEnabled = loggingSystem.isEnabled("test.Class", Level.DEBUG, null);
+        final boolean testInfoEnabled = loggingSystem.isEnabled("test.Class", Level.INFO, null);
+        final boolean testWarnEnabled = loggingSystem.isEnabled("test.Class", Level.WARN, null);
+        final boolean testErrorEnabled = loggingSystem.isEnabled("test.Class", Level.ERROR, null);
 
-        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test  ", Level.TRACE, null);
-        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test  ", Level.DEBUG, null);
-        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test  ", Level.INFO, null);
-        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test  ", Level.WARN, null);
-        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test  ", Level.ERROR, null);
+        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test.Class  ", Level.TRACE, null);
+        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test.Class  ", Level.DEBUG, null);
+        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test.Class  ", Level.INFO, null);
+        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test.Class  ", Level.WARN, null);
+        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test.Class  ", Level.ERROR, null);
 
         // then
         Assertions.assertFalse(rootTraceEnabled, "INFO should be default level");
@@ -174,8 +174,8 @@ public class LoggingSystemTest {
         final boolean rootEnabled = loggingSystem.isEnabled("", null, null);
         final boolean rootTrimEnabled = loggingSystem.isEnabled("  ", null, null);
         final boolean rootNullEnabled = loggingSystem.isEnabled(null, null, null);
-        final boolean testEnabled = loggingSystem.isEnabled("test", null, null);
-        final boolean testBlankEnabled = loggingSystem.isEnabled("  test  ", null, null);
+        final boolean testEnabled = loggingSystem.isEnabled("test.Class", null, null);
+        final boolean testBlankEnabled = loggingSystem.isEnabled("  test.Class  ", null, null);
 
         // then
         Assertions.assertTrue(rootEnabled, "For a NULL level all must be enabled");
@@ -193,8 +193,8 @@ public class LoggingSystemTest {
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
-        loggingSystem.isEnabled("test", Level.TRACE, null); // no logged error
-        loggingSystem.isEnabled("test", null, null); // 1 logged error
+        loggingSystem.isEnabled("test.Class", Level.TRACE, null); // no logged error
+        loggingSystem.isEnabled("test.Class", null, null); // 1 logged error
         loggingSystem.isEnabled(null, Level.TRACE, null); // 1 logged error
         loggingSystem.isEnabled(null, null, null); // 2 logged errors
 
@@ -230,7 +230,7 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("logging.level", "ERROR")
-                .withValue("logging.level.test", "TRACE")
+                .withValue("logging.level.test.Class", "TRACE")
                 .withConverter(ConfigLevel.class, new ConfigLevelConverter())
                 .getOrCreateConfig();
 
@@ -255,17 +255,17 @@ public class LoggingSystemTest {
         final boolean rootTrimWarnEnabled = loggingSystem.isEnabled("  ", Level.WARN, null);
         final boolean rootTrimErrorEnabled = loggingSystem.isEnabled("  ", Level.ERROR, null);
 
-        final boolean testTraceEnabled = loggingSystem.isEnabled("test", Level.TRACE, null);
-        final boolean testDebugEnabled = loggingSystem.isEnabled("test", Level.DEBUG, null);
-        final boolean testInfoEnabled = loggingSystem.isEnabled("test", Level.INFO, null);
-        final boolean testWarnEnabled = loggingSystem.isEnabled("test", Level.WARN, null);
-        final boolean testErrorEnabled = loggingSystem.isEnabled("test", Level.ERROR, null);
+        final boolean testTraceEnabled = loggingSystem.isEnabled("test.Class", Level.TRACE, null);
+        final boolean testDebugEnabled = loggingSystem.isEnabled("test.Class", Level.DEBUG, null);
+        final boolean testInfoEnabled = loggingSystem.isEnabled("test.Class", Level.INFO, null);
+        final boolean testWarnEnabled = loggingSystem.isEnabled("test.Class", Level.WARN, null);
+        final boolean testErrorEnabled = loggingSystem.isEnabled("test.Class", Level.ERROR, null);
 
-        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test  ", Level.TRACE, null);
-        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test  ", Level.DEBUG, null);
-        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test  ", Level.INFO, null);
-        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test  ", Level.WARN, null);
-        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test  ", Level.ERROR, null);
+        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test.Class  ", Level.TRACE, null);
+        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test.Class  ", Level.DEBUG, null);
+        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test.Class  ", Level.INFO, null);
+        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test.Class  ", Level.WARN, null);
+        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test.Class  ", Level.ERROR, null);
 
         // then
         Assertions.assertFalse(rootTraceEnabled, "ERROR is configured for root");
@@ -369,7 +369,7 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final LoggerImpl logger = loggingSystem.getLogger("test");
+        final LoggerImpl logger = loggingSystem.getLogger("test.Class");
         EmergencyLoggerImpl.getInstance().publishLoggedEvents(); // reset Emergency logger to remove the init logging
 
         // when
@@ -500,7 +500,7 @@ public class LoggingSystemTest {
         Context.getGlobalContext().add("global", "global-value");
         logger.withMarker("TRACE_MARKER")
                 .withContext("level", "trace")
-                .withContext("context", "unit-test")
+                .withContext("context", "unit-test.Class")
                 .trace(
                         "trace-message {}",
                         new RuntimeException("trace-error"),
@@ -510,7 +510,7 @@ public class LoggingSystemTest {
                 Context.getThreadLocalContext().add("thread-local", "thread-local-value")) {
             logger.withMarker("INFO_MARKER")
                     .withContext("level", "info")
-                    .withContext("context", "unit-test")
+                    .withContext("context", "unit-test.Class")
                     .info("info-message {}", new RuntimeException("info-error"), "ARG");
         } catch (final Exception e) {
             Assertions.fail();
@@ -520,7 +520,7 @@ public class LoggingSystemTest {
 
         logger.withMarker("INFO_MARKER")
                 .withContext("level", "info")
-                .withContext("context", "unit-test")
+                .withContext("context", "unit-test.Class")
                 .info("info-message2 {}", new RuntimeException("info-error2"), "ARG2");
 
         // then
@@ -533,7 +533,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals(
                 Map.of(
                         "context",
-                        "unit-test",
+                        "unit-test.Class",
                         "global",
                         "global-value",
                         "thread-local",
@@ -553,7 +553,7 @@ public class LoggingSystemTest {
         final LogEvent event2 = loggedEvents.get(1);
         Assertions.assertEquals("info-message2 ARG2", event2.message().getMessage());
         Assertions.assertEquals(Level.INFO, event2.level());
-        Assertions.assertEquals(Map.of("context", "unit-test", "level", "info"), event2.context());
+        Assertions.assertEquals(Map.of("context", "unit-test.Class", "level", "info"), event2.context());
         Assertions.assertEquals("test-logger", event2.loggerName());
         Assertions.assertEquals(new Marker("INFO_MARKER"), event2.marker());
         Assertions.assertEquals(Thread.currentThread().getName(), event2.threadName());
@@ -585,7 +585,7 @@ public class LoggingSystemTest {
                         "message",
                         new RuntimeException("error"),
                         new Marker("INFO_MARKER"),
-                        Map.of("context", "unit-test", "level", "info"));
+                        Map.of("context", "unit-test.Class", "level", "info"));
         Context.getGlobalContext().add("new-global", "new-global-value");
         LogEvent event2 = loggingSystem
                 .getLogEventFactory()
@@ -605,7 +605,7 @@ public class LoggingSystemTest {
                         "message",
                         new RuntimeException("error"),
                         new Marker("INFO_MARKER"),
-                        Map.of("context", "unit-test"));
+                        Map.of("context", "unit-test.Class"));
 
         // when
         loggingSystem.accept(event1);
@@ -639,7 +639,7 @@ public class LoggingSystemTest {
                                 event4.message(),
                                 event4.throwable(),
                                 event4.marker(),
-                                Map.of("context", "unit-test", "new-global", "new-global-value")),
+                                Map.of("context", "unit-test.Class", "new-global", "new-global-value")),
                 loggedEvents.get(2));
     }
 
