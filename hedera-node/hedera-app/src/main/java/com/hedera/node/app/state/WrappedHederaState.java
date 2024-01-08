@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A {@link HederaState} that wraps another {@link HederaState} and provides a {@link #commit()} method that
@@ -30,7 +30,7 @@ import java.util.Map;
 public class WrappedHederaState implements HederaState {
 
     private final HederaState delegate;
-    private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
+    private final Map<String, WrappedWritableStates> writableStatesMap = new ConcurrentHashMap<>();
 
     /**
      * Constructs a {@link WrappedHederaState} that wraps the given {@link HederaState}.

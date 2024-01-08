@@ -28,12 +28,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures. */
 public class FakeHederaState implements HederaState {
     // Key is Service, value is Map of state name to HashMap or List or Object (depending on state type)
-    private final Map<String, WritableStates> states = new HashMap<>();
+    private final Map<String, WritableStates> states = new ConcurrentHashMap<>();
 
     /** Adds to the service with the given name the {@link ReadableKVState} {@code states} */
     @SuppressWarnings({"java:S3740", "unchecked"}) // provide the parameterized type for the generic state variable

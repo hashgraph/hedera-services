@@ -67,6 +67,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -153,7 +154,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * Maintains a map of service name to the {@link WritableStates} for that service. This is
      * lazily populated as needed.
      */
-    private final Map<String, MerkleWritableStates> writableStatesMap = new HashMap<>();
+    private final Map<String, MerkleWritableStates> writableStatesMap = new ConcurrentHashMap<>();
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
@@ -290,6 +291,18 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                 }
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return writableStatesMap.computeIfAbsent(serviceName, s -> {
+            final var stateMetadata = services.get(s);
+            return stateMetadata == null ? new MerkleWritableStates(Map.of()) : new MerkleWritableStates(stateMetadata);
+        });
     }
 
     /**
@@ -470,9 +483,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         MerkleStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             this.stateMetadata = requireNonNull(stateMetadata);
             this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
-            this.kvInstances = new HashMap<>();
-            this.singletonInstances = new HashMap<>();
-            this.queueInstances = new HashMap<>();
+            this.kvInstances = new ConcurrentHashMap<>();
+            this.singletonInstances = new ConcurrentHashMap<>();
+            this.queueInstances = new ConcurrentHashMap<>();
         }
 
         @NonNull

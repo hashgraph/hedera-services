@@ -26,8 +26,8 @@ import com.hedera.node.app.state.WrappedHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The default implementation of {@link SavepointStack}.
@@ -36,7 +36,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     private final HederaState root;
     private final Deque<WrappedHederaState> stack = new ArrayDeque<>();
-    private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
+    private final Map<String, WritableStatesStack> writableStatesMap = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.
@@ -82,6 +82,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         while (!stack.isEmpty()) {
             stack.pop().commit();
         }
+        setupSavepoint(root);
     }
 
     /**
