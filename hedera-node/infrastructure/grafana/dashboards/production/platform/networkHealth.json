@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM",
-      "label": "grafanacloud-swirldslabsproduction-prom",
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
       "description": "",
       "type": "datasource",
       "pluginId": "prometheus",
@@ -17,7 +17,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "description": "The maximum size during a sampling period of the event intake queue.",
         "fieldConfig": {
@@ -26,6 +26,7 @@
               "mode": "palette-classic"
             },
             "custom": {
+              "axisBorderShow": false,
               "axisCenteredZero": false,
               "axisColorMode": "text",
               "axisLabel": "# of events",
@@ -97,7 +98,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"}",
+            "expr": "internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"}",
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
@@ -118,7 +119,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "description": "",
         "fieldConfig": {
@@ -148,6 +149,8 @@
           "overrides": []
         },
         "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
           "orientation": "auto",
           "reduceOptions": {
             "calcs": [],
@@ -157,7 +160,7 @@
           "showThresholdLabels": false,
           "showThresholdMarkers": true
         },
-        "pluginVersion": "10.2.0-59542pre",
+        "pluginVersion": "10.3.0-63137",
         "targets": [
           {
             "datasource": {
@@ -166,7 +169,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "min(min_over_time(internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+            "expr": "min(min_over_time(internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
@@ -182,7 +185,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "avg(internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"})",
+            "expr": "avg(internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"})",
             "fullMetaSearch": false,
             "hide": false,
             "includeNullMetadata": true,
@@ -199,7 +202,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "max(max_over_time(internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+            "expr": "max(max_over_time(internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
             "fullMetaSearch": false,
             "hide": false,
             "includeNullMetadata": true,
@@ -221,7 +224,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "description": "The average number of events in the consensus queue (q2) waiting to be handled.",
         "fieldConfig": {
@@ -230,6 +233,7 @@
               "mode": "palette-classic"
             },
             "custom": {
+              "axisBorderShow": false,
               "axisCenteredZero": false,
               "axisColorMode": "text",
               "axisLabel": "# of events",
@@ -301,7 +305,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "internal_consEventsMAX{environment=\"$Environment\", node_id=~\"$NodeID\"}",
+            "expr": "internal_consEventsMAX{environment=\"$network\", node_id=~\"$NodeID\"}",
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
@@ -327,7 +331,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.2.0-60853"
+      "version": "10.3.0-63588"
     },
     {
       "type": "datasource",
@@ -378,7 +382,7 @@
         "Platform"
       ],
       "targetBlank": false,
-      "title": "Platform Dashboards",
+      "title": "Platform Dashboard",
       "tooltip": "",
       "type": "dashboards",
       "url": ""
@@ -389,7 +393,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -493,19 +497,20 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "platform_PlatformStatus{environment=\"$Environment\"}",
+          "expr": "platform_PlatformStatus{environment=\"$network\"}",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -522,7 +527,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The fraction (out of 1.0) of the network that is alive and healthy, weighted by consensus weight.",
       "fieldConfig": {
@@ -531,11 +536,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "axisSoftMax": 1,
             "axisSoftMin": 0.5,
             "barAlignment": 0,
@@ -608,11 +613,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "platform_healthyNetworkFraction_fraction{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}",
+          "expr": "platform_healthyNetworkFraction_fraction{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -628,7 +633,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -675,18 +680,19 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg(last_over_time(platform_healthyNetworkFraction_fraction{environment=\"$Environment\", node_id=~\"$NodeID\", type=\"mean\"}[$__interval]))",
+          "expr": "avg(last_over_time(platform_healthyNetworkFraction_fraction{environment=\"$network\", node_id=~\"$NodeID\", type=\"mean\"}[$__interval]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -702,7 +708,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The number of app transactions added to the hashgraph per second by each node via deduplicated events.",
       "fieldConfig": {
@@ -711,11 +717,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -786,11 +792,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "platform_trans_per_sec{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}",
+          "expr": "platform_trans_per_sec{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -806,7 +812,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The average number of app transactions added to the hashgraph per second by the network via deduplicated events.",
       "fieldConfig": {
@@ -854,18 +860,19 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg(platform_trans_per_sec{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"})",
+          "expr": "avg(avg_over_time(platform_trans_per_sec{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -881,7 +888,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The time from creating an event to knowing its consensus (in seconds).",
       "fieldConfig": {
@@ -890,11 +897,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "sec",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -926,7 +933,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -967,12 +975,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "platform_secC2C{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}",
+          "expr": "platform_secC2C{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -990,7 +998,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "Of the secC2C values reported by each node, the minimum, average, and maximum.",
       "fieldConfig": {
@@ -1003,7 +1011,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1035,19 +1044,20 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "min(min_over_time(platform_secC2C{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "min(min_over_time(platform_secC2C{environment=\"$network\", type=\"min\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1059,12 +1069,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "avg(platform_secC2C{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"})",
+          "expr": "avg(platform_secC2C{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1077,12 +1087,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(max_over_time(platform_secC2C{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "max(max_over_time(platform_secC2C{environment=\"$network\", type=\"max\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1099,7 +1109,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The number of events per second created by each node in the network.",
       "fieldConfig": {
@@ -1108,11 +1118,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -1144,15 +1154,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "semi-dark-red"
+                "color": "semi-dark-red",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 5
+                "value": 10
               },
               {
                 "color": "dark-green",
-                "value": 10
+                "value": 20
               }
             ]
           }
@@ -1182,11 +1193,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "platform_cEvents_per_sec{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}",
+          "expr": "platform_cEvents_per_sec{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1202,7 +1213,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The average number of events per second created by each node.",
       "fieldConfig": {
@@ -1210,21 +1221,21 @@
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": null
               },
               {
                 "color": "dark-yellow",
-                "value": 5
+                "value": 10
               },
               {
                 "color": "green",
-                "value": 10
+                "value": 20
               }
             ]
           }
@@ -1250,18 +1261,19 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "min(min_over_time(platform_cEvents_per_sec{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "min(min_over_time(platform_cEvents_per_sec{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1274,11 +1286,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg(platform_cEvents_per_sec{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"})",
+          "expr": "avg(platform_cEvents_per_sec{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1290,11 +1302,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(max_over_time(platform_cEvents_per_sec{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "max(max_over_time(platform_cEvents_per_sec{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1350,7 +1362,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1363,7 +1375,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1395,18 +1408,19 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "min(min_over_time(internal_consEvents{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "min(min_over_time(internal_consEvents{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1418,11 +1432,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg(internal_consEvents{environment=\"$Environment\", node_id=~\"$NodeID\"})",
+          "expr": "avg(internal_consEvents{environment=\"$network\", node_id=~\"$NodeID\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1435,11 +1449,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(max_over_time(internal_consEventsMAX{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "max(max_over_time(internal_consEventsMAX{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1456,7 +1470,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The average time to handle a consensus transaction in SwirldState.handleTransaction()",
       "fieldConfig": {
@@ -1465,11 +1479,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "seconds",
+            "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
@@ -1485,8 +1499,7 @@
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
-              "log": 2,
-              "type": "log"
+              "type": "linear"
             },
             "showPoints": "auto",
             "spanNulls": false,
@@ -1503,7 +1516,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1514,7 +1528,8 @@
                 "value": 0.001
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
@@ -1544,11 +1559,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "internal_secTransH{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}",
+          "expr": "internal_secTransH{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1565,20 +1580,21 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 7,
+          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1589,7 +1605,8 @@
                 "value": 0.0001
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
@@ -1612,18 +1629,19 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "min(min_over_time(internal_secTransH{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "min(min_over_time(internal_secTransH{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1635,11 +1653,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg(internal_secTransH{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"})",
+          "expr": "avg(internal_secTransH{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1652,11 +1670,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(max_over_time(internal_secTransH{environment=\"$Environment\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "max(max_over_time(internal_secTransH{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1673,7 +1691,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "The average time it takes to perform preHandle.",
       "fieldConfig": {
@@ -1682,11 +1700,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "microseconds",
+            "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -1718,14 +1736,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -1752,11 +1772,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "internal_preHandleMicros{environment=\"$Environment\", node_id=~\"$NodeID\"}",
+          "expr": "internal_preHandleMicros{environment=\"$network\", node_id=~\"$NodeID\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1772,31 +1792,33 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 7,
+          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 300
+                "value": 30000
               },
               {
                 "color": "red",
-                "value": 500
+                "value": 50000
               }
             ]
-          }
+          },
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -1819,18 +1841,19 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "min(min_over_time(internal_preHandleMicros{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "min(min_over_time(internal_preHandleMicros{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1843,11 +1866,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "avg(internal_preHandleMicros{environment=\"$Environment\", node_id=~\"$NodeID\"})",
+          "expr": "avg(internal_preHandleMicros{environment=\"$network\", node_id=~\"$NodeID\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1860,11 +1883,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(max_over_time(internal_preHandleMicros{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+          "expr": "max(max_over_time(internal_preHandleMicros{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1880,7 +1903,7 @@
     }
   ],
   "refresh": "",
-  "schemaVersion": 38,
+  "schemaVersion": 39,
   "tags": [
     "Platform"
   ],
@@ -1890,18 +1913,19 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
-        "definition": "label_values(environment)",
-        "description": "The environment to pull data from (i.e. mainnet, testnet, etc).",
+        "definition": "label_values(platform_trans_per_sec{network!~\"nmt.*\"},environment)",
+        "description": "The network to pull data from (i.e. mainnet, testnet, etc).",
         "hide": 0,
         "includeAll": false,
-        "label": "Environment",
+        "label": "Network",
         "multi": false,
-        "name": "Environment",
+        "name": "network",
         "options": [],
         "query": {
-          "query": "label_values(environment)",
+          "qryType": 1,
+          "query": "label_values(platform_trans_per_sec{network!~\"nmt.*\"},environment)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -1915,7 +1939,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "definition": "label_values(node_id)",
         "hide": 0,
@@ -1944,6 +1968,6 @@
   "timezone": "",
   "title": "Network Health",
   "uid": "ec9413c6-6f17-49fc-951b-51cbc21a1eef",
-  "version": 57,
+  "version": 11,
   "weekStart": ""
 }

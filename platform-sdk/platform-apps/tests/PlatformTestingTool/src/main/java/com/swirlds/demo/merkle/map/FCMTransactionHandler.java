@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package com.swirlds.demo.merkle.map;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.demo.merkle.map.FCMTransactionPool.DEMO_TRANSACTION_INFO;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLED;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
@@ -355,7 +356,7 @@ public class FCMTransactionHandler {
             final long timestamp,
             final EntityType entityType) {
         if (map == null) {
-            logger.error(ERROR, "accountMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountMap is null");
             return;
         }
 
@@ -428,7 +429,10 @@ public class FCMTransactionHandler {
             MapKey key, MerkleMap<MapKey, MapValueData> map, ExpectedFCMFamily expectedMap) {
         if (!map.containsKey(key)) {
             if (!expectedMap.entityHasBeenRemoved(key)) {
-                logger.error(ERROR, "Entity for {} was missing from map but was not deleted by prior transaction", key);
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Entity for {} was missing from map but was not deleted by prior transaction",
+                        key);
             }
             return true;
         }
@@ -439,7 +443,10 @@ public class FCMTransactionHandler {
             MapKey key, MerkleMap<MapKey, MapValueFCQ<TransactionRecord>> map, ExpectedFCMFamily expectedMap) {
         if (!map.containsKey(key)) {
             if (!expectedMap.entityHasBeenRemoved(key)) {
-                logger.error(ERROR, "Entity for {} was missing from map but was not deleted by prior transaction", key);
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Entity for {} was missing from map but was not deleted by prior transaction",
+                        key);
             }
             return true;
         }
@@ -454,7 +461,7 @@ public class FCMTransactionHandler {
             final long timestamp,
             final EntityType entityType) {
         if (map == null) {
-            logger.error(ERROR, "accountMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountMap is null");
             return;
         }
         final MapKey key =
@@ -483,7 +490,7 @@ public class FCMTransactionHandler {
             final long timestamp,
             final EntityType entityType) {
         if (map == null) {
-            logger.error(ERROR, "accountMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountMap is null");
             return;
         }
         final MapKey key =
@@ -518,7 +525,7 @@ public class FCMTransactionHandler {
             final EntityType entityType)
             throws IOException {
         if (map == null) {
-            logger.error(ERROR, "accountMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountMap is null");
             return;
         }
         final MapKey key =
@@ -589,7 +596,7 @@ public class FCMTransactionHandler {
             final Set<MapKey> accountsWithExpiringRecords)
             throws IOException {
         if (map == null) {
-            logger.error(ERROR, "accountMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountMap is null");
             return;
         }
         final MapKey key = new MapKey(assortedFCQ.getShardID(), assortedFCQ.getRealmID(), assortedFCQ.getAccountID());
@@ -698,7 +705,7 @@ public class FCMTransactionHandler {
             final BlockingQueue<ExpirationRecordEntry> expirationQueue,
             final Set<MapKey> accountsWithExpiringRecords) {
         if (map == null) {
-            logger.error(ERROR, "accountFCQMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountFCQMap is null");
             return;
         }
         final MapKey fromKey = new MapKey(
@@ -768,7 +775,8 @@ public class FCMTransactionHandler {
 
         if (fromValue == null || toValue == null) {
             logger.error(
-                    ERROR, "FCQ Transfer Entities were checked for presence in map but one or more came back null");
+                    EXCEPTION.getMarker(),
+                    "FCQ Transfer Entities were checked for presence in map but one or more came back null");
             return false;
         }
 
@@ -802,7 +810,7 @@ public class FCMTransactionHandler {
             final BlockingQueue<ExpirationRecordEntry> expirationQueue,
             final Set<MapKey> accountsWithExpiringRecords) {
         if (map == null) {
-            logger.error(ERROR, "accountFCQMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountFCQMap is null");
             return;
         }
         final MapKey key = new MapKey(
@@ -845,7 +853,7 @@ public class FCMTransactionHandler {
         final MapValueFCQ<TransactionRecord> value = map.getForModify(key);
 
         if (value == null) {
-            logger.error(ERROR, "FCQ: from Key {} for UpdateFCQ doesn't exist", () -> key);
+            logger.error(EXCEPTION.getMarker(), "FCQ: from Key {} for UpdateFCQ doesn't exist", () -> key);
             return false;
         }
 
@@ -865,7 +873,7 @@ public class FCMTransactionHandler {
             final long timestamp,
             final EntityType entityType) {
         if (map == null) {
-            logger.error(ERROR, "accountFCQMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountFCQMap is null");
             return;
         }
 
@@ -899,7 +907,7 @@ public class FCMTransactionHandler {
             final EntityType entityType) {
 
         if (accountFCQMap == null) {
-            logger.error(ERROR, "accountFCQMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountFCQMap is null");
             return;
         }
 
@@ -934,7 +942,7 @@ public class FCMTransactionHandler {
 
         try {
             if (value == null) {
-                logger.error(ERROR, "FCQ: Key {} for delete doesn't exist", () -> key);
+                logger.error(EXCEPTION.getMarker(), "FCQ: Key {} for delete doesn't exist", () -> key);
                 return false;
             }
 
@@ -947,7 +955,7 @@ public class FCMTransactionHandler {
 
             if (index >= recordsSize) {
                 logger.error(
-                        DEMO_TRANSACTION_INFO,
+                        EXCEPTION.getMarker(),
                         "FCQ: Key {} for delete at index {} is out of bounds for list size {}",
                         key,
                         index,
@@ -978,7 +986,7 @@ public class FCMTransactionHandler {
         final MapKey key = new MapKey(
                 createAccountFCQ.getShardID(), createAccountFCQ.getRealmID(), createAccountFCQ.getAccountID());
         if (map == null) {
-            logger.error(ERROR, "accountFCQMap is null");
+            logger.error(EXCEPTION.getMarker(), "accountFCQMap is null");
             return;
         }
 

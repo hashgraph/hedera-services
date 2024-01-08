@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -73,7 +74,8 @@ public class TargetNetworkPrep extends HapiSuite {
         return List.of(ensureSystemStateAsExpectedWithSystemDefaultFiles());
     }
 
-    private HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
+    @HapiTest
+    final HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
         final var snapshot800 = "800startBalance";

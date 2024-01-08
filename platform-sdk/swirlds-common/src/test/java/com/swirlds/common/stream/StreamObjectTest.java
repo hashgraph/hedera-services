@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStre
 import static com.swirlds.common.stream.internal.StreamValidationResult.OK;
 import static com.swirlds.common.stream.internal.StreamValidationResult.SIG_FILE_COUNT_MISMATCH;
 import static com.swirlds.common.stream.internal.StreamValidationResult.START_HASH_NOT_MATCH;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -111,7 +112,7 @@ class StreamObjectTest {
         System.out.println(Arrays.asList(sigFiles));
         if (streamFiles.size() != sigFiles.size()) {
             logger.error(
-                    LOGM_EXCEPTION,
+                    EXCEPTION.getMarker(),
                     "streamFiles size: {} doesn't match sigFiles size: {}",
                     streamFiles.size(),
                     sigFiles.size());
@@ -124,7 +125,7 @@ class StreamObjectTest {
                     LinkedObjectStreamUtilities.readStartRunningHashFromStreamFile(streamFiles.get(0), streamType);
             if (!startRunningHash.equals(initialHash)) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         "the first stream file {} its startRunningHash {} doesn't match expected: {}",
                         streamFiles.get(0).getName(),
                         startRunningHash,
@@ -138,7 +139,7 @@ class StreamObjectTest {
                     streamFiles.get(i), sigFiles.get(i), publicKey, streamType);
             if (result != OK) {
                 logger.error(
-                        LOGM_EXCEPTION,
+                        EXCEPTION.getMarker(),
                         "streamFile: {}, sigFile: {}, validateResult: {}",
                         streamFiles.get(i),
                         sigFiles.get(i),

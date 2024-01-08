@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,35 +17,24 @@
 package com.swirlds.platform.components;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * This class is responsible for adding events to {@link Consensus} and notifying event observers, including
- * {@link ConsensusRoundHandler} and {@link com.swirlds.platform.eventhandling.PreConsensusEventHandler}.
- * <p>
- * This class differs from {@link EventIntake} in that it accepts events that have already been linked with their
- * parents. This version of event intake was written to be compatible with the new intake pipeline, whereas
- * {@link EventIntake} works with the legacy intake monolith.
+ * This class is responsible for adding events to {@link Consensus} and notifying event observers.
  */
 public class LinkedEventIntake {
     /**
@@ -63,11 +52,15 @@ public class LinkedEventIntake {
      */
     private final ShadowGraph shadowGraph;
 
-    private final ExecutorService prehandlePool;
-    private final Consumer<EventImpl> prehandleEvent;
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
 
     private final EventIntakeMetrics metrics;
     private final Time time;
+    /**
+     * FUTURE WORK: If nothing else is using it, delete platformContext when we switch to permanently using birthRound
+     * for determining Ancient.
+     */
+    private final PlatformContext platformContext;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -84,47 +77,33 @@ public class LinkedEventIntake {
     /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param threadManager      creates new threading resources
-     * @param time               provides the wall clock time
-     * @param consensusSupplier  provides the current consensus instance
-     * @param dispatcher         invokes event related callbacks
-     * @param shadowGraph        tracks events in the hashgraph
-     * @param prehandleEvent     prehandles transactions in an event
-     * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
+     * @param platformContext          the platform context
+     * @param time                     provides the wall clock time
+     * @param consensusSupplier        provides the current consensus instance
+     * @param dispatcher               invokes event related callbacks
+     * @param shadowGraph              tracks events in the hashgraph
+     * @param latestEventTipsetTracker tracks the tipset of the latest self event, null if feature is not enabled
+     * @param intakeEventCounter       tracks the number of events from each peer that are currently in the intake
+     *                                 pipeline
      */
     public LinkedEventIntake(
             @NonNull final PlatformContext platformContext,
-            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> prehandleEvent,
+            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final IntakeEventCounter intakeEventCounter) {
-
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
-        this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+        this.latestEventTipsetTracker = latestEventTipsetTracker;
 
         this.paused = false;
-
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-
-        final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
-
-        prehandlePool = new ThreadPoolExecutor(
-                eventConfig.prehandlePoolSize(),
-                eventConfig.prehandlePoolSize(),
-                0L,
-                TimeUnit.MILLISECONDS,
-                prehandlePoolQueue,
-                threadManager.createThreadFactory("platform", "txn-prehandle"));
-
-        metrics = new EventIntakeMetrics(platformContext, prehandlePoolQueue::size);
+        metrics = new EventIntakeMetrics(platformContext, () -> -1);
     }
 
     /**
@@ -152,10 +131,8 @@ public class LinkedEventIntake {
 
             dispatcher.preConsensusEvent(event);
 
-            final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
-
-            // Prehandle transactions on the thread pool.
-            prehandlePool.submit(buildPrehandleTask(event));
+            final long minimumGenerationNonAncientBeforeAdding =
+                    consensusSupplier.get().getMinGenerationNonAncient();
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
@@ -166,10 +143,20 @@ public class LinkedEventIntake {
                 consensusRounds.forEach(this::handleConsensus);
             }
 
-            if (consensusSupplier.get().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+            final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
+
+            if (minimumGenerationNonAncient > minimumGenerationNonAncientBeforeAdding) {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
-                handleStale(minGenNonAncientBeforeAdding);
+                handleStale(minimumGenerationNonAncientBeforeAdding);
+                if (latestEventTipsetTracker != null) {
+                    // FUTURE WORK: When this class is refactored, it should not be constructing the
+                    // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
+                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                            consensusSupplier.get().getLastRoundDecided(),
+                            minimumGenerationNonAncient,
+                            platformContext));
+                }
             }
 
             return Objects.requireNonNullElseGet(consensusRounds, List::of);
@@ -185,19 +172,6 @@ public class LinkedEventIntake {
      */
     public void setPaused(final boolean paused) {
         this.paused = paused;
-    }
-
-    /**
-     * Build a task that will prehandle transactions in an event. Executed on a thread pool.
-     *
-     * @param event the event to prehandle
-     */
-    @NonNull
-    private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
-        return () -> {
-            prehandleEvent.accept(event);
-            event.signalPrehandleCompletion();
-        };
     }
 
     /**
@@ -238,7 +212,7 @@ public class LinkedEventIntake {
         // It is critically important that prehandle is always called prior to handleConsensusRound().
 
         final long start = time.nanoTime();
-        consensusRound.forEach(event -> ((EventImpl) event).awaitPrehandleCompletion());
+        consensusRound.forEach(event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
         final long end = time.nanoTime();
         metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 

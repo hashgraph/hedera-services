@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
@@ -37,18 +38,18 @@ public final class ScheduleServiceImpl implements ScheduleService {
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(scheduleSchema());
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(scheduleSchema(version));
     }
 
-    private Schema scheduleSchema() {
+    private Schema scheduleSchema(final SemanticVersion version) {
         // Everything in memory for now
-        return new ScheduleServiceSchema();
+        return new ScheduleServiceSchema(version);
     }
 
     private static final class ScheduleServiceSchema extends Schema {
-        public ScheduleServiceSchema() {
-            super(RELEASE_045_VERSION);
+        public ScheduleServiceSchema(final SemanticVersion version) {
+            super(version);
         }
 
         @SuppressWarnings("rawtypes")

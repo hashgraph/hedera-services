@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ public class RekeySavedStateTreasury extends HapiSuite {
     static final String newTreasuryPassphrase = "passphrase";
     static final String devKeyPemLoc = "devGenesisKeypair.pem";
 
-    private HapiSpec rekeyTreasury() {
+    final HapiSpec rekeyTreasury() {
         final var pemLocForOriginalTreasuryKey = "stabletestnet-account2.pem";
         final var passphraseForOriginalPemLoc = "<SECRET>";
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,9 @@ class CustomExceptionalHaltReasonTest {
     void translatesSameStatusesAsMonoService() {
         assertEquals(ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID, statusFor(SELF_DESTRUCT_TO_SELF));
         assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, statusFor(INVALID_SOLIDITY_ADDRESS));
+        assertEquals(
+                ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED,
+                statusFor(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS));
         assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, statusFor(INVALID_SIGNATURE));
         assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, statusFor(ExceptionalHaltReason.INSUFFICIENT_GAS));
         assertEquals(

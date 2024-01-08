@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,12 @@ package com.hedera.node.app.service.contract.impl.infra;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
@@ -70,13 +69,8 @@ public class HevmStaticTransactionFactory {
         final var op = query.contractCallLocalOrThrow();
         assertValidCall(op);
         final var senderId = op.hasSenderId() ? op.senderIdOrThrow() : payerId;
-        var targetId = op.contractIDOrThrow();
         // For mono-service fidelity, allow calls using 0.0.X id even to contracts with a priority EVM address
-        final var maybeContract =
-                context.createStore(ReadableAccountStore.class).getContractById(targetId);
-        if (maybeContract != null && maybeContract.alias().length() == EVM_ADDRESS_LENGTH_AS_LONG) {
-            targetId = ContractID.newBuilder().evmAddress(maybeContract.alias()).build();
-        }
+        final var targetId = asPriorityId(op.contractIDOrThrow(), context.createStore(ReadableAccountStore.class));
         return new HederaEvmTransaction(
                 senderId, null, targetId, NOT_APPLICABLE, op.functionParameters(), null, 0L, op.gas(), 1L, 0L, null);
     }

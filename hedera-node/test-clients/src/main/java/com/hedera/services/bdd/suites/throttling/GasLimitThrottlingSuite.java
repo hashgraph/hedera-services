@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec txsUnderGasLimitAllowed() {
+    final HapiSpec txsUnderGasLimitAllowed() {
         final var NUM_CALLS = 10;
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("TXsUnderGasLimitAllowed")
@@ -98,7 +98,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec txOverGasLimitThrottled() {
+    final HapiSpec txOverGasLimitThrottled() {
         final Map<String, String> startingProps = new HashMap<>();
         final var MAX_GAS_PER_SECOND = 1_000_001L;
         return defaultHapiSpec("TXOverGasLimitThrottled")

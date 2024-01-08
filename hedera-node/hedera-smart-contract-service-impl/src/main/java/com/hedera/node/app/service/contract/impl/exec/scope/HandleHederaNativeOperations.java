@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,16 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -34,10 +36,13 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A fully-mutable {@link HederaNativeOperations} implemented with a {@link HandleContext}.
@@ -101,15 +106,26 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
+
         // Note the use of the null "verification assistant" callback; we don't want any
         // signing requirements enforced for this synthetic transaction
-        final var childRecordBuilder = context.dispatchChildTransaction(
-                synthTxn, CryptoCreateRecordBuilder.class, null, context.payer(), CHILD);
-        // FUTURE - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
-            throw new AssertionError("Not implemented");
+        try {
+            final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
+                    synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
+            childRecordBuilder.memo(LAZY_CREATION_MEMO);
+
+            final var lazyCreateFees = context.dispatchComputeFees(synthTxn, context.payer());
+            final var finalizationFees = getLazyCreationFinalizationFees();
+            childRecordBuilder.transactionFee(lazyCreateFees.totalFee() + finalizationFees.totalFee());
+
+            return childRecordBuilder.status();
+        } catch (final HandleException e) {
+            // It is critically important we don't let HandleExceptions propagate to the workflow because
+            // it doesn't rollback for contract operations so we can commit gas charges; that is, the
+            // EVM transaction should always either run to completion or (if it must) throw an internal
+            // failure like an IllegalArgumentException---but not a HandleException!
+            return e.getStatus();
         }
-        return OK;
     }
 
     /**
@@ -152,13 +168,26 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      * {@inheritDoc}
      */
     @Override
-    public void trackDeletion(final long deletedNumber, final long beneficiaryNumber) {
-        // TODO - implement after merging upstream
+    public void trackSelfDestructBeneficiary(
+            final long deletedNumber, final long beneficiaryNumber, @NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        selfDestructBeneficiariesFor(frame)
+                .addBeneficiaryForDeletedAccount(
+                        AccountID.newBuilder().accountNum(deletedNumber).build(),
+                        AccountID.newBuilder().accountNum(beneficiaryNumber).build());
     }
 
     @Override
     public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         return tokenServiceApi.checkForCustomFees(op);
+    }
+
+    private Fees getLazyCreationFinalizationFees() {
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder().key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY));
+        final var synthTxn =
+                TransactionBody.newBuilder().cryptoUpdateAccount(updateTxnBody).build();
+        return context.dispatchComputeFees(synthTxn, context.payer());
     }
 }

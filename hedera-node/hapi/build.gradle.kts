@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ plugins {
 
 description = "Hedera API"
 
-val hapiProtoBranchOrTag = "add-pbj-types-for-state"
+val hapiProtoBranchOrTag = "add-first-cons-of-current-block-to-info"
 val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
 
 if (!gradle.startParameter.isOffline) {

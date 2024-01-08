@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -36,6 +36,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This object is responsible for writing events to the database.
+ * <p>
+ * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Startable, Stoppable {
 
@@ -49,7 +51,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     /**
      * The current file that is being written to.
      */
-    private PreconsensusEventMutableFile currentMutableFile;
+    private PcesMutableFile currentMutableFile;
 
     /**
      * The current minimum generation required to be considered non-ancient. Only read and written on the handle
@@ -140,8 +142,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
         Objects.requireNonNull(platformContext, "platformContext must not be null");
         Objects.requireNonNull(fileManager, "fileManager must not be null");
 
-        final PreconsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
@@ -170,7 +171,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void writeEvent(@NonNull final EventImpl event) {
+    public void writeEvent(@NonNull final GossipEvent event) {
         validateSequenceNumber(event);
 
         if (!streamingNewEvents) {
@@ -179,13 +180,13 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
         }
 
         if (event.getGeneration() < minimumGenerationNonAncient) {
-            event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+            event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
             return;
         }
 
         try {
             prepareOutputStream(event);
-            currentMutableFile.writeEvent(event.getBaseEvent());
+            currentMutableFile.writeEvent(event);
             lastWrittenEvent = event.getStreamSequenceNumber();
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
@@ -207,9 +208,9 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     /**
      * Make sure that the event has a valid stream sequence number.
      */
-    private static void validateSequenceNumber(@NonNull final EventImpl event) {
-        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
-                || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+    private static void validateSequenceNumber(@NonNull final GossipEvent event) {
+        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER
+                || event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
     }
@@ -240,9 +241,9 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public boolean isEventDurable(@NonNull final EventImpl event) {
+    public boolean isEventDurable(@NonNull final GossipEvent event) {
         Objects.requireNonNull(event, "event must not be null");
-        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             // Stale events are not written to disk.
             return false;
         }
@@ -253,9 +254,9 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void waitUntilDurable(@NonNull final EventImpl event) throws InterruptedException {
+    public void waitUntilDurable(@NonNull final GossipEvent event) throws InterruptedException {
         Objects.requireNonNull(event, "event must not be null");
-        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
         lastFlushedEvent.await(event.getStreamSequenceNumber());
@@ -265,11 +266,11 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public boolean waitUntilDurable(@NonNull final EventImpl event, @NonNull final Duration timeToWait)
+    public boolean waitUntilDurable(@NonNull final GossipEvent event, @NonNull final Duration timeToWait)
             throws InterruptedException {
         Objects.requireNonNull(event, "event must not be null");
         Objects.requireNonNull(timeToWait, "timeToWait must not be null");
-        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
         return lastFlushedEvent.await(event.getStreamSequenceNumber(), timeToWait);
@@ -369,7 +370,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      *
      * @param eventToWrite the event that is about to be written
      */
-    private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
+    private void prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
             final boolean fileIsFull =

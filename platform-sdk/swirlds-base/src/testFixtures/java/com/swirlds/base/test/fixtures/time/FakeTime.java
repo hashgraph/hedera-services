@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.swirlds.base.test.fixtures.time;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 
 import com.swirlds.base.time.Time;
 import java.time.Duration;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ package com.swirlds.common.utility;
  * 		the type of the wrapped object
  */
 public class AutoCloseableWrapper<T> implements AutoCloseable {
-
+    private static final AutoCloseableWrapper<?> EMPTY = new AutoCloseableWrapper<>(null, () -> {});
     private final T object;
     private final Runnable closeCallback;
 
@@ -55,5 +55,15 @@ public class AutoCloseableWrapper<T> implements AutoCloseable {
     @Override
     public void close() {
         closeCallback.run();
+    }
+
+    /**
+     * Get an empty wrapper.
+     *
+     * @return an empty wrapper
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> AutoCloseableWrapper<T> empty() {
+        return (AutoCloseableWrapper<T>) EMPTY;
     }
 }

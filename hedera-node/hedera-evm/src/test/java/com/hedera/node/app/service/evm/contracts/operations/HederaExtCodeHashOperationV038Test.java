@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.OverflowException;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaExtCodeHashOperationV038Test {
 
     @Mock
-    private AbstractLedgerEvmWorldUpdater worldUpdater;
+    private AbstractLedgerEvmWorldUpdater<?, ?> worldUpdater;
 
     @Mock
     private Account account;
@@ -148,7 +149,7 @@ class HederaExtCodeHashOperationV038Test {
 
     @Test
     void executeThrowsInsufficientStackItems() {
-        given(mf.popStackItem()).willThrow(FixedStack.UnderflowException.class);
+        given(mf.popStackItem()).willThrow(UnderflowException.class);
 
         var opResult = subject.execute(mf, evm);
 
@@ -161,7 +162,7 @@ class HederaExtCodeHashOperationV038Test {
         // given
         subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
-        doThrow(FixedStack.OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
+        doThrow(OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
         // when
         var opResult = subject.execute(mf, evm);
         // then

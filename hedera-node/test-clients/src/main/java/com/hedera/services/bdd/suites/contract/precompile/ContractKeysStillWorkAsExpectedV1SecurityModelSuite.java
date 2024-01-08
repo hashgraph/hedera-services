@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                 fixedFeeFailsWhenDisabledButWorksWhenEnabled());
     }
 
-    private HapiSpec fixedFeeFailsWhenDisabledButWorksWhenEnabled() {
+    final HapiSpec fixedFeeFailsWhenDisabledButWorksWhenEnabled() {
         final AtomicReference<Address> senderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
@@ -176,7 +176,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                                 .alsoSigningWithFullPrefix(sender)));
     }
 
-    private HapiSpec fallbackFeePayerMustSign() {
+    final HapiSpec fallbackFeePayerMustSign() {
         final AtomicReference<Address> senderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
@@ -269,7 +269,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         getAccountBalance(receiver).hasTinyBars(0L));
     }
 
-    private HapiSpec fallbackFeeForHtsPayerMustSign() {
+    final HapiSpec fallbackFeeForHtsPayerMustSign() {
         final AtomicReference<Address> senderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
@@ -349,7 +349,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         getAccountBalance(receiver).hasTokenBalance(fungible, 9));
     }
 
-    private HapiSpec contractCanStillTransferItsOwnAssets() {
+    final HapiSpec contractCanStillTransferItsOwnAssets() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -409,7 +409,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         someWellKnownAssertions());
     }
 
-    private HapiSpec topLevelSigsStillWorkWithDefaultGrandfatherNum() {
+    final HapiSpec topLevelSigsStillWorkWithDefaultGrandfatherNum() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -584,7 +584,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         .hasKnownStatus(expectedStatus)));
     }
 
-    private HapiSpec contractKeysWorkAsExpectedForFungibleTokenMgmt() {
+    final HapiSpec contractKeysWorkAsExpectedForFungibleTokenMgmt() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final var mgmtContractAsKey = "mgmtContractAsKey";

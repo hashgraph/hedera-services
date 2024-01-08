@@ -59,8 +59,8 @@
 /platform-sdk/swirlds-platform-core/            @hashgraph/platform-hashgraph
 /platform-sdk/swirlds-sign-tool/                @hashgraph/platform-hashgraph
 /platform-sdk/swirlds-unit-tests/common/        @hashgraph/platform-hashgraph @hashgraph/platform-base
-/platform-sdk/swirlds-unit-tests/core/          @hashgraph/platform-hashgraph
-/platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-unit-tests/core/          @hashgraph/platform-hashgraph @hashgraph/platform-base
+/platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data @hashgraph/platform-architects  @hashgraph/platform-base
 /platform-sdk/swirlds-virtualmap/               @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/**/module-info.java               @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
 

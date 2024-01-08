@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKno
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCallWithGasLimit;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -43,7 +45,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,6 +85,7 @@ class CustomGasChargingTest {
 
     @Test
     void staticCallsDoNotChargeGas() {
+        givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
@@ -91,23 +93,17 @@ class CustomGasChargingTest {
                 worldUpdater,
                 wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator, worldUpdater);
+        verifyNoInteractions(worldUpdater);
     }
 
     @Test
-    void zeroPriceGasDoesNoChargingWork() {
-        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
+    void zeroPriceGasDoesNoChargingWorkButDoesReturnIntrinsicGas() {
+        final var context =
+                new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator, null, null);
+        givenWellKnownIntrinsicGasCost();
         final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator, worldUpdater);
-    }
-
-    @Test
-    void zeroPriceGasReturnsImmediately() {
-        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
-        final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
-        assertEquals(0, chargingResult.relayerAllowanceUsed());
-        verifyNoInteractions(gasCalculator);
+        assertEquals(TestHelpers.INTRINSIC_GAS, chargingResult.intrinsicGas());
     }
 
     @Test
@@ -264,6 +260,8 @@ class CustomGasChargingTest {
         final var gasCost = transaction.gasCostGiven(NETWORK_GAS_PRICE);
         given(relayer.getBalance()).willReturn(Wei.of(gasCost));
         given(relayer.hederaId()).willReturn(RELAYER_ID);
+        given(sender.getBalance()).willReturn(Wei.of(transaction.value()));
+        given(sender.hederaId()).willReturn(SENDER_ID);
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
@@ -279,8 +277,10 @@ class CustomGasChargingTest {
         givenWellKnownIntrinsicGasCost();
         final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE, 0);
         final var gasCost = transaction.gasCostGiven(NETWORK_GAS_PRICE);
-        given(sender.getBalance()).willReturn(Wei.of(gasCost));
+        given(sender.getBalance()).willReturn(Wei.of(gasCost + transaction.value()));
         given(sender.hederaId()).willReturn(SENDER_ID);
+        given(relayer.hederaId()).willReturn(RELAYER_ID);
+        given(relayer.getBalance()).willReturn(Wei.ZERO);
         final var chargingResult = subject.chargeForGas(
                 sender,
                 relayer,
@@ -292,11 +292,29 @@ class CustomGasChargingTest {
     }
 
     @Test
+    void requiresSenderToCoverGasCost() {
+        givenWellKnownIntrinsicGasCost();
+        final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE, 0);
+        final var gasCost = transaction.gasCostGiven(NETWORK_GAS_PRICE);
+        given(sender.getBalance()).willReturn(Wei.of(gasCost + transaction.value() - 1));
+        given(relayer.getBalance()).willReturn(Wei.ZERO);
+        assertFailsWith(
+                INSUFFICIENT_PAYER_BALANCE,
+                () -> subject.chargeForGas(
+                        sender,
+                        relayer,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        worldUpdater,
+                        transaction));
+    }
+
+    @Test
     void rejectsIfSenderCannotCoverOfferedGasCost() {
         givenWellKnownIntrinsicGasCost();
         final var transaction =
                 wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE / 2, Long.MAX_VALUE);
         given(sender.getBalance()).willReturn(Wei.of(transaction.offeredGasCost() - 1));
+        given(relayer.getBalance()).willReturn(Wei.of(Long.MAX_VALUE));
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
                 () -> subject.chargeForGas(
@@ -312,7 +330,6 @@ class CustomGasChargingTest {
         givenWellKnownIntrinsicGasCost();
         final var transaction =
                 wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE / 2, Long.MAX_VALUE);
-        given(sender.getBalance()).willReturn(Wei.of(transaction.offeredGasCost()));
         given(relayer.getBalance()).willReturn(Wei.ZERO);
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
@@ -325,7 +342,7 @@ class CustomGasChargingTest {
     }
 
     @Test
-    void failsIfGasAllownaceLessThanRemainingGasCost() {
+    void failsIfGasAllowanceLessThanRemainingGasCost() {
         givenWellKnownIntrinsicGasCost();
         final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE / 2, 0);
         assertFailsWith(
@@ -365,7 +382,6 @@ class CustomGasChargingTest {
     }
 
     private void givenWellKnownIntrinsicGasCost(boolean isCreation) {
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, isCreation))
-                .willReturn(TestHelpers.INTRINSIC_GAS);
+        given(gasCalculator.transactionIntrinsicGasCost(any(), eq(isCreation))).willReturn(TestHelpers.INTRINSIC_GAS);
     }
 }

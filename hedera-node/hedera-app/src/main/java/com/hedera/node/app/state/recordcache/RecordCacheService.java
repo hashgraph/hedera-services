@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,10 @@ public class RecordCacheService implements Service {
 
     /** {@inheritDoc} */
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         // This is the genesis schema for this service, and simply creates the queue state that stores the
         // transaction records.
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public SemanticVersion getVersion() {

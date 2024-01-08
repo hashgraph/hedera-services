@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class AbstractSignedStateManagerTest {
 
     protected final Map<Long /* round */, SignedState> signedStates = new ConcurrentHashMap<>();
     protected final AtomicLong highestRound = new AtomicLong(-1);
+    protected final AtomicLong highestCompleteRound = new AtomicLong(-1);
     protected final int roundsToKeepForSigning = 5;
     protected final int futureStateSignatureRounds = 16;
     protected int roundsToKeepAfterSigning = 0;
@@ -135,12 +136,28 @@ public class AbstractSignedStateManagerTest {
             if (shouldRoundBePresent.test(round)) {
                 assertEquals(-1, signedState.getReservationCount(), "state should have no reservations");
             } else {
+                int expectedReservationCount = 1;
                 if (round == highestRound.get()) {
-                    // the most recent state has an extra reservation
-                    assertEquals(2, signedState.getReservationCount(), "unexpected reservation count");
-                } else {
-                    assertEquals(1, signedState.getReservationCount(), "unexpected reservation count");
+                    // the most recent state has an extra reservation inside the SSM
+                    expectedReservationCount++;
                 }
+                if (round == highestCompleteRound.get()) {
+                    // the most recent complete state has an extra reservation held by the nexus
+                    expectedReservationCount++;
+                }
+                assertEquals(
+                        expectedReservationCount,
+                        signedState.getReservationCount(),
+                        ("unexpected reservation count!%n"
+                                        + "round: %d%n"
+                                        + "highestRound: %d%n"
+                                        + "highestCompleteRound: %d%n"
+                                        + "history:%n%s")
+                                .formatted(
+                                        round,
+                                        highestRound.get(),
+                                        highestCompleteRound.get(),
+                                        signedState.getHistory()));
             }
         }
     }

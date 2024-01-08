@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
@@ -66,7 +66,7 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.platform.state.PlatformState;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -534,7 +534,7 @@ class MerkleNetworkContextTest {
     @Test
     void summarizesStateVersionAsExpected() {
         throttling = mock(FunctionalityThrottling.class);
-        final var accessor = mock(DualStateAccessor.class);
+        final var accessor = mock(PlatformStateAccessor.class);
 
         given(throttling.allActiveThrottles()).willReturn(activeThrottles());
         given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
@@ -656,10 +656,10 @@ class MerkleNetworkContextTest {
         final var someTime = Instant.ofEpochSecond(1_234_567L, 890);
 
         throttling = mock(FunctionalityThrottling.class);
-        final var dualState = mock(DualStateImpl.class);
-        final var accessor = mock(DualStateAccessor.class);
+        final var platformState = mock(PlatformState.class);
+        final var accessor = mock(PlatformStateAccessor.class);
 
-        given(accessor.getDualState()).willReturn(dualState);
+        given(accessor.getPlatformState()).willReturn(platformState);
 
         // and:
         final var desiredWithPreparedUnscheduledMaintenance = "The network context (state version 13) is,\n"
@@ -728,7 +728,7 @@ class MerkleNetworkContextTest {
         // then:
         assertEquals(desiredWithPreparedUnscheduledMaintenance, subject.summarizedWith(accessor));
 
-        given(dualState.getFreezeTime()).willReturn(someTime);
+        given(platformState.getFreezeTime()).willReturn(someTime);
         assertEquals(desiredWithPreparedAndScheduledMaintenance, subject.summarizedWith(accessor));
     }
 

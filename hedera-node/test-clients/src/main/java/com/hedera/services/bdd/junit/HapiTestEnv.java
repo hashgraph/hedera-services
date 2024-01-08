@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PROCESS_ALICE;
+
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -26,8 +28,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiTestEnv {
+    private static final Logger logger = LogManager.getLogger(HapiTestEnv.class);
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
     private static final int FIRST_GOSSIP_PORT = 60000;
     private static final int FIRST_GOSSIP_TLS_PORT = 60001;
@@ -36,10 +41,9 @@ public class HapiTestEnv {
     private final List<HapiTestNode> nodes = new ArrayList<>();
     private final List<String> nodeHosts = new ArrayList<>();
     private boolean started = false;
-    public static final int CLUSTER_SIZE = 4;
 
-    public HapiTestEnv(@NonNull final String testName, final boolean cluster, final boolean useInProcessAlice) {
-        final var numNodes = cluster ? CLUSTER_SIZE : 1;
+    public HapiTestEnv(
+            @NonNull final String testName, final int nodeCount, @NonNull final HapiTestNodesType nodesType) {
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")
@@ -47,7 +51,7 @@ public class HapiTestEnv {
                     .append("\n")
                     .append("\n# This next line is, hopefully, ignored.\n")
                     .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
-            for (int nodeId = 0; nodeId < numNodes; nodeId++) {
+            for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
                 final var nodeName = NODE_NAMES[nodeId];
                 final var firstChar = nodeName.charAt(0);
                 final var account = "0.0." + (3 + nodeId);
@@ -66,17 +70,18 @@ public class HapiTestEnv {
                         .append("\n");
                 nodeHosts.add("127.0.0.1:" + (FIRST_GRPC_PORT + (nodeId * 2)) + ":" + account);
             }
-            sb.append("\nnextNodeId, ").append(numNodes).append("\n");
+            sb.append("\nnextNodeId, ").append(nodeCount).append("\n");
             final String configText = sb.toString();
 
-            for (int nodeId = 0; nodeId < numNodes; nodeId++) {
+            for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
                 final Path workingDir =
                         Path.of("./build/hapi-test/node" + nodeId).normalize();
                 setupWorkingDirectory(workingDir, configText);
                 final String nodeName = NODE_NAMES[nodeId];
                 final AccountID acct =
                         AccountID.newBuilder().accountNum(3L + nodeId).build();
-                if (useInProcessAlice && nodeId == 0) {
+                boolean currentNodeAlice = nodeId == 0;
+                if (IN_PROCESS_ALICE == nodesType && currentNodeAlice) {
                     nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
                 } else {
                     nodes.add(new SubProcessHapiTestNode(
@@ -88,16 +93,36 @@ public class HapiTestEnv {
         }
     }
 
+    // Defines the types of nodes(InProcessHapiTestNode or SubProcessHapiTestNode) for the test executing nodes.
+    enum HapiTestNodesType {
+        // Makes the fist starting node(Alice, id=0) to use InProcessHapiTestNode. This gives us the ability to debug
+        IN_PROCESS_ALICE,
+        OUT_OF_PROCESS_ALICE
+    }
+
     /**
      * Starts all nodes in the environment.
      */
     public void start() throws TimeoutException {
         started = true;
         for (final var node : nodes) {
-            node.start();
+            logger.info("Starting node {}", node.getName());
+            try {
+                node.start();
+            } catch (RuntimeException e) {
+                logger.error(
+                        "Node {} failed to start within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                throw e;
+            }
         }
         for (final var node : nodes) {
-            node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            try {
+                node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            } catch (TimeoutException e) {
+                logger.error(
+                        "Node {} failed to ACTIVE within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                throw e;
+            }
         }
     }
 

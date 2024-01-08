@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -44,7 +46,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class SelfDestructSuite extends HapiSuite {
 
@@ -76,10 +78,10 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
+    final HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
-        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
+        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks", NONDETERMINISTIC_LOG_DATA)
                 .given(cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
@@ -101,8 +103,8 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec hscsEvm008SelfDestructWhenCalling() {
-        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
+    final HapiSpec hscsEvm008SelfDestructWhenCalling() {
+        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))
@@ -118,7 +120,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
         final AtomicLong beneficiaryId = new AtomicLong();
         return defaultHapiSpec("selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn")
                 .given(

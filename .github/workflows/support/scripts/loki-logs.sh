@@ -33,7 +33,7 @@ do
     echo "query_result = [$query_result]"
     echo "nodes = [$nodes]"
 
-    if [[ $nodes = $maxnodes ]]; then
+    if [[ $nodes -ge $maxnodes ]]; then
         break
     fi
 

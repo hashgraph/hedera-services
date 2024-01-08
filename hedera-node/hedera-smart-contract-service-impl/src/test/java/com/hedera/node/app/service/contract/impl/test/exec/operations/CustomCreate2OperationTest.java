@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,7 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         given(txValues.transientStorage()).willReturn(undoTable);
         given(txValues.messageFrameStack()).willReturn(messageFrameStack);
         given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(txValues.maxStackSize()).willReturn(1024);
         given(undoTable.mark()).willReturn(1L);
 
         final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");
@@ -134,6 +135,5 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
         childFrame.notifyCompletion();
         verify(frame).pushStackItem(Words.fromAddress(EIP_1014_ADDRESS));
-        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS);
     }
 }

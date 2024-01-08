@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.test.framework.context;
 
 import static com.swirlds.common.config.ConfigUtils.scanAndRegisterAllConfigTypes;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -25,7 +26,9 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * A simple builder to create a {@link PlatformContext} for unit tests.
@@ -40,6 +43,7 @@ public final class TestPlatformContextBuilder {
     private Configuration configuration;
     private Metrics metrics;
     private Cryptography cryptography;
+    private Time time = Time.getCurrent();
 
     private TestPlatformContextBuilder() {}
 
@@ -48,6 +52,7 @@ public final class TestPlatformContextBuilder {
      *
      * @return a new instance
      */
+    @NonNull
     public static TestPlatformContextBuilder create() {
         return new TestPlatformContextBuilder();
     }
@@ -58,6 +63,7 @@ public final class TestPlatformContextBuilder {
      * @param configuration the configuration to use
      * @return the builder instance
      */
+    @NonNull
     public TestPlatformContextBuilder withConfiguration(@Nullable final Configuration configuration) {
         this.configuration = configuration;
         return this;
@@ -68,6 +74,7 @@ public final class TestPlatformContextBuilder {
      *
      * @param metrics the metrics to use
      */
+    @NonNull
     public TestPlatformContextBuilder withMetrics(@Nullable final Metrics metrics) {
         this.metrics = metrics;
         return this;
@@ -78,8 +85,20 @@ public final class TestPlatformContextBuilder {
      *
      * @param cryptography the cryptography to use
      */
+    @NonNull
     public TestPlatformContextBuilder withCryptography(@Nullable final Cryptography cryptography) {
         this.cryptography = cryptography;
+        return this;
+    }
+
+    /**
+     * Set the {@link Time} to use.
+     *
+     * @param time the time to use
+     */
+    @NonNull
+    public TestPlatformContextBuilder withTime(@NonNull final Time time) {
+        this.time = Objects.requireNonNull(time);
         return this;
     }
 
@@ -113,6 +132,12 @@ public final class TestPlatformContextBuilder {
             @Override
             public Metrics getMetrics() {
                 return metrics;
+            }
+
+            @NonNull
+            @Override
+            public Time getTime() {
+                return time;
             }
         };
     }

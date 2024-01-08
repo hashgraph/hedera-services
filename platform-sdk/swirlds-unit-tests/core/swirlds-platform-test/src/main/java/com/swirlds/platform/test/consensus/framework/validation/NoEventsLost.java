@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.test.framework.config.TestConfigBuilder;

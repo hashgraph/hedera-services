@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import com.swirlds.platform.gui.components.ScrollableJPanel;
 import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.PlatformVersion;
 import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.BorderLayout;
@@ -62,8 +61,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A Swirlds menu icon that goes in the upper-right corner of a window, to allow the user to access the
- * browser and other platform functions.
+ * A Swirlds menu icon that goes in the upper-right corner of a window, to allow the user to access the browser and
+ * other platform functions.
  */
 public class SwirldMenu extends JPanel {
     // the menu's window's app's Platform
@@ -91,42 +90,33 @@ public class SwirldMenu extends JPanel {
     private static final Logger logger = LogManager.getLogger(SwirldMenu.class);
 
     /**
-     * Add a Swirlds menu icon to the upper-right corner of the given window. The height and width of it
-     * will be size pixels. The logo will be the standard blue-on-white colors. If the given window already
-     * has a Swirlds menu icon, then that old menu will be removed.
+     * Add a Swirlds menu icon to the upper-right corner of the given window. The height and width of it will be size
+     * pixels. The logo will be the standard blue-on-white colors. If the given window already has a Swirlds menu icon,
+     * then that old menu will be removed.
      *
-     * @param platform
-     * 		the Platform running the app that owns this window
-     * @param window
-     * 		the window to which the icon will be added
-     * @param size
-     * 		the height and width of the icon, in pixels
+     * @param platform the Platform running the app that owns this window
+     * @param window   the window to which the icon will be added
+     * @param size     the height and width of the icon, in pixels
      */
     public static void addTo(Platform platform, JFrame window, int size) {
         addTo(platform, window, size, Color.BLUE, true);
     }
 
     /**
-     * Add a Swirlds menu icon to the upper-right corner of the given window. The height and width of it
-     * will be size pixels. If the given window already has a Swirlds menu icon, then that old menu will be
-     * removed. The logo will be blue, black, or white, according to foreColor. If there is a background, it
-     * will be white, white, or black (respectively). If backColor is false, then the background is
-     * transparent.
+     * Add a Swirlds menu icon to the upper-right corner of the given window. The height and width of it will be size
+     * pixels. If the given window already has a Swirlds menu icon, then that old menu will be removed. The logo will be
+     * blue, black, or white, according to foreColor. If there is a background, it will be white, white, or black
+     * (respectively). If backColor is false, then the background is transparent.
      * <p>
-     * NOTE: SwirldsMenu is a lightweight Component. So the transparent background will work if the window
-     * contains only lightweight Components, such as JPanel. If the window contains a heavyweight Component,
-     * such as a Canvas, then it is better to set backColor to true.
+     * NOTE: SwirldsMenu is a lightweight Component. So the transparent background will work if the window contains only
+     * lightweight Components, such as JPanel. If the window contains a heavyweight Component, such as a Canvas, then it
+     * is better to set backColor to true.
      *
-     * @param platform
-     * 		the Platform running the app that owns this window
-     * @param window
-     * 		the window to add this menu to
-     * @param size
-     * 		height and width, in pixels
-     * @param foreColor
-     * 		must be one of Color.BLUE, Color.WHITE, Color.BLACK
-     * @param backColor
-     * 		should background square be non-transparent?
+     * @param platform  the Platform running the app that owns this window
+     * @param window    the window to add this menu to
+     * @param size      height and width, in pixels
+     * @param foreColor must be one of Color.BLUE, Color.WHITE, Color.BLACK
+     * @param backColor should background square be non-transparent?
      */
     public static void addTo(Platform platform, JFrame window, int size, Color foreColor, boolean backColor) {
         Color fore = null;
@@ -154,8 +144,7 @@ public class SwirldMenu extends JPanel {
     /**
      * Delete the Swirlds menu icon from the given window. If there is no such menu, then nothing happens.
      *
-     * @param window
-     * 		the window to remove it from
+     * @param window the window to remove it from
      */
     public static void removeFrom(JFrame window) {
         removeFromRecursive(null, window.getRootPane());
@@ -163,11 +152,10 @@ public class SwirldMenu extends JPanel {
     }
 
     /**
-     * Recursively search through all components in the container tree, and delete any SwirldsMenu objects
-     * found. The search starts at root. The root should be immediately inside the given parent Container.
+     * Recursively search through all components in the container tree, and delete any SwirldsMenu objects found. The
+     * search starts at root. The root should be immediately inside the given parent Container.
      *
-     * @param root
-     * 		the root of the tree to search
+     * @param root the root of the tree to search
      */
     private static void removeFromRecursive(Container parent, Component root) {
         if (root instanceof SwirldMenu) {
@@ -181,19 +169,14 @@ public class SwirldMenu extends JPanel {
     }
 
     /**
-     * Constructor for a menu in the upper-right of the window with the Swirlds logo. The parent is the
-     * window to add this to. It should already be set to the right size.
+     * Constructor for a menu in the upper-right of the window with the Swirlds logo. The parent is the window to add
+     * this to. It should already be set to the right size.
      *
-     * @param platform
-     * 		the Platform running the app that owns this window
-     * @param parent
-     * 		the window to add the menu to
-     * @param size
-     * 		the height and width of the logo icon, in pixels
-     * @param foreColor
-     * 		the color of the icon
-     * @param backColor
-     * 		the background color of the icon, or transparent if null
+     * @param platform  the Platform running the app that owns this window
+     * @param parent    the window to add the menu to
+     * @param size      the height and width of the logo icon, in pixels
+     * @param foreColor the color of the icon
+     * @param backColor the background color of the icon, or transparent if null
      */
     SwirldMenu(Platform platform, JFrame parent, int size, Paint foreColor, Paint backColor) {
         this.platform = platform;
@@ -292,9 +275,7 @@ public class SwirldMenu extends JPanel {
                 case "About":
                     int choice = JOptionPane.showOptionDialog(
                             null, // parentCompoinent
-                            (platform == null ? "" : GuiModel.getInstance().getAbout(platform.getSelfId()))
-                                    + "\n\n"
-                                    + PlatformVersion.locateOrDefault().license(), // message
+                            (platform == null ? "" : GuiModel.getInstance().getAbout(platform.getSelfId())),
                             "About this app", // title
                             JOptionPane.DEFAULT_OPTION, // optionType
                             JOptionPane.PLAIN_MESSAGE /* INFORMATION_MESSAGE */, // messageType
@@ -334,17 +315,15 @@ public class SwirldMenu extends JPanel {
     }
 
     /**
-     * Popup a dialog box with an OK button, giving a scrollable view of the given HTML file within the .jar
-     * file.
+     * Popup a dialog box with an OK button, giving a scrollable view of the given HTML file within the .jar file.
      * <p>
-     * For example, if the path is "/docs/license.html", then the license.html file must be in the docs
-     * directory inside the swirlds.jar file.
+     * For example, if the path is "/docs/license.html", then the license.html file must be in the docs directory inside
+     * the swirlds.jar file.
      * <p>
      * That will work from the command line. To also work in Eclipse, the file must also be copied to
      * platform/target/classes/docs/license.html
      *
-     * @param path
-     * 		the path such as "/docs/license.html" for the file license.html located in both locations.
+     * @param path the path such as "/docs/license.html" for the file license.html located in both locations.
      */
     void popupHtml(String path) {
         JEditorPane display = new JEditorPane("text/html", "");
@@ -389,22 +368,16 @@ public class SwirldMenu extends JPanel {
     }
 
     /**
-     * Draw the Swirlds logo into the given Graphics2D context, with upper-left corner at pixel (x,y), with
-     * width and height both equal to scale pixels, wtih the given foreground color. If the background color
-     * is not null, then the background is filled with the given color.
+     * Draw the Swirlds logo into the given Graphics2D context, with upper-left corner at pixel (x,y), with width and
+     * height both equal to scale pixels, wtih the given foreground color. If the background color is not null, then the
+     * background is filled with the given color.
      *
-     * @param g
-     * 		Graphics2D context.
-     * @param x
-     * 		x coordinate of location of icon
-     * @param y
-     * 		y coordinate of location of icon
-     * @param size
-     * 		draw logo at size by size pixels
-     * @param foreColor
-     * 		draw logo with this color
-     * @param backColor
-     * 		fill background with this color (null means don't fill background)
+     * @param g         Graphics2D context.
+     * @param x         x coordinate of location of icon
+     * @param y         y coordinate of location of icon
+     * @param size      draw logo at size by size pixels
+     * @param foreColor draw logo with this color
+     * @param backColor fill background with this color (null means don't fill background)
      */
     static void drawLogo(Graphics2D g, float x, float y, float size, Paint foreColor, Paint backColor) {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
     @HapiTest
-    private HapiSpec acct57CanMakeSmallChanges() {
+    final HapiSpec acct57CanMakeSmallChanges() {
         return defaultHapiSpec("Acct57CanMakeSmallChanges")
                 .given(
                         resetRatesOp,
@@ -85,7 +85,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec midnightRateChangesWhenAcct50UpdatesFile112() {
+    final HapiSpec midnightRateChangesWhenAcct50UpdatesFile112() {
         return defaultHapiSpec("MidnightRateChangesWhenAcct50UpdatesFile112")
                 .given(
                         resetRatesOp,
@@ -139,7 +139,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec anonCantUpdateRates() {
+    final HapiSpec anonCantUpdateRates() {
         return defaultHapiSpec("AnonCantUpdateRates")
                 .given(resetRatesOp, cryptoCreate("randomAccount"))
                 .when()
@@ -150,7 +150,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec acct57CantMakeLargeChanges() {
+    final HapiSpec acct57CantMakeLargeChanges() {
         return defaultHapiSpec("Acct57CantMakeLargeChanges")
                 .given(
                         resetRatesOp,

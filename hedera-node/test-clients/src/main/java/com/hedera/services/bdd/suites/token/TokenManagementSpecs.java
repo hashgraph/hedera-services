@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
+    final HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
         final var civilian = "civilian";
         final var adminKey = "adminKey";
         final var fungible = "fungible";
@@ -181,7 +181,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
+    final HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -202,7 +202,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
+    final HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -223,7 +223,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
+    final HapiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
         final String BURN_TOKEN = "burn";
         final int TOTAL_SUPPLY = 100;
         final int TRANSFER_AMOUNT = 50;
@@ -448,7 +448,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec fungibleCommonMaxSupplyReachWork() {
+    final HapiSpec fungibleCommonMaxSupplyReachWork() {
         return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -475,7 +475,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec mintingMaxLongValueWorks() {
+    final HapiSpec mintingMaxLongValueWorks() {
         return defaultHapiSpec("MintingMaxLongValueWorks")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -491,7 +491,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
+    final HapiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
         final var multiKey = "multi";
         final var token = "non-fungible";
         final var txn = "mint";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class NewContractRecordExists extends HapiSuite {
         return List.of(newContractIsReflectedInRecordStream());
     }
 
-    private HapiSpec newContractIsReflectedInRecordStream() {
+    final HapiSpec newContractIsReflectedInRecordStream() {
         final var creation = "creation";
         final AtomicReference<Instant> consensusTime = new AtomicReference<>();
         return defaultHapiSpec(EMPTY_CONTRACT)

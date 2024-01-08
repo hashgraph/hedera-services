@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.swirlds.platform.health.entropy;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
-import com.swirlds.common.config.OSHealthCheckConfig;
+import com.swirlds.platform.health.OSHealthCheckConfig;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 

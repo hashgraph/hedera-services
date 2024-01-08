@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -53,12 +54,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DependencyMigrationTest extends MerkleTestBase {
+
+    private static final HederaSoftwareVersion VERSION =
+            new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION);
+    private static final VersionedConfigImpl VERSIONED_CONFIG =
+            new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
     private static final long INITIAL_ENTITY_ID = 5;
 
     @Mock
     private ThrottleAccumulator accumulator;
-
-    private VersionedConfigImpl versionedConfig = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
 
     @Mock
     private NetworkInfo networkInfo;
@@ -68,7 +72,8 @@ class DependencyMigrationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleHederaState((tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {});
+        merkleTree =
+                new MerkleHederaState((tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {}, (s, ab, pc) -> {});
     }
 
     @Nested
@@ -98,7 +103,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void stateRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(null, RELEASE_045_VERSION, null, versionedConfig, networkInfo))
+                            () -> subject.doMigrations(null, RELEASE_045_VERSION, null, VERSIONED_CONFIG, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -106,7 +111,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void currentVersionRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(merkleTree, null, null, versionedConfig, networkInfo))
+                            () -> subject.doMigrations(merkleTree, null, null, VERSIONED_CONFIG, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -122,7 +127,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void networkInfoRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, versionedConfig, null))
+                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, VERSIONED_CONFIG, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -134,8 +139,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         final var servicesRegistry = new ServicesRegistryImpl(registry, new NoOpGenesisRecordsBuilder());
         final var entityService = new EntityIdService() {
             @Override
-            public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(SemanticVersion.DEFAULT) {
+            public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+                registry.register(new Schema(version) {
                     @NonNull
                     @Override
                     public Set<StateDefinition> statesToCreate() {
@@ -150,12 +155,12 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService).forEach(servicesRegistry::register);
+        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service, VERSION));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
         subject.doMigrations(
-                merkleTree, SemanticVersion.newBuilder().major(2).build(), null, versionedConfig, networkInfo);
+                merkleTree, SemanticVersion.newBuilder().major(2).build(), null, VERSIONED_CONFIG, networkInfo);
 
         // Then: we verify the migrations had the desired effects on both entity ID state and DependentService state
         // First check that the entity ID service has an updated entity ID, despite its schema migration not doing
@@ -186,8 +191,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         // Define the Entity ID Service:
         final EntityIdService entityIdService = new EntityIdService() {
             @Override
-            public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(SemanticVersion.DEFAULT) {
+            public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+                registry.register(new Schema(version) {
                     @NonNull
                     public Set<StateDefinition> statesToCreate() {
                         return Set.of(StateDefinition.singleton(ENTITY_ID_STATE_KEY, EntityNumber.PROTOBUF));
@@ -208,8 +213,8 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
 
             @Override
-            public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(RELEASE_045_VERSION) {
+            public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+                registry.register(new Schema(version) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("A-Service#migrate");
                     }
@@ -225,8 +230,8 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
 
             @Override
-            public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(RELEASE_045_VERSION) {
+            public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+                registry.register(new Schema(version) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("B-Service#migrate");
                     }
@@ -236,8 +241,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         // Define DependentService:
         final DependentService dsService = new DependentService() {
             @Override
-            public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(RELEASE_045_VERSION) {
+            public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
+                registry.register(new Schema(version) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("DependentService#migrate");
                     }
@@ -245,12 +250,13 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Intentionally register the services in a different order than the expected migration order
-        List.of(dsService, serviceA, entityIdService, serviceB).forEach(servicesRegistry::register);
+        List.of(dsService, serviceA, entityIdService, serviceB)
+                .forEach(service -> servicesRegistry.register(service, VERSION));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
         subject.doMigrations(
-                merkleTree, SemanticVersion.newBuilder().major(1).build(), null, versionedConfig, networkInfo);
+                merkleTree, SemanticVersion.newBuilder().major(1).build(), null, VERSIONED_CONFIG, networkInfo);
 
         // Then: we verify the migrations were run in the expected order
         Assertions.assertThat(orderedInvocations)
@@ -275,9 +281,9 @@ class DependencyMigrationTest extends MerkleTestBase {
             return NAME;
         }
 
-        public void registerSchemas(@NonNull SchemaRegistry registry) {
+        public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
             // Schema #1 - initial schema
-            registry.register(new Schema(RELEASE_045_VERSION) {
+            registry.register(new Schema(version) {
                 @NonNull
                 @Override
                 public Set<StateDefinition> statesToCreate() {

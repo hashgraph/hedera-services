@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.common.test.fixtures.stream;
 
 import static com.swirlds.common.crypto.internal.CryptoUtils.getDetRandom;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.Signer;
@@ -58,7 +59,7 @@ public class StreamFileSigner implements Signer {
             sigDetRandom.setSeed(SEED);
             sigKeyPair = sigKeyGen.generateKeyPair();
         } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            logger.error(LOGM_EXCEPTION, "Failed to generate KeyPair", e);
+            logger.error(EXCEPTION.getMarker(), "Failed to generate KeyPair", e);
             CommonUtils.tellUserConsolePopup(
                     "ERROR", "ERROR: This Java installation does not have the needed cryptography providers installed");
         }
@@ -84,12 +85,12 @@ public class StreamFileSigner implements Signer {
             signature.update(data);
             final byte[] result = signature.sign();
             if (result == null) {
-                logger.error(LOGM_EXCEPTION, "Failed to sign data: signature is null");
+                logger.error(EXCEPTION.getMarker(), "Failed to sign data: signature is null");
             }
             logger.debug(LOGM_OBJECT_STREAM, "Generated signature: {}", () -> hex(result));
             return new com.swirlds.common.crypto.Signature(SignatureType.RSA, result);
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException e) {
-            logger.error(LOGM_EXCEPTION, "Failed to sign data", e);
+            logger.error(EXCEPTION.getMarker(), "Failed to sign data", e);
         }
         return new com.swirlds.common.crypto.Signature(
                 SignatureType.RSA, new byte[SignatureType.RSA.signatureLength()]);

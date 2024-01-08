@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
-import static com.swirlds.platform.event.preconsensus.BestEffortPreconsensusEventFileCopy.copyPreconsensusEventStreamFilesRetryOnFailure;
+import static com.swirlds.platform.event.preconsensus.BestEffortPcesFileCopy.copyPcesFilesRetryOnFailure;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
@@ -159,11 +159,11 @@ public final class SignedStateFileWriter {
         writeSettingsUsed(directory, platformContext.getConfiguration());
 
         if (selfId != null) {
-            copyPreconsensusEventStreamFilesRetryOnFailure(
+            copyPcesFilesRetryOnFailure(
                     platformContext,
                     selfId,
                     directory,
-                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient(),
+                    signedState.getState().getPlatformState().getMinimumGenerationNonAncient(),
                     signedState.getRound());
         }
     }

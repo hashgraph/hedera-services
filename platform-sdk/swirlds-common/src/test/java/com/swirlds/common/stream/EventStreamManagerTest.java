@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -54,7 +55,7 @@ class EventStreamManagerTest {
 
     private static final MultiStream<ObjectForTestStream> multiStreamMock = mock(MultiStream.class);
     private static final EventStreamManager<ObjectForTestStream> EVENT_STREAM_MANAGER =
-            new EventStreamManager<>(multiStreamMock, EventStreamManagerTest::isFreezeEvent);
+            new EventStreamManager<>(Time.getCurrent(), multiStreamMock, EventStreamManagerTest::isFreezeEvent);
 
     private static final ObjectForTestStream freezeEvent = mock(ObjectForTestStream.class);
 
@@ -62,6 +63,7 @@ class EventStreamManagerTest {
     static void init() throws Exception {
         disableStreamingInstance = new EventStreamManager<>(
                 TestPlatformContextBuilder.create().build(),
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 selfId,
                 mock(Signer.class),
@@ -74,6 +76,7 @@ class EventStreamManagerTest {
 
         enableStreamingInstance = new EventStreamManager<>(
                 TestPlatformContextBuilder.create().build(),
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 selfId,
                 mock(Signer.class),
@@ -114,7 +117,7 @@ class EventStreamManagerTest {
     @Test
     void addEventTest() throws InterruptedException {
         EventStreamManager<ObjectForTestStream> eventStreamManager =
-                new EventStreamManager<>(multiStreamMock, EventStreamManagerTest::isFreezeEvent);
+                new EventStreamManager<>(Time.getCurrent(), multiStreamMock, EventStreamManagerTest::isFreezeEvent);
         assertFalse(
                 eventStreamManager.getFreezePeriodStarted(),
                 "freezePeriodStarted should be false after initialization");

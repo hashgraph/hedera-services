@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_SHORT;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_INT;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_LONG;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_SHORT;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 

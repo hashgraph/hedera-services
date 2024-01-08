@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,4 +34,7 @@ public interface ContractDeleteRecordBuilder extends DeleteCapableTransactionRec
      */
     @NonNull
     ContractDeleteRecordBuilder contractID(@Nullable ContractID contractId);
+
+    @NonNull
+    ContractDeleteRecordBuilder transaction(@NonNull final Transaction txn);
 }

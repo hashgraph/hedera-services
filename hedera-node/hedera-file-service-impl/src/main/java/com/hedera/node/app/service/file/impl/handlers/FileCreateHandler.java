@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,6 @@ public class FileCreateHandler implements TransactionHandler {
 
         final var fileCreateTransactionBody = handleContext.body().fileCreateOrThrow();
 
-        // TODO: skip at least the mutability check for privileged "payer" accounts
         if (fileCreateTransactionBody.hasKeys()) {
             KeyList transactionKeyList = fileCreateTransactionBody.keys();
             builder.keys(transactionKeyList);

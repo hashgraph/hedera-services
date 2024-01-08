@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
+    final HapiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
         KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
         SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));
 
@@ -64,7 +64,7 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec getDeletedFileInfo() {
+    final HapiSpec getDeletedFileInfo() {
         return defaultHapiSpec("getDeletedFileInfo")
                 .given(fileCreate("deletedFile").logged())
                 .when(fileDelete("deletedFile").logged())

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import java.util.HashMap;
@@ -60,14 +61,24 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
     }
 
     /**
+     * Called on each state as it gathers enough signatures to be complete.
+     * <p>
+     * This consumer is provided by the wiring layer, so it should release the resource when finished.
+     */
+    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
+        return ss -> highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
+    }
+
+    /**
      * Keep adding new states to the manager but never sign any of them (other than self signatures).
      */
     @Test
     @DisplayName("Old Complete State Eventually Released")
     void oldCompleteStateEventuallyReleased() throws InterruptedException {
 
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
+                .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
 
         final Hash stateHash = randomHash(random);
@@ -108,7 +119,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
 
                 if (round >= roundsToKeepForSigning) {
-                    assertNull(lastCompletedState.getNullable(), "initial state should have been released");
+                    assertNull(lastCompletedState, "initial state should have been released");
                 } else {
                     assertSame(lastCompletedState.get(), stateFromDisk);
                 }

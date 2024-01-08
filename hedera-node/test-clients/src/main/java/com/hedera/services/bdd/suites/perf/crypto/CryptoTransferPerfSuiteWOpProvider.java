@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
         return List.of(runMixedTransferAndSubmits());
     }
 
-    private HapiSpec runMixedTransferAndSubmits() {
+    final HapiSpec runMixedTransferAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("CryptoTransferPerfSuiteWOpProvider")
                 .given(

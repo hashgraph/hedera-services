@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.Locks;
-import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
@@ -26,11 +23,13 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class is an implementation of the {@link ConfigurationBuilder} interface that is based on the given config
@@ -41,7 +40,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     /**
      * Internal lock to support a thread safe initialization
      */
-    private final AutoClosableLock initializationLock = Locks.createAutoLock();
+    private final ReentrantLock initializationLock = new ReentrantLock();
 
     /**
      * The configuration instance
@@ -92,7 +91,8 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     @NonNull
     @Override
     public Configuration build() {
-        try (final Locked ignored = initializationLock.lock()) {
+        initializationLock.lock();
+        try {
             if (initialized.get()) {
                 throw new IllegalStateException("Configuration already initialized");
             }
@@ -105,6 +105,8 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
             validationService.init();
             configuration.init();
             initialized.set(true);
+        } finally {
+            initializationLock.unlock();
         }
         return configuration;
     }
@@ -131,26 +133,45 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         configSourceService.addConfigSource(configSource);
     }
 
+    /**
+     * @param converter the converter that should be used for the configuration
+     * @deprecated Use {@link ConfigurationBuilderImpl#withConverter(Class, ConfigConverter)}
+     */
     @NonNull
     @Override
+    @SuppressWarnings({"unchecked"})
+    @Deprecated(forRemoval = true)
     public ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) {
-        addConverter(converter);
+        addConverter(getConverterType(converter.getClass()), converter);
+        return this;
+    }
+
+    /**
+     * @param converters the converters that should be used for the configuration
+     * @deprecated Use {@link ConfigurationBuilderImpl#withConverter(Class, ConfigConverter)}
+     */
+    @NonNull
+    @Override
+    @Deprecated(forRemoval = true)
+    public ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) {
+        Arrays.stream(converters).forEach(this::withConverter);
         return this;
     }
 
     @NonNull
     @Override
-    public ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) {
-        Arrays.stream(converters).forEach(this::addConverter);
+    public <T> ConfigurationBuilder withConverter(
+            @NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
+        addConverter(converterType, converter);
         return this;
     }
 
-    private void addConverter(@NonNull final ConfigConverter<?> converter) {
+    private <T> void addConverter(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         Objects.requireNonNull(converter, "converter must not be null");
         if (initialized.get()) {
             throw new IllegalStateException("Converters can not be added to initialized config");
         }
-        converterService.addConverter(converter);
+        converterService.addConverter(converterType, converter);
     }
 
     @NonNull
@@ -210,5 +231,24 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         Objects.requireNonNull(value, "value must not be null");
         properties.put(propertyName, value);
         return this;
+    }
+
+    @NonNull
+    @SuppressWarnings({"unchecked"})
+    private static <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
+        Objects.requireNonNull(converterClass, "converterClass must not be null");
+        return Arrays.stream(converterClass.getGenericInterfaces())
+                .filter(ParameterizedType.class::isInstance)
+                .map(ParameterizedType.class::cast)
+                .filter(parameterizedType -> Objects.equals(ConfigConverter.class, parameterizedType.getRawType()))
+                .map(ParameterizedType::getActualTypeArguments)
+                .findAny()
+                .map(typeArguments -> {
+                    if (typeArguments.length != 1) {
+                        throw new IllegalStateException("Can not extract generic type for converter " + converterClass);
+                    }
+                    return (Class<T>) typeArguments[0];
+                })
+                .orElseGet(() -> getConverterType((Class<C>) converterClass.getSuperclass()));
     }
 }

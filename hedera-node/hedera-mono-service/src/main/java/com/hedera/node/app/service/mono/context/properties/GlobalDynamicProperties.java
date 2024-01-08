@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILDCARDS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKEN_BALANCES_ENABLED_IN_QUERIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
@@ -303,6 +304,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private int sumOfConsensusWeights;
     private int cacheWarmThreads;
     private int configVersion;
+    private boolean tokenBalancesEnabledInQueries;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
@@ -457,6 +459,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
         sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
         cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
+        tokenBalancesEnabledInQueries = properties.getBooleanProperty(TOKEN_BALANCES_ENABLED_IN_QUERIES);
     }
 
     public int sumOfConsensusWeights() {
@@ -991,5 +994,9 @@ public class GlobalDynamicProperties implements EvmProperties {
      */
     public long stakingRewardBalanceThreshold() {
         return stakingRewardBalanceThreshold;
+    }
+
+    public boolean areTokenBalancesEnabledInQueries() {
+        return tokenBalancesEnabledInQueries;
     }
 }

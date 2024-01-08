@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.common.threading.framework.internal;
 
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.retryIfInterrupted;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.StackTrace.getStackTrace;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;

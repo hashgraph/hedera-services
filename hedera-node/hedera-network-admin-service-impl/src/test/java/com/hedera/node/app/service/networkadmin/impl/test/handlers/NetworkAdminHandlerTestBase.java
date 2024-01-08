@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -201,12 +202,12 @@ public class NetworkAdminHandlerTestBase {
         final var state = new FakeHederaState();
         final var registry = new FakeSchemaRegistry();
         final var svc = new RecordCacheService();
-        svc.registerSchemas(registry);
+        svc.registerSchemas(registry, Service.RELEASE_045_VERSION);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
-        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
+        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);
         lenient().when(versionedConfig.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         lenient().when(ledgerConfig.recordsMaxQueryableByAccount()).thenReturn(MAX_QUERYABLE_PER_ACCOUNT);
         givenRecordCacheState();

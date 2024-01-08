@@ -27,6 +27,7 @@ module com.hedera.node.app.hapi.utils {
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
     requires com.sun.jna;
+    requires com.swirlds.base;
     requires org.apache.commons.codec;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;

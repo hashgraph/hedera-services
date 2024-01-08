@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,6 +80,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -512,9 +513,11 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         return switch (function) {
             case CONTRACT_CREATE -> txn.contractCreateInstance().gas();
             case CONTRACT_CALL -> txn.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
-                            txn.ethereumTransaction().ethereumData().toByteArray())
-                    .gasLimit();
+            case ETHEREUM_TRANSACTION -> Optional.of(
+                            txn.ethereumTransactionOrThrow().ethereumData().toByteArray())
+                    .map(EthTxData::populateEthTxData)
+                    .map(EthTxData::gasLimit)
+                    .orElse(0L);
             default -> 0L;
         };
     }
@@ -804,9 +807,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                     sb.append("  ")
                             .append(function)
                             .append(": ")
-                            .append(manager.currentUsage()) // use current usage instead of the package private
-                            // asReadableRequirements(), otherwise we need to make it public as
-                            // well
+                            .append(manager.asReadableRequirements())
                             .append("\n");
                 });
         log.info("{}", () -> sb.toString().trim());

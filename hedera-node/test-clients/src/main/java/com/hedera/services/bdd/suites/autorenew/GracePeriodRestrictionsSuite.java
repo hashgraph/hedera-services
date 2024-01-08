@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                 gracePeriodRestrictionsSuiteCleanup());
     }
 
-    private HapiSpec contractCallRestrictionsEnforced() {
+    final HapiSpec contractCallRestrictionsEnforced() {
         final var civilian = "misc";
         final var detachedAccount = "gone";
         final var contract = "DoubleSend";
@@ -134,7 +134,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getAccountBalance(detachedAccount).hasTinyBars(1L));
     }
 
-    private HapiSpec cryptoUpdateRestrictionsEnforced() {
+    final HapiSpec cryptoUpdateRestrictionsEnforced() {
         final var detachedAccount = "gone";
         final long certainlyPast = Instant.now().getEpochSecond() - THREE_MONTHS_IN_SECONDS;
         final long certainlyDistant = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -177,7 +177,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
-    private HapiSpec payerRestrictionsEnforced() {
+    final HapiSpec payerRestrictionsEnforced() {
         final var detachedAccount = "gone";
 
         return defaultHapiSpec("PayerRestrictionsEnforced")
@@ -199,7 +199,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    private HapiSpec topicAutoRenewOpsEnforced() {
+    final HapiSpec topicAutoRenewOpsEnforced() {
         final var topicWithDetachedAsAutoRenew = "c";
         final var topicSansDetachedAsAutoRenew = "d";
         final var detachedAccount = "gone";
@@ -236,7 +236,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getTopicInfo(topicWithDetachedAsAutoRenew).hasAutoRenewAccount(detachedAccount));
     }
 
-    private HapiSpec tokenAutoRenewOpsEnforced() {
+    final HapiSpec tokenAutoRenewOpsEnforced() {
         final var tokenWithDetachedAsAutoRenew = "c";
         final var tokenSansDetachedAsAutoRenew = "d";
         final var detachedAccount = "gone";
@@ -272,7 +272,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getTokenInfo(tokenWithDetachedAsAutoRenew).hasAutoRenewAccount(detachedAccount));
     }
 
-    private HapiSpec treasuryOpsRestrictionEnforced() {
+    final HapiSpec treasuryOpsRestrictionEnforced() {
         final var aToken = "c";
         final var detachedAccount = "gone";
         final var tokenMultiKey = "tak";
@@ -301,7 +301,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         getAccountBalance(detachedAccount).hasTokenBalance(aToken, expectedSupply));
     }
 
-    private HapiSpec tokenMgmtRestrictionsEnforced() {
+    final HapiSpec tokenMgmtRestrictionsEnforced() {
         final var notToBe = "a";
         final var tokenNotYetAssociated = "b";
         final var tokenAlreadyAssociated = "c";
@@ -345,7 +345,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    private HapiSpec cryptoAndContractDeleteRestrictionsEnforced() {
+    final HapiSpec cryptoAndContractDeleteRestrictionsEnforced() {
         final var detachedAccount = "gone";
         final var civilian = "misc";
         final var tbd = "contract";
@@ -372,7 +372,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    private HapiSpec cryptoTransferRestrictionsEnforced() {
+    final HapiSpec cryptoTransferRestrictionsEnforced() {
         final var aToken = "c";
         final var detachedAccount = "gone";
         final var civilian = "misc";
@@ -395,7 +395,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    private HapiSpec gracePeriodRestrictionsSuiteSetup() {
+    final HapiSpec gracePeriodRestrictionsSuiteSetup() {
         return defaultHapiSpec("GracePeriodRestrictionsSuiteSetup")
                 .given()
                 .when()
@@ -404,7 +404,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         .overridingProps(propsForAccountAutoRenewOnWith(1, 3600)));
     }
 
-    private HapiSpec gracePeriodRestrictionsSuiteCleanup() {
+    final HapiSpec gracePeriodRestrictionsSuiteCleanup() {
         return defaultHapiSpec("GracePeriodRestrictionsSuiteCleanup")
                 .given()
                 .when()

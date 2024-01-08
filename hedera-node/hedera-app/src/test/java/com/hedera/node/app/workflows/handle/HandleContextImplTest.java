@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,7 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
@@ -275,6 +276,68 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     })
                     .isInstanceOf(InvocationTargetException.class)
                     .hasCauseInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Handling of record list checkpoint creation")
+    final class RevertRecordFromCheckPointTest {
+
+        private HandleContextImpl subject;
+
+        @BeforeEach
+        void setUp() {
+            when(stack.createWritableStates(TokenService.NAME))
+                    .thenReturn(MapWritableStates.builder()
+                            .state(MapWritableKVState.builder("ACCOUNTS").build())
+                            .state(MapWritableKVState.builder("ALIASES").build())
+                            .build());
+            subject = createContext(defaultTransactionBody());
+        }
+
+        @Test
+        void success_createRecordListCheckPoint() {
+            // given
+            var precedingRecord = createRecordBuilder();
+            var childRecord = createRecordBuilder();
+            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord));
+            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord));
+
+            // when
+            final var actual = subject.createRecordListCheckPoint();
+
+            // then
+            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord, childRecord));
+        }
+
+        @Test
+        void success_createRecordListCheckPoint_MultipleRecords() {
+            // given
+            var precedingRecord = createRecordBuilder();
+            var precedingRecord1 = createRecordBuilder();
+            var childRecord = createRecordBuilder();
+            var childRecord1 = createRecordBuilder();
+
+            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord, precedingRecord1));
+            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord, childRecord1));
+
+            // when
+            final var actual = subject.createRecordListCheckPoint();
+
+            // then
+            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord1, childRecord1));
+        }
+
+        @Test
+        void success_createRecordListCheckPoint_null_values() {
+            // when
+            final var actual = subject.createRecordListCheckPoint();
+            // then
+            assertThat(actual).isEqualTo(new RecordListCheckPoint(null, null));
+        }
+
+        private static SingleTransactionRecordBuilderImpl createRecordBuilder() {
+            return new SingleTransactionRecordBuilderImpl(Instant.EPOCH);
         }
     }
 
@@ -1047,23 +1110,25 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testDispatchPrecedingWithNonEmptyStackDoesntFail() {
             // given
+            given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
+            given(selfNodeInfo.nodeId()).willReturn(0L);
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.createSavepoint();
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
+                            AccountID.DEFAULT));
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
+                            AccountID.DEFAULT));
+            verify(recordListBuilder, never()).addRemovablePreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)

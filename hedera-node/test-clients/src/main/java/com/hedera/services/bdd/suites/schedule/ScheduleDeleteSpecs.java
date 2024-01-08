@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermSignSpecs.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULED_TXN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
@@ -45,10 +49,6 @@ import org.apache.logging.log4j.Logger;
 @HapiTestSuite
 public class ScheduleDeleteSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
-    private static final String VALID_SCHEDULED_TXN = "validScheduledTxn";
-    private static final String SENDER = "sender";
-    private static final String RECEIVER = "receiver";
-    private static final String ADMIN = "admin";
 
     public static void main(String... args) {
         new ScheduleDeleteSpecs().runSuiteAsync();
@@ -70,7 +70,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deleteWithNoAdminKeyFails() {
+    final HapiSpec deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -82,7 +82,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec unauthorizedDeletionFails() {
+    final HapiSpec unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -99,7 +99,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletingAlreadyDeletedIsObvious() {
+    final HapiSpec deletingAlreadyDeletedIsObvious() {
         return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
@@ -117,7 +117,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec deletingNonExistingFails() {
+    final HapiSpec deletingNonExistingFails() {
         return defaultHapiSpec("DeletingNonExistingFails")
                 .given()
                 .when()
@@ -126,7 +126,8 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         scheduleDelete("0.0.0").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
-    private HapiSpec deletingExecutedIsPointless() {
+    @HapiTest
+    final HapiSpec deletingExecutedIsPointless() {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate,ConsensusSubmitMessage"),

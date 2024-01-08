@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,8 +91,6 @@ public class FileSystemDeleteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
-        // TODO: check here that the "payer" is a privileged account.
-        //       a privileged account is always required for this transaction.
 
         final var systemDeleteTransactionBody = handleContext.body().systemDeleteOrThrow();
         if (!systemDeleteTransactionBody.hasFileID()) {

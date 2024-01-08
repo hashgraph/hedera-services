@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import com.swirlds.config.api.ConfigProperty;
 public record ConsensusConfig(
         @ConfigProperty(value = "message.maxBytesAllowed", defaultValue = "1024") @NetworkProperty
                 int messageMaxBytesAllowed,
-        @ConfigProperty(value = "message.maxPrecedingRecords", defaultValue = "3") @NetworkProperty
+        @ConfigProperty(value = "handle.maxPrecedingRecords", defaultValue = "3") @NetworkProperty
                 long handleMaxPrecedingRecords,
-        @ConfigProperty(value = "message.maxFollowingRecords", defaultValue = "50") @NetworkProperty
+        @ConfigProperty(value = "handle.maxFollowingRecords", defaultValue = "50") @NetworkProperty
                 long handleMaxFollowingRecords) {}

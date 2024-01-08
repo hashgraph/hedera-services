@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.state.Lifecycle;
@@ -89,7 +90,7 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
                 globalMetrics.subscribe(endpoint::handleMetricsChange);
                 snapshotService.subscribe(endpoint::handleSnapshots);
             } catch (final IOException e) {
-                logger.error("Exception while setting up Prometheus endpoint", e);
+                logger.error(EXCEPTION.getMarker(), "Exception while setting up Prometheus endpoint", e);
             }
         }
         prometheusEndpoint = endpoint;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private boolean requestDuplicates = false;
     private boolean requestChildRecords = false;
     private boolean includeStakingRecordsInCount = true;
+    // This field should be merged with includeStakingRecordsInCount in the future
+    private boolean countStakingRecords = false;
     private boolean shouldBeTransferFree = false;
     private boolean assertOnlyPriority = false;
     private boolean assertNothingAboutHashes = false;
@@ -246,6 +248,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord omittingAnyPaymentForCostAnswer() {
         omitPaymentHeaderOnCostAnswer = true;
+        return this;
+    }
+
+    public HapiGetTxnRecord countStakingRecords() {
+        countStakingRecords = true;
         return this;
     }
 
@@ -435,6 +442,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return response.getTransactionGetRecord().getChildTransactionRecords(i);
     }
 
+    public TransactionRecord getFirstNonStakingChildRecord() {
+        return getChildRecords().stream()
+                .filter(child -> !isEndOfStakingPeriodRecord(child))
+                .findFirst()
+                .orElseThrow();
+    }
+
     public List<TransactionRecord> getChildRecords() {
         return response.getTransactionGetRecord().getChildTransactionRecordsList();
     }
@@ -478,18 +492,22 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             }
 
             final var numActualRecords = actualRecords.size();
-            if (expectedChildRecords.size() != (numActualRecords - numStakingRecords)) {
+            var numRecordsToSubtract = numStakingRecords;
+            if (countStakingRecords) {
+                numRecordsToSubtract = 0;
+            }
+            if (expectedChildRecords.size() != (numActualRecords - numRecordsToSubtract)) {
                 final var printableActualRecords = actualRecords.stream()
                         .filter(r -> !isEndOfStakingPeriodRecord(r))
                         .map(TransactionRecord::toString)
                         .collect(Collectors.joining(", "));
                 assertEquals(
                         expectedChildRecords.size(),
-                        numActualRecords - numStakingRecords,
+                        numActualRecords - numRecordsToSubtract,
                         "Wrong # of (non-staking) child records, got: " + printableActualRecords);
             }
-            for (int i = numStakingRecords; i < numActualRecords; i++) {
-                final var expectedChildRecord = expectedChildRecords.get(i - numStakingRecords);
+            for (int i = numRecordsToSubtract; i < numActualRecords; i++) {
+                final var expectedChildRecord = expectedChildRecords.get(i - numRecordsToSubtract);
                 final var actualChildRecord = actualRecords.get(i);
                 final ErroringAsserts<TransactionRecord> asserts = expectedChildRecord.assertsFor(spec);
                 final List<Throwable> errors = asserts.errorsIn(actualChildRecord);

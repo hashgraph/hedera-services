@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ public class ModelEdge implements Comparable<ModelEdge> {
     private ModelVertex destination;
     private final String label;
     private final boolean insertionIsBlocking;
+    private final boolean manual;
 
     /**
      * Constructor.
@@ -39,17 +40,21 @@ public class ModelEdge implements Comparable<ModelEdge> {
      * @param destination         the destination vertex
      * @param label               the label of the edge, if a label is not needed for an edge then holds the value ""
      * @param insertionIsBlocking true if the insertion of this edge may block until capacity is available
+     * @param manual              true if this edge has been manually added to the diagram, false if this edge
+     *                            represents something tracked by the wiring framework
      */
     public ModelEdge(
             @NonNull final ModelVertex source,
             @NonNull final ModelVertex destination,
             @NonNull final String label,
-            final boolean insertionIsBlocking) {
+            final boolean insertionIsBlocking,
+            final boolean manual) {
 
         this.source = Objects.requireNonNull(source);
         this.destination = Objects.requireNonNull(destination);
         this.label = Objects.requireNonNull(label);
         this.insertionIsBlocking = insertionIsBlocking;
+        this.manual = manual;
     }
 
     /**
@@ -147,6 +152,18 @@ public class ModelEdge implements Comparable<ModelEdge> {
     }
 
     /**
+     * Get the character for the outgoing end of this edge.
+     */
+    @NonNull
+    private String getArrowCharacter() {
+        if (manual) {
+            return "o";
+        } else {
+            return ">";
+        }
+    }
+
+    /**
      * Render this edge to a string builder.
      *
      * @param sb           the string builder to render to
@@ -155,21 +172,23 @@ public class ModelEdge implements Comparable<ModelEdge> {
     public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameShortener nameProvider) {
 
         final String sourceName = nameProvider.getShortVertexName(source.getName());
-        sb.append(sourceName);
+        sb.append(sourceName).append(" ");
 
         if (insertionIsBlocking) {
             if (label.isEmpty()) {
-                sb.append(" --> ");
+                sb.append("--");
             } else {
-                sb.append(" -- \"").append(label).append("\" --> ");
+                sb.append("-- \"").append(label).append("\" --");
             }
         } else {
             if (label.isEmpty()) {
-                sb.append(" -.-> ");
+                sb.append("-.-");
             } else {
-                sb.append(" -. \"").append(label).append("\" .-> ");
+                sb.append("-. \"").append(label).append("\" .-");
             }
         }
+
+        sb.append(getArrowCharacter()).append(" ");
 
         final String destinationName = nameProvider.getShortVertexName(destination.getName());
         sb.append(destinationName).append("\n");

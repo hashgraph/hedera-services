@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package com.swirlds.common.config.singleton;
 
 import com.swirlds.common.config.ConfigUtils;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -61,9 +61,10 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * Sets the config. This method should only be called in the browser at startup or at unit tests
      *
      * @param configuration the new configuration
+     * @throws NullPointerException in case {@code configuration} parameter is {@code null}
      */
     public void setConfiguration(final Configuration configuration) {
-        this.configuration = CommonUtils.throwArgNull(configuration, "configuration");
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
     /**

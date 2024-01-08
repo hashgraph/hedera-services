@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import com.swirlds.common.config.SocketConfig;
+import com.swirlds.platform.network.SocketConfig;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

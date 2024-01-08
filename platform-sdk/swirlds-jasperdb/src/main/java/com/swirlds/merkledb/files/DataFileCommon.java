@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.base.units.UnitConstants.GIBIBYTES_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.KIBIBYTES_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
-import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
-import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static java.util.stream.Collectors.joining;

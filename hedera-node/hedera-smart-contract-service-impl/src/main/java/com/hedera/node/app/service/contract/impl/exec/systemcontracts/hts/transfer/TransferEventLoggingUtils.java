@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,8 @@ public class TransferEventLoggingUtils {
         requireNonNull(frame);
         requireNonNull(adjusts);
         requireNonNull(accountStore);
-        AccountID senderId = null;
-        AccountID receiverId = null;
+        var senderId = AccountID.DEFAULT;
+        var receiverId = AccountID.DEFAULT;
         long amount = 0L;
         for (final var adjust : adjusts) {
             amount = Math.abs(adjust.amount());
@@ -69,7 +69,7 @@ public class TransferEventLoggingUtils {
                 senderId = adjust.accountIDOrThrow();
             }
         }
-        frame.addLog(builderFor(tokenId, requireNonNull(senderId), requireNonNull(receiverId), accountStore)
+        frame.addLog(builderFor(tokenId, senderId, receiverId, accountStore)
                 .forDataItem(amount)
                 .build());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -33,13 +32,12 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
-import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -79,42 +77,36 @@ class PreconsensusEventReplayWorkflowTests {
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
         final int eventCount = 1000;
         for (int i = 0; i < eventCount; i++) {
-            final EventImpl event = graphGenerator.generateEvent();
+            final EventImpl event = graphGenerator.generateEventWithoutDescriptor();
             events.add(event.getBaseEvent());
         }
         final Iterator<GossipEvent> eventIterator = events.iterator();
 
         final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
         when(preconsensusEventFileManager.getEventIterator(anyLong())).thenAnswer(invocation -> {
-            final PreconsensusEventMultiFileIterator it = mock(PreconsensusEventMultiFileIterator.class);
+            final PcesMultiFileIterator it = mock(PcesMultiFileIterator.class);
             when(it.hasNext()).thenAnswer(invocation2 -> eventIterator.hasNext());
             when(it.next()).thenAnswer(invocation2 -> eventIterator.next());
             return it;
         });
 
-        final EventValidator eventValidator = mock(EventValidator.class);
         final AtomicInteger nextIndex = new AtomicInteger(0);
-        doAnswer(invocation -> {
-                    if (phase.get() != TestPhase.REPLAY_EVENTS) {
-                        fail("validateEvent should not be called until after replaying events");
-                    }
+        final InterruptableConsumer<GossipEvent> intakeHandler = event -> {
+            if (phase.get() != TestPhase.REPLAY_EVENTS) {
+                fail("validateEvent should not be called until after replaying events");
+            }
 
-                    final GossipEvent event = invocation.getArgument(0);
-                    assertNotNull(event.getHashedData().getHash());
+            assertNotNull(event.getHashedData().getHash());
 
-                    final int index = nextIndex.getAndIncrement();
-                    final GossipEvent expectedEvent = events.get(index);
+            final int index = nextIndex.getAndIncrement();
+            final GossipEvent expectedEvent = events.get(index);
 
-                    assertSame(event.getHashedData(), expectedEvent.getHashedData());
+            assertSame(event.getHashedData(), expectedEvent.getHashedData());
 
-                    if (nextIndex.get() >= eventCount) {
-                        phase.set(TestPhase.FLUSH_INTAKE_QUEUE);
-                    }
-
-                    return null;
-                })
-                .when(eventValidator)
-                .validateEvent(any());
+            if (nextIndex.get() >= eventCount) {
+                phase.set(TestPhase.FLUSH_INTAKE_QUEUE);
+            }
+        };
 
         final QueueThread<GossipEvent> eventIntakeTaskQueueThread = mock(QueueThread.class);
         doAnswer(invocation -> {
@@ -152,14 +144,12 @@ class PreconsensusEventReplayWorkflowTests {
                 .when(preconsensusEventWriter)
                 .beginStreamingNewEvents();
 
-        final StateManagementComponent stateManagementComponent = mock(StateManagementComponent.class);
         final ReservedSignedState latestImmutableState = mock(ReservedSignedState.class);
         when(latestImmutableState.isNull()).thenReturn(false);
         final SignedState signedState = mock(SignedState.class);
         when(signedState.getRound()).thenReturn(random.nextLong(1, 10000));
         when(signedState.getConsensusTimestamp()).thenReturn(randomInstant(random));
         when(latestImmutableState.get()).thenReturn(signedState);
-        when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -170,12 +160,13 @@ class PreconsensusEventReplayWorkflowTests {
                 Time.getCurrent(),
                 preconsensusEventFileManager,
                 preconsensusEventWriter,
-                eventValidator::validateEvent,
+                intakeHandler,
                 eventIntakeTaskQueueThread,
                 consensusRoundHandler,
                 stateHashSignQueue,
-                stateManagementComponent,
-                minimumGenerationNonAncient);
+                minimumGenerationNonAncient,
+                () -> latestImmutableState,
+                () -> {});
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class Issue2143Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec account55ControlCanUpdatePropertiesAndPermissions() {
+    final HapiSpec account55ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account55ControlCanUpdatePropertiesAndPermissions")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000L)))
                 .when(
@@ -66,7 +66,7 @@ public class Issue2143Spec extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec account57ControlCanUpdatePropertiesAndPermissions() {
+    final HapiSpec account57ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account57ControlCanUpdatePropertiesAndPermissions")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L)))
                 .when(

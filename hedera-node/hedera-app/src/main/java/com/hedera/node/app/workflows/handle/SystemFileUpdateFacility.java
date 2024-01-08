@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -33,8 +35,11 @@ import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.util.Collections;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,6 +126,7 @@ public class SystemFileUpdateFacility {
             final var permissions =
                     FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
             configProvider.update(networkProperties, permissions);
+            logContentsOf("Network properties", networkProperties);
             backendThrottle.applyGasConfig();
             frontendThrottle.applyGasConfig();
 
@@ -132,6 +138,7 @@ public class SystemFileUpdateFacility {
                     FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
             final var permissions = FileUtilities.getFileContent(state, fileID);
             configProvider.update(networkProperties, permissions);
+            logContentsOf("API permissions", permissions);
         } else if (fileNum == config.throttleDefinitions()) {
             final var result = throttleManager.update(FileUtilities.getFileContent(state, fileID));
             backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
@@ -142,6 +149,21 @@ public class SystemFileUpdateFacility {
             return result;
         }
         return SUCCESS;
+    }
+
+    private void logContentsOf(@NonNull final String configFileName, @NonNull final Bytes contents) {
+        try {
+            final var configList = ServicesConfigurationList.PROTOBUF.parseStrict(contents.toReadableSequentialData());
+            final var printableConfigList = configList.nameValueOrElse(Collections.emptyList()).stream()
+                    .map(pair -> pair.name() + "=" + pair.value())
+                    .collect(joining("\n\t"));
+            logger.info(
+                    "Refreshing properties with following overrides to {}:\n\t{}",
+                    configFileName,
+                    printableConfigList.isBlank() ? "<NONE>" : printableConfigList);
+        } catch (IOException ignore) {
+            // If this isn't parseable we won't have updated anything, also don't log
+        }
     }
 
     private FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {

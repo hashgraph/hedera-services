@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.fees;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -40,8 +41,8 @@ public class FeeService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new Schema(RELEASE_045_VERSION) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new Schema(version) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

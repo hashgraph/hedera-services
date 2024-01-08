@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import java.util.HashMap;
@@ -74,6 +74,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
         return ss -> {
             assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
             stateHasEnoughSignaturesCount.getAndIncrement();
         };
     }
@@ -82,7 +83,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
     @DisplayName("Sequential Signatures After Restart Test")
     void sequentialSignaturesAfterRestartTest() throws InterruptedException {
 
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

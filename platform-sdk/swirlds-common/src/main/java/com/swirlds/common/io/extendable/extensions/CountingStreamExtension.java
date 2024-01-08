@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package com.swirlds.common.io.extendable.extensions;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.io.extendable.extensions.internal.Counter;
 import com.swirlds.common.io.extendable.extensions.internal.StandardCounter;
 import com.swirlds.common.io.extendable.extensions.internal.ThreadSafeCounter;
-import com.swirlds.common.units.UnitConstants;
 
 /**
  * A stream extension that counts the number of bytes that pass through it

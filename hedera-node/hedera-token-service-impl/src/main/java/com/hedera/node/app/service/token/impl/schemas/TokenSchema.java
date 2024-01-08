@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator.asAccountId;
-import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -93,8 +93,9 @@ public class TokenSchema extends Schema {
             @NonNull final Supplier<SortedSet<Account>> stakingAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> treasuryAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> miscAcctRcds,
-            @NonNull final Supplier<SortedSet<Account>> blocklistAcctRcds) {
-        super(RELEASE_045_VERSION);
+            @NonNull final Supplier<SortedSet<Account>> blocklistAcctRcds,
+            @NonNull final SemanticVersion version) {
+        super(version);
 
         this.sysAccts = sysAcctRcds;
         this.stakingAccts = stakingAcctRcds;
@@ -264,28 +265,31 @@ public class TokenSchema extends Schema {
     }
 
     private void initializeStakingNodeInfo(@NonNull final MigrationContext ctx) {
-        // TODO: This need to go through address book and set all the nodes
         final var config = ctx.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var stakingConfig = config.getConfigData(StakingConfig.class);
-        final var numberOfNodes = 1;
+        final var addressBook = ctx.networkInfo().addressBook();
+        final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
         final long minStakePerNode = maxStakePerNode / 2;
 
         final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
         final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
-        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods];
+        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
         Arrays.fill(rewardSumHistory, 0L);
 
-        final var stakingInfo = StakingNodeInfo.newBuilder()
-                .nodeNumber(0)
-                .maxStake(maxStakePerNode)
-                .minStake(minStakePerNode)
-                .rewardSumHistory(Arrays.asList(rewardSumHistory))
-                .weight(500)
-                .build();
-        stakingInfoState.put(EntityNumber.newBuilder().number(0L).build(), stakingInfo);
+        for (final var node : addressBook) {
+            final var nodeNumber = node.nodeId();
+            final var stakingInfo = StakingNodeInfo.newBuilder()
+                    .nodeNumber(nodeNumber)
+                    .maxStake(maxStakePerNode)
+                    .minStake(minStakePerNode)
+                    .rewardSumHistory(Arrays.asList(rewardSumHistory))
+                    .weight(500)
+                    .build();
+            stakingInfoState.put(EntityNumber.newBuilder().number(nodeNumber).build(), stakingInfo);
+        }
     }
 
     private void initializeNetworkRewards(@NonNull final MigrationContext ctx) {

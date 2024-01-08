@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.infra;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -360,6 +361,17 @@ class HevmTransactionFactoryTest {
         assertCreateFailsWith(CONTRACT_FILE_EMPTY, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .fileID(INITCODE_FILE_ID)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
+                .proxyAccountID(AccountID.DEFAULT)
+                .autoRenewPeriod(SOME_DURATION));
+    }
+
+    @Test
+    void fromHapiCreationValidatesInlineInitcodeNotEmpty() {
+        assertCreateFailsWith(CONTRACT_BYTECODE_EMPTY, b -> b.memo(SOME_MEMO)
+                .adminKey(AN_ED25519_KEY)
+                .initcode(Bytes.EMPTY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
                 .proxyAccountID(AccountID.DEFAULT)

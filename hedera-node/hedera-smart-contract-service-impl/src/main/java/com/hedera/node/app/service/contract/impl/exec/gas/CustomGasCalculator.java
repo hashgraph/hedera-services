@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.gas;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.tinybarValuesFor;
-import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
-import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.base.units.UnitConstants.MINUTES_TO_SECONDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.config.data.CacheConfig;

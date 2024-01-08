@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -72,7 +72,8 @@ public class CustomSelfDestructOperation extends AbstractOperation {
             final var tbdAddress = frame.getRecipientAddress();
             final var proxyWorldUpdater = (ProxyWorldUpdater) frame.getWorldUpdater();
             // Enforce Hedera-specific restrictions on account deletion
-            final var maybeHaltReason = proxyWorldUpdater.tryTrackingDeletion(tbdAddress, beneficiaryAddress);
+            final var maybeHaltReason =
+                    proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(tbdAddress, beneficiaryAddress, frame);
             if (maybeHaltReason.isPresent()) {
                 return haltFor(null, 0, maybeHaltReason.get());
             }
@@ -103,7 +104,7 @@ public class CustomSelfDestructOperation extends AbstractOperation {
             frame.addRefund(beneficiaryAddress, inheritance);
             frame.setState(MessageFrame.State.CODE_SUCCESS);
             return new OperationResult(cost, null);
-        } catch (FixedStack.UnderflowException ignore) {
+        } catch (UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
     }

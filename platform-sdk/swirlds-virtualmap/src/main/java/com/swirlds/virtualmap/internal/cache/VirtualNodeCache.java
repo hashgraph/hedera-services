@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,8 +171,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                             .setThreadGroup(new ThreadGroup("virtual-cache-cleaners"))
                             .setComponent("virtual-map")
                             .setThreadName("cache-cleaner")
-                            .setExceptionHandler(
-                                    (t, ex) -> logger.error("Failed to purge unneeded key/mutationList pairs", ex))
+                            .setExceptionHandler((t, ex) -> logger.error(
+                                    EXCEPTION.getMarker(), "Failed to purge unneeded key/mutationList pairs", ex))
                             .buildFactory());
 
     /**

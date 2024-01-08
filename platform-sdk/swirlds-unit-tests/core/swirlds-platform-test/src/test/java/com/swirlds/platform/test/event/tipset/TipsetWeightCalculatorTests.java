@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight;
@@ -533,9 +534,11 @@ class TipsetWeightCalculatorTests {
         final EventDescriptor eventD2 = newEventDescriptor(randomHash(random), nodeD, 2);
         builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
+        // FUTURE WORK: Change the test to use birthRound instead of generation for ancient.
         // Mark generation 1 as ancient.
-        builder.setMinimumGenerationNonAncient(2);
-        childlessEventTracker.pruneOldEvents(2);
+        final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(1, 1, 2, false);
+        builder.setNonAncientEventWindow(nonAncientEventWindow);
+        childlessEventTracker.pruneOldEvents(nonAncientEventWindow);
 
         // We shouldn't be able to find tipsets for ancient events.
         assertNull(builder.getTipset(eventA1));

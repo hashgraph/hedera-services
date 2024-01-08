@@ -19,7 +19,7 @@ plugins {
 }
 
 val besuNativeVersion = "0.8.2"
-val besuVersion = "23.10.0"
+val besuVersion = "23.10.2"
 val bouncycastleVersion = "1.76"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
@@ -27,11 +27,11 @@ val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
 val jacksonVersion = "2.16.0"
 val log4jVersion = "2.21.1"
-val mockitoVersion = "4.11.0"
+val mockitoVersion = "5.8.0"
 val nettyVersion = "4.1.87.Final"
 val prometheusVersion = "0.16.0"
 val protobufVersion = "3.21.7"
-val systemStubsVersion = "2.0.2"
+val systemStubsVersion = "2.1.5"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.4.2"
 
@@ -55,7 +55,7 @@ moduleInfo {
     version("com.google.jimfs", "1.2")
     version("com.google.protobuf", protobufVersion)
     version("com.google.protobuf.util", protobufVersion)
-    version("com.hedera.pbj.runtime", "0.7.6")
+    version("com.hedera.pbj.runtime", "0.7.11")
     version("com.squareup.javapoet", "1.13.0")
     version("com.sun.jna", "5.12.1")
     version("dagger", daggerVersion)
@@ -101,7 +101,6 @@ moduleInfo {
     version("org.junit.platform.engine", "1.9.1")
     version("org.junitpioneer", "2.0.1")
     version("org.mockito", mockitoVersion)
-    version("org.mockito.inline", mockitoVersion)
     version("org.mockito.junit.jupiter", mockitoVersion)
     version("org.opentest4j", "1.2.0")
     version("org.testcontainers", testContainersVersion)

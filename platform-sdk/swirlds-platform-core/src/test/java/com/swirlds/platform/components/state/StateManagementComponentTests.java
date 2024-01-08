@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,8 @@ package com.swirlds.platform.components.state;
 
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.context.PlatformContext;
@@ -36,16 +31,12 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -57,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -74,13 +66,11 @@ class StateManagementComponentTests {
     private final TestPrioritySystemTransactionConsumer systemTransactionConsumer =
             new TestPrioritySystemTransactionConsumer();
     private final TestSignedStateWrapperConsumer newLatestCompleteStateConsumer = new TestSignedStateWrapperConsumer();
-    private final TestSavedStateController controller = new TestSavedStateController();
 
     @BeforeEach
     protected void beforeEach() {
         systemTransactionConsumer.reset();
         newLatestCompleteStateConsumer.reset();
-        controller.getStatesQueue().clear();
     }
 
     /**
@@ -123,76 +113,6 @@ class StateManagementComponentTests {
                 "Invalid number of system transactions submitted");
 
         component.stop();
-    }
-
-    /**
-     * Verify that when the component is provided a complete signed state to load, it is returned when asked for the
-     * latest complete signed state.
-     */
-    @Test
-    @DisplayName("Signed state to load becomes the latest complete signed state")
-    void signedStateToLoadIsLatestComplete() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final DefaultStateManagementComponent component = newStateManagementComponent();
-
-        component.start();
-
-        final int firstRound = 1;
-        final int lastRound = 100;
-
-        // Send a bunch of signed states for the component to load, in order
-        for (int roundNum = firstRound; roundNum <= lastRound; roundNum++) {
-            final SignedState signedState =
-                    new RandomSignedStateGenerator(random).setRound(roundNum).build();
-
-            final SignedState signedStateSpy = spy(signedState);
-            when(signedStateSpy.isComplete()).thenReturn(true);
-
-            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
-
-            // Some basic assertions on the signed state provided to the new latest complete state consumer
-            verifyNewLatestCompleteStateConsumer(roundNum, signedStateSpy);
-
-            verifyLatestCompleteState(signedStateSpy, component);
-        }
-
-        // Send a bunch of signed states that are older than the latest complete signed state
-        for (int roundNum = firstRound; roundNum < lastRound; roundNum++) {
-            final SignedState signedState =
-                    new RandomSignedStateGenerator(random).setRound(roundNum).build();
-
-            final SignedState signedStateSpy = spy(signedState);
-            when(signedStateSpy.isComplete()).thenReturn(true);
-
-            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
-
-            // The signed state provided is old, so the consumer should not be invoked again
-            assertEquals(
-                    lastRound,
-                    newLatestCompleteStateConsumer.getNumInvocations(),
-                    "The new latest complete state consumer should not be invoked for states that are older than the "
-                            + "current latest complete state");
-
-            // The latest complete signed state should still be the same as before and not the one just provided
-            verifyLatestCompleteState(newLatestCompleteStateConsumer.getLastSignedState(), component);
-        }
-
-        component.stop();
-    }
-
-    private void verifyLatestCompleteState(
-            final SignedState expectedSignedState, final StateManagementComponent component) {
-        // Check that the correct signed state is provided when the latest complete state is requested
-        try (final ReservedSignedState wrapper = component.getLatestSignedState("test")) {
-            assertEquals(expectedSignedState, wrapper.get(), "Incorrect latest signed state provided");
-
-            // 1 for being the latest complete signed state
-            // 1 for being the latest signed state
-            // 1 for the AutoCloseableWrapper
-            assertEquals(3, wrapper.get().getReservationCount(), "Incorrect number of reservations");
-        }
-        assertEquals(
-                expectedSignedState.getRound(), component.getLastCompleteRound(), "Incorrect latest complete round");
     }
 
     private void verifyNewLatestCompleteStateConsumer(final int roundNum, final SignedState signedState) {
@@ -240,109 +160,11 @@ class StateManagementComponentTests {
                 // This state should be sent out as the latest complete state
                 final int finalRoundNum = roundNum;
                 AssertionUtils.assertEventuallyDoesNotThrow(
-                        () -> {
-                            verifyNewLatestCompleteStateConsumer(finalRoundNum / 2, signedState);
-                            verifyLatestCompleteState(signedState, component);
-                        },
+                        () -> verifyNewLatestCompleteStateConsumer(finalRoundNum / 2, signedState),
                         Duration.ofSeconds(2),
                         "The unit test failed.");
             }
         }
-
-        component.stop();
-    }
-
-    @Test
-    @DisplayName("Signed States For Old Rounds Are Not Processed")
-    void signedStateFromTransactionsCodePath() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final DefaultStateManagementComponent component = newStateManagementComponent();
-
-        systemTransactionConsumer.reset();
-        component.start();
-
-        final SignedState signedStateRound1 = new RandomSignedStateGenerator(random)
-                .setRound(1)
-                .setSigningNodeIds(List.of())
-                .build();
-        signedStateRound1.getState().setHash(null);
-
-        final SignedState signedStateRound2 = new RandomSignedStateGenerator(random)
-                .setRound(2)
-                .setSigningNodeIds(List.of())
-                .build();
-        signedStateRound2.getState().setHash(null);
-
-        final SignedState signedStateRound3 = new RandomSignedStateGenerator(random)
-                .setRound(3)
-                .setSigningNodeIds(List.of())
-                .build();
-        signedStateRound3.getState().setHash(null);
-
-        // Transaction proceeds, state is hashed, signature of hash sent, and state is set as last state.
-        component.newSignedStateFromTransactions(signedStateRound2.reserve("test"));
-        assertNotNull(
-                signedStateRound2.getState().getHash(),
-                "The hash for transaction states that are processed will not be null.");
-        assertEquals(
-                systemTransactionConsumer.getNumSubmitted(),
-                1,
-                "The transaction could should be 1 for processing a valid state.");
-        assertEquals(
-                component.getLatestImmutableState("test").get(),
-                signedStateRound2,
-                "The last state should be the same as the signed state for round 2.");
-
-        // Transaction fails to be signed due to lower round.
-        component.newSignedStateFromTransactions(signedStateRound1.reserve("test"));
-        assertNull(
-                signedStateRound1.getState().getHash(),
-                "The states with older rounds will not have their hash computed.");
-        assertEquals(
-                systemTransactionConsumer.getNumSubmitted(),
-                1,
-                "The states with older rounds will not have hash signatures transmitted.");
-        assertEquals(
-                component.getLatestImmutableState("test").get(),
-                signedStateRound2,
-                "The states with older rounds will not be saved as the latest state.");
-
-        // Transaction proceeds, state is hashed, signature of hash sent, and state is set as last state.
-        component.newSignedStateFromTransactions(signedStateRound3.reserve("test"));
-        assertNotNull(
-                signedStateRound3.getState().getHash(),
-                "The state should be processed and have a hash computed and set.");
-        assertEquals(
-                systemTransactionConsumer.getNumSubmitted(),
-                2,
-                "The signed hash for processed states will be transmitted.");
-        assertEquals(
-                component.getLatestImmutableState("test").get(),
-                signedStateRound3,
-                "The processed state should be set as the latest state in teh signed state manager.");
-
-        component.stop();
-    }
-
-    @Test
-    @DisplayName("Test that the state is saved to disk when it is received via reconnect")
-    void testReconnectStateSaved() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final DefaultStateManagementComponent component = newStateManagementComponent();
-
-        component.start();
-
-        final List<NodeId> majorityWeightNodes =
-                IntStream.range(0, NUM_NODES - 1).mapToObj(NodeId::new).toList();
-        final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setRound(10)
-                .setSigningNodeIds(majorityWeightNodes)
-                .build();
-        component.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
-        final SignedState stateSentForWriting = controller.getStatesQueue().poll();
-        assertNotNull(stateSentForWriting, "The state should be saved to disk.");
-        assertEquals(
-                stateSentForWriting, signedState, "The state saved to disk should be the same as the state loaded.");
 
         component.stop();
     }
@@ -432,11 +254,14 @@ class StateManagementComponentTests {
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
-        final PlatformSigner signer = mock(PlatformSigner.class);
-        when(signer.sign(any(Hash.class))).thenReturn(mock(Signature.class));
-
-        final PlatformStatusGetter platformStatusGetter = mock(PlatformStatusGetter.class);
-        when(platformStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
+        final Consumer<ReservedSignedState> signer = rs -> {
+            try (rs) {
+                systemTransactionConsumer.consume(new StateSignatureTransaction(
+                        rs.get().getRound(),
+                        mock(Signature.class),
+                        rs.get().getState().getHash()));
+            }
+        };
 
         final DispatchConfiguration dispatchConfiguration =
                 platformContext.getConfiguration().getConfigData(DispatchConfiguration.class);
@@ -447,13 +272,10 @@ class StateManagementComponentTests {
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
                 dispatchBuilder,
-                signer,
-                systemTransactionConsumer::consume,
                 newLatestCompleteStateConsumer::consume,
                 (msg, t, code) -> {},
-                platformStatusGetter,
-                controller,
-                r -> {});
+                rss -> {},
+                signer);
 
         dispatchBuilder.start();
 

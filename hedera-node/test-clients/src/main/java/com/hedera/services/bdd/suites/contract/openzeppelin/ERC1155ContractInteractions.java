@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class ERC1155ContractInteractions extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec erc1155() {
+    final HapiSpec erc1155() {
         return defaultHapiSpec("erc1155")
                 .given(
                         newKeyNamed("ec").shape(SECP_256K1_SHAPE),
@@ -86,7 +86,10 @@ public class ERC1155ContractInteractions extends HapiSuite {
                         uploadInitCode(CONTRACT))
                 .when()
                 .then(
-                        contractCreate(CONTRACT).via("contractCreate").payingWith(ACCOUNT2),
+                        contractCreate(CONTRACT)
+                                .gas(500_000L)
+                                .via("contractCreate")
+                                .payingWith(ACCOUNT2),
                         getTxnRecord("contractCreate").logged(),
                         getAccountBalance(ACCOUNT2).logged(),
                         getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),

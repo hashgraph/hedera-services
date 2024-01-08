@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,7 +203,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         newKeyNamed("admin"),
                         cryptoCreate(treasury),
                         uploadInitCode(contract),
-                        contractCreate(contract).gas(300_000).via(CREATION),
+                        contractCreate(contract).gas(600_000).via(CREATION),
                         withOpContext((spec, opLog) -> {
                             var subOp = getTxnRecord(CREATION);
                             allRunFor(spec, subOp);
@@ -388,7 +388,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
                         uploadInitCode(contract),
-                        contractCreate(contract).gas(300_000),
+                        contractCreate(contract).gas(600_000),
                         tokenCreate(uniqToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)

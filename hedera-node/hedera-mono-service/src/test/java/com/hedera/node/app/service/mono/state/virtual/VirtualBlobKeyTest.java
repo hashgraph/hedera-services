@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,20 +107,24 @@ class VirtualBlobKeyTest {
 
     @Test
     void serializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(16);
+        final ByteBuffer verify = ByteBuffer.allocate(16);
+        verify.put((byte) FILE_DATA.ordinal());
+        verify.putInt(entityNum);
+        verify.rewind();
 
         subject.serialize(buffer);
+        buffer.rewind();
 
-        verify(buffer).put((byte) FILE_DATA.ordinal());
-        verify(buffer).putInt(entityNum);
+        assertEquals(verify, buffer);
     }
 
     @Test
     void deserializeWorks() throws IOException {
-        final var buffer = mock(ByteBuffer.class);
-
-        given(buffer.get()).willReturn((byte) FILE_DATA.ordinal());
-        given(buffer.getInt()).willReturn(entityNum);
+        final ByteBuffer buffer = ByteBuffer.allocate(16);
+        buffer.put((byte) FILE_DATA.ordinal());
+        buffer.putInt(entityNum);
+        buffer.rewind();
 
         VirtualBlobKey blobKey = new VirtualBlobKey();
 

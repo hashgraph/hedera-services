@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec checkTokenAndTypeStandardCases() {
+    final HapiSpec checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("checkTokenAndTypeStandardCases")
@@ -127,7 +127,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
 
     // Should just return false on isToken() check for missing token type
     @HapiTest
-    private HapiSpec checkTokenAndTypeNegativeCases() {
+    final HapiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 

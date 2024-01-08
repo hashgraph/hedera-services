@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -95,7 +96,7 @@ public class FreezeHandler implements TransactionHandler {
             // so we will do the same
             final ReadableUpgradeFileStore upgradeStore = context.createStore(ReadableUpgradeFileStore.class);
             final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
-            verifyUpdateFileAndHash(freezeTxn, upgradeStore, filesConfig.upgradeFileNumber());
+            verifyUpdateFileAndHash(freezeTxn, upgradeStore, filesConfig.softwareUpdateRange());
         }
         // no need to add any keys to the context because this transaction does not require any signatures
         // it must be submitted by an account with superuser privileges, that is checked during ingest
@@ -138,6 +139,9 @@ public class FreezeHandler implements TransactionHandler {
 
         validateSemantics(freezeTxn, freezeStore, upgradeFileStore);
 
+        final FileID updateFileID = freezeTxn.updateFile();
+        final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
+
         final FreezeUpgradeActions upgradeActions =
                 new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
@@ -147,7 +151,13 @@ public class FreezeHandler implements TransactionHandler {
                 // by the time we get here, we've already checked that fileHash is non-null in preHandle()
                 freezeStore.updateFileHash(freezeTxn.fileHash());
                 try {
-                    upgradeActions.extractSoftwareUpgrade(upgradeFileStore.getFull());
+                    if (updateFileID != null
+                            && updateFileID.fileNum()
+                                    >= filesConfig.softwareUpdateRange().left()
+                            && updateFileID.fileNum()
+                                    <= filesConfig.softwareUpdateRange().right()) {
+                        upgradeActions.extractSoftwareUpgrade(upgradeFileStore.getFull(updateFileID));
+                    }
                 } catch (IOException e) {
                     throw new IllegalStateException("Error extracting upgrade file", e);
                 }
@@ -159,7 +169,14 @@ public class FreezeHandler implements TransactionHandler {
             }
             case TELEMETRY_UPGRADE -> {
                 try {
-                    upgradeActions.extractTelemetryUpgrade(upgradeFileStore.getFull(), requireNonNull(freezeStartTime));
+                    if (updateFileID != null
+                            && updateFileID.fileNum()
+                                    >= filesConfig.softwareUpdateRange().left()
+                            && updateFileID.fileNum()
+                                    <= filesConfig.softwareUpdateRange().right()) {
+                        upgradeActions.extractTelemetryUpgrade(
+                                upgradeFileStore.getFull(updateFileID), requireNonNull(freezeStartTime));
+                    }
                 } catch (IOException e) {
                     throw new IllegalStateException("Error extracting upgrade file", e);
                 }
@@ -190,9 +207,10 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(freezeTxn);
         requireNonNull(freezeStore);
         requireNonNull(upgradeStore);
+        final FileID updateFileID = freezeTxn.updateFile();
 
         if ((freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE)
-                && (upgradeStore.peek() == null)) {
+                && (updateFileID == null || upgradeStore.peek(updateFileID) == null)) {
             throw new IllegalStateException("Update file not found");
         }
     }
@@ -230,7 +248,7 @@ public class FreezeHandler implements TransactionHandler {
     private static void verifyUpdateFileAndHash(
             final @NonNull FreezeTransactionBody freezeTxn,
             final @NonNull ReadableUpgradeFileStore upgradeStore,
-            final long upgradeFileNumber)
+            final LongPair softwareUpdateRange)
             throws PreCheckException {
         requireNonNull(freezeTxn);
         requireNonNull(upgradeStore);
@@ -239,10 +257,12 @@ public class FreezeHandler implements TransactionHandler {
         // this is the *only* place that the FileID is accessed
         // we subsequently ignore it
         final FileID updateFileID = freezeTxn.updateFile();
-        if (updateFileID == null || updateFileID.fileNum() != upgradeFileNumber) {
+        if (updateFileID == null
+                || updateFileID.fileNum() < softwareUpdateRange.left()
+                || updateFileID.fileNum() > softwareUpdateRange.right()) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
-        if (upgradeStore.peek() == null) {
+        if (upgradeStore.peek(updateFileID) == null) {
             throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
 

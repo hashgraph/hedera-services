@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.address.AddressBook;
 import java.time.Instant;
 import java.util.HashMap;
@@ -66,7 +66,10 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
+        return ss -> {
+            stateHasEnoughSignaturesCount.getAndIncrement();
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
+        };
     }
 
     /**
@@ -75,7 +78,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     @Test
     @DisplayName("Register States Without Signatures")
     void registerStatesWithoutSignatures() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -100,11 +103,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             manager.addState(signedState);
 
             if (round == 0) {
-                firstTimestamp = signedState
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getConsensusTimestamp();
+                firstTimestamp = signedState.getState().getPlatformState().getConsensusTimestamp();
             }
             assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
             assertEquals(firstRound, manager.getFirstStateRound());
@@ -113,7 +112,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
-                assertNull(lastCompletedState.getNullable(), "no states should be completed in this test");
+                assertNull(lastCompletedState, "no states should be completed in this test");
             }
 
             final int expectedUnsignedStates = Math.max(0, round - roundsToKeepForSigning + 1);

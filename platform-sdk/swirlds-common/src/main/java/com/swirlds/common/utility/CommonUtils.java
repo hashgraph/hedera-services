@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.function.Consumer;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiSystem;
@@ -282,38 +281,6 @@ public class CommonUtils {
             throw new IllegalArgumentException("Illegal hexadecimal character " + ch + " at index " + index);
         }
         return digit;
-    }
-
-    /**
-     * Throw an {@link IllegalArgumentException} if the supplied argument is {@code null}.
-     *
-     * @param arg     the argument checked
-     * @param argName the name of the argument
-     * @deprecated use {@link java.util.Objects#requireNonNull(Object, String)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public static <T> T throwArgNull(final T arg, final String argName) {
-        if (arg == null) {
-            throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be null!", argName));
-        }
-        return arg;
-    }
-
-    /**
-     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank.
-     *
-     * @param arg     the argument checked
-     * @param argName the name of the argument
-     * @see String#isBlank()
-     * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgBlank(String, String)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public static String throwArgBlank(final String arg, final String argName) {
-        Objects.requireNonNull(arg, argName);
-        if (arg.isBlank()) {
-            throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be blank!", argName));
-        }
-        return arg;
     }
 
     /**

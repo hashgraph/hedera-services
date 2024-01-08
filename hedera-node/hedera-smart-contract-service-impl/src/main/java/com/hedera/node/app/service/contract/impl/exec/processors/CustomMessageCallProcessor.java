@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,26 @@
 
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
+import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
+import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setMessageCallHaltedForMissingReceiverSigReq;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.transfersValue;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
+import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
@@ -158,7 +165,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (result.isRefundGas()) {
                 frame.incrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, result);
+            finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
         }
     }
 
@@ -185,12 +192,15 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, fullResult.result());
+            finishPrecompileExecution(frame, fullResult.result(), SYSTEM, (ActionSidecarContentTracer) tracer);
         }
     }
 
     private void finishPrecompileExecution(
-            @NonNull final MessageFrame frame, @NonNull final PrecompileContractResult result) {
+            @NonNull final MessageFrame frame,
+            @NonNull final PrecompileContractResult result,
+            @NonNull final ContractActionType type,
+            @NonNull final ActionSidecarContentTracer tracer) {
         if (frame.getState() == MessageFrame.State.REVERT) {
             frame.setRevertReason(result.getOutput());
         } else {
@@ -198,6 +208,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
         frame.setState(result.getState());
         frame.setExceptionalHaltReason(result.getHaltReason());
+        tracer.tracePrecompileResult(frame, type);
     }
 
     private void doTransferValueOrHalt(
@@ -216,7 +227,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
                     acquiredSenderAuthorizationViaDelegateCall(frame));
             maybeReasonToHalt.ifPresent(reason -> {
                 if (reason == INVALID_SIGNATURE) {
-                    setMessageCallHaltedForMissingReceiverSigReq(frame);
+                    setPropagatedCallFailure(frame, MISSING_RECEIVER_SIGNATURE);
                 }
                 doHalt(frame, reason, operationTracer);
             });
@@ -261,6 +272,9 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         frame.setExceptionalHaltReason(Optional.of(reason));
         if (forLazyCreation == ForLazyCreation.YES) {
             frame.decrementRemainingGas(frame.getRemainingGas());
+            if (reason == INSUFFICIENT_CHILD_RECORDS) {
+                setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
+            }
         }
         if (operationTracer != null) {
             if (forLazyCreation == ForLazyCreation.YES) {
@@ -272,9 +286,10 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
     }
 
+    @Override
     protected void revert(final MessageFrame frame) {
         super.revert(frame);
-        // clear child records form any succeeded operations when revert
+        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
         ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

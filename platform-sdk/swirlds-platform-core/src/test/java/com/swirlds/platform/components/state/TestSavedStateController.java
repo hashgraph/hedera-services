@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.platform.components.state;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.components.SavedStateController;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,17 +29,12 @@ public class TestSavedStateController extends SavedStateController {
     private final Deque<SignedState> queue = new LinkedList<>();
 
     public TestSavedStateController() {
-        super(new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class), s -> true);
+        super(new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class));
     }
 
     @Override
-    public synchronized void maybeSaveState(@NonNull final SignedState signedState) {
-        queue.add(signedState);
-    }
-
-    @Override
-    public synchronized void reconnectStateReceived(@NonNull final SignedState signedState) {
-        queue.add(signedState);
+    public synchronized void reconnectStateReceived(@NonNull final ReservedSignedState reservedSignedState) {
+        queue.add(reservedSignedState.get());
     }
 
     @Override

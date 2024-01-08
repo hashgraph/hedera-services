@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2023 Hedera Hashgraph, LLC
+# Copyright (C) 2023-2024 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.9"
+        default: "21.0.1"
   push:
     branches:
       - develop
@@ -49,13 +49,24 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  check-gradle:
     name: Gradle
     uses: ./.github/workflows/zxc-verify-gradle-build-determinism.yaml
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: ${{ inputs.java-distribution || 'temurin' }}
-      java-version: ${{ inputs.java-version || '17.0.9' }}
+      java-version: ${{ inputs.java-version || '21.0.1' }}
+    secrets:
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+
+  check-docker:
+    name: Docker
+    uses: ./.github/workflows/zxc-verify-docker-build-determinism.yaml
+    with:
+      ref: ${{ github.event.inputs.ref || '' }}
+      java-distribution: ${{ inputs.java-distribution || 'temurin' }}
+      java-version: ${{ inputs.java-version || '21.0.1' }}
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}

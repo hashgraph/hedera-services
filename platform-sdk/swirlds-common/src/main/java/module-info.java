@@ -49,7 +49,6 @@ module com.swirlds.common {
     exports com.swirlds.common.sequence;
     exports com.swirlds.common.sequence.map;
     exports com.swirlds.common.sequence.set;
-    exports com.swirlds.common.settings;
     exports com.swirlds.common.stream;
     exports com.swirlds.common.stream.internal;
     exports com.swirlds.common.threading;

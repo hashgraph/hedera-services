@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.IN_PROCESS_ALICE;
+import static com.hedera.services.bdd.junit.HapiTestEnv.HapiTestNodesType.OUT_OF_PROCESS_ALICE;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
@@ -25,13 +27,16 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -72,6 +77,9 @@ import org.junit.platform.engine.support.hierarchical.Node;
  * support the JUnit Jupiter {@link Disabled} annotation.
  */
 public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecutionContext> /* implements TestEngine */ {
+
+    public static final int NODE_COUNT = 4;
+
     static {
         // This is really weird, but it exists because we have to force JUL to use Log4J as early as possible.
         System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
@@ -91,6 +99,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             methodCandidate -> isAnnotated(methodCandidate, HapiTest.class)
                     || (methodCandidate.getParameterCount() == 0 && methodCandidate.getReturnType() == HapiSpec.class);
 
+    private static final Comparator<ClassTestDescriptor> SUITE_DESCRIPTOR_COMPARATOR =
+            Comparator.comparingInt(ClassTestDescriptor::order);
     private static final Comparator<Method> noSorting = (m1, m2) -> 0;
     private static final Comparator<Method> sortMethodsAscByOrderNumber = (m1, m2) -> {
         final var m1Order = m1.getAnnotation(Order.class);
@@ -115,43 +125,53 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new HapiEngineDescriptor(uniqueId);
+        final List<ClassTestDescriptor> suites = new ArrayList<>();
 
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
+            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, suites);
         });
 
         discoveryRequest.getSelectorsByType(ClassSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
+            addChildToSuites(javaClass, discoveryRequest, engineDescriptor, suites);
         });
 
         discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
-            appendTestsInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest);
+            appendSuitesInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest, suites);
         });
+
+        suites.sort(SUITE_DESCRIPTOR_COMPARATOR);
+        suites.forEach(engineDescriptor::addChild);
 
         return engineDescriptor;
     }
 
-    private static void addChildToEngineDescriptor(
-            Class<?> javaClass, EngineDiscoveryRequest discoveryRequest, EngineDescriptor engineDescriptor) {
+    private static void addChildToSuites(
+            @NonNull final Class<?> javaClass,
+            @NonNull final EngineDiscoveryRequest discoveryRequest,
+            @NonNull final EngineDescriptor engineDescriptor,
+            @NonNull final List<ClassTestDescriptor> orderedSuites) {
         if (IS_HAPI_TEST_SUITE.test(javaClass)) {
             final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
             if (!classDescriptor.skip) {
-                engineDescriptor.addChild(classDescriptor);
+                orderedSuites.add(classDescriptor);
             }
         }
     }
 
-    private void appendTestsInClasspathRoot(
-            URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
+    private void appendSuitesInClasspathRoot(
+            @NonNull final URI uri,
+            @NonNull final TestDescriptor engineDescriptor,
+            @NonNull final EngineDiscoveryRequest discoveryRequest,
+            List<ClassTestDescriptor> orderedSuites) {
         ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
                 .filter(aClass -> discoveryRequest.getFiltersByType(PackageNameFilter.class).stream()
                         .map(Filter::toPredicate)
                         .allMatch(predicate -> predicate.test(aClass.getPackageName())))
                 .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
                 .filter(classTestDescriptor -> !classTestDescriptor.skip)
-                .forEach(engineDescriptor::addChild);
+                .forEach(orderedSuites::add);
     }
 
     /**
@@ -184,10 +204,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             // Allow for a simple switch to enable in-process Alice node for debugging
             final String debugEnv = System.getenv("HAPI_DEBUG_NODE");
-            final boolean useInProcessAlice = Boolean.parseBoolean(debugEnv);
+            final boolean debugMode = Boolean.parseBoolean(debugEnv);
+            final var nodesType = debugMode ? IN_PROCESS_ALICE : OUT_OF_PROCESS_ALICE;
             // For now, switching to non-in process servers, because in process doesn't work for the
             // restart and reconnect testing.
-            env = new HapiTestEnv("HAPI Tests", true, useInProcessAlice);
+            env = new HapiTestEnv("HAPI Tests", NODE_COUNT, nodesType);
             context.setEnv(env);
 
             final var tmpDir = Path.of("data");
@@ -230,6 +251,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         private final boolean isolated;
 
         private final boolean fuzzyMatch;
+        private final int order;
 
         private final Set<TestTag> testTags;
 
@@ -274,6 +296,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     findAnnotation(testClass, HapiTestSuite.class).orElseThrow();
             this.isolated = annotation.isolated();
             this.fuzzyMatch = annotation.fuzzyMatch();
+            this.order = annotation.order();
+        }
+
+        public int order() {
+            return order;
         }
 
         @Override

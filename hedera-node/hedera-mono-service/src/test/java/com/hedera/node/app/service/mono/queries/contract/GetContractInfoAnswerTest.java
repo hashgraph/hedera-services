@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.never;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -72,6 +75,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GetContractInfoAnswerTest {
     private Transaction paymentTxn;
     private final int maxTokenPerContractInfo = 10;
+    private final boolean areTokenBalancesEnabledInQueries = true;
     private final String node = "0.0.3";
     private final String payer = "0.0.12345";
     private final String target = "0.0.123";
@@ -91,6 +95,9 @@ class GetContractInfoAnswerTest {
     private MerkleMap<EntityNum, MerkleAccount> contracts;
 
     @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
     private RewardCalculator rewardCalculator;
 
     ContractGetInfoResponse.ContractInfo info;
@@ -99,7 +106,6 @@ class GetContractInfoAnswerTest {
 
     @BeforeEach
     void setup() {
-        // we don't return the token relationships data anymore, since the field it is deprecated
         info = ContractGetInfoResponse.ContractInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setContractID(asContract(target))
@@ -115,14 +121,21 @@ class GetContractInfoAnswerTest {
                         .build())
                 .build();
 
-        subject = new GetContractInfoAnswer(aliasManager, optionValidator, rewardCalculator);
+        subject = new GetContractInfoAnswer(aliasManager, optionValidator, dynamicProperties, rewardCalculator);
     }
 
     @Test
     void getsTheInfo() throws Throwable {
+        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
         final Query query = validQuery(ANSWER_ONLY, fee, target);
 
-        given(view.infoForContract(asContract(target), aliasManager, rewardCalculator))
+        given(view.infoForContract(
+                        asContract(target),
+                        aliasManager,
+                        maxTokenPerContractInfo,
+                        rewardCalculator,
+                        areTokenBalancesEnabledInQueries))
                 .willReturn(Optional.of(info));
 
         // when:
@@ -164,14 +177,21 @@ class GetContractInfoAnswerTest {
         assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
         assertSame(info, opResponse.getContractInfo());
         // and:
-        verify(view, never()).infoForContract(any(), any(), any());
+        verify(view, never()).infoForContract(any(), any(), anyInt(), any(), anyBoolean());
     }
 
     @Test
     void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
+        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+        given(dynamicProperties.areTokenBalancesEnabledInQueries()).willReturn(true);
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-        given(view.infoForContract(asContract(target), aliasManager, rewardCalculator))
+        given(view.infoForContract(
+                        asContract(target),
+                        aliasManager,
+                        maxTokenPerContractInfo,
+                        rewardCalculator,
+                        areTokenBalancesEnabledInQueries))
                 .willReturn(Optional.empty());
 
         // when:
@@ -195,7 +215,7 @@ class GetContractInfoAnswerTest {
         final ContractGetInfoResponse opResponse = response.getContractGetInfo();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
         assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-        verify(view, never()).infoForContract(any(), any(), any());
+        verify(view, never()).infoForContract(any(), any(), anyInt(), any(), anyBoolean());
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
         return List.of(getAccountBalanceFromAllNodes(), validateTopicInfo(), validateFileInfo());
     }
 
-    private HapiSpec getAccountBalanceFromAllNodes() {
+    final HapiSpec getAccountBalanceFromAllNodes() {
         // Since https://github.com/hashgraph/hedera-services/pull/5799, the nodes will create
         // 299 "blocklist" accounts with EVM addresses commonly used in HardHat test environments,
         // to protect developers from accidentally sending hbar to those addresses
@@ -96,7 +96,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0)));
     }
 
-    private HapiSpec validateTopicInfo() {
+    final HapiSpec validateTopicInfo() {
         final byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
                 .given(getTopicInfo(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO).logged().saveRunningHash())
@@ -117,7 +117,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 .hasRunningHash(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO));
     }
 
-    private HapiSpec validateFileInfo() {
+    final HapiSpec validateFileInfo() {
         return defaultHapiSpec("ValidateFileInfo")
                 .given()
                 .when()

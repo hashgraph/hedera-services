@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,7 +204,7 @@ public class IdFuzzingProviderFactory {
                     .exposingCreatedIdTo(id ->
                             tokenAddr.set(HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
             uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-            contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+            contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT).gas(500_000L),
             tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
             cryptoTransfer(moving(INITIAL_SUPPLY, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER))
         };

@@ -114,13 +114,13 @@ end_group
 
 start_group "Generating Library Hashes (${GITHUB_WORKSPACE}/${RELEASE_LIB_PATH}/*.jar)"
   pushd "${GITHUB_WORKSPACE}/${RELEASE_LIB_PATH}" >/dev/null 2>&1 || fail "PUSHD ERROR (Exit Code: ${?})" "${?}"
-  ${SHA256SUM} -- *.jar | sort -k 2 | tee -a "${TEMP_DIR}"/libraries.sha256
+  ${SHA256SUM} -b -- *.jar | sort -k 2 | tee -a "${TEMP_DIR}"/libraries.sha256
   popd >/dev/null 2>&1 || fail "POPD ERROR (Exit Code: ${?})" "${?}"
 end_group
 
 start_group "Generating Application Hashes (${GITHUB_WORKSPACE}/${RELEASE_APPS_PATH}/*.jar)"
   pushd "${GITHUB_WORKSPACE}/${RELEASE_APPS_PATH}" >/dev/null 2>&1 || fail "PUSHD ERROR (Exit Code: ${?})" "${?}"
-  ${SHA256SUM} -- *.jar | sort -k 2 | tee -a "${TEMP_DIR}"/applications.sha256
+  ${SHA256SUM} -b -- *.jar | sort -k 2 | tee -a "${TEMP_DIR}"/applications.sha256
   popd >/dev/null 2>&1 || fail "POPD ERROR (Exit Code: ${?})" "${?}"
 end_group
 
