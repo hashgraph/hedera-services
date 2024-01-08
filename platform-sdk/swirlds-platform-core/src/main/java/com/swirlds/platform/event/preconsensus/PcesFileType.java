@@ -21,7 +21,7 @@ package com.swirlds.platform.event.preconsensus;
  * The original type of files are bound by generations. The new type of files are bound by birth rounds. Once
  * migration has been completed to birth round bound files, support for the generation bound files will be removed.
  */
-public enum PcesFileType {
+public enum PcesFileType { // TODO this should be a more general type...
     /**
      * A PCES file bound by generations.
      */
