@@ -41,4 +41,7 @@ public @interface HapiTestSuite {
      * @return true if we want to enable fuzzy matching for every spec in the suite
      */
     boolean fuzzyMatch() default false;
+
+    /** The order in which this suite should be run; smaller values come first. */
+    int order() default 0;
 }

@@ -30,7 +30,6 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -117,13 +116,7 @@ public final class PreconsensusEventReplayWorkflow {
                     new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, intakeHandler);
             eventReplayPipeline.replayEvents();
 
-            final boolean useLegacyIntake = platformContext
-                    .getConfiguration()
-                    .getConfigData(EventConfig.class)
-                    .useLegacyIntake();
-
-            waitForReplayToComplete(
-                    intakeQueue, consensusRoundHandler, stateHashSignQueue, useLegacyIntake, flushIntakePipeline);
+            waitForReplayToComplete(intakeQueue, consensusRoundHandler, stateHashSignQueue, flushIntakePipeline);
 
             final Instant finish = time.now();
             final Duration elapsed = Duration.between(start, finish);
@@ -152,19 +145,13 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
-            final boolean useLegacyIntake,
             @NonNull final Runnable flushIntakePipeline)
             throws InterruptedException {
 
         // Wait until all events from the preconsensus event stream have been fully ingested.
         intakeQueue.waitUntilNotBusy();
 
-        if (!useLegacyIntake) {
-            // The old intake has an empty intake pipeline as soon as the intake queue is empty.
-            // The new intake has more steps to the intake pipeline, so we need to flush it before certifying that
-            // the replay is complete.
-            flushIntakePipeline.run();
-        }
+        flushIntakePipeline.run();
 
         // Wait until all rounds from the preconsensus event stream have been fully processed.
         consensusRoundHandler.waitUntilNotBusy();

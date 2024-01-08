@@ -51,7 +51,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     /**
      * The current file that is being written to.
      */
-    private PreconsensusEventMutableFile currentMutableFile;
+    private PcesMutableFile currentMutableFile;
 
     /**
      * The current minimum generation required to be considered non-ancient. Only read and written on the handle
@@ -142,8 +142,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
         Objects.requireNonNull(platformContext, "platformContext must not be null");
         Objects.requireNonNull(fileManager, "fileManager must not be null");
 
-        final PreconsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 

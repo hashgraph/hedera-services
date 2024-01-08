@@ -85,8 +85,7 @@ public class PreconsensusEventReplayPipeline {
         this.unhashedEventIterator = Objects.requireNonNull(unhashedEventIterator);
         this.intakeHandler = Objects.requireNonNull(intakeHandler);
 
-        final PreconsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         intakeQueue = new QueueThreadConfiguration<EventBeingHashed>(threadManager)
                 .setThreadName("EventReplayPipeline-Ingest")

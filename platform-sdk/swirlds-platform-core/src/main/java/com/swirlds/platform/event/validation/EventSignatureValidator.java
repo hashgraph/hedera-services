@@ -40,10 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Verifies event signatures.
- * <p>
- * This class was written to be compatible with the new intake pipeline. The previous signature validator
- * {@link SignatureValidator} has been left unchanged, to be used by the legacy intake monolith.
+ * Verifies event signatures
  */
 public class EventSignatureValidator {
     private static final Logger logger = LogManager.getLogger(EventSignatureValidator.class);

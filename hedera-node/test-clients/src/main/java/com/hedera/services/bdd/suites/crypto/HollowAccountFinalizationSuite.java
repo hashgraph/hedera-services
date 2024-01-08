@@ -183,8 +183,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
 
                     allRunFor(spec, cryptoTransferWithLazyCreate, getHollowAccountInfoAfterCreation, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
 
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
@@ -637,8 +639,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
 
                     final var secondECDSAKey = spec.registry()
@@ -655,7 +659,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     allRunFor(spec, op2, secondHapiGetTxnRecord);
 
                     final AccountID anotherNewAccountID = secondHapiGetTxnRecord
-                            .getChildRecord(0)
+                            .getFirstNonStakingChildRecord()
                             .getReceipt()
                             .getAccountID();
                     spec.registry().saveAccountId(ANOTHER_SECP_256K1_SOURCE_KEY, anotherNewAccountID);
@@ -725,8 +729,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     final var hapiGetTxnRecord =
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op1, op2, hapiGetTxnRecord);
-                    final var newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final var newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
                 .then(withOpContext((spec, opLog) -> {
@@ -793,8 +799,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     final var hapiGetTxnRecord =
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op1, op2, hapiGetTxnRecord);
-                    final var newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final var newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
                 .then(withOpContext((spec, opLog) -> {
@@ -909,8 +917,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     final var hapiGetTxnRecord =
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op, hapiGetTxnRecord);
-                    final var hollowAccountId =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final var hollowAccountId = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     // try sending from hollow through transfer precompile and with appropriate sig
                     // this should fail, since the sig is not a required sig for the ContractCall
                     final var token = spec.registry().getTokenID(ft);
@@ -996,8 +1006,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                 allRunFor(spec, op, op2, hapiGetTxnRecord);
 
-                final AccountID newAccountID =
-                        hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                final AccountID newAccountID = hapiGetTxnRecord
+                        .getFirstNonStakingChildRecord()
+                        .getReceipt()
+                        .getAccountID();
                 spec.registry().saveAccountId(key, newAccountID);
             })
         };
