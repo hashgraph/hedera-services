@@ -71,11 +71,7 @@ public class SStoreSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                multipleSStoreOpsSucceed(),
-                benchmarkSingleSetter(),
-                childStorage()
-        );
+        return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
@@ -88,8 +84,7 @@ public class SStoreSuite extends HapiSuite {
                         snapshotMode(
                                 SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
                                 SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES
-                        ),
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
@@ -129,8 +124,7 @@ public class SStoreSuite extends HapiSuite {
                 .given(
                         snapshotMode(
                                 SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES
-                        ),
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
@@ -201,9 +195,9 @@ public class SStoreSuite extends HapiSuite {
                 .given(
                         snapshotMode(
                                 SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES
-                        ),
-                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
+                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
+                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .payingWith("payer")
