@@ -26,8 +26,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
@@ -37,8 +38,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import java.math.BigInteger;
@@ -50,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 /** - CONCURRENCY STATUS - . Can run concurrent without temporarySStoreRefundTest() */
 public class SStoreSuite extends HapiSuite {
@@ -79,14 +78,11 @@ public class SStoreSuite extends HapiSuite {
     HapiSpec multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiSpec.defaultHapiSpec("multipleSStoreOpsSucceed")
-                .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+        return HapiSpec.defaultHapiSpec(
+                        "multipleSStoreOpsSucceed",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var step = 16;
                     List<HapiSpecOperation> subOps = new ArrayList<>();
@@ -120,13 +116,8 @@ public class SStoreSuite extends HapiSuite {
     HapiSpec childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
-        return defaultHapiSpec("ChildStorage")
-                .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+        return defaultHapiSpec("ChildStorage", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
                     final var kbPerStep = 16;
@@ -191,13 +182,8 @@ public class SStoreSuite extends HapiSuite {
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
                 .toArray();
-        return defaultHapiSpec("benchmarkSingleSetter")
-                .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
-                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract))
+        return defaultHapiSpec("benchmarkSingleSetter", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .payingWith("payer")
