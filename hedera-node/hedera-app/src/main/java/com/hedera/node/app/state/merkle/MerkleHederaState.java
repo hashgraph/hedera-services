@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HandleConsensusRoundListener;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.PreHandleListener;
+import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
@@ -303,10 +304,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     @NonNull
     public ReadableStates getReadableStates(@NonNull String serviceName) {
-        return writableStatesMap.computeIfAbsent(serviceName, s -> {
-            final var stateMetadata = services.get(s);
-            return stateMetadata == null ? new MerkleWritableStates(Map.of()) : new MerkleWritableStates(stateMetadata);
-        });
+        return new ReadonlyStatesWrapper(doGetWritableStates(serviceName));
     }
 
     /**
@@ -316,6 +314,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @NonNull
     public WritableStates getWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
+        return doGetWritableStates(serviceName);
+    }
+
+    @NonNull
+    private WritableStates doGetWritableStates(@NonNull final String serviceName) {
         return writableStatesMap.computeIfAbsent(serviceName, s -> {
             final var stateMetadata = services.get(s);
             return stateMetadata == null ? new MerkleWritableStates(Map.of()) : new MerkleWritableStates(stateMetadata);
