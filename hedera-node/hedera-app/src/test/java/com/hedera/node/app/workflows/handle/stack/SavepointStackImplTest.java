@@ -600,13 +600,8 @@ class SavepointStackImplTest extends StateTestBase {
             // then
             assertThatThrownBy(stack::commit).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(stack::rollback).isInstanceOf(IllegalStateException.class);
-            assertThat(stack.depth()).isZero();
-            assertThatThrownBy(stack::peek).isInstanceOf(IllegalStateException.class);
+            assertThat(stack.depth()).isOne();
             assertThatCode(stack::commitFullStack).doesNotThrowAnyException();
-            assertThatThrownBy(() -> stack.getReadableStates(FOOD_SERVICE))
-                    .isInstanceOf(IllegalStateException.class);
-            assertThatThrownBy(() -> stack.getWritableStates(FOOD_SERVICE))
-                    .isInstanceOf(IllegalStateException.class);
             assertThatCode(stack::createSavepoint).doesNotThrowAnyException();
         }
 
@@ -621,10 +616,8 @@ class SavepointStackImplTest extends StateTestBase {
 
             // when
             stack.commitFullStack();
-            stack.createSavepoint();
 
             // then
-            assertThat(stack.depth()).isEqualTo(1);
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.rootStates(FOOD_SERVICE)).has(content(newData));

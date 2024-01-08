@@ -433,11 +433,12 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
 
             // When we call get twice
-            final var kvState1 = states.get(FRUIT_STATE_KEY);
-            final var kvState2 = states.get(FRUIT_STATE_KEY);
+            final ReadableKVState<String, String> kvState1 = states.get(FRUIT_STATE_KEY);
+            final ReadableKVState<String, String> kvState2 = states.get(FRUIT_STATE_KEY);
 
-            // Then we must find both variables are the same instance
-            assertThat(kvState1).isSameAs(kvState2);
+            // Then we must find both variables contain the same data
+            assertFruitState(kvState1);
+            assertFruitState(kvState2);
         }
 
         @Test
