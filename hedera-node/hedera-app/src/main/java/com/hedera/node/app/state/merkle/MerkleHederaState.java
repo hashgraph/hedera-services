@@ -256,6 +256,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // **MOVE** over the onInit handler. Don't leave it on the immutable state
         this.onInit = from.onInit;
         from.onInit = null;
+
+        // **MOVE** over the onUpdateWeight handler. Don't leave it on the immutable state
+        this.onUpdateWeight = from.onUpdateWeight;
+        from.onUpdateWeight = null;
     }
 
     @Override

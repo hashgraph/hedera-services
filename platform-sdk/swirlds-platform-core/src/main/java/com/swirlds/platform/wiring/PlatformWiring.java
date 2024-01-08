@@ -39,7 +39,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -51,13 +50,11 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
 public class PlatformWiring implements Startable, Stoppable, Clearable {
-    private final PlatformContext platformContext;
     private final WiringModel model;
 
     private final InternalEventValidatorWiring internalEventValidatorWiring;
@@ -80,53 +77,36 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-
-        this.platformContext = Objects.requireNonNull(platformContext);
         model = WiringModel.create(platformContext, time);
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
-        // the new intake pipeline components must only be constructed if they are enabled
-        // this ensures that no exception will arise for unbound wires
-        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
-            internalEventValidatorWiring =
-                    InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
-            eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
-            eventSignatureValidatorWiring =
-                    EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
-            orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
-            inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-            linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
-            eventCreationManagerWiring =
-                    EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
+        internalEventValidatorWiring =
+                InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
+        eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
+        eventSignatureValidatorWiring =
+                EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
+        orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
+        inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
+        linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+        eventCreationManagerWiring =
+                EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
 
-            applicationTransactionPrehandlerWiring = ApplicationTransactionPrehandlerWiring.create(
-                    schedulers.applicationTransactionPrehandlerScheduler());
-            stateSignatureCollectorWiring =
-                    StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
+        applicationTransactionPrehandlerWiring =
+                ApplicationTransactionPrehandlerWiring.create(schedulers.applicationTransactionPrehandlerScheduler());
+        stateSignatureCollectorWiring =
+                StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
 
-            platformCoordinator = new PlatformCoordinator(
-                    internalEventValidatorWiring,
-                    eventDeduplicatorWiring,
-                    eventSignatureValidatorWiring,
-                    orphanBufferWiring,
-                    inOrderLinkerWiring,
-                    linkedEventIntakeWiring,
-                    eventCreationManagerWiring,
-                    applicationTransactionPrehandlerWiring,
-                    stateSignatureCollectorWiring);
-        } else {
-            internalEventValidatorWiring = null;
-            eventDeduplicatorWiring = null;
-            eventSignatureValidatorWiring = null;
-            orphanBufferWiring = null;
-            inOrderLinkerWiring = null;
-            linkedEventIntakeWiring = null;
-            eventCreationManagerWiring = null;
-            platformCoordinator = null;
-            applicationTransactionPrehandlerWiring = null;
-            stateSignatureCollectorWiring = null;
-        }
+        platformCoordinator = new PlatformCoordinator(
+                internalEventValidatorWiring,
+                eventDeduplicatorWiring,
+                eventSignatureValidatorWiring,
+                orphanBufferWiring,
+                inOrderLinkerWiring,
+                linkedEventIntakeWiring,
+                eventCreationManagerWiring,
+                applicationTransactionPrehandlerWiring,
+                stateSignatureCollectorWiring);
 
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
@@ -163,21 +143,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
-        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
-            internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
-            eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
-            eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
-            orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
-            inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
-            orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
-            eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
-            orphanBufferWiring
-                    .eventOutput()
-                    .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
-            orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
+        internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
+        eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
+        eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+        inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
+        eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
+        orphanBufferWiring
+                .eventOutput()
+                .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
+        orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
-            solderNonAncientEventWindow();
-        }
+        solderNonAncientEventWindow();
     }
 
     /**
@@ -371,13 +349,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @Override
     public void clear() {
-        final boolean useLegacyIntake = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .useLegacyIntake();
-
-        if (!useLegacyIntake) {
-            platformCoordinator.clear();
-        }
+        platformCoordinator.clear();
     }
 }

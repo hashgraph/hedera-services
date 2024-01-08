@@ -54,7 +54,10 @@ public class NftTransferSuite extends HapiSuite {
     private static final String USER_ACCOUNT_PREFIX = "party-";
     private static final String FEE_COLLECTOR = "feeCollector";
     private static final int NUM_ACCOUNTS = 10;
-    private static final int NUM_TOKEN_TYPES = 100;
+    // If this is set too high then prod Netty settings create a high
+    // risk of server sending GOAWAY; and in practice it seems quite
+    // hard to stabilize HapiSpec behavior in this event
+    private static final int NUM_TOKEN_TYPES = 10;
     private static final int NUM_ROUNDS = 100;
 
     private static void runTestTask() {
