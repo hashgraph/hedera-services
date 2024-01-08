@@ -45,6 +45,8 @@ import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -89,6 +91,12 @@ class EthereumTransactionHandlerTest {
 
     @Mock
     private EthereumTransactionRecordBuilder recordBuilder;
+
+    @Mock
+    private ContractCallRecordBuilder callRecordBuilder;
+
+    @Mock
+    private ContractCreateRecordBuilder createRecordBuilder;
 
     @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
@@ -154,6 +162,7 @@ class EthereumTransactionHandlerTest {
         setUpTransactionProcessing();
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
+        given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(callRecordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
                 expectedResult,
@@ -162,11 +171,11 @@ class EthereumTransactionHandlerTest {
                 SUCCESS_RESULT.gasPrice(),
                 null,
                 null);
-        given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
-        given(recordBuilder.contractCallResult(expectedResult)).willReturn(recordBuilder);
+        given(callRecordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(callRecordBuilder);
+        given(callRecordBuilder.contractCallResult(expectedResult)).willReturn(callRecordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(recordBuilder);
+        given(callRecordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(callRecordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
@@ -178,6 +187,7 @@ class EthereumTransactionHandlerTest {
         setUpTransactionProcessing();
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
+        given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(createRecordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
@@ -188,11 +198,11 @@ class EthereumTransactionHandlerTest {
                 null,
                 null);
 
-        given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
-        given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
+        given(createRecordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(createRecordBuilder);
+        given(createRecordBuilder.contractCreateResult(expectedResult)).willReturn(createRecordBuilder);
+        given(createRecordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(createRecordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITHOUT_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
