@@ -23,7 +23,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -46,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,7 +75,8 @@ public final class GossipFactory {
      * @param latestEventTipsetTracker      tracks the tipset of the latest self event
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
-     * @param intakeQueue                   the event intake queue
+     * @param receivedEventHandler          handles events received from other nodes
+     * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
@@ -100,7 +101,8 @@ public final class GossipFactory {
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<GossipEvent> intakeQueue,
+            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
@@ -121,7 +123,8 @@ public final class GossipFactory {
         Objects.requireNonNull(shadowGraph);
         Objects.requireNonNull(emergencyRecoveryManager);
         Objects.requireNonNull(consensusRef);
-        Objects.requireNonNull(intakeQueue);
+        Objects.requireNonNull(receivedEventHandler);
+        Objects.requireNonNull(intakeQueueSizeSupplier);
         Objects.requireNonNull(swirldStateManager);
         Objects.requireNonNull(latestCompleteState);
         Objects.requireNonNull(syncMetrics);
@@ -140,7 +143,7 @@ public final class GossipFactory {
                     addressBook,
                     selfId,
                     appVersion,
-                    intakeQueue,
+                    intakeQueueSizeSupplier,
                     swirldStateManager,
                     latestCompleteState,
                     platformStatusManager,
@@ -162,7 +165,8 @@ public final class GossipFactory {
                     latestEventTipsetTracker,
                     emergencyRecoveryManager,
                     consensusRef,
-                    intakeQueue,
+                    receivedEventHandler,
+                    intakeQueueSizeSupplier,
                     swirldStateManager,
                     latestCompleteState,
                     syncMetrics,

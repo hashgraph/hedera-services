@@ -234,13 +234,6 @@ public class SwirldsPlatform implements Platform {
      */
     private final SignedStateNexus latestImmutableState = new SignedStateNexus();
 
-    private final QueueThread<GossipEvent> intakeQueue;
-
-    /**
-     * Validates events and passes valid events further down the intake pipeline.
-     */
-    private final InterruptableConsumer<GossipEvent> intakeHandler;
-
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
 
@@ -544,8 +537,6 @@ public class SwirldsPlatform implements Platform {
                 platformWiring::flushIntakePipeline,
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
-        platformWiring.bind(
-                eventHasher, signedStateFileManager, stateSigner, pcesReplayer, pcesWriter, eventDurabilityNexus);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -636,8 +627,6 @@ public class SwirldsPlatform implements Platform {
                         .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                         .build());
 
-        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
                 threadManager,
@@ -701,33 +690,27 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 appVersion,
                 transactionPool,
-                this::getIntakeQueueSize,
+                platformWiring.getHasherUnprocessedTaskCountSupplier(),
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
-        platformWiring.bindIntake(
+        platformWiring.bind(
+                eventHasher,
                 internalEventValidator,
                 eventDeduplicator,
                 eventSignatureValidator,
                 orphanBuffer,
                 inOrderLinker,
                 linkedEventIntake,
-                eventCreationManager,
+                signedStateFileManager,
+                stateSigner,
+                pcesReplayer,
+                pcesWriter,
+                eventDurabilityNexus,
                 sequencer,
+                eventCreationManager,
                 swirldStateManager,
                 signedStateManager);
-
-        intakeHandler = platformWiring.getEventInput()::put;
-
-        intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
-                .setNodeId(selfId)
-                .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setThreadName("event-intake")
-                .setHandler(intakeHandler)
-                .setCapacity(eventConfig.eventIntakeQueueSize())
-                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
-                .build());
 
         platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, transactionPool);
 
@@ -753,7 +736,8 @@ public class SwirldsPlatform implements Platform {
                 latestEventTipsetTracker,
                 emergencyRecoveryManager,
                 consensusRef,
-                intakeQueue,
+                platformWiring.getEventInput()::put,
+                platformWiring.getHasherUnprocessedTaskCountSupplier(),
                 swirldStateManager,
                 latestCompleteState,
                 syncMetrics,
@@ -809,7 +793,6 @@ public class SwirldsPlatform implements Platform {
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of(intakeQueue, "intakeQueue"),
                         Pair.of(platformWiring, "platformWiring"),
                         Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
@@ -824,15 +807,6 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
-    }
-
-    /**
-     * Get the current size of the intake queue. Helper method to break a circular dependency.
-     *
-     * @return the current size of the intake queue
-     */
-    private int getIntakeQueueSize() {
-        return intakeQueue.size();
     }
 
     /**

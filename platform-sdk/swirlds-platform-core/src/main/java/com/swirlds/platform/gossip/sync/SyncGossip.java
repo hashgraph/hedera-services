@@ -26,7 +26,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -74,6 +73,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -113,7 +113,8 @@ public class SyncGossip extends AbstractGossip {
      * @param latestEventTipsetTracker      tracks the tipset of the latest self event
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
-     * @param intakeQueue                   the event intake queue
+     * @param receivedEventHandler          handles events received from other nodes
+     * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
@@ -137,7 +138,8 @@ public class SyncGossip extends AbstractGossip {
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<GossipEvent> intakeQueue,
+            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
@@ -154,7 +156,7 @@ public class SyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                intakeQueue,
+                intakeQueueSizeSupplier,
                 swirldStateManager,
                 latestCompleteState,
                 platformStatusManager,
@@ -177,7 +179,7 @@ public class SyncGossip extends AbstractGossip {
                 addressBook.getSize(),
                 syncMetrics,
                 consensusRef::get,
-                intakeQueue,
+                receivedEventHandler,
                 syncManager,
                 intakeEventCounter,
                 shadowgraphExecutor,
@@ -212,7 +214,8 @@ public class SyncGossip extends AbstractGossip {
         }
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
-                () -> !gossipHalted.get(), () -> intakeQueue.size() < eventConfig.eventIntakeQueueThrottleSize()));
+                () -> !gossipHalted.get(),
+                () -> intakeQueueSizeSupplier.getAsLong() < eventConfig.eventIntakeQueueThrottleSize()));
 
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)

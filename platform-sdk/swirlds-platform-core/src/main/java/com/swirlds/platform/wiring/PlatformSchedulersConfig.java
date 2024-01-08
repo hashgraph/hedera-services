@@ -72,7 +72,7 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType eventHasherSchedulerType,
-        @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "10000") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
