@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
 import static com.swirlds.platform.test.event.preconsensus.PcesFileReaderTests.createDummyFile;
@@ -36,12 +37,15 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -49,10 +53,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for {@link PcesFileManager}
@@ -81,14 +88,20 @@ class PcesFileManagerTests {
         files = new ArrayList<>();
     }
 
-    private PlatformContext buildContext() {
+    protected static Stream<Arguments> buildArguments() {
+        return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
+    }
+
+    private PlatformContext buildContext(@NonNull final AncientMode ancientMode) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
                 .withValue(
                         "event.preconsensus.recycleBinDirectory",
                         testDirectory.resolve("recycle")) // FUTURE: No property defined for value
                 .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
+                .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .withValue(PcesConfig_.PERMIT_GAPS, false)
+                .withValue(PcesConfig_.COMPACT_LAST_FILE_ON_STARTUP, false)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();
@@ -96,32 +109,29 @@ class PcesFileManagerTests {
         return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Generate Descriptors With Manager Test")
-    void generateDescriptorsWithManagerTest() throws IOException {
-        final PlatformContext platformContext = buildContext();
+    void generateDescriptorsWithManagerTest(@NonNull final AncientMode ancientMode) throws IOException {
+        final PlatformContext platformContext = buildContext(ancientMode);
 
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         final PcesFileManager generatingManager = new PcesFileManager(
-                platformContext,
-                Time.getCurrent(),
-                new PcesFileTracker(GENERATION_THRESHOLD /*TODO*/),
-                new NodeId(0),
-                0);
+                platformContext, Time.getCurrent(), new PcesFileTracker(ancientMode), new NodeId(0), 0);
 
         for (int i = 0; i < fileCount; i++) {
-            final PcesFile file = generatingManager.getNextFileDescriptor(minimumGeneration, maximumGeneration);
+            final PcesFile file = generatingManager.getNextFileDescriptor(lowerBound, upperBound);
 
-            assertTrue(file.getLowerBound() >= minimumGeneration);
-            assertTrue(file.getUpperBound() >= maximumGeneration);
+            assertTrue(file.getLowerBound() >= lowerBound);
+            assertTrue(file.getUpperBound() >= upperBound);
 
-            // Intentionally allow generations to be chosen that may not be legal (i.e. a generation decreases)
-            minimumGeneration = random.nextLong(minimumGeneration - 1, maximumGeneration + 1);
-            maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+            // Intentionally allow bounds to be chosen that may not be legal (i.e. ancient threshold decreases)
+            lowerBound = random.nextLong(lowerBound - 1, upperBound + 1);
+            upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -129,47 +139,41 @@ class PcesFileManagerTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
+                platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
     }
 
-    @Test
-    @DisplayName("Incremental Pruning By Generation Test")
-    void incrementalPruningByGenerationTest() throws IOException {
+    @ParameterizedTest
+    @MethodSource("buildArguments")
+    @DisplayName("Incremental Pruning By Ancient Boundary Test")
+    void incrementalPruningByAncientBoundaryTest(@NonNull final AncientMode ancientMode) throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         for (long sequenceNumber = firstSequenceNumber;
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final PcesFile file = PcesFile.of(
-                    GENERATION_THRESHOLD /*TODO*/,
-                    timestamp,
-                    sequenceNumber,
-                    minimumGeneration,
-                    maximumGeneration,
-                    0,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-            maximumGeneration =
-                    Math.max(maximumGeneration + 1, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound + 1, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext();
+        final PlatformContext platformContext = buildContext(ancientMode);
 
         // Choose a file in the middle. The goal is to incrementally purge all files before this file, but not
         // to purge this file or any of the ones after it.
@@ -183,28 +187,23 @@ class PcesFileManagerTests {
         final FakeTime time = new FakeTime(lastFile.getTimestamp().plus(Duration.ofHours(1)), Duration.ZERO);
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
         final PcesFileManager manager = new PcesFileManager(platformContext, time, fileTracker, new NodeId(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
-        // Increase the pruned generation a little at a time,
+        // Increase the pruned ancient threshold a little at a time,
         // until the middle file is almost GC eligible but not quite.
-        for (long generation = firstFile.getUpperBound() - 100;
-                generation <= middleFile.getUpperBound();
-                generation++) {
+        for (long ancientThreshold = firstFile.getUpperBound() - 100;
+                ancientThreshold <= middleFile.getUpperBound();
+                ancientThreshold++) {
 
-            manager.pruneOldFiles(generation);
+            manager.pruneOldFiles(ancientThreshold);
 
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                    buildContext(),
-                    TestRecycleBin.getInstance(),
-                    fileDirectory,
-                    0,
-                    false,
-                    GENERATION_THRESHOLD /*TODO*/);
+                    buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
             final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -219,13 +218,13 @@ class PcesFileManagerTests {
             // Check the first file that wasn't pruned
             assertTrue(firstUnPrunedIndex <= middleFileIndex);
             if (firstUnPrunedIndex < middleFileIndex) {
-                assertTrue(firstUnPrunedFile.getUpperBound() >= generation);
+                assertTrue(firstUnPrunedFile.getUpperBound() >= ancientThreshold);
             }
 
             // Check the file right before the first un-pruned file.
             if (firstUnPrunedIndex > 0) {
                 final PcesFile lastPrunedFile = files.get(firstUnPrunedIndex - 1);
-                assertTrue(lastPrunedFile.getUpperBound() < generation);
+                assertTrue(lastPrunedFile.getUpperBound() < ancientThreshold);
             }
 
             // Check all remaining files to make sure we didn't accidentally delete something from the end
@@ -244,7 +243,7 @@ class PcesFileManagerTests {
         // Parse files afresh to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -259,42 +258,36 @@ class PcesFileManagerTests {
         assertEquals(middleFileIndex + 1, firstUnPrunedIndex);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Incremental Pruning By Timestamp Test")
-    void incrementalPruningByTimestampTest() throws IOException {
+    void incrementalPruningByTimestampTest(@NonNull final AncientMode ancientMode) throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         for (long sequenceNumber = firstSequenceNumber;
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final PcesFile file = PcesFile.of(
-                    GENERATION_THRESHOLD /*TODO*/,
-                    timestamp,
-                    sequenceNumber,
-                    minimumGeneration,
-                    maximumGeneration,
-                    0,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-            maximumGeneration =
-                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
-            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound + 1, random.nextLong(lowerBound, lowerBound + maxDelta));
+            timestamp = timestamp.plusSeconds(random.nextInt(1, 100));
 
             files.add(file);
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext();
+        final PlatformContext platformContext = buildContext(ancientMode);
 
         // Choose a file in the middle. The goal is to incrementally purge all files before this file, but not
         // to purge this file or any of the ones after it.
@@ -308,7 +301,7 @@ class PcesFileManagerTests {
         final FakeTime time = new FakeTime(firstFile.getTimestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
         final PcesFileManager manager = new PcesFileManager(platformContext, time, fileTracker, new NodeId(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
@@ -318,17 +311,12 @@ class PcesFileManagerTests {
         final Instant endingTime =
                 middleFile.getTimestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
         while (time.now().isBefore(endingTime)) {
-            manager.pruneOldFiles(lastFile.getUpperBound() + 1);
+            manager.pruneOldFiles(middleFile.getUpperBound());
 
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                    buildContext(),
-                    TestRecycleBin.getInstance(),
-                    fileDirectory,
-                    0,
-                    false,
-                    GENERATION_THRESHOLD /*TODO*/);
+                    buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
             final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -361,17 +349,17 @@ class PcesFileManagerTests {
             }
             assertIteratorEquality(expectedFiles.iterator(), freshFileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
-            time.tick(Duration.ofSeconds(random.nextInt(1, 20)));
+            time.tick(Duration.ofSeconds(random.nextInt(1, 100)));
         }
 
-        // Now, increase the generation by a little and try again.
+        // Now, increase the ancient threshold by a little and try again.
         // The middle file should now be garbage collection eligible.
-        manager.pruneOldFiles(lastFile.getUpperBound() + 1);
+        manager.pruneOldFiles(middleFile.getUpperBound() + 1);
 
         // Parse files afresh to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
