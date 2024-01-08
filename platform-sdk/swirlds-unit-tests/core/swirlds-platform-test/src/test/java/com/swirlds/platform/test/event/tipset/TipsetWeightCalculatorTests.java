@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -534,9 +534,9 @@ class TipsetWeightCalculatorTests {
         final EventDescriptor eventD2 = newEventDescriptor(randomHash(random), nodeD, 2);
         builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
-        // FUTURE WORK: Change the test to use round instead of generation for ancient.
+        // FUTURE WORK: Change the test to use birthRound instead of generation for ancient.
         // Mark generation 1 as ancient.
-        final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(1, 0, 2);
+        final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(1, 1, 2, false);
         builder.setNonAncientEventWindow(nonAncientEventWindow);
         childlessEventTracker.pruneOldEvents(nonAncientEventWindow);
 

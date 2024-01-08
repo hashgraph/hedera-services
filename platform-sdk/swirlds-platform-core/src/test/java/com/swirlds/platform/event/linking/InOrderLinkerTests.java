@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,7 +165,7 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 1));
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 1, false));
 
         final Hash child2Hash = randomHash(random);
         final long child2Generation = 2;
@@ -187,7 +187,7 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 2));
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 2, false));
 
         final Hash child3Hash = randomHash(random);
         final long child3Generation = 3;
@@ -203,7 +203,7 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 4));
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 4, false));
 
         final Hash child4Hash = randomHash(random);
         final long child4Generation = 4;
@@ -262,7 +262,7 @@ class InOrderLinkerTests {
     void ancientEvent() {
         // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
         inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 3));
+                ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_NEGATIVE_INFINITY, 3, false));
 
         final GossipEvent child1 = generateMockEvent(
                 randomHash(random),

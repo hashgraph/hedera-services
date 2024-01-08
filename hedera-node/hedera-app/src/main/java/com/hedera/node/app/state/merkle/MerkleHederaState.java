@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -256,6 +256,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // **MOVE** over the onInit handler. Don't leave it on the immutable state
         this.onInit = from.onInit;
         from.onInit = null;
+
+        // **MOVE** over the onUpdateWeight handler. Don't leave it on the immutable state
+        this.onUpdateWeight = from.onUpdateWeight;
+        from.onUpdateWeight = null;
     }
 
     @Override

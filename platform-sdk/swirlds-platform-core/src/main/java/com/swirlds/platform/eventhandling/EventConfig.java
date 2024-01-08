@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,8 +57,9 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventsLogDir                      eventStream files will be generated in this directory.
  * @param enableEventStreaming              enable stream event to server.
  * @param prehandlePoolSize                 the size of the thread pool used for prehandling transactions
- * @param useLegacyIntake                   if true then use the legacy intake monolith, if false then use the new
- *                                          intake pipeline
+ * @param useBirthRoundAncientThreshold     if true, use birth rounds instead of generations for deciding if an event is
+ *                                          ancient or not. Once this setting has been enabled on a network, it can
+ *                                          never be disabled again (migration pathway is one-way).
  */
 @ConfigData("event")
 public record EventConfig(
@@ -73,4 +74,4 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
-        @ConfigProperty(defaultValue = "false") boolean useLegacyIntake) {}
+        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold) {}

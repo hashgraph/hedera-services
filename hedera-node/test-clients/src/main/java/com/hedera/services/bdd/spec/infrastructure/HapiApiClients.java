@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.hedera.services.bdd.spec.infrastructure;
+
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -38,13 +40,16 @@ import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -52,6 +57,8 @@ import org.apache.logging.log4j.Logger;
 
 public class HapiApiClients {
     static final Logger log = LogManager.getLogger(HapiApiClients.class);
+    // The deadline for the server to respond to a blocking unary call
+    private static final long DEADLINE_SECS = 30L;
 
     private final AccountID defaultNode;
     private final List<NodeConnectInfo> nodes;
@@ -90,7 +97,11 @@ public class HapiApiClients {
      */
     private static final int MAX_DESIRED_CHANNELS_PER_NODE = 50;
 
-    private ManagedChannel createNettyChannel(boolean useTls, final String host, final int port, final int tlsPort) {
+    private static final long MINIMUM_REBUILD_INTERVAL_MS = 30_000L;
+    private static final AtomicReference<Instant> LAST_CHANNEL_REBUILD_TIME = new AtomicReference<>();
+
+    private static ManagedChannel createNettyChannel(
+            boolean useTls, final String host, final int port, final int tlsPort) {
         try {
             ManagedChannel channel;
 
@@ -120,13 +131,16 @@ public class HapiApiClients {
         return null;
     }
 
-    private void ensureChannelStubsInPool(final NodeConnectInfo node, final String uri, final boolean useTls) {
-        final var existingPool = channelPools.computeIfAbsent(uri, COPY_ON_WRITE_LIST_SUPPLIER);
+    private void ensureChannelStubsInPool(@NonNull final NodeConnectInfo node, final boolean useTls) {
+        requireNonNull(node);
+        final var channelUri = useTls ? node.tlsUri() : node.uri();
+        final var existingPool = channelPools.computeIfAbsent(channelUri, COPY_ON_WRITE_LIST_SUPPLIER);
         if (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
             final var channel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
-            existingPool.add(ChannelStubs.from(channel));
+            requireNonNull(channel, "Cannot continue without Netty channel");
+            existingPool.add(ChannelStubs.from(channel, node, useTls));
         }
-        stubSequences.putIfAbsent(uri, new AtomicInteger());
+        stubSequences.putIfAbsent(channelUri, new AtomicInteger());
     }
 
     private HapiApiClients(final List<NodeConnectInfo> nodes, final AccountID defaultNode) {
@@ -134,8 +148,8 @@ public class HapiApiClients {
         stubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
         tlsStubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
         nodes.forEach(node -> {
-            ensureChannelStubsInPool(node, node.uri(), false);
-            ensureChannelStubsInPool(node, node.tlsUri(), true);
+            ensureChannelStubsInPool(node, false);
+            ensureChannelStubsInPool(node, true);
         });
         this.defaultNode = defaultNode;
     }
@@ -145,47 +159,65 @@ public class HapiApiClients {
     }
 
     public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).fileSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .fileSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public TokenServiceBlockingStub getTokenSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).tokenSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .tokenSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).cryptoSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .cryptoSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public FreezeServiceBlockingStub getFreezeSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).freezeSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .freezeSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public SmartContractServiceBlockingStub getScSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).scSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .scSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public ConsensusServiceBlockingStub getConsSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).consSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .consSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public NetworkServiceBlockingStub getNetworkSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).networkSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .networkSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public ScheduleServiceBlockingStub getScheduleSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).scheduleSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .scheduleSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).utilSvcStubs();
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .utilSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
     private String stubId(AccountID nodeId, boolean useTls) {
         return useTls ? tlsStubIds.get(nodeId) : stubIds.get(nodeId);
     }
 
-    private static ChannelStubs nextStubsFromPool(@NonNull final String stubId) {
-        Objects.requireNonNull(stubId);
+    private static synchronized ChannelStubs nextStubsFromPool(@NonNull final String stubId) {
+        requireNonNull(stubId);
         final List<ChannelStubs> stubs = channelPools.get(stubId);
         if (stubs == null || stubs.isEmpty()) {
             throw new IllegalArgumentException("Should have ensured at least one channel in pool");
@@ -207,13 +239,50 @@ public class HapiApiClients {
                 .toString();
     }
 
+    public static synchronized void rebuildChannels() {
+        final var maybeLastRebuildTime = LAST_CHANNEL_REBUILD_TIME.get();
+        if (maybeLastRebuildTime != null) {
+            final var msSinceLastRebuild = System.currentTimeMillis() - maybeLastRebuildTime.toEpochMilli();
+            if (msSinceLastRebuild < MINIMUM_REBUILD_INTERVAL_MS) {
+                return;
+            }
+        }
+        log.info("Shutting down all managed channels");
+        shutdownChannels();
+        final var allUris = new ArrayList<>(channelPools.keySet());
+        allUris.forEach(uri -> {
+            final var closedChannels = channelPools.get(uri);
+            final var reopenedChannels = rebuiltChannelsLike(closedChannels);
+            log.info("Reopened {} channels for {}", reopenedChannels.size(), uri);
+            channelPools.put(uri, reopenedChannels);
+        });
+        LAST_CHANNEL_REBUILD_TIME.set(Instant.now());
+        log.info("Finished rebuilding channels at {}", LAST_CHANNEL_REBUILD_TIME.get());
+    }
+
+    private static List<ChannelStubs> rebuiltChannelsLike(@NonNull final List<ChannelStubs> channelStubs) {
+        final List<ChannelStubs> newChannelStubs = new CopyOnWriteArrayList<>();
+        channelStubs.forEach(channelStub -> {
+            final var node = channelStub.nodeConnectInfo();
+            final var useTls = channelStub.useTls();
+            final var channel =
+                    requireNonNull(createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort()));
+            newChannelStubs.add(ChannelStubs.from(channel, node, useTls));
+        });
+        return newChannelStubs;
+    }
+
     /** Close all netty channels that are opened for clients */
     private static void closeChannels() {
         if (channelPools.isEmpty()) {
             return;
         }
-        channelPools.forEach((uri, channelPool) -> channelPool.forEach(ChannelStubs::shutdown));
+        shutdownChannels();
         channelPools.clear();
+    }
+
+    private static void shutdownChannels() {
+        channelPools.forEach((uri, channelPool) -> channelPool.forEach(ChannelStubs::shutdown));
     }
 
     /**
