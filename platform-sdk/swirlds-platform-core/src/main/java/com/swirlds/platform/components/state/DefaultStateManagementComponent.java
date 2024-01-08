@@ -63,7 +63,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignedStateSentinel signedStateSentinel;
 
     private final Consumer<ReservedSignedState> stateSigner;
-    private final Consumer<ReservedSignedState> sigCollector; //TODO reserve state before passing it to this consumer
+    private final Consumer<ReservedSignedState> sigCollector;
 
     /**
      * @param platformContext                    the platform context
@@ -116,7 +116,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
             stateSigner.accept(signedState.getAndReserve("signing state from transactions"));
 
-            sigCollector.accept(signedState);
+            sigCollector.accept(
+                    signedState.getAndReserve("DefaultStateManagementComponent.newSignedStateFromTransactions"));
         }
     }
 
