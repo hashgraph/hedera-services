@@ -22,11 +22,5 @@ package com.swirlds.platform.system.transaction;
 public enum SystemTransactionType {
 
     /** first byte of a system transaction giving a signed state's (round number, signature) */
-    SYS_TRANS_STATE_SIG,
-
-    /** first byte of a system transaction giving all avgPingMilliseconds stats (sent as ping time in microseconds) */
-    SYS_TRANS_PING_MICROSECONDS,
-
-    /** first byte of a system transaction giving all avgBytePerSecSent stats (sent as bits per second) */
-    SYS_TRANS_BITS_PER_SECOND
+    SYS_TRANS_STATE_SIG
 }

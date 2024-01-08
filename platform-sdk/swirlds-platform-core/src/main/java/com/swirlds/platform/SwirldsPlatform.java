@@ -531,7 +531,8 @@ public class SwirldsPlatform implements Platform {
                 platformWiring.getSignStateInput()::put);
 
         // Load the minimum generation into the pre-consensus event writer
-        final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStates =
+                getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
         if (!savedStates.isEmpty()) {
             // The minimum generation of non-ancient events for the oldest state snapshot on disk.
             final long minimumGenerationNonAncientForOldestState =

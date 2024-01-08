@@ -91,7 +91,6 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.components.appcomm.WiringConfig;
 import com.swirlds.platform.config.PathsConfig;
@@ -139,7 +138,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
-                .withConfigDataType(FCHashMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 /*
                 These data types from the platform were not available on the classpath. Add if needed later.
