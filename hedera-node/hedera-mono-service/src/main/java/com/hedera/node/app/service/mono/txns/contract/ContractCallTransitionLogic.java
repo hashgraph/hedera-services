@@ -240,6 +240,12 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
     // Determine if the operation should be sanity checked.
     private boolean possiblySanityCheckOp(final ContractCallTransactionBody op, final EntityNum target) {
+        if (!properties.evmVersion().equals(EVM_VERSION_0_46)
+                || !properties.allowCallsToNonContractAccounts()
+                || properties.grandfatherContracts().contains(target.toId().asEvmAddress())) {
+            return true;
+        }
+
         // Tokens are valid targets
         if (entityAccess.isTokenAccount(target.toId().asEvmAddress())) {
             return false;
