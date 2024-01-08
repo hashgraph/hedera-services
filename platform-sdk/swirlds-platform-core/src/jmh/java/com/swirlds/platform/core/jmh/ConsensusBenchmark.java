@@ -23,6 +23,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
@@ -80,7 +81,8 @@ public class ConsensusBenchmark {
         consensus = new ConsensusImpl(
                 configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
-                emitter.getGraphGenerator().getAddressBook());
+                emitter.getGraphGenerator().getAddressBook(),
+                configuration.getConfigData(EventConfig.class).useBirthRoundAncientThreshold());
     }
 
     @Benchmark

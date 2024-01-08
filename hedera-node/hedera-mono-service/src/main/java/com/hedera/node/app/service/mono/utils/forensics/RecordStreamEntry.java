@@ -46,6 +46,10 @@ public record RecordStreamEntry(TxnAccessor accessor, TransactionRecord txnRecor
         return accessor.getFunction();
     }
 
+    public TransactionRecord transactionRecord() {
+        return txnRecord;
+    }
+
     @Override
     public String toString() {
         return String.format(

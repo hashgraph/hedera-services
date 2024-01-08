@@ -56,12 +56,12 @@ public final class PcesUtilities {
      * @return the new compacted PCES file.
      */
     @NonNull
-    public static PreconsensusEventFile compactPreconsensusEventFile(
-            @NonNull final PreconsensusEventFile originalFile, final long previousMaximumGeneration) {
+    public static PcesFile compactPreconsensusEventFile(
+            @NonNull final PcesFile originalFile, final long previousMaximumGeneration) {
 
         // Find the maximum generation in the file.
         long maxGeneration = originalFile.getMinimumGeneration();
-        try (final IOIterator<GossipEvent> iterator = new PreconsensusEventFileIterator(originalFile, 0)) {
+        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0)) {
 
             while (iterator.hasNext()) {
                 final GossipEvent next = iterator.next();
@@ -83,7 +83,7 @@ public final class PcesUtilities {
         }
 
         // Now, compact the generational span of the file using the newly discovered maximum generation.
-        final PreconsensusEventFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
+        final PcesFile newFile = originalFile.buildFileWithCompressedSpan(maxGeneration);
         try {
             Files.move(originalFile.getPath(), newFile.getPath(), StandardCopyOption.ATOMIC_MOVE);
         } catch (final IOException e) {
@@ -107,9 +107,9 @@ public final class PcesUtilities {
      * @return the wrapper object, or null if the file can't be parsed
      */
     @Nullable
-    public static PreconsensusEventFile parseFile(@NonNull final Path path) {
+    public static PcesFile parseFile(@NonNull final Path path) {
         try {
-            return PreconsensusEventFile.of(path);
+            return PcesFile.of(path);
         } catch (final IOException exception) {
             // ignore any file that can't be parsed
             logger.warn(EXCEPTION.getMarker(), "Failed to parse file: {}", path, exception);
@@ -123,11 +123,11 @@ public final class PcesUtilities {
      * @param rootPath the root of the directory tree
      */
     public static void compactPreconsensusEventFiles(@NonNull final Path rootPath) {
-        final List<PreconsensusEventFile> files = new ArrayList<>();
+        final List<PcesFile> files = new ArrayList<>();
         try (final Stream<Path> fileStream = Files.walk(rootPath)) {
             fileStream
                     .filter(f -> !Files.isDirectory(f))
-                    .filter(f -> f.toString().endsWith(PreconsensusEventFile.EVENT_FILE_EXTENSION))
+                    .filter(f -> f.toString().endsWith(PcesFile.EVENT_FILE_EXTENSION))
                     .map(PcesUtilities::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
@@ -137,8 +137,8 @@ public final class PcesUtilities {
         }
 
         long previousMaximumGeneration = 0;
-        for (final PreconsensusEventFile file : files) {
-            final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
+        for (final PcesFile file : files) {
+            final PcesFile compactedFile = compactPreconsensusEventFile(file, previousMaximumGeneration);
             previousMaximumGeneration = compactedFile.getMaximumGeneration();
         }
     }
@@ -163,7 +163,7 @@ public final class PcesUtilities {
             final long previousMaximumGeneration,
             final long previousOrigin,
             @NonNull final Instant previousTimestamp,
-            @NonNull final PreconsensusEventFile descriptor) {
+            @NonNull final PcesFile descriptor) {
 
         // Sequence number should always monotonically increase
         if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {
@@ -214,8 +214,8 @@ public final class PcesUtilities {
             @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) throws IOException {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
         final Path databaseDirectory = savedStateDirectory
