@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class PcesFileManager {
      */
     private final Time time;
 
-    private final PreconsensusEventMetrics metrics;
+    private final PcesMetrics metrics;
 
     /**
      * The root directory where event files are stored.
@@ -105,12 +105,12 @@ public class PcesFileManager {
             throw new IllegalArgumentException("starting round must be non-negative");
         }
 
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         this.time = Objects.requireNonNull(time);
         this.files = Objects.requireNonNull(files);
-        this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
+        this.metrics = new PcesMetrics(platformContext.getMetrics());
         this.minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
         this.databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
@@ -163,7 +163,7 @@ public class PcesFileManager {
                     + "Current origin round: " + currentOrigin + ", new origin round: " + newOriginRound);
         }
 
-        final PreconsensusEventFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
+        final PcesFile lastFile = files.getFileCount() > 0 ? files.getLastFile() : null;
 
         logger.info(
                 STARTUP.getMarker(),
@@ -184,8 +184,7 @@ public class PcesFileManager {
      * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
-    public @NonNull PreconsensusEventFile getNextFileDescriptor(
-            final long minimumGeneration, final long maximumGeneration) {
+    public @NonNull PcesFile getNextFileDescriptor(final long minimumGeneration, final long maximumGeneration) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -206,7 +205,7 @@ public class PcesFileManager {
                     Math.max(maximumGeneration, files.getLastFile().getMaximumGeneration());
         }
 
-        final PreconsensusEventFile descriptor = PreconsensusEventFile.of(
+        final PcesFile descriptor = PcesFile.of(
                 time.now(),
                 getNextSequenceNumber(),
                 minimumGenerationForFile,
@@ -217,7 +216,7 @@ public class PcesFileManager {
         if (files.getFileCount() > 0) {
             // There are never enough sanity checks. This is the same sanity check that is run when we parse
             // the files from disk, so if it doesn't pass now it's not going to pass when we read the files.
-            final PreconsensusEventFile previousFile = files.getLastFile();
+            final PcesFile previousFile = files.getLastFile();
             PcesUtilities.fileSanityChecks(
                     false,
                     previousFile.getSequenceNumber(),
@@ -239,7 +238,7 @@ public class PcesFileManager {
      *
      * @param file the file that has been completely written
      */
-    public void finishedWritingFile(@NonNull final PreconsensusEventMutableFile file) {
+    public void finishedWritingFile(@NonNull final PcesMutableFile file) {
         final long previousFileHighestGeneration;
         if (files.getFileCount() == 1) {
             previousFileHighestGeneration = 0;
@@ -249,7 +248,7 @@ public class PcesFileManager {
         }
 
         // Compress the generational span of the file. Reduces overlap between files.
-        final PreconsensusEventFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
+        final PcesFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
         files.setFile(files.getFileCount() - 1, compressedDescriptor);
 
         // Update metrics
@@ -276,7 +275,7 @@ public class PcesFileManager {
                 && files.getFirstFile().getMaximumGeneration() < minimumGeneration
                 && files.getFirstFile().getTimestamp().isBefore(minimumTimestamp)) {
 
-            final PreconsensusEventFile file = files.removeFirstFile();
+            final PcesFile file = files.removeFirstFile();
             totalFileByteCount -= Files.size(file.getPath());
             file.deleteFile(databaseDirectory);
         }

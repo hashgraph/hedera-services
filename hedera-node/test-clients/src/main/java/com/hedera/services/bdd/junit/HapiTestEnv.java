@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiTestEnv {
+    private static final Logger logger = LogManager.getLogger(HapiTestEnv.class);
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
     private static final int FIRST_GOSSIP_PORT = 60000;
     private static final int FIRST_GOSSIP_TLS_PORT = 60001;
@@ -103,10 +106,23 @@ public class HapiTestEnv {
     public void start() throws TimeoutException {
         started = true;
         for (final var node : nodes) {
-            node.start();
+            logger.info("Starting node {}", node.getName());
+            try {
+                node.start();
+            } catch (RuntimeException e) {
+                logger.error(
+                        "Node {} failed to start within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                throw e;
+            }
         }
         for (final var node : nodes) {
-            node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            try {
+                node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            } catch (TimeoutException e) {
+                logger.error(
+                        "Node {} failed to ACTIVE within {} seconds", node.getName(), CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+                throw e;
+            }
         }
     }
 

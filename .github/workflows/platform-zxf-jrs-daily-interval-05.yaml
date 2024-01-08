@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -198,44 +198,4 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - NewNodesMinStake
-    if: ${{ !cancelled() && always() }}
-
-  LegacyIntakePipeline:
-    name: LegacyIntakePipeline
-    uses: ./.github/workflows/zxc-jrs-regression.yaml
-    with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
-      panel-config: "configs/suites/daily/4N/GCP-Daily-LegacyIntakePipeline-4N.json"
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
-      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
-      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
-    needs:
-      - NewNodesZeroStake
-    if: ${{ !cancelled() && always() }}
-
-  SBReconnectLegacyIntake:
-    name: SBReconnectLegacyIntake
-    uses: ./.github/workflows/zxc-jrs-regression.yaml
-    with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
-      panel-config: "configs/suites/daily/10N/SBReconnect-LegacyIntake-10N.json"
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
-      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
-      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
-    needs:
-      - LegacyIntakePipeline
     if: ${{ !cancelled() && always() }}

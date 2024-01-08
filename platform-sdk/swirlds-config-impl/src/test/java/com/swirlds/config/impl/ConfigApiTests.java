@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -418,7 +419,7 @@ class ConfigApiTests {
     void registerConverterForTypeMultipleTimes() {
         // given
         final ConfigurationBuilder configurationBuilder =
-                ConfigurationBuilder.create().withConverter(new DurationConverter());
+                ConfigurationBuilder.create().withConverter(Duration.class, new DurationConverter());
         // then
         assertThrows(
                 IllegalStateException.class,
@@ -430,7 +431,7 @@ class ConfigApiTests {
     void registerCustomConverter() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new TestDateConverter())
+                .withConverter(Date.class, new TestDateConverter())
                 .withSource(new SimpleConfigSource("app.start", "1662367513551"))
                 .build();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,16 @@ tasks.register<Test>("hapiTestMisc") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { excludeTags("CRYPTO", "TOKEN", "SMART_CONTRACT", "TIME_CONSUMING") }
+    useJUnitPlatform {
+        excludeTags(
+            "CRYPTO",
+            "TOKEN",
+            "SMART_CONTRACT",
+            "TIME_CONSUMING",
+            "RESTART",
+            "ND_RECONNECT"
+        )
+    }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -138,6 +147,35 @@ tasks.register<Test>("hapiTestTimeConsuming") {
     classpath = sourceSets.main.get().runtimeClasspath
 
     useJUnitPlatform { includeTags("TIME_CONSUMING") }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs a handful of test-suites that are extremely time-consuming (10+ minutes)
+tasks.register<Test>("hapiTestRestart") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("RESTART") }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+tasks.register<Test>("hapiTestNDReconnect") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("ND_RECONNECT") }
 
     // Limit heap and number of processors
     maxHeapSize = "8g"

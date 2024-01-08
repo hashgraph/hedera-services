@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class ConsensusHandlingMetrics {
 
     private static final LongGauge.Config consensusTimeConfig = new LongGauge.Config(INTERNAL_CATEGORY, "consensusTime")
             .withDescription("The consensus timestamp of the round currently being handled.")
-            .withUnit("milliseconds since the epoch");
+            .withUnit("milliseconds");
     private final LongGauge consensusTime;
 
     private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(

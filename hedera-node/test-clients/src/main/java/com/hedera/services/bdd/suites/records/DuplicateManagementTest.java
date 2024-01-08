@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ public class DuplicateManagementTest extends HapiSuite {
     private static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
+    private static final long MS_TO_WAIT_FOR_CONSENSUS = 5_000L;
 
     public static void main(String... args) {
         new DuplicateManagementTest().runSuiteSync();
@@ -88,7 +89,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                 cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
                         uncheckedSubmit(
                                 cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
-                        sleepFor(1_000L))
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS))
                 .then(
                         getReceipt(TXN_ID)
                                 .andAnyDuplicates()
@@ -109,7 +110,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                 .hasDuplicates(inOrder(
                                         recordWith().status(DUPLICATE_TRANSACTION),
                                         recordWith().status(DUPLICATE_TRANSACTION))),
-                        sleepFor(1_000L),
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS),
                         withOpContext((spec, opLog) -> {
                             var cheapGet = getTxnRecord("cheapTxn").assertingNothingAboutHashes();
                             var costlyGet = getTxnRecord("costlyTxn").assertingNothingAboutHashes();
@@ -142,7 +143,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                 .payingWith(CIVILIAN)
                                 .txnId(TXN_ID)
                                 .signedBy("wrongKey")),
-                        sleepFor(1_000L))
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS))
                 .then(
                         getReceipt(TXN_ID).hasPriorityStatus(INVALID_PAYER_SIGNATURE),
                         getTxnRecord(TXN_ID)
@@ -169,7 +170,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                 .txnId(TXN_ID)
                                 .payingWith(CIVILIAN)
                                 .setNode(TO)),
-                        sleepFor(1_000L))
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS))
                 .then(
                         getReceipt(TXN_ID)
                                 .andAnyDuplicates()
