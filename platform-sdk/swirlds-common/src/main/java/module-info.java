@@ -150,7 +150,6 @@ module com.swirlds.common {
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
-    requires com.swirlds.config.extensions;
     requires com.sun.jna;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;

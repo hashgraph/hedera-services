@@ -25,4 +25,9 @@ public abstract class UtilOp extends HapiSpecOperation {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
         return 0;
     }
+
+    public UtilOp logged() {
+        verboseLoggingOn = true;
+        return this;
+    }
 }
