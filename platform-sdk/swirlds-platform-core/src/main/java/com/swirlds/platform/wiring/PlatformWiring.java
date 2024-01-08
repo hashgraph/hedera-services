@@ -121,7 +121,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,
                 orphanBufferWiring,
-                pcesSequencerWiring,
                 inOrderLinkerWiring,
                 linkedEventIntakeWiring,
                 eventCreationManagerWiring,
