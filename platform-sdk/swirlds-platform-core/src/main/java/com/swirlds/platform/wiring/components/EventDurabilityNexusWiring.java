@@ -34,6 +34,7 @@ public record EventDurabilityNexusWiring(@NonNull InputWire<Long> latestDurableS
      * @param taskScheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
+    @NonNull
     public static EventDurabilityNexusWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new EventDurabilityNexusWiring(taskScheduler.buildInputWire("latest durable sequence number"));
     }

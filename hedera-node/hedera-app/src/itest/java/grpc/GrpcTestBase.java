@@ -30,6 +30,7 @@ import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.GrpcConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
@@ -231,6 +232,7 @@ abstract class GrpcTestBase extends TestBase {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(GrpcConfig.class)
                 .withConfigDataType(NettyConfig.class)
+                .withConfigDataType(HederaConfig.class)
                 .withSource(testConfig)
                 .build();
     }

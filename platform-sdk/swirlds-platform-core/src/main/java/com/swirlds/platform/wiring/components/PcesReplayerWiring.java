@@ -46,6 +46,7 @@ public record PcesReplayerWiring(
      * @param taskScheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
+    @NonNull
     public static PcesReplayerWiring create(@NonNull final TaskScheduler<DoneStreamingPcesTrigger> taskScheduler) {
         return new PcesReplayerWiring(
                 taskScheduler.buildInputWire("event files to replay"),

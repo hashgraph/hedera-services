@@ -34,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param minimumGenerationNonAncientInput  the input wire for the minimum generation of non-ancient events
  * @param minimumGenerationToStoreInputWire the input wire for the minimum generation of events to store
  * @param latestDurableSequenceNumberOutput the output wire for the latest durable sequence number
- * @param flushRunnable                     the runnable to flush the writer
  */
 public record PcesWriterWiring(
         @NonNull InputWire<DoneStreamingPcesTrigger> doneStreamingPcesInputWire,
@@ -42,8 +41,7 @@ public record PcesWriterWiring(
         @NonNull InputWire<Long> discontinuityInputWire,
         @NonNull InputWire<Long> minimumGenerationNonAncientInput,
         @NonNull InputWire<Long> minimumGenerationToStoreInputWire,
-        @NonNull OutputWire<Long> latestDurableSequenceNumberOutput,
-        @NonNull Runnable flushRunnable) {
+        @NonNull OutputWire<Long> latestDurableSequenceNumberOutput) {
 
     /**
      * Create a new instance of this wiring.
@@ -51,6 +49,7 @@ public record PcesWriterWiring(
      * @param taskScheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
+    @NonNull
     public static PcesWriterWiring create(@NonNull final TaskScheduler<Long> taskScheduler) {
         return new PcesWriterWiring(
                 taskScheduler.buildInputWire("done streaming pces"),
@@ -58,8 +57,7 @@ public record PcesWriterWiring(
                 taskScheduler.buildInputWire("discontinuity"),
                 taskScheduler.buildInputWire("minimum generation non ancient"),
                 taskScheduler.buildInputWire("minimum generation to store"),
-                taskScheduler.getOutputWire(),
-                taskScheduler::flush);
+                taskScheduler.getOutputWire());
     }
 
     /**

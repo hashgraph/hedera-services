@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * The {@link TaskScheduler}s used by the platform.
  *
- * @param eventHasherScheduler             the scheduler for the event hasher
+ * @param eventHasherScheduler                      the scheduler for the event hasher
  * @param internalEventValidatorScheduler           the scheduler for the internal event validator
  * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
  * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
@@ -41,10 +41,10 @@ import java.util.List;
  * @param eventCreationManagerScheduler             the scheduler for the event creation manager
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
- * @param pcesReplayerScheduler            the scheduler for the pces replayer
- * @param pcesWriterScheduler              the scheduler for the pces writer
- * @param pcesSequencerScheduler           the scheduler for the pces sequencer
- * @param eventDurabilityNexusScheduler    the scheduler for the event durability nexus
+ * @param pcesReplayerScheduler                     the scheduler for the pces replayer
+ * @param pcesWriterScheduler                       the scheduler for the pces writer
+ * @param pcesSequencerScheduler                    the scheduler for the pces sequencer
+ * @param eventDurabilityNexusScheduler             the scheduler for the event durability nexus
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  */
@@ -143,6 +143,7 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("stateSigner")
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("pcesReplayer")
@@ -164,7 +165,6 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("eventDurabilityNexus")
                         .withType(config.eventDurabilityNexusSchedulerType())
                         .withUnhandledTaskCapacity(config.eventDurabilityNexusUnhandledTaskCapacity())
-                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),

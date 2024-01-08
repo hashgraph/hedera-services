@@ -42,6 +42,7 @@ public record PcesSequencerWiring(
      * @param taskScheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
+    @NonNull
     public static PcesSequencerWiring create(@NonNull final TaskScheduler<GossipEvent> taskScheduler) {
         return new PcesSequencerWiring(
                 taskScheduler.buildInputWire("events to sequence"),

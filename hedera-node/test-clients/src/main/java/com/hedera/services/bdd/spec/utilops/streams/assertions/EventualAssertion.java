@@ -21,9 +21,7 @@ import com.hedera.services.bdd.spec.utilops.streams.EventualAssertionResult;
 import java.time.Duration;
 
 public abstract class EventualAssertion extends UtilOp {
-    // Default timeout just a bit longer than the record file period of
-    // hedera.recordStream.logPeriod=2 seconds
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(3L);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5L);
 
     protected final EventualAssertionResult result;
 

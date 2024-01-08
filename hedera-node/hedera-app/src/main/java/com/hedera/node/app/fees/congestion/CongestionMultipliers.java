@@ -26,7 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
- * An implementation for congestion multipliers that uses two types of multiplier implementation ({@link EntityUtilizationMultiplier} and a {@link ThrottleMultiplier})
+ * An implementation for congestion multipliers that uses two types of multiplier implementation (
+ * {@link EntityUtilizationMultiplier} and a {@link ThrottleMultiplier})
  * to determine the current congestion multiplier.
  */
 public class CongestionMultipliers {

@@ -97,6 +97,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
+        eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
         eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
@@ -115,6 +116,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
 
         platformCoordinator = new PlatformCoordinator(
+                eventHasherWiring,
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,
@@ -125,7 +127,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring);
 
-        eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
@@ -164,10 +165,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
+        eventHasherWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
         internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
         eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
         eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(pcesSequencerWiring.eventInput());
+        pcesSequencerWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+        pcesSequencerWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
         inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
         eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
@@ -383,33 +387,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
         return pcesWriterWiring.discontinuityInputWire();
-    }
-
-    /**
-     * Get the input wire for the PCES writer to update the minimum generation non-ancient
-     *
-     * @return the input wire for the PCES writer to update the minimum generation non-ancient
-     */
-    public InputWire<Long> getPcesWriterMinimumGenerationNonAncientInput() {
-        return pcesWriterWiring.minimumGenerationNonAncientInput();
-    }
-
-    /**
-     * Get the input wire for passing events to the PCES writer.
-     *
-     * @return the input wire for passing events to the PCES writer
-     */
-    public InputWire<GossipEvent> getPcesWriterEventInput() {
-        return pcesWriterWiring.eventInputWire();
-    }
-
-    /**
-     * Get the runnable that will flush the PCES writer.
-     *
-     * @return the runnable that will flush the PCES writer
-     */
-    public Runnable getPcesWriterFlushRunnable() {
-        return pcesWriterWiring.flushRunnable();
     }
 
     /**

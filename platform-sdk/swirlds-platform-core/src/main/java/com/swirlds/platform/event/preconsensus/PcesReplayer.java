@@ -73,7 +73,7 @@ public class PcesReplayer {
     }
 
     /**
-     * Write information about the replay to disk.
+     * Log information about the replay
      *
      * @param timestampBeforeReplay the consensus timestamp before replay
      * @param roundBeforeReplay     the round before replay
@@ -135,6 +135,7 @@ public class PcesReplayer {
      * @param eventIterator an iterator over the events in the preconsensus stream
      * @return a trigger object indicating when the replay is complete
      */
+    @NonNull
     public DoneStreamingPcesTrigger replayPces(@NonNull final IOIterator<GossipEvent> eventIterator) {
         Objects.requireNonNull(eventIterator);
 
