@@ -26,8 +26,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
@@ -35,8 +36,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -44,14 +43,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class CallOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CallOperationSuite.class);
 
     public static void main(String... args) {
-        new CallOperationSuite().runSuiteAsync();
+        new CallOperationSuite().runSuiteSync();
     }
 
     @Override
@@ -61,7 +60,7 @@ public class CallOperationSuite extends HapiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @HapiTest
@@ -71,15 +70,9 @@ public class CallOperationSuite extends HapiSuite {
         final var ACCOUNT = "account";
         final var EXPECTED_BALANCE = 10;
 
-        return defaultHapiSpec("VerifiesExistence")
-                .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
-                        cryptoCreate(ACCOUNT).balance(0L),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+        return defaultHapiSpec(
+                        "VerifiesExistence", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(cryptoCreate(ACCOUNT).balance(0L), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, "call", asHeadlongAddress(INVALID_ADDRESS))
@@ -102,10 +95,7 @@ public class CallOperationSuite extends HapiSuite {
         final var contract = "CallingContract";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return defaultHapiSpec("CallingContract")
-                .given(
-                        snapshotMode(SnapshotMode.TAKE_FROM_MONO_STREAMS),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+                .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
                         contractCall(contract, "setVar1", BigInteger.valueOf(35)),
                         contractCallLocal(contract, "getVar1").logged(),

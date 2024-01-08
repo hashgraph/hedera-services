@@ -24,14 +24,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class RecordsSuite extends HapiSuite {
 
@@ -71,7 +69,6 @@ public class RecordsSuite extends HapiSuite {
 
         return defaultHapiSpec("bigCall")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract))
@@ -86,11 +83,8 @@ public class RecordsSuite extends HapiSuite {
     HapiSpec txRecordsContainValidTransfers() {
         final var contract = "ParentChildTransfer";
 
-        return defaultHapiSpec("TXRecordsContainValidTransfers")
+        return defaultHapiSpec("TXRecordsContainValidTransfers", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        snapshotMode(
-                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         uploadInitCode(contract),
                         contractCreate(contract).balance(10_000L).via("createTx"))
                 .when(contractCall(contract, "transferToChild", BigInteger.valueOf(10_000))
