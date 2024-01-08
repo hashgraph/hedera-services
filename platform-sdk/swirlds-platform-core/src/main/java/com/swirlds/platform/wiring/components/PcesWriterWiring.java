@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
@@ -31,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param doneStreamingPcesInputWire        the input wire for the trigger to indicate that PCES streaming is complete
  * @param eventInputWire                    the input wire for events to be written
  * @param discontinuityInputWire            the input wire for PCES discontinuities
- * @param minimumGenerationNonAncientInput  the input wire for the minimum generation of non-ancient events
+ * @param nonAncientEventWindowInput  the input wire for the minimum generation of non-ancient events
  * @param minimumGenerationToStoreInputWire the input wire for the minimum generation of events to store
  * @param latestDurableSequenceNumberOutput the output wire for the latest durable sequence number
  */
@@ -39,7 +40,7 @@ public record PcesWriterWiring(
         @NonNull InputWire<DoneStreamingPcesTrigger> doneStreamingPcesInputWire,
         @NonNull InputWire<GossipEvent> eventInputWire,
         @NonNull InputWire<Long> discontinuityInputWire,
-        @NonNull InputWire<Long> minimumGenerationNonAncientInput,
+        @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput,
         @NonNull InputWire<Long> minimumGenerationToStoreInputWire,
         @NonNull OutputWire<Long> latestDurableSequenceNumberOutput) {
 
@@ -70,8 +71,8 @@ public record PcesWriterWiring(
                 .bind(pcesWriter::beginStreamingNewEvents);
         ((BindableInputWire<GossipEvent, Long>) eventInputWire).bind(pcesWriter::writeEvent);
         ((BindableInputWire<Long, Long>) discontinuityInputWire).bind(pcesWriter::registerDiscontinuity);
-        ((BindableInputWire<Long, Long>) minimumGenerationNonAncientInput)
-                .bind(pcesWriter::setMinimumGenerationNonAncient);
+        ((BindableInputWire<NonAncientEventWindow, Long>) nonAncientEventWindowInput)
+                .bind(pcesWriter::updateNonAncientEventBoundary);
         ((BindableInputWire<Long, Long>) minimumGenerationToStoreInputWire)
                 .bind(pcesWriter::setMinimumAncientIdentifierToStore);
     }

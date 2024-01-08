@@ -43,6 +43,7 @@ import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
@@ -310,7 +311,8 @@ class PcesWriterTests {
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            passValueToDurabilityNexus(writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+            passValueToDurabilityNexus(writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                    -1, minimumGenerationNonAncient, minimumGenerationNonAncient, false) /* TODO*/));
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // Although it's not common, it's possible that the generator will generate
@@ -353,7 +355,8 @@ class PcesWriterTests {
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            passValueToDurabilityNexus(writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+            passValueToDurabilityNexus(writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                    -1, minimumGenerationNonAncient, minimumGenerationNonAncient, false) /* TODO*/));
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // Although it's not common, it's actually possible that the generator will generate
@@ -368,7 +371,8 @@ class PcesWriterTests {
         if (minimumGenerationNonAncient > ancientEvent.getGeneration()) {
             // This is probably not possible... but just in case make sure this event is ancient
             try {
-                passValueToDurabilityNexus(writer.setMinimumGenerationNonAncient(ancientEvent.getGeneration() + 1));
+                passValueToDurabilityNexus(writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                        -1, ancientEvent.getGeneration() + 1, ancientEvent.getGeneration() + 1, false) /* TODO*/));
             } catch (final IllegalArgumentException e) {
                 // ignore, more likely than not this event is way older than the actual ancient generation
             }
@@ -435,7 +439,8 @@ class PcesWriterTests {
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            passValueToDurabilityNexus(writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+            passValueToDurabilityNexus(writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                    -1, minimumGenerationNonAncient, minimumGenerationNonAncient, false) /* TODO*/));
         }
 
         assertTrue(eventDurabilityNexus.isEventDurable(events.get(events.size() - 1)));
@@ -476,7 +481,8 @@ class PcesWriterTests {
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            passValueToDurabilityNexus(writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+            passValueToDurabilityNexus(writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                    -1, minimumGenerationNonAncient, minimumGenerationNonAncient, false) /* TODO*/));
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // Although it's not common, it's actually possible that the generator will generate
@@ -512,7 +518,8 @@ class PcesWriterTests {
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            passValueToDurabilityNexus(writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+            passValueToDurabilityNexus(writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                    -1, minimumGenerationNonAncient, minimumGenerationNonAncient, false) /* TODO*/));
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // Although it's not common, it's actually possible that the generator will generate
@@ -564,7 +571,8 @@ class PcesWriterTests {
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            passValueToDurabilityNexus(writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+            passValueToDurabilityNexus(writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                    -1, minimumGenerationNonAncient, minimumGenerationNonAncient, false) /* TODO*/));
         }
 
         // Remove the rejected events from the list

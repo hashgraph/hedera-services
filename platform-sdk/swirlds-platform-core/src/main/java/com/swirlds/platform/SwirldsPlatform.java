@@ -800,7 +800,6 @@ public class SwirldsPlatform implements Platform {
 
             platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
                     initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
-            platformWiring.updateMinimumGenerationNonAncient(initialState.getMinRoundGeneration());
 
             // We don't want to invoke these callbacks until after we are starting up.
             final long round = initialState.getRound();
@@ -986,7 +985,6 @@ public class SwirldsPlatform implements Platform {
                             signedState.getState().getPlatformState().getAddressBook()));
             platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
                     signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
-            platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 

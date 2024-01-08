@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.LongRunningAverage;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
@@ -245,22 +246,21 @@ public class PcesWriter {
     }
 
     /**
-     * Let the event writer know the current non-ancient event boundary. Ancient events will be ignored if added
-     * to the event writer.
+     * Let the event writer know the current non-ancient event boundary. Ancient events will be ignored if added to the
+     * event writer.
      *
-     * @param nonAncientBoundary the minimum threshold of a non-ancient event, either a generation or a birth round
-     *                           depending on the {@link PcesFileType}.
+     * @param nonAncientBoundary describes the boundary between ancient and non-ancient events
      * @return the sequence number of the last event durably written to the stream if this method call resulted in any
      * additional events being durably written to the stream, otherwise null
      */
     @Nullable
-    public Long setMinimumGenerationNonAncient(final long nonAncientBoundary) { // TODO use non-ancient event window
-        if (nonAncientBoundary < this.nonAncientBoundary) {
+    public Long updateNonAncientEventBoundary(@NonNull final NonAncientEventWindow nonAncientBoundary) {
+        if (nonAncientBoundary.getLowerBound() < this.nonAncientBoundary) {
             throw new IllegalArgumentException("Non-ancient boundary cannot be decreased. Current = "
                     + this.nonAncientBoundary + ", requested = " + nonAncientBoundary);
         }
 
-        this.nonAncientBoundary = nonAncientBoundary;
+        this.nonAncientBoundary = nonAncientBoundary.getLowerBound();
 
         if (!streamingNewEvents || currentMutableFile == null) {
             return null;

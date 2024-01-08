@@ -182,8 +182,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         solderNonAncientEventWindow();
         linkedEventIntakeWiring
-                .minimumGenerationNonAncientOutput()
-                .solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
+                .nonAncientEventWindowOutput()
+                .solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
@@ -403,15 +403,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-    }
-
-    /**
-     * Inject a new minimum generation non-ancient on all components that need it.
-     *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
-     */
-    public void updateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        pcesWriterWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 
     /**
