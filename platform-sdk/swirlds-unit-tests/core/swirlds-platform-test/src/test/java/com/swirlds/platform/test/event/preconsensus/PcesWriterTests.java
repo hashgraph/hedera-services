@@ -580,7 +580,7 @@ class PcesWriterTests {
 
         // Prune old files.
         final long minimumGenerationToStore = events.get(events.size() - 1).getGeneration() / 2;
-        writer.setMinimumGenerationToStore(minimumGenerationToStore);
+        writer.setMinimumAncientIdentifierToStore(minimumGenerationToStore);
 
         // We shouldn't see any files that are incapable of storing events above the minimum
         final PcesFileTracker pcesFiles = PcesFileReader.readFilesFromDisk(

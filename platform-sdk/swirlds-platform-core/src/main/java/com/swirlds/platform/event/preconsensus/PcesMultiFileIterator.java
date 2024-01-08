@@ -32,25 +32,25 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
     private final Iterator<PcesFile> fileIterator;
     private final PcesFileType fileType;
     private PcesFileIterator currentIterator;
-    private final long minimumGeneration;
+    private final long lowerBound;
     private GossipEvent next;
     private int truncatedFileCount = 0;
 
     /**
      * Create an iterator that walks over events in a series of event files.
      *
-     * @param minimumGeneration the minimum generation of events to return, events with lower generations are not
-     *                          returned
-     * @param fileIterator      an iterator that walks over event files
-     * @param fileType          the type of file to read
+     * @param lowerBound   the minimum ancient identifier of events to return, events with lower ancient identifiers are
+     *                     not returned
+     * @param fileIterator an iterator that walks over event files
+     * @param fileType     the type of file to read
      */
     public PcesMultiFileIterator(
-            final long minimumGeneration,
+            final long lowerBound,
             @NonNull final Iterator<PcesFile> fileIterator,
             @NonNull final PcesFileType fileType) {
 
         this.fileIterator = Objects.requireNonNull(fileIterator);
-        this.minimumGeneration = minimumGeneration;
+        this.lowerBound = lowerBound;
         this.fileType = Objects.requireNonNull(fileType);
     }
 
@@ -68,7 +68,7 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
                     break;
                 }
 
-                currentIterator = new PcesFileIterator(fileIterator.next(), minimumGeneration, fileType);
+                currentIterator = new PcesFileIterator(fileIterator.next(), lowerBound, fileType);
             } else {
                 next = currentIterator.next();
             }

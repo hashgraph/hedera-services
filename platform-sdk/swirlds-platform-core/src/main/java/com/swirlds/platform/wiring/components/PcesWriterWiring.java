@@ -75,6 +75,6 @@ public record PcesWriterWiring(
         ((BindableInputWire<Long, Long>) minimumGenerationNonAncientInput)
                 .bind(pcesWriter::setMinimumGenerationNonAncient);
         ((BindableInputWire<Long, Long>) minimumGenerationToStoreInputWire)
-                .bind(pcesWriter::setMinimumGenerationToStore);
+                .bind(pcesWriter::setMinimumAncientIdentifierToStore);
     }
 }

@@ -23,6 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,10 +53,10 @@ public class PcesWriter {
     private PcesMutableFile currentMutableFile;
 
     /**
-     * The current minimum generation required to be considered non-ancient. Only read and written on the handle
-     * thread.
+     * The current minimum ancient identifier required to be considered non-ancient. Only read and written on the handle
+     * thread. Either a round or generation depending on the {@link PcesFileType}.
      */
-    private long minimumGenerationNonAncient = 0;
+    private long nonAncientBoundary = 0;
 
     /**
      * The desired file size, in megabytes. Is not a hard limit, it's possible that we may exceed this value by a small
@@ -65,52 +66,52 @@ public class PcesWriter {
     private final int preferredFileSizeMegabytes;
 
     /**
-     * When creating a new file, make sure that it has at least this much generational capacity for events after the
-     * first event written to the file.
+     * When creating a new file, make sure that it has at least this much capacity between the upper bound and lower
+     * bound for events after the first event written to the file.
      */
-    private final int minimumGenerationalCapacity;
+    private final int minimumSpan;
 
     /**
-     * The minimum generation that we are required to keep around.
+     * The minimum ancient identifier that we are required to keep around. Will be either a birth round or a generation,
+     * depending on the {@link PcesFileType}.
      */
-    private long minimumGenerationToStore;
+    private long minimumAncientIdentifierToStore;
 
     /**
-     * A running average of the generational span utilization in each file. Generational span utilization is defined as
-     * the difference between the highest generation of all events in the file and the minimum legal generation for that
-     * file. Higher generational utilization is always better, as it means that we have a lower un-utilized generational
-     * span. Un-utilized generational span is defined as the difference between the highest legal generation in a file
-     * and the highest actual generation of all events in the file. The reason why we want to minimize un-utilized
-     * generational span is to reduce the generational overlap between files, which in turn makes it faster to search
-     * for events with particular generations. The purpose of this running average is to intelligently choose the
-     * maximum generation for each new file to minimize un-utilized generational span while still meeting file size
-     * requirements.
+     * A running average of the span utilization in each file. Span utilization is defined as the difference between the
+     * highest ancient identifier of all events in the file and the minimum legal ancient identifier for that file.
+     * Higher utilization is always better, as it means that we have a lower un-utilized span. Un-utilized span is
+     * defined as the difference between the highest legal ancient identifier in a file and the highest actual ancient
+     * identifier of all events in the file. The reason why we want to minimize un-utilized span is to reduce the
+     * overlap between files, which in turn makes it faster to search for events with particular ancient identifier. The
+     * purpose of this running average is to intelligently choose upper bound for each new file to minimize un-utilized
+     * span while still meeting file size requirements.
      */
-    private final LongRunningAverage averageGenerationalSpanUtilization;
+    private final LongRunningAverage averageSpanUtilization;
 
     /**
-     * The previous generational span. Set to a constant at bootstrap time.
+     * The previous span. Set to a constant at bootstrap time.
      */
-    private long previousGenerationalSpan;
+    private long previousSpan;
 
     /**
-     * If true then use {@link #bootstrapGenerationalSpanOverlapFactor} to compute the maximum generation for new files.
-     * If false then use {@link #generationalSpanOverlapFactor} to compute the maximum generation for new files.
-     * Bootstrap mode is used until we create the first file that exceeds the preferred file size.
+     * If true then use {@link #bootstrapSpanOverlapFactor} to compute the upper bound new files. If false then use
+     * {@link #spanOverlapFactor} to compute the upper bound for new files. Bootstrap mode is used until we create the
+     * first file that exceeds the preferred file size.
      */
     private boolean bootstrapMode = true;
 
     /**
-     * During bootstrap mode, multiply this value by the running average when deciding the generation span for a new
-     * file (i.e. the difference between the maximum and the minimum legal generation).
+     * During bootstrap mode, multiply this value by the running average when deciding the upper bound for a new
+     * file (i.e. the difference between the maximum and the minimum legal ancient identifier).
      */
-    private final double bootstrapGenerationalSpanOverlapFactor;
+    private final double bootstrapSpanOverlapFactor;
 
     /**
-     * When not in boostrap mode, multiply this value by the running average when deciding the generation span for a new
-     * file (i.e. the difference between the maximum and the minimum legal generation).
+     * When not in boostrap mode, multiply this value by the running average when deciding the span for a new
+     * file (i.e. the difference between the maximum and the minimum legal ancient identifier).
      */
-    private final double generationalSpanOverlapFactor;
+    private final double spanOverlapFactor;
 
     /**
      * The highest event sequence number that has been written to the stream (but possibly not yet flushed).
@@ -118,10 +119,17 @@ public class PcesWriter {
     private long lastWrittenEvent = -1;
 
     /**
-     * If true then all added events are new and need to be written to the stream. If false then all added events
-     * are already durable and do not need to be written to the stream.
+     * If true then all added events are new and need to be written to the stream. If false then all added events are
+     * already durable and do not need to be written to the stream.
      */
     private boolean streamingNewEvents = false;
+
+    /**
+     * The type of the PCES file. There are currently two types: one bound by generations and one bound by birth rounds.
+     * The original type of files are bound by generations. The new type of files are bound by birth rounds. Once
+     * migration has been completed to birth round bound files, support for the generation bound files will be removed.
+     */
+    private final PcesFileType fileType;
 
     /**
      * Constructor
@@ -138,14 +146,20 @@ public class PcesWriter {
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
-        averageGenerationalSpanUtilization =
-                new LongRunningAverage(config.generationalUtilizationSpanRunningAverageLength());
-        previousGenerationalSpan = config.bootstrapGenerationalSpan();
-        bootstrapGenerationalSpanOverlapFactor = config.bootstrapGenerationalSpanOverlapFactor();
-        generationalSpanOverlapFactor = config.generationalSpanOverlapFactor();
-        minimumGenerationalCapacity = config.minimumGenerationalCapacity();
+        averageSpanUtilization = new LongRunningAverage(config.spanUtilizationSpanRunningAverageLength());
+        previousSpan = config.bootstrapSpan();
+        bootstrapSpanOverlapFactor = config.bootstrapSpanOverlapFactor();
+        spanOverlapFactor = config.spanOverlapFactor();
+        minimumSpan = config.minimumSpan();
 
         this.fileManager = fileManager;
+
+        fileType = platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .useBirthRoundAncientThreshold()
+                ? PcesFileType.BIRTH_ROUND_BOUND
+                : PcesFileType.GENERATION_BOUND;
     }
 
     /**
@@ -178,7 +192,7 @@ public class PcesWriter {
             return lastWrittenEvent;
         }
 
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (event.getAncientIdentifier(fileType) < nonAncientBoundary) {
             event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
             return null;
         }
@@ -239,13 +253,14 @@ public class PcesWriter {
      * additional events being durably written to the stream, otherwise null
      */
     @Nullable
-    public Long setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
+    public Long setMinimumGenerationNonAncient(
+            final long minimumGenerationNonAncient) { // TODO use non-ancient event window
+        if (minimumGenerationNonAncient < this.nonAncientBoundary) {
             throw new IllegalArgumentException("Minimum generation non-ancient cannot be decreased. Current = "
-                    + this.minimumGenerationNonAncient + ", requested = " + minimumGenerationNonAncient);
+                    + this.nonAncientBoundary + ", requested = " + minimumGenerationNonAncient);
         }
 
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+        this.nonAncientBoundary = minimumGenerationNonAncient;
 
         if (!streamingNewEvents || currentMutableFile == null) {
             return null;
@@ -262,10 +277,10 @@ public class PcesWriter {
     /**
      * Set the minimum generation needed to be kept on disk.
      *
-     * @param minimumGenerationToStore the minimum generation required to be stored on disk
+     * @param minimumAncientIdentifierToStore the minimum generation required to be stored on disk
      */
-    public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
-        this.minimumGenerationToStore = minimumGenerationToStore;
+    public void setMinimumAncientIdentifierToStore(final long minimumAncientIdentifierToStore) {
+        this.minimumAncientIdentifierToStore = minimumAncientIdentifierToStore;
         pruneOldFiles();
     }
 
@@ -281,7 +296,7 @@ public class PcesWriter {
         }
 
         try {
-            fileManager.pruneOldFiles(minimumGenerationToStore);
+            fileManager.pruneOldFiles(minimumAncientIdentifierToStore);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to prune old files", e);
         }
@@ -294,9 +309,9 @@ public class PcesWriter {
      */
     private void closeFile() {
         try {
-            previousGenerationalSpan = currentMutableFile.getUtilizedSpan();
+            previousSpan = currentMutableFile.getUtilizedSpan();
             if (!bootstrapMode) {
-                averageGenerationalSpanUtilization.add(previousGenerationalSpan);
+                averageSpanUtilization.add(previousSpan);
             }
             currentMutableFile.close();
 
@@ -316,16 +331,15 @@ public class PcesWriter {
      */
     private long computeNewFileSpan(final long minimumFileGeneration, final long nextGenerationToWrite) {
 
-        final long basisSpan = (bootstrapMode || averageGenerationalSpanUtilization.isEmpty())
-                ? previousGenerationalSpan
-                : averageGenerationalSpanUtilization.getAverage();
+        final long basisSpan = (bootstrapMode || averageSpanUtilization.isEmpty())
+                ? previousSpan
+                : averageSpanUtilization.getAverage();
 
-        final double overlapFactor =
-                bootstrapMode ? bootstrapGenerationalSpanOverlapFactor : generationalSpanOverlapFactor;
+        final double overlapFactor = bootstrapMode ? bootstrapSpanOverlapFactor : spanOverlapFactor;
 
         final long desiredSpan = (long) (basisSpan * overlapFactor);
 
-        final long minimumSpan = (nextGenerationToWrite + minimumGenerationalCapacity) - minimumFileGeneration;
+        final long minimumSpan = (nextGenerationToWrite + this.minimumSpan) - minimumFileGeneration;
 
         return Math.max(desiredSpan, minimumSpan);
     }
@@ -355,11 +369,11 @@ public class PcesWriter {
         }
 
         if (currentMutableFile == null) {
-            final long maximumGeneration = minimumGenerationNonAncient
-                    + computeNewFileSpan(minimumGenerationNonAncient, eventToWrite.getGeneration());
+            final long maximumGeneration =
+                    nonAncientBoundary + computeNewFileSpan(nonAncientBoundary, eventToWrite.getGeneration());
 
             currentMutableFile = fileManager
-                    .getNextFileDescriptor(minimumGenerationNonAncient, maximumGeneration)
+                    .getNextFileDescriptor(nonAncientBoundary, maximumGeneration)
                     .getMutableFile();
         }
 
