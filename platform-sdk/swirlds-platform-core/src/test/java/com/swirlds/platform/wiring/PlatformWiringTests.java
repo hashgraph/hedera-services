@@ -25,8 +25,13 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
+import com.swirlds.platform.event.preconsensus.PcesReplayer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -56,9 +61,16 @@ class PlatformWiringTests {
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class),
                 mock(EventCreationManager.class),
+                mock(PcesSequencer.class),
                 mock(SwirldStateManager.class),
                 mock(SignedStateManager.class));
-        wiring.bind(mock(SignedStateFileManager.class), mock(StateSigner.class));
+        wiring.bind(
+                mock(EventHasher.class),
+                mock(SignedStateFileManager.class),
+                mock(StateSigner.class),
+                mock(PcesReplayer.class),
+                mock(PcesWriter.class),
+                mock(EventDurabilityNexus.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

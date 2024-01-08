@@ -29,8 +29,12 @@ public class PcesSequencer {
     /**
      * Set the stream sequence number of an event.
      * @param event an event that needs a sequence number
+     *
+     * @return the event with a sequence number set
      */
-    public void assignStreamSequenceNumber(final GossipEvent event) {
+    public GossipEvent assignStreamSequenceNumber(final GossipEvent event) {
         event.setStreamSequenceNumber(nextStreamSequenceNumber++);
+
+        return event;
     }
 }
