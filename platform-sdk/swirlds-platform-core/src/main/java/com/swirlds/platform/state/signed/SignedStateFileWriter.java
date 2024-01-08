@@ -29,7 +29,6 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STAT
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
@@ -63,11 +62,14 @@ public final class SignedStateFileWriter {
      * human needs to decide what is contained within a signed state file. If the file already exists in the given
      * directory then it is overwritten.
      *
-     * @param state     the state that is being written
-     * @param directory the directory where the state is being written
+     * @param platformContext the platform context
+     * @param state           the state that is being written
+     * @param directory       the directory where the state is being written
      */
-    public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
-        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
+    public static void writeHashInfoFile(
+            @NonNull final PlatformContext platformContext, final Path directory, final State state)
+            throws IOException {
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
 
         logger.info(
@@ -152,7 +154,7 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(signedState);
 
         writeStateFile(directory, signedState);
-        writeHashInfoFile(directory, signedState.getState());
+        writeHashInfoFile(platformContext, directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         writeStateAddressBookFile(directory, signedState.getAddressBook());
