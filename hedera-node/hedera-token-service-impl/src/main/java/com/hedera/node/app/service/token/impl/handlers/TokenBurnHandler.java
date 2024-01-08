@@ -121,6 +121,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
+        TokenBurnRecordBuilder record = context.recordBuilder(TokenBurnRecordBuilder.class);
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             validateTrue(fungibleBurnCount >= 0 && nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_AMOUNT);
             final var newTotalSupply = changeSupply(
@@ -131,7 +132,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     accountStore,
                     tokenStore,
                     tokenRelStore);
-            context.recordBuilder(TokenBurnRecordBuilder.class).newTotalSupply(newTotalSupply);
+            record.newTotalSupply(newTotalSupply);
         } else {
             validateTrue(!nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_METADATA);
 
@@ -158,8 +159,9 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
 
             // Remove the nft objects
             nftSerialNums.forEach(serialNum -> nftStore.remove(tokenId, serialNum));
-            context.recordBuilder(TokenBurnRecordBuilder.class).newTotalSupply(newTotalSupply);
+            record.newTotalSupply(newTotalSupply);
         }
+        record.tokenType(token.tokenType());
     }
 
     @NonNull
