@@ -19,9 +19,11 @@ package com.swirlds.platform.test.consensus.framework;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
@@ -55,7 +57,10 @@ public class ConsensusTestNode {
      */
     public static @NonNull ConsensusTestNode genesisContext(@NonNull final EventEmitter<?> eventEmitter) {
         return new ConsensusTestNode(
-                eventEmitter, new TestIntake(eventEmitter.getGraphGenerator().getAddressBook()));
+                eventEmitter,
+                new TestIntake(
+                        eventEmitter.getGraphGenerator().getAddressBook(),
+                        new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class)));
     }
 
     /** Simulates a restart on a node */
@@ -81,7 +86,10 @@ public class ConsensusTestNode {
         newEmitter.reset();
 
         final ConsensusTestNode consensusTestNode = new ConsensusTestNode(
-                newEmitter, new TestIntake(newEmitter.getGraphGenerator().getAddressBook()));
+                newEmitter,
+                new TestIntake(
+                        newEmitter.getGraphGenerator().getAddressBook(),
+                        new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class)));
         consensusTestNode.intake.loadSnapshot(
                 Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
                         .getSnapshot());

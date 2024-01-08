@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 
 /**
- * Encapsulates metrics for {@link EventIntake}.
+ * Encapsulates metrics for EventIntake
  */
 public class EventIntakeMetrics {
 
