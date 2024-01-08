@@ -150,7 +150,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                     .andAllChildRecords()
                                     .logged();
                             allRunFor(spec, lookup);
-                            final var childCreation = lookup.getChildRecord(0);
+                            final var childCreation = lookup.getFirstNonStakingChildRecord();
                             maliciousEOAId.set(
                                     asAccountString(childCreation.getReceipt().getAccountID()));
                         }),

@@ -4263,7 +4263,9 @@ public class TraceabilitySuite extends HapiSuite {
                                     hapiGetContractBytecode);
                             expectContractBytecode(
                                     specName,
-                                    topLevelCallTxnRecord.getChildRecord(0).getConsensusTimestamp(),
+                                    topLevelCallTxnRecord
+                                            .getFirstNonStakingChildRecord()
+                                            .getConsensusTimestamp(),
                                     asContract(mirrorLiteralId.get()),
                                     ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
                                     ByteStringUtils.wrapUnsafely(bytecodeFromMirror.get()));
@@ -5110,7 +5112,9 @@ public class TraceabilitySuite extends HapiSuite {
                                     hapiGetContractBytecode);
                             expectContractBytecode(
                                     specName,
-                                    topLevelCallTxnRecord.getChildRecord(0).getConsensusTimestamp(),
+                                    topLevelCallTxnRecord
+                                            .getFirstNonStakingChildRecord()
+                                            .getConsensusTimestamp(),
                                     asContract(mergedContractIdAsString),
                                     ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
                                     ByteStringUtils.wrapUnsafely(mergedContractBytecode.get()));

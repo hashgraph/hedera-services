@@ -2015,8 +2015,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                     final var getTxnRecord =
                             getTxnRecord(payTxn).andAllChildRecords().logged();
                     allRunFor(spec, getTxnRecord);
-                    final var lazyAccountId =
-                            getTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final var lazyAccountId = getTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     final var name = "lazy";
                     spec.registry().saveAccountId(name, lazyAccountId);
                     allRunFor(spec, getAccountBalance(name).hasTinyBars(depositAmount));

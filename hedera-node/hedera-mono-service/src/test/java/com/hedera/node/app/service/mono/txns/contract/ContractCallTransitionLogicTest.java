@@ -94,6 +94,8 @@ class ContractCallTransitionLogicTest {
             ContractID.newBuilder().setContractNum(9_999L).build();
     private final ByteString alias = ByteStringUtils.wrapUnsafely(
             new byte[] {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 50});
+    private final ContractID missing =
+            ContractID.newBuilder().setContractNum(0L).setEvmAddress(alias).build();
     private long gas = 21_000;
     private long sent = 21_000L;
     private static final long maxGas = 666_666L;
@@ -162,6 +164,7 @@ class ContractCallTransitionLogicTest {
     private final Account senderAccount = new Account(new Id(0, 0, 1002));
     private final Account relayerAccount = new Account(new Id(0, 0, 1003));
     private final Account contractAccount = new Account(new Id(0, 0, 1006));
+    private final Account missingContractAccount = new Account(new Id(0, 0, 0));
     private final GasCalculator gasCalculator =
             new GasCalculatorHederaV22(properties, usagePricesProvider, hbarCentExchange);
     ContractCallTransitionLogic subject;
@@ -793,6 +796,25 @@ class ContractCallTransitionLogicTest {
     }
 
     @Test
+    void acceptsOkSyntaxIfTokenAddress() {
+        givenValidTxnCtx();
+        given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(entityAccess.isTokenAccount(any())).willReturn(true);
+        // expect:
+        assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
+    }
+
+    @Test
+    void acceptsOkSyntaxIfPossibleLazyCreate() {
+        givenMissingContractIDTxnCtx();
+        given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+
+        // expect:
+        assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
+    }
+
+    @Test
     void failsIfNotSmartContractSyntax() {
         givenValidTxnCtxWithNoAmount();
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
@@ -858,6 +880,15 @@ class ContractCallTransitionLogicTest {
                         .setGas(gas)
                         .setAmount(sent)
                         .setContractID(target));
+        contractCallTxn = op.build();
+    }
+
+    private void givenMissingContractIDTxnCtx() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(sent)
+                        .setContractID(missing));
         contractCallTxn = op.build();
     }
 
