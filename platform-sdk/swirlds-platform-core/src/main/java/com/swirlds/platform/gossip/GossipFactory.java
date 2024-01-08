@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,11 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.linking.EventLinker;
-import com.swirlds.platform.event.validation.EventValidator;
-import com.swirlds.platform.gossip.chatter.ChatterGossip;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
 import com.swirlds.platform.metrics.SyncMetrics;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
@@ -83,10 +78,7 @@ public final class GossipFactory {
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param eventValidator                validates events and passes valid events further along the intake pipeline
-     * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
-     * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
      * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -111,10 +103,7 @@ public final class GossipFactory {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
-            @NonNull final EventValidator eventValidator,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
@@ -135,20 +124,31 @@ public final class GossipFactory {
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(swirldStateManager);
         Objects.requireNonNull(latestCompleteState);
-        Objects.requireNonNull(eventValidator);
-        Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(syncMetrics);
-        Objects.requireNonNull(eventLinker);
         Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
         Objects.requireNonNull(intakeEventCounter);
 
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-
-        if (chatterConfig.useChatter()) {
-            logger.info(STARTUP.getMarker(), "Using ChatterGossip");
-            return new ChatterGossip(
+        if (addressBook.getSize() == 1) {
+            logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
+            return new SingleNodeSyncGossip(
+                    platformContext,
+                    threadManager,
+                    time,
+                    keysAndCerts,
+                    addressBook,
+                    selfId,
+                    appVersion,
+                    intakeQueue,
+                    swirldStateManager,
+                    latestCompleteState,
+                    platformStatusManager,
+                    loadReconnectState,
+                    clearAllPipelinesForReconnect);
+        } else {
+            logger.info(STARTUP.getMarker(), "Using SyncGossip");
+            return new SyncGossip(
                     platformContext,
                     threadManager,
                     time,
@@ -159,65 +159,18 @@ public final class GossipFactory {
                     appVersion,
                     epochHash,
                     shadowGraph,
+                    latestEventTipsetTracker,
                     emergencyRecoveryManager,
                     consensusRef,
                     intakeQueue,
                     swirldStateManager,
                     latestCompleteState,
-                    eventValidator,
-                    eventObserverDispatcher,
                     syncMetrics,
-                    eventLinker,
                     platformStatusManager,
                     loadReconnectState,
                     clearAllPipelinesForReconnect,
+                    intakeEventCounter,
                     emergencyStateSupplier);
-        } else {
-            if (addressBook.getSize() == 1) {
-                logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
-                return new SingleNodeSyncGossip(
-                        platformContext,
-                        threadManager,
-                        time,
-                        keysAndCerts,
-                        addressBook,
-                        selfId,
-                        appVersion,
-                        shadowGraph,
-                        intakeQueue,
-                        swirldStateManager,
-                        latestCompleteState,
-                        syncMetrics,
-                        platformStatusManager,
-                        loadReconnectState,
-                        clearAllPipelinesForReconnect);
-            } else {
-                logger.info(STARTUP.getMarker(), "Using SyncGossip");
-                return new SyncGossip(
-                        platformContext,
-                        threadManager,
-                        time,
-                        keysAndCerts,
-                        notificationEngine,
-                        addressBook,
-                        selfId,
-                        appVersion,
-                        epochHash,
-                        shadowGraph,
-                        latestEventTipsetTracker,
-                        emergencyRecoveryManager,
-                        consensusRef,
-                        intakeQueue,
-                        swirldStateManager,
-                        latestCompleteState,
-                        syncMetrics,
-                        eventLinker,
-                        platformStatusManager,
-                        loadReconnectState,
-                        clearAllPipelinesForReconnect,
-                        intakeEventCounter,
-                        emergencyStateSupplier);
-            }
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,20 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
      * {@inheritDoc}
      */
     public final IndexedEvent generateEvent() {
+        final IndexedEvent next = buildNextEvent(numEventsGenerated);
+        next.getBaseEvent().buildDescriptor();
+        next.getBaseEvent().signalPrehandleCompletion();
+        numEventsGenerated++;
+        updateMaxGeneration(next);
+        return next;
+    }
+
+    /**
+     * Generate an event, but don't build the descriptor.
+     *
+     * @return the generated event with unbuilt descriptor
+     */
+    public final IndexedEvent generateEventWithoutDescriptor() {
         final IndexedEvent next = buildNextEvent(numEventsGenerated);
         next.getBaseEvent().signalPrehandleCompletion();
         numEventsGenerated++;

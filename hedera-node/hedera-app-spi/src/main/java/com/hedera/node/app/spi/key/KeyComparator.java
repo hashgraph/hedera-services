@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ public class KeyComparator implements Comparator<Key> {
         if (first == second) return 0;
         else if (first == null) return -1;
         else if (second == null) return 1;
+        // Note, record defines equals, but it uses reference equality for reference type members.
+        //       We must not use reference equality here, so we cannot use that.
         else if (first.key() == null) return second.key() == null ? 0 : -1;
         else if (second.key() == null) return 1;
 
@@ -91,20 +93,21 @@ public class KeyComparator implements Comparator<Key> {
         final Bytes evmTwo = rightId.evmAddress();
         final Long leftNum = leftId.contractNum();
         final Long rightNum = rightId.contractNum();
-        final long firstId = leftNum != null ? leftNum.longValue() : 0L;
-        final long secondId = rightNum != null ? rightNum.longValue() : 0L;
+        // default -1 so contractNum sorts "before" evm address
+        final long firstId = leftNum != null ? leftNum.longValue() : -1L;
+        final long secondId = rightNum != null ? rightNum.longValue() : -1L;
         if (realmOne == realmTwo) {
             if (shardOne == shardTwo) {
                 if (firstId == secondId) {
                     return compareBytes(evmOne, evmTwo);
                 } else {
-                    return firstId > secondId ? -1 : 1;
+                    return Long.compare(firstId, secondId);
                 }
             } else {
-                return shardOne > shardTwo ? -1 : 1;
+                return Long.compare(shardOne, shardTwo);
             }
         } else {
-            return realmOne > realmTwo ? -1 : 1;
+            return Long.compare(realmOne, realmTwo);
         }
     }
 
@@ -129,7 +132,7 @@ public class KeyComparator implements Comparator<Key> {
 
         final int leftThreshold = lhs.threshold();
         final int rightThreshold = rhs.threshold();
-        if (leftThreshold != rightThreshold) return leftThreshold - rightThreshold;
+        if (leftThreshold != rightThreshold) return leftThreshold > rightThreshold ? 1 : -1;
 
         final KeyList leftList = lhs.keys();
         final KeyList rightList = rhs.keys();
@@ -188,10 +191,9 @@ public class KeyComparator implements Comparator<Key> {
         else {
             // left and right length are equal.
             for (long offset = 0L; offset < leftLength; offset++) {
-                // cast because java hates byte (it promotes to int for everything anyway)
-                final int left = (int) lhs.getByte(offset);
-                final int right = (int) rhs.getByte(offset);
-                if (left != right) return left - right;
+                final byte left = lhs.getByte(offset);
+                final byte right = rhs.getByte(offset);
+                if (left != right) return Byte.compareUnsigned(left, right) > 0 ? 1 : -1;
             }
         }
         // nothing differed, so these are equal.
@@ -203,10 +205,11 @@ public class KeyComparator implements Comparator<Key> {
      * The "natural" order, in this case, is just the type order in the proto file.
      * @param firstKeyType The OneOfType for the first (left hand) key.
      * @param secondKeyType The OneOfType for the second (right hand) key.
-     * @return a value less than, equal to, or greater than 0 indicating if the first key type should be
-     *   sorted before, the same, or after, the second key type.
+     * @return a value greater than, equal to, or less than 0 indicating if the first key type is
+     *     "greater than" (sorted after), the same as, or "less than" (sorted before),
+     *     the second key type.
      */
     private int compareCrossType(final KeyOneOfType firstKeyType, final KeyOneOfType secondKeyType) {
-        return firstKeyType.protoOrdinal() - secondKeyType.protoOrdinal();
+        return Integer.compare(firstKeyType.protoOrdinal(), secondKeyType.protoOrdinal());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -201,14 +201,15 @@ public class TestConfigBuilder {
     /**
      * Adds the given config converter to the builder
      *
+     * @param converterType the type of the config converter
      * @param converter the config converter that will be added
-     * @param <T>       the type of the config converter
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     @NonNull
-    public <T> TestConfigBuilder withConverter(@NonNull final ConfigConverter<T> converter) {
+    public <T> TestConfigBuilder withConverter(
+            @NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         checkConfigState();
-        builder.withConverter(converter);
+        builder.withConverter(converterType, converter);
         return this;
     }
 

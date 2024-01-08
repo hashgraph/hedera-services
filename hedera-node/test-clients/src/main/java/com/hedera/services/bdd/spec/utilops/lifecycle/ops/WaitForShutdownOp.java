@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,9 @@ public class WaitForShutdownOp extends LifecycleOp {
 
     @Override
     protected boolean run(@NonNull final HapiTestNode node) {
-        logger.info("Waiting for node {} to shut down, waiting up to {}s...", node, waitSeconds);
         try {
             node.waitForShutdown(waitSeconds);
-            logger.info("Node {} is shut down", node);
+            logger.info("Waiting for node {} to shut down, waiting up to {}s...", node, waitSeconds);
             return false; // Do not stop the test, all is well.
         } catch (TimeoutException e) {
             logger.info("Node {} did not shut down within {}s", node, waitSeconds);

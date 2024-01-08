@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_AC
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
@@ -187,6 +186,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     public static final String PAY_TXN = "payTxn";
     public static final String CREATE_TX = "createTX";
     public static final String V_0_34 = "v0.34";
+    private static final String SENDER_TXN = "senderTxn";
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -761,8 +761,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op, op2, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
                 .then(overriding(LAZY_CREATION_ENABLED, FALSE), withOpContext((spec, opLog) -> {
@@ -872,8 +874,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
 
                     final var op2 = ethereumContractCreate(CONTRACT)
@@ -1102,8 +1106,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
                     allRunFor(spec, op, hapiGetTxnRecord);
 
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
                 .then(withOpContext((spec, opLog) -> {
