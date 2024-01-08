@@ -30,11 +30,6 @@ import java.util.Set;
  * this schema is always correct for the current version of the software.
  */
 public class InitialModServiceNetworkSchema extends Schema {
-    /**
-     * (FUTURE) When mod-service release is finalized, rename this class to e.g.
-     * {@code Release47TokenSchema} as it will no longer be appropriate to assume
-     * this schema is always correct for the current version of the software.
-     */
     public InitialModServiceNetworkSchema(SemanticVersion version) {
         super(version);
     }
