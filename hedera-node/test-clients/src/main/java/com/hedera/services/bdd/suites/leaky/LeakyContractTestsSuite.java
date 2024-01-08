@@ -329,7 +329,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 contractCreateFollowedByContractCallNoncesExternalization(),
                 shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled(),
                 canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
-                getErc20TokenNameExceedingLimits());
+                getErc20TokenNameExceedingLimits(),
+                relayerFeeAsExpectedIfSenderCoversGas());
     }
 
     @SuppressWarnings("java:S5960")
