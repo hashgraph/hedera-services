@@ -95,15 +95,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -348,7 +349,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<String> mergedMirrorAddr2 = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor")
+        return propertyPreservingHapiSpec(
+                        "canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(LAZY_CREATION_ENABLED)
                 .given(
                         overriding(LAZY_CREATION_ENABLED, TRUE),
@@ -431,7 +435,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec transferErc20TokenFromErc721TokenFails() {
-        return propertyPreservingHapiSpec("transferErc20TokenFromErc721TokenFails")
+        return propertyPreservingHapiSpec(
+                        "transferErc20TokenFromErc721TokenFails",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
                         overriding(HEDERA_ALLOWANCES_IS_ENABLED, "true"),
@@ -475,7 +482,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
 
-        return propertyPreservingHapiSpec("TransferErc20TokenFromContractWithApproval")
+        return propertyPreservingHapiSpec(
+                        "TransferErc20TokenFromContractWithApproval",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -608,7 +618,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("transferDontWorkWithoutTopLevelSignatures")
+        return propertyPreservingHapiSpec("transferDontWorkWithoutTopLevelSignatures", NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         // disable top level signatures for all functions
@@ -748,7 +758,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
+        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures", NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         // enable top level signatures for
@@ -907,7 +917,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("transferFailsWithIncorrectAmounts")
+        return propertyPreservingHapiSpec(
+                        "transferFailsWithIncorrectAmounts", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
@@ -959,7 +970,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var REDUCED_NODE_FEE = 1L;
         final var REDUCED_SERVICE_FEE = 1L;
         final var INIT_ACCOUNT_BALANCE = 100 * ONE_HUNDRED_HBARS;
-        return defaultHapiSpec("getErc20TokenNameExceedingLimits")
+        return defaultHapiSpec(
+                        "getErc20TokenNameExceedingLimits", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(INIT_ACCOUNT_BALANCE),
@@ -1017,7 +1029,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var overdraftAmount = payerBalance + ONE_HBAR;
         final var overAmbitiousPayer = "overAmbitiousPayer";
         final var uncheckedCC = "uncheckedCC";
-        return defaultHapiSpec("PayerCannotOverSendValue")
+        return defaultHapiSpec("PayerCannotOverSendValue", NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
@@ -1044,7 +1056,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec createTokenWithInvalidFeeCollector() {
-        return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
+        return propertyPreservingHapiSpec(
+                        "createTokenWithInvalidFeeCollector",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
@@ -1094,7 +1110,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
     final HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
-        return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
+        return propertyPreservingHapiSpec(
+                        "createTokenWithInvalidFixedFeeWithERC721Denomination",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
@@ -1151,7 +1171,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final String feeCollector = ACCOUNT_2;
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
-        return propertyPreservingHapiSpec("createTokenWithInvalidRoyaltyFee")
+        return propertyPreservingHapiSpec(
+                        "createTokenWithInvalidRoyaltyFee",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
@@ -1211,7 +1235,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var createTokenNum = new AtomicLong();
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
-        return propertyPreservingHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
+        return propertyPreservingHapiSpec(
+                        "nonFungibleTokenCreateWithFeesHappyPath",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
@@ -1299,7 +1328,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var feeCollector = "feeCollector";
         final var arEd25519Key = "arEd25519Key";
         final var initialAutoRenewAccount = "initialAutoRenewAccount";
-        return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
+        return propertyPreservingHapiSpec(
+                        "fungibleTokenCreateWithFeesHappyPath",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
@@ -1380,7 +1414,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return propertyPreservingHapiSpec("etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
+        return propertyPreservingHapiSpec(
+                        "etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation", NONDETERMINISTIC_NONCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
@@ -1402,7 +1437,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     final HapiSpec transferToCaller() {
         final var transferTxn = TRANSFER_TXN;
         final var sender = "sender";
-        return defaultHapiSpec("transferToCaller")
+        return defaultHapiSpec("transferToCaller", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(TRANSFERRING_CONTRACT),
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
@@ -1442,7 +1477,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-        return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
+        return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller", NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "5"),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
@@ -1477,7 +1512,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicLong longLivedPayerGasUsed = new AtomicLong();
         final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
 
-        return defaultHapiSpec("ContractCreationStoragePriceMatchesFinalExpiry")
+        return defaultHapiSpec(
+                        "ContractCreationStoragePriceMatchesFinalExpiry",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + longLifetime),
                         cryptoCreate(normalPayer),
@@ -1509,7 +1547,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+        return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck", NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT),
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -1524,7 +1562,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck")
+        return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck", NONDETERMINISTIC_NONCE)
                 .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
@@ -1535,7 +1573,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     final HapiSpec transferZeroHbarsToCaller() {
         final var transferTxn = TRANSFER_TXN;
-        return defaultHapiSpec("transferZeroHbarsToCaller")
+        return defaultHapiSpec("transferZeroHbarsToCaller", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(TRANSFERRING_CONTRACT),
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
@@ -1591,7 +1629,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
             txnLog.info("  Literally :: {}", result);
         };
 
-        return defaultHapiSpec("ResultSizeAffectsFees")
+        return defaultHapiSpec("ResultSizeAffectsFees", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(contract),
@@ -1633,7 +1671,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final int maxAutoAssociations = 100;
         final String CONTRACT = "Multipurpose";
 
-        return propertyPreservingHapiSpec("autoAssociationSlotsAppearsInInfo")
+        return propertyPreservingHapiSpec("autoAssociationSlotsAppearsInInfo", NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
                 .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "true"))
                 .when()
@@ -1648,7 +1686,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-        return defaultHapiSpec("CreateMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
+        return defaultHapiSpec(
+                        "CreateMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "5"),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -1669,7 +1710,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec createMinChargeIsTXGasUsedByContractCreate() {
-        return defaultHapiSpec("CreateMinChargeIsTXGasUsedByContractCreate")
+        return defaultHapiSpec(
+                        "CreateMinChargeIsTXGasUsedByContractCreate",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -1702,7 +1746,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<ByteString> expectedChildAddress = new AtomicReference<>();
         final AtomicReference<ByteString> expectedParentAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("PropagatesNestedCreations")
+        return defaultHapiSpec("PropagatesNestedCreations", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(adminKey),
                         uploadInitCode(contract),
@@ -1770,7 +1814,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     HapiSpec temporarySStoreRefundTest() {
         final var contract = "TemporarySStoreRefund";
-        return defaultHapiSpec("TemporarySStoreRefundTest")
+        return defaultHapiSpec("TemporarySStoreRefundTest", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
                         uploadInitCode(contract),
@@ -1810,7 +1854,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
     final HapiSpec deletedContractsCannotBeUpdated() {
         final var contract = "SelfDestructCallable";
         final var beneficiary = "beneficiary";
-        return defaultHapiSpec("DeletedContractsCannotBeUpdated")
+        return defaultHapiSpec(
+                        "DeletedContractsCannotBeUpdated", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).gas(300_000),
@@ -1829,7 +1874,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "FibonacciPlus";
         final var expiry = Instant.now().getEpochSecond() + 7776000;
 
-        return defaultHapiSpec("CanCallPendingContractSafely")
+        return defaultHapiSpec(
+                        "CanCallPendingContractSafely", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
                         inParallel(IntStream.range(0, createBurstSize)
@@ -1874,7 +1920,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var TOTAL_SUPPLY = 1_000;
         final var ALLOW_AUTO_ASSOCIATIONS_PROPERTY = CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY;
 
-        return propertyPreservingHapiSpec("lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled")
+        return propertyPreservingHapiSpec(
+                        "lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
                 .given(
                         overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
@@ -1942,7 +1992,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var depositAmount = 1000;
         final var payTxn = "payTxn";
 
-        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
+        return propertyPreservingHapiSpec(
+                        "evmLazyCreateViaSolidityCall",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(lazyCreationProperty, contractsEvmVersionProperty, contractsEvmVersionDynamicProperty)
                 .given(
                         overridingThree(
@@ -2004,7 +2058,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<AccountID> receiverAddress = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var amountPerTransfer = 50L;
-        return propertyPreservingHapiSpec("RequiresTopLevelSignatureOrApprovalDependingOnControllingProperty")
+        return propertyPreservingHapiSpec(
+                        "RequiresTopLevelSignatureOrApprovalDependingOnControllingProperty",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         cryptoCreate(SENDER)
@@ -2130,14 +2187,16 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
         final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
         final var depositAmount = 1000;
-        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCallTooManyCreatesFails")
+        return propertyPreservingHapiSpec(
+                        "evmLazyCreateViaSolidityCallTooManyCreatesFails",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(
                         lazyCreationProperty,
                         maxPrecedingRecords,
                         contractsEvmVersionDynamicProperty,
                         contractsEvmVersionDynamicProperty)
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         overridingTwo(lazyCreationProperty, "true", maxPrecedingRecords, "1"),
                         overridingTwo(contractsEvmVersionProperty, "v0.34", contractsEvmVersionDynamicProperty, "true"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -2174,7 +2233,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
-        return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
+        return propertyPreservingHapiSpec(
+                        "rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled", NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
                 .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, FALSE))
                 .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -2191,7 +2251,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
-        return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
+        return defaultHapiSpec(
+                        "erc20TransferFromDoesNotWorkIfFlagIsDisabled",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         overriding(HEDERA_ALLOWANCES_IS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
@@ -2241,7 +2304,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("WhitelistPositiveCase")
+        return propertyPreservingHapiSpec(
+                        "WhitelistPositiveCase", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -2294,7 +2358,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<String> unListedCalleeMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("WhitelistNegativeCases")
+        return propertyPreservingHapiSpec(
+                        "WhitelistNegativeCases", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -2365,7 +2430,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
 
-        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath", NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
@@ -2423,7 +2488,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var committedInnerCreationTx = "committedInnerCreationTx";
         final var revertedInnerCreationTx = "revertedInnerCreationTx";
 
-        return propertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
+        return propertyPreservingHapiSpec(
+                        "contractCreateFollowedByContractCallNoncesExternalization",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
@@ -2514,7 +2582,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
 
-        return propertyPreservingHapiSpec("shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled")
+        return propertyPreservingHapiSpec(
+                        "shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "false"),
