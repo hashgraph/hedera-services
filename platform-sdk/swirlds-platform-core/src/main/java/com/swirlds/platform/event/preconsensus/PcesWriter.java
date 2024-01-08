@@ -102,14 +102,14 @@ public class PcesWriter {
     private boolean bootstrapMode = true;
 
     /**
-     * During bootstrap mode, multiply this value by the running average when deciding the upper bound for a new
-     * file (i.e. the difference between the maximum and the minimum legal ancient identifier).
+     * During bootstrap mode, multiply this value by the running average when deciding the upper bound for a new file
+     * (i.e. the difference between the maximum and the minimum legal ancient identifier).
      */
     private final double bootstrapSpanOverlapFactor;
 
     /**
-     * When not in boostrap mode, multiply this value by the running average when deciding the span for a new
-     * file (i.e. the difference between the maximum and the minimum legal ancient identifier).
+     * When not in boostrap mode, multiply this value by the running average when deciding the span for a new file (i.e.
+     * the difference between the maximum and the minimum legal ancient identifier).
      */
     private final double spanOverlapFactor;
 
@@ -248,19 +248,19 @@ public class PcesWriter {
      * Let the event writer know the minimum generation for non-ancient events. Ancient events will be ignored if added
      * to the event writer.
      *
-     * @param minimumGenerationNonAncient the minimum generation of a non-ancient event
+     * @param nonAncientBoundary the minimum threshold of a non-ancient event, either a generation or a birth round
+     *                           depending on the {@link PcesFileType}.
      * @return the sequence number of the last event durably written to the stream if this method call resulted in any
      * additional events being durably written to the stream, otherwise null
      */
     @Nullable
-    public Long setMinimumGenerationNonAncient(
-            final long minimumGenerationNonAncient) { // TODO use non-ancient event window
-        if (minimumGenerationNonAncient < this.nonAncientBoundary) {
-            throw new IllegalArgumentException("Minimum generation non-ancient cannot be decreased. Current = "
-                    + this.nonAncientBoundary + ", requested = " + minimumGenerationNonAncient);
+    public Long setMinimumGenerationNonAncient(final long nonAncientBoundary) { // TODO use non-ancient event window
+        if (nonAncientBoundary < this.nonAncientBoundary) {
+            throw new IllegalArgumentException("Non-ancient boundary cannot be decreased. Current = "
+                    + this.nonAncientBoundary + ", requested = " + nonAncientBoundary);
         }
 
-        this.nonAncientBoundary = minimumGenerationNonAncient;
+        this.nonAncientBoundary = nonAncientBoundary;
 
         if (!streamingNewEvents || currentMutableFile == null) {
             return null;
@@ -275,9 +275,9 @@ public class PcesWriter {
     }
 
     /**
-     * Set the minimum generation needed to be kept on disk.
+     * Set the minimum ancient identifier needed to be kept on disk.
      *
-     * @param minimumAncientIdentifierToStore the minimum generation required to be stored on disk
+     * @param minimumAncientIdentifierToStore the minimum ancient identifier required to be stored on disk
      */
     public void setMinimumAncientIdentifierToStore(final long minimumAncientIdentifierToStore) {
         this.minimumAncientIdentifierToStore = minimumAncientIdentifierToStore;
@@ -327,9 +327,12 @@ public class PcesWriter {
     }
 
     /**
-     * Calculate the generation span for a new file that is about to be created.
+     * Calculate the span for a new file that is about to be created.
+     *
+     * @param minimumLowerBound            the minimum lower bound that is legal to use for the new file
+     * @param nextAncientIdentifierToWrite the ancient identifier of the next event that will be written
      */
-    private long computeNewFileSpan(final long minimumFileGeneration, final long nextGenerationToWrite) {
+    private long computeNewFileSpan(final long minimumLowerBound, final long nextAncientIdentifierToWrite) {
 
         final long basisSpan = (bootstrapMode || averageSpanUtilization.isEmpty())
                 ? previousSpan
@@ -339,7 +342,7 @@ public class PcesWriter {
 
         final long desiredSpan = (long) (basisSpan * overlapFactor);
 
-        final long minimumSpan = (nextGenerationToWrite + this.minimumSpan) - minimumFileGeneration;
+        final long minimumSpan = (nextAncientIdentifierToWrite + this.minimumSpan) - minimumLowerBound;
 
         return Math.max(desiredSpan, minimumSpan);
     }
@@ -354,7 +357,8 @@ public class PcesWriter {
     private Long prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
         Long latestDurableSequenceNumberUpdate = null;
         if (currentMutableFile != null) {
-            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
+            final boolean fileCanContainEvent =
+                    currentMutableFile.canContain(eventToWrite.getAncientIdentifier(fileType));
             final boolean fileIsFull =
                     UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES) >= preferredFileSizeMegabytes;
 
@@ -369,11 +373,11 @@ public class PcesWriter {
         }
 
         if (currentMutableFile == null) {
-            final long maximumGeneration =
-                    nonAncientBoundary + computeNewFileSpan(nonAncientBoundary, eventToWrite.getGeneration());
+            final long upperBound = nonAncientBoundary
+                    + computeNewFileSpan(nonAncientBoundary, eventToWrite.getAncientIdentifier(fileType));
 
             currentMutableFile = fileManager
-                    .getNextFileDescriptor(nonAncientBoundary, maximumGeneration)
+                    .getNextFileDescriptor(nonAncientBoundary, upperBound)
                     .getMutableFile();
         }
 
