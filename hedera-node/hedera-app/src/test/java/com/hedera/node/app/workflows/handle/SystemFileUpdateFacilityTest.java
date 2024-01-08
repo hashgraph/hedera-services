@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Instant;
@@ -100,8 +101,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         state = new FakeHederaState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
 
         final var config = new TestConfigBuilder(false)
-                .withConverter(new BytesConverter())
-                .withConverter(new LongPairConverter())
+                .withConverter(Bytes.class, new BytesConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(LedgerConfig.class)

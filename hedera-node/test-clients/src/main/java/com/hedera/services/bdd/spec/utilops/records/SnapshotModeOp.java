@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,9 +202,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     public SnapshotModeOp(@NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... specialMatchModes) {
         this.mode = requireNonNull(mode);
-        this.matchModes = specialMatchModes.length > 0
-                ? EnumSet.copyOf(Arrays.asList(specialMatchModes))
-                : EnumSet.noneOf(SnapshotMatchMode.class);
+        this.matchModes = computeMatchModesIncluding(specialMatchModes);
         // Each snapshot should have a unique placeholder memo so that we can take multiple snapshots
         // without clearing the record streams directory in between
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -777,5 +775,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             log.error("Could not write readable items to txt", e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    private Set<SnapshotMatchMode> computeMatchModesIncluding(@NonNull final SnapshotMatchMode... specialMatchModes) {
+        final Set<SnapshotMatchMode> modes = new HashSet<>(Arrays.asList(specialMatchModes));
+        if (System.getenv("CI") != null) {
+            // In CI the presence of end-of-staking-period records makes all
+            // nonces non-deterministic (as any transaction may or may not
+            // trigger an end-of-period record, which consumes a nonce)
+            modes.add(NONDETERMINISTIC_NONCE);
+        }
+        return modes.isEmpty() ? EnumSet.noneOf(SnapshotMatchMode.class) : EnumSet.copyOf(modes);
     }
 }

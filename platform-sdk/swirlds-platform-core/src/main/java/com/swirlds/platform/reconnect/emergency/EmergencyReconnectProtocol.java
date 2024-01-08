@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -60,6 +61,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final NotificationEngine notificationEngine;
     private final Configuration configuration;
     private final Time time;
+    private final PlatformContext platformContext;
 
     /**
      * Enables submitting platform status actions
@@ -67,6 +69,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final StatusActionSubmitter statusActionSubmitter;
 
     /**
+     * @param  platformContext         the platform context
      * @param time                     provides wall clock time
      * @param threadManager            responsible for managing thread lifecycles
      * @param notificationEngine       the notification engine to use
@@ -81,6 +84,7 @@ public class EmergencyReconnectProtocol implements Protocol {
      * @param configuration            the platform configuration
      */
     public EmergencyReconnectProtocol(
+            @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final NotificationEngine notificationEngine,
@@ -94,21 +98,19 @@ public class EmergencyReconnectProtocol implements Protocol {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Configuration configuration) {
 
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
-        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
-        this.notificationEngine = Objects.requireNonNull(notificationEngine, "notificationEngine must not be null");
-        this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
-        this.emergencyRecoveryManager =
-                Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager must not be null");
-        this.teacherThrottle = Objects.requireNonNull(teacherThrottle, "teacherThrottle must not be null");
-        this.emergencyStateSupplier =
-                Objects.requireNonNull(emergencyStateSupplier, "emergencyStateSupplier must not be null");
-        this.reconnectSocketTimeout =
-                Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
-        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
-        this.reconnectController = Objects.requireNonNull(reconnectController, "reconnectController must not be null");
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.notificationEngine = Objects.requireNonNull(notificationEngine);
+        this.peerId = Objects.requireNonNull(peerId);
+        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
+        this.teacherThrottle = Objects.requireNonNull(teacherThrottle);
+        this.emergencyStateSupplier = Objects.requireNonNull(emergencyStateSupplier);
+        this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
+        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
+        this.reconnectController = Objects.requireNonNull(reconnectController);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        this.configuration = Objects.requireNonNull(configuration);
     }
 
     @Override
@@ -167,6 +169,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try {
             new EmergencyReconnectTeacher(
+                            platformContext,
                             time,
                             threadManager,
                             emergencyStateSupplier,
