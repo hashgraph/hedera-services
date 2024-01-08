@@ -13,15 +13,15 @@ These goals allow software to be well organized, flexible, and easily tuned for 
 
 ## Overview
 
-At the most basic level, a component in this framework is composed of task schedulers, business logic, and wires. Each
+At the most basic level, a component in this framework is composed of a task scheduler, business logic, and wires. Each
 component has a unit of business logic that performs some action on a piece of data. The component receives the data on
-an input wire, performs the action, and optionally produces data on an output wire. The components are connected, or "
-soldered", together by joining input and output wires of the same data type to form a data pipeline.
+an input wire, performs the action, and optionally produces data on an output wire. The components are connected, or 
+"soldered", together by joining input and output wires of the same data type to form a data pipeline.
 
 The concurrency of the component is determined by the task scheduler type. Each component has a task scheduler which
 combines the data received on the input wire with the business logic operation to form a task. This task is then
 scheduled for execution according to the task scheduler type and implementation. Task schedulers are described in more
-detail below.
+detail [below](#TaskSchedulers).
 
 Here is a picture of a simple component with one input wire of type `Integer`, and one output wire of type `String`:
 
@@ -37,9 +37,9 @@ handled externally. Changes to concurrency and wiring have no impact on the busi
 
 ### Wires
 
-Wires are the construct on which data flows between components. Each component can have zero or more input wires (
-restrictions apply based on the concurrency of the task scheduler) and one or more output wires. Components that do not
-produce any data have an output void of type `Void`. Wires are strongly types to the data they transport. Wires of the
+Wires are the construct on which data flows between components. Each component can have zero or more input wires 
+(restrictions apply based on the concurrency of the task scheduler) and one or more output wires. Components that do not
+produce any data have an output void of type `Void`. Wires are strongly typed to the data they transport. Wires of the
 same type can be "soldered" or connected to determine the flow of data between components.
 
 ### Task Schedulers
