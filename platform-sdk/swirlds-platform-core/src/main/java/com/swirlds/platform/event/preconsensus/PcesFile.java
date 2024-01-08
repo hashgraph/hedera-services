@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- * Files have the following format. Deviation from this format is not allowed. A {@link PreconsensusEventFileManager}
+ * Files have the following format. Deviation from this format is not allowed. A {@link PcesFileManager}
  * will be unable to correctly read files with a different format.
  * </p>
  * <pre>
@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * </pre>
  * <p>
  * By default, files are stored with the following directory structure. Note that files are not required to be stored
- * with this directory structure in order to be read by a {@link PreconsensusEventFileManager}.
+ * with this directory structure in order to be read by a {@link PcesFileManager}.
  * </p>
  * <pre>
  * [root directory]/[4 digit year][2 digit month][2 digit day]/[file name]

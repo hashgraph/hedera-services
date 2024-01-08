@@ -31,8 +31,6 @@ platformStatus.observingStatusDelay,      1ms
 
 event.enableEventStreaming,               false
 event.eventsLogDir,                       ./eventsStreams
-event.preconsensus.enableReplay,          true
-event.preconsensus.enableStorage,         true
 
                                           #############################
                                           #          Metrics          #
