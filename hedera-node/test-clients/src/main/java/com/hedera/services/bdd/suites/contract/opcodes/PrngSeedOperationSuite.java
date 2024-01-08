@@ -30,17 +30,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
@@ -96,12 +95,9 @@ public class PrngSeedOperationSuite extends HapiSuite {
         final var gasToOffer = 400_000;
         final var numCalls = 5;
         final List<String> prngSeeds = new ArrayList<>();
-        return propertyPreservingHapiSpec("MultipleCallsHaveIndependentResults")
+        return propertyPreservingHapiSpec("MultipleCallsHaveIndependentResults", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
                         uploadInitCode(prng),
                         contractCreate(prng),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
@@ -147,13 +143,12 @@ public class PrngSeedOperationSuite extends HapiSuite {
     final HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
-        return propertyPreservingHapiSpec("prngPrecompileHappyPathWorks")
+        return propertyPreservingHapiSpec(
+                        "prngPrecompileHappyPathWorks",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
-                        snapshotMode(
-                                SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                                SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
                         cryptoCreate(BOB),
@@ -179,7 +174,6 @@ public class PrngSeedOperationSuite extends HapiSuite {
         return propertyPreservingHapiSpec("prngPrecompileDisabledInV_0_30")
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
-                        snapshotMode(SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
                         cryptoCreate(BOB),
