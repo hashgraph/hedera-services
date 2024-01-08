@@ -37,11 +37,9 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.function.Supplier;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implementation of the {@link ContractService}.
@@ -84,7 +82,7 @@ public enum ContractServiceImpl implements ContractService {
         // We intentionally ignore the given (i.e. passed-in) version in this method
         registry.register(new ContractSchema(RELEASE_045_VERSION));
 
-        //        if(true)return;
+//                if(true)return;
         registry.register(new Schema(RELEASE_MIGRATION_VERSION) {
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
@@ -97,25 +95,35 @@ public enum ContractServiceImpl implements ContractService {
                 System.out.println("BBM: finished migrating contract storage. Result: " + result);
 
                 System.out.println("BBM: migrating contract bytecode...");
-                WritableKVState<EntityNumber, Bytecode> bytecodeTs = ctx.newStates().get(
-                        ContractSchema.BYTECODE_KEY);
+                WritableKVState<EntityNumber, Bytecode> bytecodeTs =
+                        ctx.newStates().get(ContractSchema.BYTECODE_KEY);
                 var migratedContractNums = new ArrayList<Integer>();
                 try {
-                    fss.get().extractVirtualMapData(
+                    fss.get()
+                            .extractVirtualMapData(
                                     AdHocThreadManager.getStaticThreadManager(),
                                     entry -> {
-                                        if (VirtualBlobKey.Type.CONTRACT_BYTECODE == entry.left().getType()) {
+                                        if (VirtualBlobKey.Type.CONTRACT_BYTECODE
+                                                == entry.left().getType()) {
                                             var contractId = entry.left().getEntityNumCode();
                                             var contents = entry.right().getData();
                                             Bytes wrappedContents;
                                             if (contents == null || contents.length < 1) {
-                                                System.out.println("BBM: contract contents null for contractId " + contractId);
+                                                System.out.println(
+                                                        "BBM: contract contents null for contractId " + contractId);
                                                 wrappedContents = Bytes.EMPTY;
                                             } else {
-                                                System.out.println("BBM: migrating contract contents (length " + contents.length + ") for contractId " + contractId);
+                                                System.out.println("BBM: migrating contract contents (length "
+                                                        + contents.length + ") for contractId " + contractId);
                                                 wrappedContents = Bytes.wrap(contents);
                                             }
-                                            bytecodeTs.put(EntityNumber.newBuilder().number(contractId).build(), Bytecode.newBuilder().code(wrappedContents).build());
+                                            bytecodeTs.put(
+                                                    EntityNumber.newBuilder()
+                                                            .number(contractId)
+                                                            .build(),
+                                                    Bytecode.newBuilder()
+                                                            .code(wrappedContents)
+                                                            .build());
                                             migratedContractNums.add(contractId);
                                         }
                                     },

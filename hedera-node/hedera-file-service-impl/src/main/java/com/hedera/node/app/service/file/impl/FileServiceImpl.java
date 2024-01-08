@@ -80,7 +80,9 @@ public final class FileServiceImpl implements FileService {
                 var allFileIds = extractFileIds(fss.get());
                 var migratedFileIds = new ArrayList<Long>();
                 allFileIds.forEach(fromFileIdRaw -> {
-                    var fromFileId = com.hederahashgraph.api.proto.java.FileID.newBuilder().setFileNum(fromFileIdRaw).build();
+                    var fromFileId = com.hederahashgraph.api.proto.java.FileID.newBuilder()
+                            .setFileNum(fromFileIdRaw)
+                            .build();
                     var fromFileMeta = fileAttrs.get(fromFileId);
                     // Note: if the file meta is null, then this file is more specialized
                     // (e.g. contract bytecode) and will be migrated elsewhere
@@ -111,11 +113,11 @@ public final class FileServiceImpl implements FileService {
         final var fileIds = new ArrayList<Long>();
         try {
             fileStorage.extractVirtualMapData(
-                            AdHocThreadManager.getStaticThreadManager(),
-                            entry -> {
-                                fileIds.add((long) entry.left().getEntityNumCode());
-                            },
-                            1);
+                    AdHocThreadManager.getStaticThreadManager(),
+                    entry -> {
+                        fileIds.add((long) entry.left().getEntityNumCode());
+                    },
+                    1);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
