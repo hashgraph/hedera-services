@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -439,9 +439,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             final boolean isFileUpdate = FileUpdateTransactionBody.class.isAssignableFrom(expectedType);
             final boolean isForFile121 =
                     FileID.newBuilder().setFileNum(121).build().equals(expectedField.getValue());
-            // skip matching FileUpdate for properties file 121 since depending on if leaky tests are run before or not,
+            final boolean isForFile111 =
+                    FileID.newBuilder().setFileNum(111).build().equals(expectedField.getValue());
+            // skip matching FileUpdate for properties file 121 or fee schedules file 111 since depending on if leaky
+            // tests are run before or not,
             // the FileUpdate contents can be different
-            if (isFileUpdate && isForFile121) {
+            if (isFileUpdate && (isForFile121 || isForFile111)) {
                 return;
             }
 
