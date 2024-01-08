@@ -60,7 +60,7 @@ public class SStoreSuite extends HapiSuite {
     private static final String GET_CHILD_VALUE = "getChildValue";
 
     public static void main(String... args) {
-        new SStoreSuite().runSuiteSync();
+        new SStoreSuite().runSuiteAsync();
     }
 
     @Override
