@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
+import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
+import com.swirlds.logging.api.internal.level.MarkerState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
@@ -237,7 +239,7 @@ public class HandlerLoggingLevelConfigTest {
 
     private static TestConfigBuilder getConfigBuilder() {
         return new TestConfigBuilder()
-                .withConverter(new MarkerStateConverter())
-                .withConverter(new ConfigLevelConverter());
+                .withConverter(MarkerState.class, new MarkerStateConverter())
+                .withConverter(ConfigLevel.class, new ConfigLevelConverter());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,9 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
+import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
+import com.swirlds.logging.api.internal.level.MarkerState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
@@ -39,8 +41,8 @@ public class LogLevelTest {
 
     private TestConfigBuilder createDefaultBuilder() {
         return new TestConfigBuilder()
-                .withConverter(new MarkerStateConverter())
-                .withConverter(new ConfigLevelConverter());
+                .withConverter(MarkerState.class, new MarkerStateConverter())
+                .withConverter(ConfigLevel.class, new ConfigLevelConverter());
     }
 
     @AfterEach

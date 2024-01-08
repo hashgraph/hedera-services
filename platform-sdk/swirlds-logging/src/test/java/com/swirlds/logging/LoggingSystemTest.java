@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
+import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.LocalDateTime;
@@ -230,7 +231,7 @@ public class LoggingSystemTest {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("logging.level", "ERROR")
                 .withValue("logging.level.test", "TRACE")
-                .withConverter(new ConfigLevelConverter())
+                .withConverter(ConfigLevel.class, new ConfigLevelConverter())
                 .getOrCreateConfig();
 
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
