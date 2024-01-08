@@ -790,6 +790,7 @@ class ContractCallTransitionLogicTest {
         givenValidTxnCtx();
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
+        given(properties.allowCallsToNonContractAccounts()).willReturn(true);
         contractAccount.setSmartContract(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
@@ -798,8 +799,9 @@ class ContractCallTransitionLogicTest {
     @Test
     void acceptsOkSyntaxIfTokenAddress() {
         givenValidTxnCtx();
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
+        given(properties.allowCallsToNonContractAccounts()).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
-        given(entityAccess.isTokenAccount(any())).willReturn(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
     }
@@ -807,6 +809,8 @@ class ContractCallTransitionLogicTest {
     @Test
     void acceptsOkSyntaxIfPossibleLazyCreate() {
         givenMissingContractIDTxnCtx();
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
+        given(properties.allowCallsToNonContractAccounts()).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
 
@@ -817,7 +821,7 @@ class ContractCallTransitionLogicTest {
     @Test
     void failsIfNotSmartContractSyntax() {
         givenValidTxnCtxWithNoAmount();
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_38);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);
