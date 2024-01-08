@@ -186,6 +186,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
         stateSignatureCollectorWiring.getReservedStateOutput().solderTo(
                 signedStateFileManagerWiring.saveToDiskFilter());
+        //TODO wire collector output to others
 
         solderNonAncientEventWindow();
         linkedEventIntakeWiring

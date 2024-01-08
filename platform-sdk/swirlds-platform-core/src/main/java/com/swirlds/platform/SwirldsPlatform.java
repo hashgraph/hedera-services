@@ -554,6 +554,7 @@ public class SwirldsPlatform implements Platform {
                 newLatestCompleteStateConsumer,
                 signatureCollectionDone::accept,
                 signatureCollectionDone::accept);
+        //TODO wire collector output to others
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
