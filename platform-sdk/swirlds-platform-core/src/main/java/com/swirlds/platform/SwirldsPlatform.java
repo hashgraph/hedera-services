@@ -538,16 +538,6 @@ public class SwirldsPlatform implements Platform {
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
-        // Load the minimum generation into the pre-consensus event writer
-        final List<SavedStateInfo> savedStates =
-                getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
-        if (!savedStates.isEmpty()) {
-            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
-            final long minimumGenerationNonAncientForOldestState =
-                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
-            platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
-        }
-
         components.add(stateManagementComponent);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
@@ -694,6 +684,8 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager::getCurrentStatus,
                 latestReconnectRound::get);
 
+        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, transactionPool);
+
         platformWiring.bind(
                 eventHasher,
                 internalEventValidator,
@@ -712,7 +704,15 @@ public class SwirldsPlatform implements Platform {
                 swirldStateManager,
                 signedStateManager);
 
-        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, transactionPool);
+        // Load the minimum generation into the pre-consensus event writer
+        final List<SavedStateInfo> savedStates =
+                getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
+        if (!savedStates.isEmpty()) {
+            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
+            final long minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
+        }
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
