@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -63,8 +62,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -87,7 +84,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -233,7 +229,6 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientGas(),
                 insufficientFee(),
                 nonPayable(),
-                invalidContract(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 imapUserExercise(),
@@ -1536,22 +1531,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("callTxn")
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
-    }
-
-    @HapiTest
-    HapiSpec invalidContract() {
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("InvalidContract")
-                .given(withOpContext(
-                        (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ifHapiTest(
-                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
-                        ifNotHapiTest(
-                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
-                .then();
     }
 
     // This test disabled for modularization service

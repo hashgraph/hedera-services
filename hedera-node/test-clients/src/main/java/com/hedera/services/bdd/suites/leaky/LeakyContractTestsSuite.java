@@ -357,7 +357,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 getErc20TokenNameExceedingLimits(),
                 relayerFeeAsExpectedIfSenderCoversGas(),
                 canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
-                getErc20TokenNameExceedingLimits());
+                getErc20TokenNameExceedingLimits(),
+                invalidContract());
     }
 
     @SuppressWarnings("java:S5960")
@@ -2932,6 +2933,25 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(getAccountInfo(RELAYER)
                         .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
                         .logged());
+    }
+
+    @HapiTest
+    HapiSpec invalidContract() {
+        final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
+
+        return propertyPreservingHapiSpec("InvalidContract")
+                .preserving(EVM_VERSION_PROPERTY)
+                .given(
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        withOpContext((spec, ctxLog) ->
+                                spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ifHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
+                        ifNotHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
+                .then();
     }
 
     private HapiContractCallLocal setExpectedCreate2Address(
