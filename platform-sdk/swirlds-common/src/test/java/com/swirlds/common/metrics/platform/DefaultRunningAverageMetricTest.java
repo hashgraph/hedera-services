@@ -31,7 +31,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;

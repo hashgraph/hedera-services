@@ -26,7 +26,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.io.IOException;

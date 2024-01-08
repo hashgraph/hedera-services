@@ -40,7 +40,7 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

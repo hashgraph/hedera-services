@@ -1,0 +1,7 @@
+open module com.swirlds.config.extensions.test.fixtures {
+    exports com.swirlds.config.extensions.test.fixtures;
+
+    requires com.swirlds.common;
+    requires com.swirlds.config.extensions;
+    requires static com.github.spotbugs.annotations;
+}

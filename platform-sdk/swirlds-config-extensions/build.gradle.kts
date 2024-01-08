@@ -17,6 +17,7 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
+    id("java-test-fixtures")
 }
 
 testModuleInfo {

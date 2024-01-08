@@ -30,7 +30,7 @@ import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.IOException;

@@ -50,7 +50,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

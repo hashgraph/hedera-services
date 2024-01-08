@@ -59,7 +59,7 @@ import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;

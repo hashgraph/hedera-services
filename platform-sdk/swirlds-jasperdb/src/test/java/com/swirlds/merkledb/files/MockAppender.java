@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.logging;
+package com.swirlds.merkledb.files;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.logging.log4j.core.LogEvent;
@@ -38,7 +37,7 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 public class MockAppender extends AbstractAppender {
     private final List<String> messages = new CopyOnWriteArrayList<>();
 
-    public MockAppender(@NonNull final String name) {
+    public MockAppender(final String name) {
         super("MockAppender-" + name, null, null, true, null);
     }
 
@@ -46,7 +45,7 @@ public class MockAppender extends AbstractAppender {
      * {@inheritDoc}
      */
     @Override
-    public void append(@NonNull final LogEvent event) {
+    public void append(final LogEvent event) {
         if (isStarted()) {
             messages.add(String.format(
                     "%s - %s - %s",

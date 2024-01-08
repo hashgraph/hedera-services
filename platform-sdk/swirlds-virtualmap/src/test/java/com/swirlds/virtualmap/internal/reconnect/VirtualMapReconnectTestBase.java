@@ -36,7 +36,7 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;

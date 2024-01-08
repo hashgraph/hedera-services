@@ -20,10 +20,10 @@ import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

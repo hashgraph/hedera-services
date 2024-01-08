@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.test.consensus;
 
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
