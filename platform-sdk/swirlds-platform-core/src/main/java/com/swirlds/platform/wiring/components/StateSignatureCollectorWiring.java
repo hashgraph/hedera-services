@@ -63,11 +63,11 @@ public class StateSignatureCollectorWiring {
         final OutputWire<ReservedSignedState> stateSplitter = taskScheduler.getOutputWire()
                 .buildSplitter("reservedStateSplitter", "reserved states");
         this.completeStateOutput = stateSplitter.buildFilter(
-                "filter only complete states",
+                "filterOnlyCompleteStates",
                 "reservedStateOutput",
                         StateSignatureCollectorWiring::completeStates)
-                .buildAdvancedTransformer(new SignedStateReserver("complete states reserver"));
-        this.reservedStateOutput = stateSplitter.buildAdvancedTransformer(new SignedStateReserver("all states reserver"));
+                .buildAdvancedTransformer(new SignedStateReserver("completeStatesReserver"));
+        this.reservedStateOutput = stateSplitter.buildAdvancedTransformer(new SignedStateReserver("allStatesReserver"));
 
         //
         // Create input for pre-consensus signatures
