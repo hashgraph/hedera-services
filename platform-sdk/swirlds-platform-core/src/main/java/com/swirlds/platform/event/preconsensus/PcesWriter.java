@@ -245,7 +245,7 @@ public class PcesWriter {
     }
 
     /**
-     * Let the event writer know the minimum generation for non-ancient events. Ancient events will be ignored if added
+     * Let the event writer know the current non-ancient event boundary. Ancient events will be ignored if added
      * to the event writer.
      *
      * @param nonAncientBoundary the minimum threshold of a non-ancient event, either a generation or a birth round
