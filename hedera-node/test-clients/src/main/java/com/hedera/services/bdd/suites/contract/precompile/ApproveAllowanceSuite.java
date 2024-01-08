@@ -45,10 +45,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -191,7 +191,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         "htsTokenApproveToInnerContract",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -257,8 +257,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
 
-        return defaultHapiSpec(
-                        "htsTokenAllowance", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("htsTokenAllowance", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -319,7 +318,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         "htsTokenApprove",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -473,7 +472,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         "hapiNftGetApproved",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -537,7 +536,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         "hapiNftSetApprovalForAll",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -630,7 +629,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         "testIndirectApprovalWith" + testName,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        HIGHLY_NON_DETERMINISTIC_FEES,
                         NONDETERMINISTIC_NONCE)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
