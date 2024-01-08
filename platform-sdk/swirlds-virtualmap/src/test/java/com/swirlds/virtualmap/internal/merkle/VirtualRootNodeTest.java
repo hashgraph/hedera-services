@@ -393,9 +393,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Default zero flush threshold")
     void defaultZeroFlushThresholdTest() {
-        // Save the previous settings
-        final Configuration originalConfig = ConfigurationHolder.getInstance().get();
-
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
@@ -423,7 +420,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
         }
         assertFalse(root.shouldBeFlushed()); // should still have a custom flush threshold
         root.release();
-        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     @Test
