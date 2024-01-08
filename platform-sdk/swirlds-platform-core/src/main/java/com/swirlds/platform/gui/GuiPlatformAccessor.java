@@ -19,7 +19,6 @@ package com.swirlds.platform.gui;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.nexus.SignedStateNexus;

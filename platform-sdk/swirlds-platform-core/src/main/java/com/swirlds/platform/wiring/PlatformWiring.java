@@ -232,7 +232,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
         stateSignatureCollectorWiring
                 .getCompleteStateOutput()
-                .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setState);
+                .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setStateIfNewer);
     }
 
     /**

@@ -21,6 +21,7 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,14 +30,14 @@ import java.util.Objects;
 /**
  * A nexus that holds the latest complete signed state.
  */
-//TODO make it use a lock
-public class LatestCompleteStateNexus extends SignedStateNexus {
+public class LatestCompleteStateNexus implements SignedStateNexus {
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "roundSup")
+            PLATFORM_CATEGORY, "roundSup")
             .withDescription("latest round with state signed by a supermajority")
             .withUnit("round");
 
     private final StateConfig stateConfig;
+    private ReservedSignedState currentState;
 
     /**
      * Create a new nexus that holds the latest complete signed state.
@@ -53,9 +54,21 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
     }
 
     @Override
-    public void setState(@Nullable final ReservedSignedState reservedSignedState) {
-        if(reservedSignedState != null && reservedSignedState.isNotNull() && getRound() < reservedSignedState.get().getRound()){
-            super.setState(reservedSignedState);
+    public synchronized void setState(@Nullable final ReservedSignedState reservedSignedState) {
+        if (currentState != null) {
+            currentState.close();
+        }
+        currentState = reservedSignedState;
+    }
+
+    public synchronized void setStateIfNewer(@Nullable final ReservedSignedState reservedSignedState) {
+        if (reservedSignedState == null) {
+            return;
+        }
+        if (reservedSignedState.isNotNull() && getRound() < reservedSignedState.get().getRound()) {
+            setState(reservedSignedState);
+        } else {
+            reservedSignedState.close();
         }
     }
 
@@ -66,19 +79,34 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
      *
      * @param newStateRound a new signed state round that is not yet complete
      */
-    public void newIncompleteState(final long newStateRound) {
+    public synchronized void newIncompleteState(final long newStateRound) {
         // NOTE: This logic is duplicated in SignedStateManager, but will be removed from the signed state manager
         // once its refactor is done
 
         // Any state older than this is unconditionally removed, even if it is the latest
         final long earliestPermittedRound = newStateRound - stateConfig.roundsToKeepForSigning() + 1;
 
-        //TODO this is actually not thread safe
-
         // Is the latest complete round older than the earliest permitted round?
         if (getRound() < earliestPermittedRound) {
             // Yes, so remove it
             clear();
         }
+    }
+
+    @Nullable
+    @Override
+    public synchronized ReservedSignedState getState(@NonNull final String reason) {
+        if (currentState == null) {
+            return null;
+        }
+        return currentState.tryGetAndReserve(reason);
+    }
+
+    @Override
+    public synchronized long getRound() {
+        if (currentState == null) {
+            return ConsensusConstants.ROUND_UNDEFINED;
+        }
+        return currentState.get().getRound();
     }
 }
