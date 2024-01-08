@@ -29,6 +29,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.wiring.SignedStateReserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -47,6 +48,7 @@ public class StateSignatureCollectorWiring {
     private final InputWire<GossipEvent> preConsensusEventInput;
     private final InputWire<ConsensusRound> postConsensusEventInput;
     private final OutputWire<ReservedSignedState> reservedStateOutput;
+    private final OutputWire<ReservedSignedState> completeStateOutput;
 
     /**
      * Constructor.
@@ -58,7 +60,14 @@ public class StateSignatureCollectorWiring {
             @NonNull final WiringModel model, @NonNull final TaskScheduler<List<ReservedSignedState>> taskScheduler) {
 
         this.taskScheduler = Objects.requireNonNull(taskScheduler);
-        this.reservedStateOutput = taskScheduler.getOutputWire().buildSplitter("reservedStateSplitter", "reserved states");
+        final OutputWire<ReservedSignedState> stateSplitter = taskScheduler.getOutputWire()
+                .buildSplitter("reservedStateSplitter", "reserved states");
+        this.completeStateOutput = stateSplitter.buildFilter(
+                "filter only complete states",
+                "reservedStateOutput",
+                        StateSignatureCollectorWiring::completeStates)
+                .buildAdvancedTransformer(new SignedStateReserver("complete states reserver"));
+        this.reservedStateOutput = stateSplitter.buildAdvancedTransformer(new SignedStateReserver("all states reserver"));
 
         //
         // Create input for pre-consensus signatures
@@ -105,6 +114,14 @@ public class StateSignatureCollectorWiring {
         return new StateSignatureCollectorWiring(model, taskScheduler);
     }
 
+    private static boolean completeStates(@NonNull final ReservedSignedState rs) {
+        if (rs.get().isComplete()) {
+            return true;
+        }
+        rs.close();
+        return false;
+    }
+
     /**
      * Bind the preconsensus event handler to the input wire.
      *
@@ -136,8 +153,11 @@ public class StateSignatureCollectorWiring {
     }
 
     public OutputWire<ReservedSignedState> getReservedStateOutput() {
-        //TODO add a state reserver
         return reservedStateOutput;
+    }
+
+    public OutputWire<ReservedSignedState> getCompleteStateOutput() {
+        return completeStateOutput;
     }
 
     /**

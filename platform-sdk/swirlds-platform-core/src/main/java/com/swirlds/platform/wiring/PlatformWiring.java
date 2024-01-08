@@ -186,7 +186,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
         stateSignatureCollectorWiring.getReservedStateOutput().solderTo(
                 signedStateFileManagerWiring.saveToDiskFilter());
-        //TODO wire collector output to others
 
         solderNonAncientEventWindow();
         linkedEventIntakeWiring
@@ -228,12 +227,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
         stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
 
-        //TODO for below, we need to filter out older states and non-complete ones
         stateSignatureCollectorWiring
-                .getReservedStateOutput()
+                .getCompleteStateOutput()
                 .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
         stateSignatureCollectorWiring
-                .getReservedStateOutput()
+                .getCompleteStateOutput()
                 .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setState);
     }
 
@@ -355,11 +353,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
         return signedStateFileManagerWiring.dumpStateToDisk();
-    }
-
-    @NonNull
-    public InputWire<GossipEvent> getSignatureCollectorPreconsEventInput() {
-        return stateSignatureCollectorWiring.preconsensusEventInput();
     }
 
     @NonNull

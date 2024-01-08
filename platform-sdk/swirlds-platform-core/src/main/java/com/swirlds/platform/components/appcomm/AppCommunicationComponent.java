@@ -29,6 +29,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -54,6 +55,8 @@ public class AppCommunicationComponent implements PlatformComponent, IssConsumer
     private final NotificationEngine notificationEngine;
     /** A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
     private final QueueThread<ReservedSignedState> asyncLatestCompleteStateQueue;
+    /** The round of the latest state provided to the application */
+    private long latestStateProvidedRound = ConsensusConstants.ROUND_UNDEFINED;
     /**
      * The size of the queue holding tasks for
      * {@link com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer}s
@@ -120,6 +123,12 @@ public class AppCommunicationComponent implements PlatformComponent, IssConsumer
      * Handler for {@link #asyncLatestCompleteStateQueue}
      */
     private void latestCompleteStateHandler(@NonNull final ReservedSignedState reservedSignedState) {
+        if (reservedSignedState.get().getRound() <= latestStateProvidedRound) {
+            // this state is older than the latest state provided to the application, no need to notify
+            reservedSignedState.close();
+            return;
+        }
+        latestStateProvidedRound = reservedSignedState.get().getRound();
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 reservedSignedState.get().getSwirldState(),
                 reservedSignedState.get().getState().getPlatformState(),

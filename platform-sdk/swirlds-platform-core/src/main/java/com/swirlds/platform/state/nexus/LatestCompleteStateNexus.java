@@ -21,12 +21,15 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
  * A nexus that holds the latest complete signed state.
  */
+//TODO make it use a lock
 public class LatestCompleteStateNexus extends SignedStateNexus {
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "roundSup")
@@ -47,6 +50,13 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
 
         final RunningAverageMetric avgRoundSupermajority = metrics.getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
         metrics.addUpdater(() -> avgRoundSupermajority.update(getRound()));
+    }
+
+    @Override
+    public void setState(@Nullable final ReservedSignedState reservedSignedState) {
+        if(reservedSignedState != null && reservedSignedState.isNotNull() && getRound() < reservedSignedState.get().getRound()){
+            super.setState(reservedSignedState);
+        }
     }
 
     /**
