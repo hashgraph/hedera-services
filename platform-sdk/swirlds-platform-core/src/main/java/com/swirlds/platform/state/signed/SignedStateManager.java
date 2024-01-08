@@ -85,10 +85,6 @@ public class SignedStateManager {
      */
     private final SignedStateMetrics signedStateMetrics;
 
-    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer;
-    private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
-    private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
-
     /**
      * Start empty, with no known signed states. The number of addresses in platform.hashgraph.getAddressBook() must not
      * change in the future. The addressBook must contain exactly the set of members who can sign the state. A signed
@@ -96,28 +92,13 @@ public class SignedStateManager {
      *
      * @param stateConfig                      configuration for state
      * @param signedStateMetrics               a collection of signed state metrics
-     * @param newLatestCompleteStateConsumer   this method should be called each time we change which state is being
-     *                                         considered the latest fully signed state
-     * @param stateHasEnoughSignaturesConsumer this method should be called when a state gathers enough signatures to be
-     *                                         complete, even if that state does not become the "latest complete state"
-     * @param stateLacksSignaturesConsumer     this method is called when we have to delete a state before it gathers
-     *                                         sufficient signatures
      */
     public SignedStateManager(
             @NonNull final StateConfig stateConfig,
-            @NonNull final SignedStateMetrics signedStateMetrics,
-            @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
-            @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
-            @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
+            @NonNull final SignedStateMetrics signedStateMetrics) {
 
         this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig");
         this.signedStateMetrics = Objects.requireNonNull(signedStateMetrics, "signedStateMetrics");
-        this.newLatestCompleteStateConsumer =
-                Objects.requireNonNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
-        this.stateHasEnoughSignaturesConsumer =
-                Objects.requireNonNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
-        this.stateLacksSignaturesConsumer =
-                Objects.requireNonNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
 
         this.savedSignatures =
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
@@ -407,7 +388,8 @@ public class SignedStateManager {
      * @param signedState the new most recently and complete signed state
      */
     private void notifyNewLatestCompleteState(@NonNull final SignedState signedState) {
-        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(signedState);
+        //newLatestCompleteStateConsumer.newLatestCompleteStateEvent(signedState);
+        //TODO
     }
 
     /**
@@ -417,7 +399,8 @@ public class SignedStateManager {
      */
     private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState, "signedState must not be null");
-        stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
+        //stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
+        //TODO
     }
 
     /**
@@ -427,6 +410,7 @@ public class SignedStateManager {
      */
     private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState, "signedState must not be null");
-        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
+        //stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
+        //TODO
     }
 }

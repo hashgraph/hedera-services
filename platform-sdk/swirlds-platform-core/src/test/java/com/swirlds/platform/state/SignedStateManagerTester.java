@@ -38,6 +38,7 @@ import java.util.List;
 public class SignedStateManagerTester extends SignedStateManager {
     private final LatestCompleteStateNexus latestSignedState;
 
+    //TODO
     private SignedStateManagerTester(
             @NonNull final StateConfig stateConfig,
             @NonNull final SignedStateMetrics signedStateMetrics,
@@ -47,10 +48,7 @@ public class SignedStateManagerTester extends SignedStateManager {
             @NonNull final LatestCompleteStateNexus latestSignedState) {
         super(
                 stateConfig,
-                signedStateMetrics,
-                newLatestCompleteStateConsumer,
-                stateHasEnoughSignaturesConsumer,
-                stateLacksSignaturesConsumer);
+                signedStateMetrics);
         this.latestSignedState = latestSignedState;
     }
 

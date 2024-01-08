@@ -532,30 +532,11 @@ public class SwirldsPlatform implements Platform {
 
 
         savedStateController = new SavedStateController(stateConfig);
-        final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
-            // the app comm component expects a state to be reserved for it
-            appCommunicationComponent.newLatestCompleteStateEvent(ss.reserve("AppCommunicationComponent newLatestCompleteStateEvent"));
-            // the nexus expects a state to be reserved for it
-            // in the future, all of these reservations will be done by the wiring
-            latestCompleteState.setState(ss.reserve("setting latest complete state"));
-        };
 
-        final Consumer<SignedState> signatureCollectionDone = ss -> {
-            /*
-             * Signature for a signed state is now done. We should save it to disk, if it should be saved. The state
-             * may or may not have all its signatures collected.
-             */
-            if (ss.isStateToSave()) {
-                platformWiring.getSaveStateToDiskInput().put(ss.reserve("save to disk"));
-            }
-        };
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         final SignedStateManager signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class),
-                signedStateMetrics,
-                newLatestCompleteStateConsumer,
-                signatureCollectionDone::accept,
-                signatureCollectionDone::accept);
+                signedStateMetrics);
         //TODO wire collector output to others
 
         stateManagementComponent = new DefaultStateManagementComponent(
