@@ -20,6 +20,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -35,7 +36,7 @@ import java.util.Objects;
 public class PcesFileIterator implements IOIterator<GossipEvent> {
 
     private final long lowerBound;
-    private final PcesFileType fileType;
+    private final AncientMode fileType;
     private final SerializableDataInputStream stream;
     private boolean hasPartialEvent = false;
     private final CountingStreamExtension counter;
@@ -51,7 +52,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
      * @param fileType       the type of file to read
      */
     public PcesFileIterator(
-            @NonNull final PcesFile fileDescriptor, final long lowerBound, @NonNull final PcesFileType fileType)
+            @NonNull final PcesFile fileDescriptor, final long lowerBound, @NonNull final AncientMode fileType)
             throws IOException {
 
         this.lowerBound = lowerBound;

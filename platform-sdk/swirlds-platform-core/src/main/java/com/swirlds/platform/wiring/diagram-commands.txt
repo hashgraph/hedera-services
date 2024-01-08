@@ -16,7 +16,7 @@ pcli diagram \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
-    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
 
 ########################################################################################################################
@@ -37,12 +37,13 @@ pcli diagram \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
-    -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
+    -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
     -c 'State File Management' \
-    -c 'State Signature Collection'
+    -c 'State Signature Collection' \
+    -c 'Preconsensus Event Stream'
 
 
 

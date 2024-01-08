@@ -23,6 +23,7 @@ import static com.swirlds.platform.event.preconsensus.PcesUtilities.fileSanityCh
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -63,7 +64,7 @@ public class PcesFileReader {
             @NonNull final Path databaseDirectory,
             final long startingRound,
             final boolean permitGaps,
-            final PcesFileType typeToRead)
+            final AncientMode typeToRead)
             throws IOException {
 
         Objects.requireNonNull(platformContext);

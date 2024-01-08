@@ -23,6 +23,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -59,7 +60,7 @@ public final class PcesUtilities {
     public static PcesFile compactPreconsensusEventFile(
             @NonNull final PcesFile originalFile, final long previousUpperBound) {
 
-        final PcesFileType fileType = originalFile.getFileType();
+        final AncientMode fileType = originalFile.getFileType();
 
         // Find the true upper bound in the file.
         long newUpperBound = originalFile.getLowerBound();

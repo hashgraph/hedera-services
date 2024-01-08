@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -40,14 +40,14 @@ class PcesUtilitiesTests {
     void setup() {
         time = new FakeTime();
         time.tick(Duration.ofSeconds(100));
-        previousFileDescriptor = PcesFile.of(GENERATION_BOUND /*TODO*/, time.now(), 2, 10, 20, 5, Path.of("root"));
+        previousFileDescriptor = PcesFile.of(GENERATION_THRESHOLD /*TODO*/, time.now(), 2, 10, 20, 5, Path.of("root"));
     }
 
     @Test
     @DisplayName("Standard operation")
     void standardOperation() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 time.now(),
                 previousFileDescriptor.getSequenceNumber() + 1,
                 previousFileDescriptor.getLowerBound(),
@@ -69,7 +69,7 @@ class PcesUtilitiesTests {
     @DisplayName("Decreasing sequence number")
     void decreasingSequenceNumber() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 time.now(),
                 previousFileDescriptor.getSequenceNumber() - 1,
                 previousFileDescriptor.getLowerBound(),
@@ -93,7 +93,7 @@ class PcesUtilitiesTests {
     @DisplayName("Decreasing sequence number with gaps permitted")
     void decreasingSequenceNumberWithGapsPermitted() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 time.now(),
                 previousFileDescriptor.getSequenceNumber() - 1,
                 previousFileDescriptor.getLowerBound(),
@@ -115,7 +115,7 @@ class PcesUtilitiesTests {
     @DisplayName("Non-increasing sequence number")
     void nonIncreasingSequenceNumber() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 time.now(),
                 previousFileDescriptor.getSequenceNumber(),
                 previousFileDescriptor.getLowerBound(),
@@ -139,7 +139,7 @@ class PcesUtilitiesTests {
     @DisplayName("Decreasing minimum generation")
     void decreasingMinimumGeneration() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 time.now(),
                 previousFileDescriptor.getSequenceNumber() + 1,
                 previousFileDescriptor.getLowerBound() - 1,
@@ -163,7 +163,7 @@ class PcesUtilitiesTests {
     @DisplayName("Decreasing maximum generation")
     void decreasingMaximumGeneration() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 time.now(),
                 previousFileDescriptor.getSequenceNumber() + 1,
                 previousFileDescriptor.getLowerBound(),
@@ -187,7 +187,7 @@ class PcesUtilitiesTests {
     @DisplayName("Decreasing timestamp")
     void decreasingTimestamp() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 previousFileDescriptor.getTimestamp().minusSeconds(10),
                 previousFileDescriptor.getSequenceNumber() + 1,
                 previousFileDescriptor.getLowerBound(),
@@ -211,7 +211,7 @@ class PcesUtilitiesTests {
     @DisplayName("Decreasing origin")
     void decreasingOrigin() {
         final PcesFile currentFileDescriptor = PcesFile.of(
-                GENERATION_BOUND /*TODO*/,
+                GENERATION_THRESHOLD /*TODO*/,
                 time.now(),
                 previousFileDescriptor.getSequenceNumber() + 1,
                 previousFileDescriptor.getLowerBound(),

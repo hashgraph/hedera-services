@@ -79,6 +79,7 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -91,7 +92,6 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
-import com.swirlds.platform.event.preconsensus.PcesFileType;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
@@ -439,12 +439,12 @@ public class SwirldsPlatform implements Platform {
 
             // When we perform the migration to using birth round bounding, we will need to read
             // the old type and start writing the new type.
-            final PcesFileType currentFileType = platformContext
+            final AncientMode currentFileType = platformContext
                             .getConfiguration()
                             .getConfigData(EventConfig.class)
                             .useBirthRoundAncientThreshold()
-                    ? PcesFileType.BIRTH_ROUND_BOUND
-                    : PcesFileType.GENERATION_BOUND;
+                    ? AncientMode.BIRTH_ROUND_THRESHOLD
+                    : AncientMode.GENERATION_THRESHOLD;
 
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,

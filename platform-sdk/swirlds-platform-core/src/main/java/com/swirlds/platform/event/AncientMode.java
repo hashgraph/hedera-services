@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.preconsensus;
+package com.swirlds.platform.event;
 
 /**
- * The type of the PCES file. There are currently two types: one bound by generations and one bound by birth rounds.
- * The original type of files are bound by generations. The new type of files are bound by birth rounds. Once
- * migration has been completed to birth round bound files, support for the generation bound files will be removed.
+ * The strategy used to determine if an event is ancient. There are currently two types: one bound by generations and
+ * one bound by birth rounds. The original definition of ancient used generations. The new definition for ancient uses
+ * birth rounds. Once migration has been completed to birth rounds, support for the generation defined ancient threshold
+ * will be removed.
  */
-public enum PcesFileType { // TODO this should be a more general type...
+public enum AncientMode {
     /**
-     * A PCES file bound by generations.
+     * The ancient threshold is defined by generations.
      */
-    GENERATION_BOUND,
+    GENERATION_THRESHOLD,
     /**
-     * A PCES file bound by birth rounds.
+     * The ancient threshold is defined by birth rounds.
      */
-    BIRTH_ROUND_BOUND
+    BIRTH_ROUND_THRESHOLD
 }

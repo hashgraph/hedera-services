@@ -21,6 +21,7 @@ import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_B
 
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
+import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -46,14 +47,14 @@ public class PcesFileTracker {
      */
     private final RandomAccessDeque<PcesFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
 
-    private final PcesFileType fileType;
+    private final AncientMode fileType;
 
     /**
      * Constructor.
      *
      * @param fileType the type of file to track
      */
-    public PcesFileTracker(@NonNull final PcesFileType fileType) {
+    public PcesFileTracker(@NonNull final AncientMode fileType) {
         this.fileType = Objects.requireNonNull(fileType);
     }
 
@@ -159,7 +160,7 @@ public class PcesFileTracker {
      *
      * @param lowerBound    the desired lower bound, iterator is guaranteed to return all available events with an
      *                      ancient identifier (i.e. a generation or a birth round depending on the
-     *                      {@link PcesFileType}) greater or equal to this value. No events with a smaller ancient
+     *                      {@link AncientMode}) greater or equal to this value. No events with a smaller ancient
      *                      identifier will be returned. A value of {@link PcesFileManager#NO_LOWER_BOUND} will cause
      *                      the returned iterator to walk over all available events.
      * @param startingRound the round to start iterating from
@@ -178,7 +179,7 @@ public class PcesFileTracker {
      *
      * @param lowerBound  the desired lower bound, iterator is guaranteed to walk over all files that may contain events
      *                    with an ancient identifier (i.e. a generation or birth round depending on the
-     *                    {@link PcesFileType}) greater or equal to this value. A value of
+     *                    {@link AncientMode}) greater or equal to this value. A value of
      *                    {@link PcesFileManager#NO_LOWER_BOUND} will cause the returned iterator to walk over all
      *                    available event files.
      * @param originRound the origin round to start iterating from. The origin of a PCES segment is used to

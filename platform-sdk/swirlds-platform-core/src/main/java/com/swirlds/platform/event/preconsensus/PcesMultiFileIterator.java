@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -30,7 +31,7 @@ import java.util.Objects;
 public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
 
     private final Iterator<PcesFile> fileIterator;
-    private final PcesFileType fileType;
+    private final AncientMode fileType;
     private PcesFileIterator currentIterator;
     private final long lowerBound;
     private GossipEvent next;
@@ -47,7 +48,7 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
     public PcesMultiFileIterator(
             final long lowerBound,
             @NonNull final Iterator<PcesFile> fileIterator,
-            @NonNull final PcesFileType fileType) {
+            @NonNull final AncientMode fileType) {
 
         this.fileIterator = Objects.requireNonNull(fileIterator);
         this.lowerBound = lowerBound;

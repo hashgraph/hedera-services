@@ -19,8 +19,8 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -153,7 +153,7 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -171,7 +171,7 @@ class PcesFileReaderTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
@@ -204,7 +204,7 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -230,7 +230,12 @@ class PcesFileReaderTests {
 
         if (permitGaps) {
             final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                    platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, true, GENERATION_BOUND /*TODO*/);
+                    platformContext,
+                    TestRecycleBin.getInstance(),
+                    fileDirectory,
+                    0,
+                    true,
+                    GENERATION_THRESHOLD /*TODO*/);
             // Gaps are allowed. We should see all files except for the one that was skipped.
             assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
         } else {
@@ -243,7 +248,7 @@ class PcesFileReaderTests {
                             fileDirectory,
                             0,
                             permitGaps,
-                            GENERATION_BOUND /*TODO*/));
+                            GENERATION_THRESHOLD /*TODO*/));
         }
     }
 
@@ -265,7 +270,7 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -283,7 +288,7 @@ class PcesFileReaderTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -342,7 +347,7 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -363,7 +368,7 @@ class PcesFileReaderTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -415,7 +420,7 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -433,7 +438,7 @@ class PcesFileReaderTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
 
         // Request a generation higher than all files in the data store
         final long targetGeneration = files.get(fileCount - 1).getUpperBound() + 1;
@@ -453,7 +458,7 @@ class PcesFileReaderTests {
                         fileDirectory,
                         0,
                         false,
-                        GENERATION_BOUND /*TODO*/));
+                        GENERATION_THRESHOLD /*TODO*/));
     }
 
     /**
@@ -525,7 +530,7 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -559,14 +564,14 @@ class PcesFileReaderTests {
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(NO_LOWER_BOUND, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
         final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(NO_LOWER_BOUND, startingRound2));
 
@@ -574,7 +579,7 @@ class PcesFileReaderTests {
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_THRESHOLD /*TODO*/);
 
         assertIteratorEquality(
                 filesBeforeDiscontinuity.iterator(), fileTracker3.getFileIterator(NO_LOWER_BOUND, startingRound3));
@@ -585,7 +590,7 @@ class PcesFileReaderTests {
         // files to be deleted.
         final long startingRound4 = 0;
         final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_THRESHOLD /*TODO*/);
 
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(NO_LOWER_BOUND, startingRound4));
@@ -631,7 +636,7 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -671,14 +676,14 @@ class PcesFileReaderTests {
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startGeneration, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
         final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startGeneration, startingRound2));
 
@@ -686,7 +691,7 @@ class PcesFileReaderTests {
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesBeforeDiscontinuity.iterator(), fileTracker3.getFileIterator(startGeneration, startingRound3));
 
@@ -696,7 +701,7 @@ class PcesFileReaderTests {
         // files to be deleted.
         final long startingRound4 = 0;
         final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(startGeneration, startingRound4));
 
@@ -741,7 +746,7 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -779,14 +784,14 @@ class PcesFileReaderTests {
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startGeneration, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
         final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startGeneration, startingRound2));
 
@@ -794,7 +799,7 @@ class PcesFileReaderTests {
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_THRESHOLD /*TODO*/);
         // There is no files with a compatible origin and events with generations in the span we want.
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker3.getFileIterator(startGeneration, startingRound3));
@@ -805,7 +810,7 @@ class PcesFileReaderTests {
         // files to be deleted.
         final long startingRound4 = 0;
         final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(startGeneration, startingRound4));
 
@@ -850,7 +855,7 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -887,14 +892,14 @@ class PcesFileReaderTests {
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound1, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startGeneration, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
         final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound2, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startGeneration, startingRound2));
 
@@ -902,7 +907,7 @@ class PcesFileReaderTests {
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound3, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker3.getFileIterator(startGeneration, startingRound3));
 
@@ -912,7 +917,7 @@ class PcesFileReaderTests {
         // files to be deleted.
         final long startingRound4 = 0;
         final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
-                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_BOUND /*TODO*/);
+                platformContext, recycleBin, fileDirectory, startingRound4, false, GENERATION_THRESHOLD /*TODO*/);
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(startGeneration, startingRound4));
 

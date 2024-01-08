@@ -18,7 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.io.FileManipulation.corruptFile;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.truncateFile;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -108,7 +108,7 @@ class PcesReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -161,7 +161,7 @@ class PcesReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -201,7 +201,7 @@ class PcesReadWriteTests {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 random.nextLong(0, 1000),
@@ -244,7 +244,7 @@ class PcesReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -310,7 +310,7 @@ class PcesReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
@@ -376,7 +376,7 @@ class PcesReadWriteTests {
         final long restrictedMaximumGeneration = maximumGeneration - (minimumGeneration + maximumGeneration) / 4;
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 restrictedMinimumGeneration,
@@ -435,7 +435,7 @@ class PcesReadWriteTests {
         maximumGeneration += random.nextInt(1, 10);
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumGeneration,
@@ -500,7 +500,7 @@ class PcesReadWriteTests {
         final long uncompressedSpan = 5;
 
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumEventGeneration,
@@ -541,7 +541,7 @@ class PcesReadWriteTests {
     @DisplayName("Empty File Test")
     void emptyFileTest() throws IOException {
         final PcesFile file = PcesFile.of(
-                GENERATION_BOUND, // TODO test both styles
+                GENERATION_THRESHOLD, // TODO test both styles
                 Instant.now(),
                 0,
                 0,

@@ -23,6 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
@@ -55,7 +56,7 @@ public class PcesWriter {
 
     /**
      * The current minimum ancient identifier required to be considered non-ancient. Only read and written on the handle
-     * thread. Either a round or generation depending on the {@link PcesFileType}.
+     * thread. Either a round or generation depending on the {@link AncientMode}.
      */
     private long nonAncientBoundary = 0;
 
@@ -74,7 +75,7 @@ public class PcesWriter {
 
     /**
      * The minimum ancient identifier that we are required to keep around. Will be either a birth round or a generation,
-     * depending on the {@link PcesFileType}.
+     * depending on the {@link AncientMode}.
      */
     private long minimumAncientIdentifierToStore;
 
@@ -130,7 +131,7 @@ public class PcesWriter {
      * The original type of files are bound by generations. The new type of files are bound by birth rounds. Once
      * migration has been completed to birth round bound files, support for the generation bound files will be removed.
      */
-    private final PcesFileType fileType;
+    private final AncientMode fileType;
 
     /**
      * Constructor
@@ -159,8 +160,8 @@ public class PcesWriter {
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
                         .useBirthRoundAncientThreshold()
-                ? PcesFileType.BIRTH_ROUND_BOUND
-                : PcesFileType.GENERATION_BOUND;
+                ? AncientMode.BIRTH_ROUND_THRESHOLD
+                : AncientMode.GENERATION_THRESHOLD;
     }
 
     /**

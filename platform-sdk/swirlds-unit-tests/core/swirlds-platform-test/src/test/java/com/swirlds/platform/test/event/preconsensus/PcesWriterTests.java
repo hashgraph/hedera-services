@@ -19,8 +19,8 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,7 +129,7 @@ class PcesWriterTests {
                 PcesUtilities.getDatabaseDirectory(platformContext, selfId),
                 0,
                 false,
-                GENERATION_BOUND); // TODO
+                GENERATION_THRESHOLD); // TODO
 
         // Verify that the events were written correctly
         final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
@@ -248,7 +248,7 @@ class PcesWriterTests {
         generator = buildGraphGenerator(random);
         generationsUntilAncient = random.nextInt(50, 100);
         sequencer = new PcesSequencer();
-        pcesFiles = new PcesFileTracker(GENERATION_BOUND); // TODO
+        pcesFiles = new PcesFileTracker(GENERATION_THRESHOLD); // TODO
 
         time = new FakeTime(Duration.ofMillis(1));
         final PcesFileManager fileManager = new PcesFileManager(platformContext, time, pcesFiles, selfId, 0);
@@ -596,7 +596,7 @@ class PcesWriterTests {
                 PcesUtilities.getDatabaseDirectory(platformContext, selfId),
                 0,
                 false,
-                GENERATION_BOUND); // TODO
+                GENERATION_THRESHOLD); // TODO
 
         pcesFiles
                 .getFileIterator(NO_LOWER_BOUND, 0)

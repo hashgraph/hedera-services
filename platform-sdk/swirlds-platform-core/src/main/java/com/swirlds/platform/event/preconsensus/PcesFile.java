@@ -18,11 +18,12 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.parseSanitizedTimestamp;
 import static com.swirlds.common.formatting.StringFormattingUtils.sanitizeTimestamp;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.BIRTH_ROUND_BOUND;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -117,13 +118,13 @@ public final class PcesFile implements Comparable<PcesFile> {
 
     /**
      * The lower bound for events in the PCES file. Will be either a generation or a birth round depending on the
-     * {@link PcesFileType}.
+     * {@link AncientMode}.
      */
     private final long lowerBound;
 
     /**
      * The upper bound for events that are permitted to be in this file. Will be either a generation or a birth round
-     * depending on the {@link PcesFileType}.
+     * depending on the {@link AncientMode}.
      */
     private final long upperBound;
 
@@ -146,7 +147,7 @@ public final class PcesFile implements Comparable<PcesFile> {
     /**
      * The type of the file.
      */
-    private final PcesFileType fileType;
+    private final AncientMode fileType;
 
     /**
      * Construct a new PreConsensusEventFile.
@@ -156,14 +157,14 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @param sequenceNumber the sequence number of the file. All file sequence numbers are unique. Sequence numbers are
      *                       allocated in monotonically increasing order.
      * @param lowerBound     the upper bound of events that are permitted to be in this file, either a generation or a
-     *                       birth round depending on the {@link PcesFileType}.
+     *                       birth round depending on the {@link AncientMode}.
      * @param upperBound     the lower bound of events that are permitted to be in this file, either a generation or a
-     *                       birth round depending on the {@link PcesFileType}.
+     *                       birth round depending on the {@link AncientMode}.
      * @param origin         the origin of the stream file, signals the round from which the stream is unbroken
      * @param path           the location where this file can be found
      */
     private PcesFile(
-            @NonNull final PcesFileType fileType,
+            @NonNull final AncientMode fileType,
             @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long lowerBound,
@@ -208,16 +209,16 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @param timestamp      the timestamp when this file was created (wall clock time)
      * @param sequenceNumber the sequence number of the descriptor
      * @param minimumBound   the minimum event bound permitted to be in this file (inclusive), either a generation or a
-     *                       birth round depending on the {@link PcesFileType}.
+     *                       birth round depending on the {@link AncientMode}.
      * @param maximumBound   the maximum event bound permitted to be in this file (inclusive), either a generation or a
-     *                       birth round depending on the {@link PcesFileType}.
+     *                       birth round depending on the {@link AncientMode}.
      * @param origin         the origin round number, i.e. the round after which the stream is unbroken
      * @param rootDirectory  the directory where event stream files are stored
      * @return a description of the file
      */
     @NonNull
     public static PcesFile of(
-            @NonNull final PcesFileType fileType,
+            @NonNull final AncientMode fileType,
             @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long minimumBound,
@@ -248,7 +249,7 @@ public final class PcesFile implements Comparable<PcesFile> {
         }
 
         final String fileName = filePath.getFileName().toString();
-        final PcesFileType fileType = determineFileType(fileName);
+        final AncientMode fileType = determineFileType(fileName);
 
         final String[] elements = fileName.substring(0, fileName.length() - EVENT_FILE_EXTENSION.length())
                 .split(EVENT_FILE_SEPARATOR);
@@ -279,11 +280,11 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @throws IOException if the file type could not be determined
      */
     @NonNull
-    private static PcesFileType determineFileType(@NonNull final String fileName) throws IOException {
+    private static AncientMode determineFileType(@NonNull final String fileName) throws IOException {
         if (fileName.contains(MINIMUM_GENERATION_PREFIX) && fileName.contains(MAXIMUM_GENERATION_PREFIX)) {
-            return GENERATION_BOUND;
+            return GENERATION_THRESHOLD;
         } else if (fileName.contains(MINIMUM_BIRTH_ROUND_PREFIX) && fileName.contains(MAXIMUM_BIRTH_ROUND_PREFIX)) {
-            return BIRTH_ROUND_BOUND;
+            return BIRTH_ROUND_THRESHOLD;
         } else {
             throw new IOException("Unable to determine file type from " + fileName);
         }
@@ -296,8 +297,8 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @return the prefix used to identify the lower bound in the file name
      */
     @NonNull
-    private static String getLowerBoundPrefix(@NonNull final PcesFileType fileType) {
-        return fileType == GENERATION_BOUND ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX;
+    private static String getLowerBoundPrefix(@NonNull final AncientMode fileType) {
+        return fileType == GENERATION_THRESHOLD ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX;
     }
 
     /**
@@ -307,15 +308,15 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @return the prefix used to identify the upper bound in the file name
      */
     @NonNull
-    private static String getUpperBoundPrefix(@NonNull final PcesFileType fileType) {
-        return fileType == GENERATION_BOUND ? MAXIMUM_GENERATION_PREFIX : MAXIMUM_BIRTH_ROUND_PREFIX;
+    private static String getUpperBoundPrefix(@NonNull final AncientMode fileType) {
+        return fileType == GENERATION_THRESHOLD ? MAXIMUM_GENERATION_PREFIX : MAXIMUM_BIRTH_ROUND_PREFIX;
     }
 
     /**
      * Create a new event file descriptor for span compaction.
      *
      * @param maximumBoundaryValueInFile the maximum boundary value for events actually present in the file. Will be
-     *                                   either a generation or a birth round depending on the {@link PcesFileType}.
+     *                                   either a generation or a birth round depending on the {@link AncientMode}.
      * @return a description of the new file
      */
     @NonNull
@@ -357,7 +358,7 @@ public final class PcesFile implements Comparable<PcesFile> {
 
     /**
      * @return the minimum event bound permitted to be in this file (inclusive), either a generation or a birth round
-     * depending on the {@link PcesFileType}.
+     * depending on the {@link AncientMode}.
      */
     public long getLowerBound() {
         return lowerBound;
@@ -365,7 +366,7 @@ public final class PcesFile implements Comparable<PcesFile> {
 
     /**
      * @return the maximum event generation permitted to be in this file (inclusive), either a generation or a birth
-     * round depending on the {@link PcesFileType}.
+     * round depending on the {@link AncientMode}.
      */
     public long getUpperBound() {
         return upperBound;
@@ -455,7 +456,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * are not sequentially preceding the lower bound.
      *
      * @param lowerBound lower bound of the events to return, will be either a generation or a birth round depending on
-     *                   the {@link PcesFileType}.
+     *                   the {@link AncientMode}.
      * @return an iterator over the events in this file
      */
     @NonNull
@@ -492,7 +493,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      */
     @NonNull
     private static String buildFileName(
-            @NonNull final PcesFileType fileType,
+            @NonNull final AncientMode fileType,
             @NonNull final Instant timestamp,
             final long sequenceNumber,
             final long minimumBound,
@@ -533,7 +534,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * @return the type of this file
      */
     @NonNull
-    public PcesFileType getFileType() {
+    public AncientMode getFileType() {
         return fileType;
     }
 
@@ -541,7 +542,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * Check if it is legal for the file described by this object to contain a particular event.
      *
      * @param eventSequenceNumber a sequence number that describes which file an event should be in, either the
-     *                            generation or a birth round of the event depending on the {@link PcesFileType}.
+     *                            generation or a birth round of the event depending on the {@link AncientMode}.
      * @return true if it is legal for this event to be in the file described by this object
      */
     public boolean canContain(final long eventSequenceNumber) {

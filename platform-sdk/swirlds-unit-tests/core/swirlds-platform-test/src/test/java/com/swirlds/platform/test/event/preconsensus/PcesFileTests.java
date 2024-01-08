@@ -20,6 +20,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.writeRandomBytes;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFile.EVENT_FILE_SEPARATOR;
 import static com.swirlds.platform.event.preconsensus.PcesFile.MAXIMUM_BIRTH_ROUND_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PcesFile.MAXIMUM_GENERATION_PREFIX;
@@ -27,8 +29,6 @@ import static com.swirlds.platform.event.preconsensus.PcesFile.MINIMUM_BIRTH_ROU
 import static com.swirlds.platform.event.preconsensus.PcesFile.MINIMUM_GENERATION_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PcesFile.ORIGIN_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PcesFile.SEQUENCE_NUMBER_PREFIX;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.BIRTH_ROUND_BOUND;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,8 +43,8 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesFile;
-import com.swirlds.platform.event.preconsensus.PcesFileType;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -91,13 +91,13 @@ class PcesFileTests {
     }
 
     protected static Stream<Arguments> buildArguments() {
-        return Stream.of(Arguments.of(GENERATION_BOUND), Arguments.of(BIRTH_ROUND_BOUND));
+        return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
     }
 
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Invalid Parameters Test")
-    void invalidParametersTest(@NonNull final PcesFileType fileType) {
+    void invalidParametersTest(@NonNull final AncientMode fileType) {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> PcesFile.of(fileType, Instant.now(), -1, 1, 2, 0, Path.of("foo")));
@@ -129,7 +129,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("File Name Test")
-    void fileNameTest(@NonNull final PcesFileType fileType) {
+    void fileNameTest(@NonNull final AncientMode fileType) {
         final Random random = getRandomPrintSeed();
 
         int count = 100;
@@ -141,9 +141,9 @@ class PcesFileTests {
             final Instant timestamp = RandomUtils.randomInstant(random);
 
             final String lowerBoundPrefix =
-                    fileType == GENERATION_BOUND ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX;
+                    fileType == GENERATION_THRESHOLD ? MINIMUM_GENERATION_PREFIX : MINIMUM_BIRTH_ROUND_PREFIX;
             final String upperBoundPrefix =
-                    fileType == GENERATION_BOUND ? MAXIMUM_GENERATION_PREFIX : MAXIMUM_BIRTH_ROUND_PREFIX;
+                    fileType == GENERATION_THRESHOLD ? MAXIMUM_GENERATION_PREFIX : MAXIMUM_BIRTH_ROUND_PREFIX;
 
             final String expectedName =
                     timestamp.toString().replace(":", "+") + EVENT_FILE_SEPARATOR + SEQUENCE_NUMBER_PREFIX
@@ -162,7 +162,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("File Path Test")
-    void filePathTest(@NonNull final PcesFileType fileType) {
+    void filePathTest(@NonNull final AncientMode fileType) {
         final Random random = getRandomPrintSeed();
 
         int count = 100;
@@ -193,7 +193,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Parsing Test")
-    void parsingTest(@NonNull final PcesFileType fileType) throws IOException {
+    void parsingTest(@NonNull final AncientMode fileType) throws IOException {
         final Random random = getRandomPrintSeed();
 
         int count = 100;
@@ -248,7 +248,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Deletion Test")
-    void deletionTest(@NonNull final PcesFileType fileType) throws IOException {
+    void deletionTest(@NonNull final AncientMode fileType) throws IOException {
         final Random random = getRandomPrintSeed();
         final Instant now = Instant.now();
 
@@ -308,7 +308,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Recycle Test")
-    void recycleTest(@NonNull final PcesFileType fileType) throws IOException {
+    void recycleTest(@NonNull final AncientMode fileType) throws IOException {
         final Random random = getRandomPrintSeed();
         final Instant now = Instant.now();
 
@@ -388,7 +388,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("compareTo() Test")
-    void compareToTest(@NonNull final PcesFileType fileType) {
+    void compareToTest(@NonNull final AncientMode fileType) {
         final Random random = getRandomPrintSeed();
 
         final Path directory = Path.of("foo/bar/baz");
@@ -427,7 +427,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("canContain() Test")
-    void canContainTest(@NonNull final PcesFileType fileType) {
+    void canContainTest(@NonNull final AncientMode fileType) {
         final Random random = getRandomPrintSeed();
 
         final Path directory = Path.of("foo/bar/baz");
@@ -461,7 +461,7 @@ class PcesFileTests {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Span Compression Test")
-    void spanCompressionTest(@NonNull final PcesFileType fileType) {
+    void spanCompressionTest(@NonNull final AncientMode fileType) {
         final Random random = getRandomPrintSeed();
 
         final Path directory = Path.of("foo/bar/baz");

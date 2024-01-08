@@ -18,8 +18,8 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
 import static com.swirlds.platform.test.event.preconsensus.PcesFileReaderTests.createDummyFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -107,7 +107,11 @@ class PcesFileManagerTests {
         Instant timestamp = Instant.now();
 
         final PcesFileManager generatingManager = new PcesFileManager(
-                platformContext, Time.getCurrent(), new PcesFileTracker(GENERATION_BOUND /*TODO*/), new NodeId(0), 0);
+                platformContext,
+                Time.getCurrent(),
+                new PcesFileTracker(GENERATION_THRESHOLD /*TODO*/),
+                new NodeId(0),
+                0);
 
         for (int i = 0; i < fileCount; i++) {
             final PcesFile file = generatingManager.getNextFileDescriptor(minimumGeneration, maximumGeneration);
@@ -125,7 +129,7 @@ class PcesFileManagerTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
     }
@@ -148,7 +152,7 @@ class PcesFileManagerTests {
                 sequenceNumber++) {
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -179,7 +183,7 @@ class PcesFileManagerTests {
         final FakeTime time = new FakeTime(lastFile.getTimestamp().plus(Duration.ofHours(1)), Duration.ZERO);
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
         final PcesFileManager manager = new PcesFileManager(platformContext, time, fileTracker, new NodeId(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
@@ -195,7 +199,12 @@ class PcesFileManagerTests {
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                    buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                    buildContext(),
+                    TestRecycleBin.getInstance(),
+                    fileDirectory,
+                    0,
+                    false,
+                    GENERATION_THRESHOLD /*TODO*/);
 
             final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -235,7 +244,7 @@ class PcesFileManagerTests {
         // Parse files afresh to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
 
         final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -268,7 +277,7 @@ class PcesFileManagerTests {
                 sequenceNumber++) {
 
             final PcesFile file = PcesFile.of(
-                    GENERATION_BOUND /*TODO*/,
+                    GENERATION_THRESHOLD /*TODO*/,
                     timestamp,
                     sequenceNumber,
                     minimumGeneration,
@@ -299,7 +308,7 @@ class PcesFileManagerTests {
         final FakeTime time = new FakeTime(firstFile.getTimestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
         final PcesFileManager manager = new PcesFileManager(platformContext, time, fileTracker, new NodeId(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
@@ -314,7 +323,12 @@ class PcesFileManagerTests {
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                    buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                    buildContext(),
+                    TestRecycleBin.getInstance(),
+                    fileDirectory,
+                    0,
+                    false,
+                    GENERATION_THRESHOLD /*TODO*/);
 
             final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -357,7 +371,7 @@ class PcesFileManagerTests {
         // Parse files afresh to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_BOUND /*TODO*/);
+                buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false, GENERATION_THRESHOLD /*TODO*/);
 
         final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 

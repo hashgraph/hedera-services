@@ -17,14 +17,15 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.BIRTH_ROUND_BOUND;
-import static com.swirlds.platform.event.preconsensus.PcesFileType.GENERATION_BOUND;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.eventhandling.EventConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class PcesFileManager {
     /**
      * The PCES file type for new files.
      */
-    private final PcesFileType newFileType;
+    private final AncientMode newFileType;
 
     /**
      * Constructor
@@ -128,8 +129,8 @@ public class PcesFileManager {
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
                         .useBirthRoundAncientThreshold()
-                ? BIRTH_ROUND_BOUND
-                : GENERATION_BOUND;
+                ? BIRTH_ROUND_THRESHOLD
+                : GENERATION_THRESHOLD;
 
         initializeMetrics();
     }
