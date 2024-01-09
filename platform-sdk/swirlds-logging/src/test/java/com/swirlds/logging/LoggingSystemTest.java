@@ -422,7 +422,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals(Thread.currentThread().getName(), event1.threadName());
         Assertions.assertNull(event1.throwable());
         Assertions.assertTrue(event1.timestamp() > startTime);
-        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
+        Assertions.assertTrue(event1.timestamp() <= System.currentTimeMillis());
 
         final LogEvent event2 = loggedEvents.get(1);
         Assertions.assertEquals("warn-message", event2.message().getMessage());
@@ -433,7 +433,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals(Thread.currentThread().getName(), event2.threadName());
         Assertions.assertNull(event2.throwable());
         Assertions.assertTrue(event2.timestamp() > startTime);
-        Assertions.assertTrue(event2.timestamp() < System.currentTimeMillis());
+        Assertions.assertTrue(event2.timestamp() <= System.currentTimeMillis());
 
         final LogEvent event3 = loggedEvents.get(2);
         Assertions.assertEquals("error-message", event3.message().getMessage());
@@ -444,7 +444,7 @@ public class LoggingSystemTest {
         Assertions.assertEquals(Thread.currentThread().getName(), event3.threadName());
         Assertions.assertNull(event3.throwable());
         Assertions.assertTrue(event3.timestamp() > startTime);
-        Assertions.assertTrue(event3.timestamp() < System.currentTimeMillis());
+        Assertions.assertTrue(event3.timestamp() <= System.currentTimeMillis());
 
         Assertions.assertTrue(event1.timestamp() <= event2.timestamp());
         Assertions.assertTrue(event2.timestamp() <= event3.timestamp());

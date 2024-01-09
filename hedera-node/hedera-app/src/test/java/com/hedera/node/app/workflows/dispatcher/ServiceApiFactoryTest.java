@@ -56,7 +56,7 @@ class ServiceApiFactoryTest {
 
     @Test
     void canCreateTokenServiceApi() {
-        given(stack.createWritableStates(TokenService.NAME)).willReturn(writableStates);
+        given(stack.getWritableStates(TokenService.NAME)).willReturn(writableStates);
         assertNotNull(subject.getApi(TokenServiceApi.class));
     }
 

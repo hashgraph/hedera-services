@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.observers;
 
 public enum ObservationType {
-    PRE_CONSENSUS,
     ADDED,
     CONSENSUS,
     STALE

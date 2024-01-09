@@ -29,22 +29,22 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface HederaState {
     /**
-     * Creates a {@link ReadableStates} for the given named service. If such a service doesn't
+     * Returns a {@link ReadableStates} for the given named service. If such a service doesn't
      * exist, an empty {@link ReadableStates} is returned.
      *
      * @param serviceName The name of the service.
      * @return A collection of {@link ReadableKVState} instances belonging to the service.
      */
     @NonNull
-    ReadableStates createReadableStates(@NonNull String serviceName);
+    ReadableStates getReadableStates(@NonNull String serviceName);
 
     /**
-     * Creates a {@link WritableStates} for the given named service. If such a service doesn't
+     * Returns a {@link WritableStates} for the given named service. If such a service doesn't
      * exist, an empty {@link WritableStates} is returned.
      *
      * @param serviceName The name of the service.
      * @return A collection of {@link WritableKVState} instance belonging to the service.
      */
     @NonNull
-    WritableStates createWritableStates(@NonNull String serviceName);
+    WritableStates getWritableStates(@NonNull String serviceName);
 }
