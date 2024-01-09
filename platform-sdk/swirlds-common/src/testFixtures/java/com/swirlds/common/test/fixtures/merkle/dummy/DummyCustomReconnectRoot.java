@@ -24,7 +24,7 @@ import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import java.util.LinkedList;
 import java.util.List;
 

@@ -30,6 +30,7 @@ jmhModuleInfo {
 
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
+    requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

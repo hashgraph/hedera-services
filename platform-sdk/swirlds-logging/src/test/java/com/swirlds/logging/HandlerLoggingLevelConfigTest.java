@@ -17,13 +17,13 @@
 package com.swirlds.logging;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.logging.api.internal.level.MarkerState;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
