@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -32,10 +33,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -91,10 +101,37 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
+    final HapiSpec factoryAndSelfDestructInConstructorContract() {
+        final var contract = "FactorySelfDestructConstructor";
+
+        final var sender = "sender";
+        return defaultHapiSpec(
+                        "FactoryAndSelfDestructInConstructorContract",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_LOG_DATA)
+                .given(
+                        uploadInitCode(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                        contractCreate(contract).balance(10).payingWith(sender))
+                .when(
+                        // Currently only mono service has a precheck for deleted contracts
+                        ifHapiTest(contractCall(contract)
+                                .hasKnownStatus(CONTRACT_DELETED)
+                                .payingWith(sender)),
+                        ifNotHapiTest(contractCall(contract)
+                                .hasPrecheck(CONTRACT_DELETED)
+                                .payingWith(sender)))
+                .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
+    }
+
+    @HapiTest
     final HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
-        return defaultHapiSpec("FactoryQuickSelfDestructContract")
+        return defaultHapiSpec(
+                        "FactoryQuickSelfDestructContract",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_LOG_DATA)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract),
@@ -118,7 +155,7 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     final HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
-        return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
+        return defaultHapiSpec("InheritanceOfNestedCreatedContracts", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).logged().via("createRecord"),
@@ -133,7 +170,7 @@ public class CreateOperationSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec simpleFactoryWorks() {
-        return defaultHapiSpec("simpleFactoryWorks")
+        return defaultHapiSpec("simpleFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
                         .gas(780_000)
@@ -154,7 +191,7 @@ public class CreateOperationSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec stackedFactoryWorks() {
-        return defaultHapiSpec("StackedFactoryWorks")
+        return defaultHapiSpec("StackedFactoryWorks", FULLY_NONDETERMINISTIC)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "stackedDeploymentSuccess")
                         .gas(1_000_000)
@@ -272,7 +309,11 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     final HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
-        return defaultHapiSpec("contractCreateWithNewOpInConstructorAbandoningParent")
+        return defaultHapiSpec(
+                        "contractCreateWithNewOpInConstructorAbandoningParent",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))
                 .when()
                 .then(

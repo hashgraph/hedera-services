@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,16 @@ package com.hedera.node.app.fees.congestion;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
- * An implementation for congestion multipliers that uses two types of multiplier implementation ({@link EntityUtilizationMultiplier} and a {@link ThrottleMultiplier})
+ * An implementation for congestion multipliers that uses two types of multiplier implementation (
+ * {@link EntityUtilizationMultiplier} and a {@link ThrottleMultiplier})
  * to determine the current congestion multiplier.
  */
 public class CongestionMultipliers {
@@ -59,9 +62,16 @@ public class CongestionMultipliers {
      */
     public long maxCurrentMultiplier(
             @NonNull final TransactionInfo txnInfo, @NonNull final ReadableStoreFactory storeFactory) {
+        return maxCurrentMultiplier(txnInfo.txBody(), txnInfo.functionality(), storeFactory);
+    }
+
+    public long maxCurrentMultiplier(
+            @NonNull final TransactionBody body,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final ReadableStoreFactory storeFactory) {
         return Math.max(
                 throttleMultiplier.currentMultiplier(),
-                entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory));
+                entityUtilizationMultiplier.currentMultiplier(body, functionality, storeFactory));
     }
 
     /**

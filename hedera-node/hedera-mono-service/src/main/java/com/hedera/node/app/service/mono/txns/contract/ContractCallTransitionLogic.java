@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -225,12 +226,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
-        // Do some sanity checking in advance to ensure that the target is a valid contract
-        // Missing entity num is a valid target for lazy create.  Tokens are also valid targets
         final var target = targetOf(op);
-        if (!target.equals(EntityNum.MISSING_NUM)
-                && !entityAccess.isTokenAccount(target.toId().asEvmAddress())
-                && op.getAmount() == 0) {
+        if (possiblySanityCheckOp(op, target)) {
             try {
                 final var receiver = accountStore.loadContract(target.toId());
                 if (!receiver.isSmartContract()) {
@@ -243,6 +240,29 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             }
         }
         return OK;
+    }
+
+    // Determine if the operation should be sanity checked.
+    private boolean possiblySanityCheckOp(final ContractCallTransactionBody op, final EntityNum target) {
+        if (properties.evmVersion().equals(EVM_VERSION_0_46)
+                && properties.allowCallsToNonContractAccounts()
+                && !properties.grandfatherContracts().contains(target.toId().asEvmAddress())) {
+            return false;
+        }
+
+        // Tokens are valid targets
+        if (entityAccess.isTokenAccount(target.toId().asEvmAddress())) {
+            return false;
+        }
+
+        // Check for possible lazy create
+        if (((target.equals(EntityNum.MISSING_NUM)
+                        && isOfEvmAddressSize(op.getContractID().getEvmAddress()))
+                || op.getAmount() > 0)) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override

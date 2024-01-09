@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,11 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * The timestamp of the previously emitted event.
      */
     private Instant previousTimestamp;
+
+    /**
+     * The creator of the previously emitted event.
+     */
+    private NodeId previousCreatorId;
 
     /**
      * Construct a new StandardEventGenerator.
@@ -382,6 +387,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
             source.reset();
         }
         previousTimestamp = null;
+        previousCreatorId = null;
     }
 
     /**
@@ -408,9 +414,10 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Get the next timestamp for the next event.
      */
-    private Instant getNextTimestamp(final EventSource<?> source) {
+    private Instant getNextTimestamp(final EventSource<?> source, final NodeId otherParentId) {
         if (previousTimestamp == null) {
             previousTimestamp = DEFAULT_FIRST_EVENT_TIME_CREATED;
+            previousCreatorId = source.getNodeId();
             return previousTimestamp;
         }
 
@@ -419,7 +426,11 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
                 previousEvent == null ? Instant.ofEpochSecond(0) : previousEvent.getTimeCreated();
 
         final boolean shouldRepeatTimestamp = getRandom().nextDouble() < simultaneousEventFraction;
-        if (!previousTimestampForSource.equals(previousTimestamp) && shouldRepeatTimestamp) {
+
+        // don't repeat a timestamp if the previously emitted event is either parent of the new event
+        final boolean forbidRepeatTimestamp =
+                previousCreatorId.equals(source.getNodeId()) || previousCreatorId.equals(otherParentId);
+        if (!previousTimestampForSource.equals(previousTimestamp) && shouldRepeatTimestamp && !forbidRepeatTimestamp) {
             return previousTimestamp;
         } else {
             final double delta = Math.max(
@@ -431,6 +442,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
             final Instant timestamp =
                     previousTimestamp.plusSeconds(deltaSeconds).plusNanos(deltaNanoseconds);
             previousTimestamp = timestamp;
+            previousCreatorId = source.getNodeId();
             return timestamp;
         }
     }
@@ -443,8 +455,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         final EventSource<?> source = getNextEventSource(eventIndex);
         final EventSource<?> otherParentSource = getNextOtherParentSource(eventIndex, source);
 
-        final IndexedEvent next =
-                source.generateEvent(getRandom(), eventIndex, otherParentSource, getNextTimestamp(source));
+        final IndexedEvent next = source.generateEvent(
+                getRandom(), eventIndex, otherParentSource, getNextTimestamp(source, otherParentSource.getNodeId()));
         next.setGeneratorIndex(eventIndex);
 
         return next;

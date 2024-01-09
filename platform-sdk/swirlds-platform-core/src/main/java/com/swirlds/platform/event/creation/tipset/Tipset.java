@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,12 @@ public class Tipset {
     private final long[] tips;
 
     /**
+     * The value used to represent an undefined tip generation, either because the node ID is not in the address book or
+     * because there is no known event for the node ID in this event's ancestry.
+     */
+    public static final long UNDEFINED = -1L;
+
+    /**
      * Create an empty tipset.
      *
      * @param addressBook the current address book
@@ -46,11 +52,11 @@ public class Tipset {
         tips = new long[addressBook.getSize()];
 
         // Necessary because we currently start at generation 0, not generation 1.
-        Arrays.fill(tips, -1);
+        Arrays.fill(tips, UNDEFINED);
     }
 
     /**
-     * Build an empty tipset (i.e. where all generations are -1) using another tipset as a template.
+     * Build an empty tipset (i.e. where all generations are {@link #UNDEFINED}) using another tipset as a template.
      *
      * @param tipset the tipset to use as a template
      * @return a new empty tipset
@@ -81,7 +87,7 @@ public class Tipset {
         final Tipset newTipset = buildEmptyTipset(tipsets.get(0));
 
         for (int index = 0; index < length; index++) {
-            long max = -1;
+            long max = UNDEFINED;
             for (final Tipset tipSet : tipsets) {
                 max = Math.max(max, tipSet.tips[index]);
             }
@@ -98,7 +104,11 @@ public class Tipset {
      * @return the tip generation for the node
      */
     public long getTipGenerationForNode(@NonNull final NodeId nodeId) {
-        return tips[addressBook.getIndexOfNodeId(nodeId)];
+        final int index = addressBook.getIndexOfNodeId(nodeId);
+        if (index == AddressBook.NOT_IN_ADDRESS_BOOK_INDEX) {
+            return UNDEFINED;
+        }
+        return tips[index];
     }
 
     /**
@@ -131,8 +141,8 @@ public class Tipset {
      *
      * <p>
      * A tip advancement is defined as an increase in the tip generation for a node ID. The exception to this rule is
-     * that an increase in generation for the self ID is never counted as a tip advancement. The tip advancement
-     * weight is defined as the sum of all remaining tip advancements after being appropriately weighted.
+     * that an increase in generation for the self ID is never counted as a tip advancement. The tip advancement weight
+     * is defined as the sum of all remaining tip advancements after being appropriately weighted.
      * </p>
      *
      * <p>

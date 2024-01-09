@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package com.hedera.services.bdd.suites.regression.system;
 
+import static com.hedera.services.bdd.junit.TestTags.ND_RECONNECT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
@@ -30,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToShutDo
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.PAYER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
@@ -38,6 +41,7 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.T
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -47,13 +51,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 /**
  * This test is to verify reconnect functionality. It submits a burst of mixed operations, then
  * shuts one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
  * submits the same burst of mixed operations again.
  */
-// @HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes
+@HapiTestSuite
+@Tag(ND_RECONNECT)
 public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsNodeDeathReconnectTest.class);
 
@@ -87,31 +93,38 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
+                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(TREASURY),
-                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         // Kill node 2
-                        shutDownNode("Carol"),
+                        shutDownNode("Carol").logged(),
                         // Wait for it to shut down
-                        waitForNodeToShutDown("Carol", 75))
+                        waitForNodeToShutDown("Carol", 75).logged(),
+                        // This sleep is needed, since the ports of shutdown node may still be in time_wait status,
+                        // which will cause an error that address is already in use when restarting nodes.
+                        // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
+                        // kernel settings), so restarting node succeeds.
+                        sleepFor(180_000L).logged())
                 .when(
                         // Submit operations when node 2 is down
                         inParallel(mixedOpsBurst.get()),
                         // start all nodes
-                        startNode("Carol"),
+                        startNode("Carol").logged(),
                         // wait for node 2 to go BEHIND
-                        waitForNodeToBeBehind("Carol", 60),
+                        waitForNodeToBeBehind("Carol", 60).logged(),
                         // Node 2 will try to reconnect and comes to RECONNECT_COMPLETE
-                        waitForNodeToFinishReconnect("Carol", 60),
+                        waitForNodeToFinishReconnect("Carol", 60).logged(),
                         // Node 2 successfully reconnects and becomes ACTIVE
-                        waitForNodeToBecomeActive("Carol", 60))
+                        waitForNodeToBecomeActive("Carol", 60).logged())
                 .then(
                         // Once node 2 come back ACTIVE, submit some operations again
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
-                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS).payingWith(PAYER),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY).payingWith(PAYER),
                         inParallel(mixedOpsBurst.get()));
     }
 }

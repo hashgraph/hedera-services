@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.swirlds.platform.consensus.ConsensusSorter;
 import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.CountingVote;
 import com.swirlds.platform.consensus.InitJudges;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
@@ -143,6 +144,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** consensus configuration */
     private final ConsensusConfig config;
+    /**
+     * Indicates if an event's status of ancient should be determined by birthRound (true) or generation (false)
+     * FUTURE WORK: Delete this variable and its initialization when we switch to permanently using birthRound.
+     */
+    private final boolean useBirthRoundForAncient;
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
     /** metrics related to consensus */
@@ -190,11 +196,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param config consensus configuration
      * @param consensusMetrics metrics related to consensus
      * @param addressBook the global address book, which never changes
+     * @param useBirthRoundForAncient indicates if we should compare birthRound for determining ancient.
      */
     public ConsensusImpl(
             @NonNull final ConsensusConfig config,
             @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final AddressBook addressBook,
+            final boolean useBirthRoundForAncient) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
@@ -203,6 +211,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.addressBook = addressBook;
 
         this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
+        this.useBirthRoundForAncient = useBirthRoundForAncient;
     }
 
     @Override
@@ -655,6 +664,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
+                // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
+                // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
+                // production.
+                NonAncientEventWindow.createUsingRoundsNonAncient(
+                        decidedRoundNumber, getMinGenerationNonAncient(), config.roundsNonAncient(), false),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),

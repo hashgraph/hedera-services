@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -93,12 +94,17 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
      * {@inheritDoc}
      */
     @Override
-    public void tracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
+    public void tracePrecompileResult(@NonNull final MessageFrame frame, @NonNull final ContractActionType type) {
         requireNonNull(type);
         requireNonNull(frame);
         if (hasActionSidecarsEnabled(frame)) {
             actionStack.finalizeLastStackActionAsPrecompile(frame, type, stackValidationChoice(frame));
         }
+    }
+
+    @Override
+    public @NonNull ContractActions contractActions() {
+        return actionStack.asContractActions();
     }
 
     /**

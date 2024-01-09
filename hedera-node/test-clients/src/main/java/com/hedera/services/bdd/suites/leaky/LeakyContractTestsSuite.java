@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexed
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.SENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -202,6 +203,7 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -245,7 +247,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
-// @HapiTestSuite
+@HapiTestSuite
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
@@ -356,13 +358,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 getErc20TokenNameExceedingLimits(),
                 relayerFeeAsExpectedIfSenderCoversGas(),
                 canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
-                getErc20TokenNameExceedingLimits());
+                getErc20TokenNameExceedingLimits(),
+                invalidContract());
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
         final var tcValue = 1_234L;
-        final var contract = "Create2FactoryWithSelfDestructingContract";
+        final var contract = "Create2SelfDestructContract";
         final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
@@ -1886,8 +1890,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                         12L)
                                 .payingWith(GENESIS)
                                 .gas(300_000L)
-                                // This will fail the semantics validity check that verifies existence of the contract,
-                                .hasPrecheck(INVALID_CONTRACT_ID)
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
                                 .via(callTxn)));
     }
 
@@ -2014,8 +2017,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                     final var getTxnRecord =
                             getTxnRecord(payTxn).andAllChildRecords().logged();
                     allRunFor(spec, getTxnRecord);
-                    final var lazyAccountId =
-                            getTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final var lazyAccountId = getTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
                     final var name = "lazy";
                     spec.registry().saveAccountId(name, lazyAccountId);
                     allRunFor(spec, getAccountBalance(name).hasTinyBars(depositAmount));
@@ -2929,6 +2934,25 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(getAccountInfo(RELAYER)
                         .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
                         .logged());
+    }
+
+    @HapiTest
+    HapiSpec invalidContract() {
+        final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
+
+        return propertyPreservingHapiSpec("InvalidContract")
+                .preserving(EVM_VERSION_PROPERTY)
+                .given(
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        withOpContext((spec, ctxLog) ->
+                                spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ifHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
+                        ifNotHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
+                .then();
     }
 
     private HapiContractCallLocal setExpectedCreate2Address(

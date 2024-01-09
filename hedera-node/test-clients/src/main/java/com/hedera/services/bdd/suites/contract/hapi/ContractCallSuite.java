@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -63,8 +62,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -87,13 +84,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -234,9 +229,6 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientGas(),
                 insufficientFee(),
                 nonPayable(),
-                invalidContract(),
-                invalidContractIsAnAccount(),
-                invalidContractDoesNotExist(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 imapUserExercise(),
@@ -1539,61 +1531,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("callTxn")
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
-    }
-
-    @HapiTest
-    HapiSpec invalidContract() {
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("InvalidContract")
-                .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))))
-                .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(SUCCESS));
-    }
-
-    @HapiTest
-    HapiSpec invalidContractDoesNotExist() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("invalidContractDoesNotExist")
-                .given()
-                .when(
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                ifHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
-                                        .hasKnownStatus(SUCCESS)
-                                        .via("contractDoesNotExist")))),
-                        ifNotHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
-                                .hasPrecheck(INVALID_CONTRACT_ID)
-                                .via("contractDoesNotExist")))
-                .then(ifNotHapiTest(getTxnRecord("contractDoesNotExist").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
-    }
-
-    @HapiTest
-    HapiSpec invalidContractIsAnAccount() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("invalidContractIsAnAccount")
-                .given(cryptoCreate("invalid")
-                        .balance(ONE_MILLION_HBARS)
-                        .payingWith(GENESIS)
-                        .exposingCreatedIdTo(accountID::set))
-                .when(
-                        ifHapiTest(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCallWithFunctionAbi(
-                                                "0.0." + accountID.get().getAccountNum(), function)
-                                        .hasKnownStatus(SUCCESS)
-                                        .via("contractIsAccount")))),
-                        ifNotHapiTest(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCallWithFunctionAbi(
-                                                "0.0." + accountID.get().getAccountNum(), function)
-                                        .hasPrecheck(INVALID_CONTRACT_ID)
-                                        .via("contractIsAccount")))))
-                .then(ifNotHapiTest(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
     // This test disabled for modularization service

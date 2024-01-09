@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -148,7 +149,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                     .andAllChildRecords()
                                     .logged();
                             allRunFor(spec, lookup);
-                            final var childCreation = lookup.getChildRecord(0);
+                            final var childCreation = lookup.getFirstNonStakingChildRecord();
                             maliciousEOAId.set(
                                     asAccountString(childCreation.getReceipt().getAccountID()));
                         }),
@@ -301,7 +302,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
-        return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord")
+        // Does nested creates, which appear in reversed order from mono-service
+        return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -316,7 +318,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxGasAllowance(ONE_HUNDRED_HBARS)
                         .gasLimit(5_000_000L)
                         .via(txn))
-                .then(childRecordsCheck(txn, SUCCESS, recordWith(), recordWith().hasMirrorIdInReceipt()));
+                .then(childRecordsCheck(
+                        txn,
+                        SUCCESS,
+                        recordWith().hasMirrorIdInReceipt(),
+                        recordWith().hasMirrorIdInReceipt()));
     }
 
     @HapiTest

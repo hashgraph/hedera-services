@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,7 +128,9 @@ public class Evm38ValidationSuite extends HapiSuite {
                         withOpContext(
                                 (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
                 .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
+                .then(contractCallWithFunctionAbi("invalid", function)
+                        .hasPrecheck(INVALID_CONTRACT_ID)
+                        .hasKnownStatus(SUCCESS));
     }
 
     @HapiTest
@@ -649,7 +651,7 @@ public class Evm38ValidationSuite extends HapiSuite {
                                 .gas(1_000_000L)))
                 .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
                         .gas(350_000L)
-                        .hasKnownStatus(CONTRACT_DELETED));
+                        .hasPrecheck(CONTRACT_DELETED));
     }
 
     @HapiTest
@@ -666,7 +668,10 @@ public class Evm38ValidationSuite extends HapiSuite {
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract).balance(10).payingWith(sender))
-                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED).payingWith(sender))
+                .when(contractCall(contract)
+                        .hasPrecheck(CONTRACT_DELETED)
+                        .payingWith(sender)
+                        .hasKnownStatus(SUCCESS))
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 

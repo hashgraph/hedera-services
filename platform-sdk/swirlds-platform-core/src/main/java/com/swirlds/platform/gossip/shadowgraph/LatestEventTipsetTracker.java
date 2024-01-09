@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.internal.EventImpl;
@@ -58,12 +59,12 @@ public class LatestEventTipsetTracker {
     }
 
     /**
-     * Update the minimum generation non-ancient.
+     * Update the non-ancient event window
      *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+    public synchronized void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,8 @@ public final class DiagramCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
-        final PlatformContext platformContext =
-                new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, Time.getCurrent());
 

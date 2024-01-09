@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -24,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
@@ -43,6 +45,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
@@ -54,6 +57,9 @@ import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
@@ -62,12 +68,14 @@ import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -82,6 +90,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -99,9 +108,10 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.EnumSet;
-import java.util.Objects;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -114,10 +124,8 @@ import org.apache.logging.log4j.Logger;
 public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
-    private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS = EnumSet.of(
-            HederaFunctionality.CONTRACT_CREATE,
-            HederaFunctionality.CONTRACT_CALL,
-            HederaFunctionality.ETHEREUM_TRANSACTION);
+    private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
+            EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
 
     private final NetworkInfo networkInfo;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -129,6 +137,7 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
+    private final ScheduleExpirationHook scheduleExpirationHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
     private final ChildRecordFinalizer childRecordFinalizer;
@@ -159,7 +168,8 @@ public class HandleWorkflow {
             @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
+            @NonNull final ScheduleExpirationHook scheduleExpirationHook) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -182,6 +192,7 @@ public class HandleWorkflow {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.networkUtilizationManager =
                 requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
+        this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
     }
 
     /**
@@ -226,7 +237,7 @@ public class HandleWorkflow {
                     }
                 } catch (final Exception e) {
                     logger.fatal(
-                            "A fatal unhandled exception occurred during transaction handling. "
+                            "Possibly CATASTROPHIC failure while running the handle workflow. "
                                     + "While this node may not die right away, it is in a bad way, most likely fatally.",
                             e);
                 }
@@ -264,7 +275,7 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
         // Setup record builder list
-        blockRecordManager.startUserTransaction(consensusNow, state);
+        final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
         final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
@@ -290,6 +301,16 @@ public class HandleWorkflow {
         // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
         // the user transaction
         blockRecordManager.advanceConsensusClock(consensusNow, state);
+        // Look for any expired schedules and delete them when new block is created
+        if (switchedBlocks) {
+            final var firstSecondToExpire =
+                    blockRecordManager.firstConsTimeOfLastBlock().getEpochSecond();
+            final var lastSecondToExpire = consensusNow.getEpochSecond();
+            final var scheduleStore =
+                    new WritableStoreFactory(stack, ScheduleService.NAME).getStore(WritableScheduleStore.class);
+            // purge all expired schedules between the first consensus time of last block and the current consensus time
+            scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
+        }
 
         TransactionBody txBody;
         AccountID payer = null;
@@ -424,7 +445,37 @@ public class HandleWorkflow {
                 try {
                     // Any hollow accounts that must sign to have all needed signatures, need to be finalized
                     // as a result of transaction being handled.
-                    finalizeHollowAccounts(context, configuration, preHandleResult.getHollowAccounts(), verifier);
+                    Set<Account> hollowAccounts = preHandleResult.getHollowAccounts();
+                    SignatureVerification maybeEthTxVerification = null;
+                    if (transactionInfo.functionality() == ETHEREUM_TRANSACTION) {
+                        final var maybeEthTxSigs = CONTRACT_SERVICE
+                                .handlers()
+                                .ethereumTransactionHandler()
+                                .maybeEthTxSigsFor(
+                                        transactionInfo.txBody().ethereumTransactionOrThrow(),
+                                        readableStoreFactory.getStore(ReadableFileStore.class),
+                                        configuration);
+                        if (maybeEthTxSigs != null) {
+                            final var alias = Bytes.wrap(maybeEthTxSigs.address());
+                            final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
+                            final var maybeHollowAccountId = accountStore.getAccountIDByAlias(alias);
+                            if (maybeHollowAccountId != null) {
+                                final var maybeHollowAccount =
+                                        requireNonNull(accountStore.getAccountById(maybeHollowAccountId));
+                                if (isHollow(maybeHollowAccount)) {
+                                    hollowAccounts = new LinkedHashSet<>(preHandleResult.getHollowAccounts());
+                                    hollowAccounts.add(maybeHollowAccount);
+                                    maybeEthTxVerification = new SignatureVerificationImpl(
+                                            Key.newBuilder()
+                                                    .ecdsaSecp256k1(Bytes.wrap(maybeEthTxSigs.publicKey()))
+                                                    .build(),
+                                            alias,
+                                            true);
+                                }
+                            }
+                        }
+                    }
+                    finalizeHollowAccounts(context, configuration, hollowAccounts, verifier, maybeEthTxVerification);
 
                     networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
                     // If the payer is authorized to waive fees, then we don't charge them
@@ -492,7 +543,7 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
-            logger.error("An unexpected exception was thrown during handle", e);
+            logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
@@ -530,12 +581,14 @@ public class HandleWorkflow {
      * @param configuration the configuration
      * @param accounts the set of hollow accounts that need to be finalized
      * @param verifier the key verifier
+     * @param ethTxVerification
      */
     private void finalizeHollowAccounts(
             @NonNull final HandleContext context,
             @NonNull final Configuration configuration,
             @NonNull final Set<Account> accounts,
-            @NonNull final DefaultKeyVerifier verifier) {
+            @NonNull final DefaultKeyVerifier verifier,
+            @Nullable SignatureVerification ethTxVerification) {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var precedingHollowAccountRecords = accounts.size();
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
@@ -546,9 +599,12 @@ public class HandleWorkflow {
         } else {
             for (final var hollowAccount : accounts) {
                 // get the verified key for this hollow account
-                final var verification = Objects.requireNonNull(
-                        verifier.verificationFor(hollowAccount.alias()),
-                        "Required hollow account verified signature did not exist");
+                final var verification =
+                        ethTxVerification != null && hollowAccount.alias().equals(ethTxVerification.evmAlias())
+                                ? ethTxVerification
+                                : requireNonNull(
+                                        verifier.verificationFor(hollowAccount.alias()),
+                                        "Required hollow account verified signature did not exist");
                 if (verification.key() != null) {
                     if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
                         logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,11 +116,16 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 .logging(),
                         withOpContext((spec, opLog) -> {
                             List<HapiSpecOperation> ops = new ArrayList<>();
+                            var stakedNodeId = settings.getNodeToStake();
                             for (int i = 0; i < STAKED_CREATIONS; i++) {
                                 var stakedAccount = "stakedAccount" + i;
+                                if (settings.getExtraNodesToStake().length != 0) {
+                                    stakedNodeId =
+                                            settings.getExtraNodesToStake()[i % settings.getExtraNodesToStake().length];
+                                }
                                 ops.add(cryptoCreate(stakedAccount)
                                         .payingWith("sender")
-                                        .stakedNodeId(settings.getNodeToStake())
+                                        .stakedNodeId(stakedNodeId)
                                         .fee(ONE_HBAR)
                                         .deferStatusResolution()
                                         .signedBy("sender", DEFAULT_PAYER));

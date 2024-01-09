@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
@@ -31,6 +30,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
@@ -69,7 +69,7 @@ public class TipsetEventCreator implements EventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    private long minimumGenerationNonAncient = FIRST_GENERATION;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * The address book for the current network.
@@ -156,7 +156,7 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Override
     public void registerEvent(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             return;
         }
 
@@ -197,10 +197,10 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
-        tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
-        childlessOtherEventTracker.pruneOldEvents(minimumGenerationNonAncient);
+    public void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+        tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
+        childlessOtherEventTracker.pruneOldEvents(nonAncientEventWindow);
     }
 
     /**
@@ -274,8 +274,8 @@ public class TipsetEventCreator implements EventCreator {
         if (bestOtherParent == null) {
             // If there are no available other parents, it is only legal to create a new event if we are
             // creating a genesis event. In order to create a genesis event, we must have never created
-            // an event before and the current minimum generation non ancient must have never been advanced.
-            if (minimumGenerationNonAncient > GENERATION_UNDEFINED + 1 || lastSelfEvent != null) {
+            // an event before and the current non-ancient event window must have never been advanced.
+            if (nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW || lastSelfEvent != null) {
                 // event creation isn't legal
                 return null;
             }
@@ -421,7 +421,9 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                addressBook.getRound(),
+                nonAncientEventWindow.useBirthRoundForAncient()
+                        ? nonAncientEventWindow.pendingConsensusRound()
+                        : addressBook.getRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
@@ -474,7 +476,7 @@ public class TipsetEventCreator implements EventCreator {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("Minimum generation non-ancient: ")
-                .append(tipsetTracker.getMinimumGenerationNonAncient())
+                .append(tipsetTracker.getNonAncientEventWindow())
                 .append("\n");
         sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
         sb.append(tipsetWeightCalculator);

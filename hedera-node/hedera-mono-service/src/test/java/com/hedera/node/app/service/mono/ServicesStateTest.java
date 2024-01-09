@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -1068,7 +1069,10 @@ class ServicesStateTest extends ResponsibleVMapUser {
      */
     private static ReservedSignedState loadSignedState(final String path) throws IOException {
         final PlatformContext platformContext = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+                ConfigurationHolder.getInstance().get(),
+                new NoOpMetrics(),
+                CryptographyHolder.get(),
+                Time.getCurrent());
         final var signedPair = SignedStateFileReader.readStateFile(platformContext, Paths.get(path));
         // Because it's possible we are loading old data, we cannot check equivalence of the hash.
         return signedPair.reservedSignedState();
