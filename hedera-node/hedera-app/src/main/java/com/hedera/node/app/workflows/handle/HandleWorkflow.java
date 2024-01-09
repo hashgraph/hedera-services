@@ -212,10 +212,17 @@ public class HandleWorkflow {
         // log start of round to transaction state log
         logStartRound(round);
 
-        // handle each event in the round
-        int eventCounter = 0;
+        // Diff-testing only: get the last handled txn time from state:
         System.out.println(
                 "DIFF-TEST: num events to process in round " + round.getRoundNum() + ": " + round.getEventCount());
+        var currentBlockInfo = state.createReadableStates(BlockRecordService.NAME)
+                .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        var lastHandledTxnTime = currentBlockInfo.get().consTimeOfLastHandledTxn();
+        var lastHandledTxnInstant = Instant.ofEpochSecond(lastHandledTxnTime.seconds(), lastHandledTxnTime.nanos());
+        System.out.println("DIFF-TEST: Last handled txn time in state: " + lastHandledTxnInstant);
+
+        // handle each event in the round
+        int eventCounter = 0;
         for (final ConsensusEvent event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
@@ -239,7 +246,16 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+
+                        final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
+
+                        // For differential testing only: get the last handled txn timestamp from the state, and compare that with the consensus
+                        // time of the event. We do this to avoid re-processing transactions.
+                        if (consensusNow.isAfter(lastHandledTxnInstant)) {
+                            // handle user transaction
+                            handleUserTransaction(consensusNow, state, platformState, event, creator, platformTxn);
+                        }
+
                         userTxnCounter++;
                     }
                 } catch (final Exception e) {
@@ -272,16 +288,8 @@ public class HandleWorkflow {
         // but for compatibility with the current implementation, we adjust it as follows.
         final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
-        // For differential testing only: get the last handled txn timestamp from the state, and compare that with the consensus
-        // time of the event. We do this to avoid re-processing transactions.
-        var currentBlockInfo = state.createReadableStates(BlockRecordService.NAME)
-                .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
-        var lastHandledTxnTime = currentBlockInfo.get().consTimeOfLastHandledTxn();
-        var lastHandledTxnInstant = Instant.ofEpochSecond(lastHandledTxnTime.seconds(), lastHandledTxnTime.nanos());
-        if (consensusNow.isAfter(lastHandledTxnInstant)) {
-            // handle user transaction
-            handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
-        }
+        // handle user transaction
+        handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
     }
 
     private void handleUserTransaction(
