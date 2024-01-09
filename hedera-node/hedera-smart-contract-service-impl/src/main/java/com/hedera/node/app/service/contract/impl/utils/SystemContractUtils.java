@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
 import com.google.common.primitives.Longs;
@@ -24,8 +25,11 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.List;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
 
 /**
  * Utilities for system contracts.
@@ -68,6 +72,17 @@ public final class SystemContractUtils {
                 .gas(gas)
                 .contractCallResult(tuweniToPbjBytes(result))
                 .functionParameters(tuweniToPbjBytes(inputData))
+                .senderId(senderId)
+                .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                .build();
+    }
+
+    @NonNull
+    public static ContractFunctionResult contractFunctionResultSuccessFor(
+            final long gasUsed, final Bytes result, AccountID senderId) {
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .contractCallResult(tuweniToPbjBytes(result))
                 .senderId(senderId)
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .build();
