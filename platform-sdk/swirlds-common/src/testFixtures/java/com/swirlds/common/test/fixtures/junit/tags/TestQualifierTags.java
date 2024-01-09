@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.fixtures.tags;
+package com.swirlds.common.test.fixtures.junit.tags;
 
 /**
  * Tags that describe various features of a test's behavior or the way that a test should be run.

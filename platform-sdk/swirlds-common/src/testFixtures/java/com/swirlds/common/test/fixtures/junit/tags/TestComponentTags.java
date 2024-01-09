@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.fixtures.tags;
+package com.swirlds.common.test.fixtures.junit.tags;
 
 /**
  * Tags that denote the component that a test is verifying.
