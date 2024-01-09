@@ -20,7 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -17,7 +17,7 @@
 package com.swirlds.common.test.merkle;
 
 import static com.swirlds.common.merkle.copy.MerkleInitialize.initializeTreeAfterCopy;
-import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

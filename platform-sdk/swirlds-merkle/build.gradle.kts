@@ -22,6 +22,7 @@ plugins {
 testModuleInfo {
     requires("com.swirlds.base")
     requires("com.swirlds.common.testing")
+    requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions")
     requires("com.swirlds.merkledb")

@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.SwirldsLogFileReader;
 import com.swirlds.logging.legacy.SwirldsLogReader;
@@ -31,7 +32,6 @@ import com.swirlds.logging.legacy.json.JsonLogEntry;
 import com.swirlds.logging.legacy.json.JsonParser;
 import com.swirlds.logging.legacy.payload.ReconnectLoadFailurePayload;
 import com.swirlds.logging.legacy.payload.SynchronizationCompletePayload;
-import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;

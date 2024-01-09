@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 

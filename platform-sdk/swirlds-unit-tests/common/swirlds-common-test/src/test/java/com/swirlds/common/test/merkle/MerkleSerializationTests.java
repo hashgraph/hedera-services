@@ -17,11 +17,11 @@
 package com.swirlds.common.test.merkle;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
+import static com.swirlds.common.test.fixtures.io.ResourceLoader.getFile;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.areTreesEqual;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.isFullyInitialized;
-import static com.swirlds.test.framework.ResourceLoader.getFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,11 +44,11 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.utility.MerkleLong;
+import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayInputStream;
