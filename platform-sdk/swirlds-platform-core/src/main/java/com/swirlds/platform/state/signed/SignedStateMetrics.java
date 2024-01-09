@@ -42,13 +42,6 @@ public class SignedStateMetrics {
             .withFormat(FORMAT_10_2);
     private final RunningAverageMetric unsignedStates;
 
-    private static final RunningAverageMetric.Config SIGNED_STATES_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "signedStates")
-            .withDescription("Average Number Of Signed States In the Signed State Manager")
-            .withUnit("count")
-            .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric signedStates;
-
     private static final RunningAverageMetric.Config AVERAGE_TIME_TO_FULLY_SIGN_STATE = new RunningAverageMetric.Config(
                     CATEGORY, "averageTimeToFullySignState")
             .withDescription("The average time spent waiting for enough state signatures to fully sign a state.")
@@ -142,13 +135,6 @@ public class SignedStateMetrics {
      */
     public RunningAverageMetric getUnsignedStatesMetric() {
         return unsignedStates;
-    }
-
-    /**
-     * Get a metric tracking signed states.
-     */
-    public RunningAverageMetric geSignedStatesMetric() {
-        return signedStates;
     }
 
     /**
@@ -257,6 +243,5 @@ public class SignedStateMetrics {
         stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
         writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);
         stateSignatureAge = metrics.getOrCreate(STATE_SIGNATURE_AGE_CONFIG);
-        signedStates = metrics.getOrCreate(SIGNED_STATES_CONFIG);
     }
 }

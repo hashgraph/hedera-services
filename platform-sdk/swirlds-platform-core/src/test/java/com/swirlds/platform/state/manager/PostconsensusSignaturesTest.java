@@ -18,6 +18,7 @@ package com.swirlds.platform.state.manager;
 
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildReallyFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
@@ -38,7 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link SignedStateManager#handlePostconsensusSignatureTransaction}
+ * Tests for {@link SignedStateManager#handlePostconsensusScopedSystemTransactions(List)}
  */
 class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
 
@@ -107,6 +108,7 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
             }
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
+                assertNotNull(lastCompletedState, "latest complete state should not be null");
                 assertSame(signedStates.get((long) round), lastCompletedState.get(), "unexpected last completed state");
             }
 

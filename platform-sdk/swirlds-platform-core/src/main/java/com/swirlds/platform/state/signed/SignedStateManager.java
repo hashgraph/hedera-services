@@ -21,17 +21,20 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
-import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -53,36 +56,15 @@ import java.util.Objects;
  */
 public class SignedStateManager {
 
-    /**
-     * The latest signed state. May be unhashed. May or may not have all of its signatures.
-     */
-    private final SignedStateReference lastState = new SignedStateReference();
-
-    /**
-     * Signed states awaiting signatures.
-     */
-    private final SignedStateMap incompleteStates = new SignedStateMap();
-
-    /**
-     * States that have already been signed.
-     */
-    private final SignedStateMap completeStates = new SignedStateMap();
-
+    /** The latest signed state round*/
+    private long lastStateRound = ConsensusConstants.ROUND_UNDEFINED;
+    /** Signed states awaiting signatures */
+    private final Map<Long, ReservedSignedState> incompleteStates = new HashMap<>();
+    /** State config */
     private final StateConfig stateConfig;
-
-    /**
-     * A signature that was received when there was no state with a matching round.
-     */
-    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {}
-
-    /**
-     * Signatures for rounds in the future.
-     */
+    /** Signatures for rounds in the future */
     private final SequenceSet<SavedSignature> savedSignatures;
-
-    /**
-     * A collection of signed state metrics.
-     */
+    /** A collection of signed state metrics */
     private final SignedStateMetrics signedStateMetrics;
 
     /**
@@ -90,8 +72,8 @@ public class SignedStateManager {
      * change in the future. The addressBook must contain exactly the set of members who can sign the state. A signed
      * state is considered completed when it has signatures from a sufficient threshold of nodes.
      *
-     * @param stateConfig                      configuration for state
-     * @param signedStateMetrics               a collection of signed state metrics
+     * @param stateConfig        configuration for state
+     * @param signedStateMetrics a collection of signed state metrics
      */
     public SignedStateManager(
             @NonNull final StateConfig stateConfig,
@@ -104,20 +86,14 @@ public class SignedStateManager {
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
     }
 
-    public List<ReservedSignedState> addReservedState(@NonNull final ReservedSignedState reservedSignedState) {
-        try(reservedSignedState){
-            addState(reservedSignedState.get());
-        }
-        return null;
-    }
-
     /**
      * Add a state. State may be ignored if it is too old.
      *
-     * @param signedState the signed state to add
+     * @param reservedSignedState the signed state to add
      */
-    private void addState(@NonNull final SignedState signedState) {
-        Objects.requireNonNull(signedState, "reservedSignedState");
+    public List<ReservedSignedState> addReservedState(@NonNull final ReservedSignedState reservedSignedState) {
+        Objects.requireNonNull(reservedSignedState, "reservedSignedState");
+        final SignedState signedState = reservedSignedState.get();
 
         if (signedState.getState().getHash() == null) {
             throw new IllegalArgumentException(
@@ -128,105 +104,120 @@ public class SignedStateManager {
         // They may no longer be valid if we have done a data migration.
         signedState.pruneInvalidSignatures();
 
-        if (signedState.isComplete()) {
-            completeStates.put(signedState, "SignedStateManager.addState(complete)");
-            if (completeStates.getLatestRound() == signedState.getRound()) {
-                notifyNewLatestCompleteState(signedState);
-            }
-        } else {
-            incompleteStates.put(signedState, "SignedStateManager.addState(incomplete)");
-            gatherSavedSignatures(signedState);
-        }
+        // find any signatures that have been saved
+        final List<SavedSignature> signatures = savedSignatures.getEntriesWithSequenceNumber(signedState.getRound());
+        savedSignatures.removeSequenceNumber(signedState.getRound());
+        signatures.forEach(ss -> addSignature(reservedSignedState, ss.memberId, ss.signature));
 
-        setLastStateIfNewer(signedState);
+        lastStateRound = Math.max(lastStateRound, signedState.getRound());
         adjustSavedSignaturesWindow(signedState.getRound());
-        purgeOldStates();
-    }
 
-    /**
-     * Sets the last state to this signed state, iff it is more recent than the current last state
-     *
-     * @param signedState the signed state to use
-     */
-    private void setLastStateIfNewer(@NonNull final SignedState signedState) {
-        if (signedState.getRound() > lastState.getRound()) {
-            lastState.set(signedState, "SignedStateManager.setLastStateIfNewer()");
+        if (!signedState.isComplete()) {
+            final ReservedSignedState previousState = incompleteStates.put(signedState.getRound(), reservedSignedState);
+            Optional.ofNullable(previousState).ifPresent(ReservedSignedState::close);
+            //TODO log a warning, this should not happen
+            return purgeOldStates();
         }
+        return Stream.concat(
+                        Stream.of(reservedSignedState),
+                        purgeOldStates().stream())
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public List<ReservedSignedState> handlePreconsensusScopedSystemTransactions(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
-            handlePreconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
-        }
-        return null;
+        return transactions.stream()
+                .map(this::handlePreconsensusSignatureTransaction)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     /**
      * An observer of pre-consensus state signatures.
      *
-     * @param signerId             the node that created the signature
-     * @param signatureTransaction the signature transaction
+     * @param scopedTransaction the signature transaction
      */
-    private void handlePreconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
+    private ReservedSignedState handlePreconsensusSignatureTransaction(
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
+        Objects.requireNonNull(scopedTransaction);
 
-        Objects.requireNonNull(signerId);
-        Objects.requireNonNull(signatureTransaction);
-
-        final long round = signatureTransaction.getRound();
-        final Signature signature = signatureTransaction.getStateSignature();
+        final long round = scopedTransaction.transaction().getRound();
+        final Signature signature = scopedTransaction.transaction().getStateSignature();
 
         signedStateMetrics.getStateSignaturesGatheredPerSecondMetric().cycle();
 
-        final long lastStateRound = lastState.getRound();
         if (lastStateRound != -1) {
             final long signatureAge = round - lastStateRound;
             signedStateMetrics.getStateSignatureAge().update(signatureAge);
         }
 
-        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
-            if (reservedState.isNull()) {
-                // This round has already been completed, or it is really old or in the future
-                savedSignatures.add(new SavedSignature(round, signerId, signature));
-                return;
-            }
-
-            addSignature(reservedState.get(), signerId, signature);
+        final ReservedSignedState reservedState = incompleteStates.get(round);
+        if (reservedState == null) {
+            // This round has already been completed, or it is really old or in the future
+            savedSignatures.add(new SavedSignature(round, scopedTransaction.submitterId(), signature));
+            return null;
         }
+        return addSignature(reservedState, scopedTransaction.submitterId(), signature);
     }
 
     public List<ReservedSignedState> handlePostconsensusScopedSystemTransactions(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
-            handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
-        }
-        return null;
+        return transactions.stream()
+                .map(this::handlePostconsensusSignatureTransaction)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     /**
      * An observer of post-consensus state signatures.
      *
-     * @param signerId    the node that created the signature
-     * @param transaction the signature transaction
+     * @param scopedTransaction the signature transaction
      */
-    private void handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
+    private ReservedSignedState handlePostconsensusSignatureTransaction(
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
+        Objects.requireNonNull(scopedTransaction);
 
-        Objects.requireNonNull(signerId);
+        final long round = scopedTransaction.transaction().getRound();
 
-        final long round = transaction.getRound();
-
-        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
-            // it isn't possible to receive a post-consensus signature transaction for a future round,
-            // and if we don't have the state for an old round, we never will.
-            // in both cases, the signature can be ignored
-            if (reservedState.isNull()) {
-                return;
-            }
-
-            addSignature(reservedState.get(), signerId, transaction.getStateSignature());
+        final ReservedSignedState reservedState = incompleteStates.get(round);
+        // it isn't possible to receive a post-consensus signature transaction for a future round,
+        // and if we don't have the state for an old round, we never will.
+        // in both cases, the signature can be ignored
+        if (reservedState == null) {
+            return null;
         }
+
+        return addSignature(reservedState, scopedTransaction.submitterId(),
+                scopedTransaction.transaction().getStateSignature());
+    }
+
+    /**
+     * Add a new signature to a signed state.
+     *
+     * @param reservedSignedState the state being signed
+     * @param nodeId              the ID of the signer
+     * @param signature           the signature on the state
+     */
+    private ReservedSignedState addSignature(
+            @NonNull final ReservedSignedState reservedSignedState, @NonNull final NodeId nodeId,
+            @NonNull final Signature signature) {
+        Objects.requireNonNull(reservedSignedState, "signedState must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(signature, "signature must not be null");
+        final SignedState signedState = reservedSignedState.get();
+
+        if (signedState.addSignature(nodeId, signature)) {
+            // at this point the signed state is complete for the first time
+            signedStateMetrics.getStatesSignedPerSecondMetric().cycle();
+            signedStateMetrics
+                    .getAverageTimeToFullySignStateMetric()
+                    .update(Duration.between(signedState.getCreationTimestamp(), Instant.now())
+                            .toMillis());
+
+            return incompleteStates.remove(signedState.getRound());
+        }
+        return null;
     }
 
     /**
@@ -235,92 +226,30 @@ public class SignedStateManager {
      * @return the earliest round permitted to be stored
      */
     private long getEarliestPermittedRound() {
-        return lastState.getRound() - stateConfig.roundsToKeepForSigning() + 1;
-    }
-
-    /**
-     * Given an iterator that walks over the states in {@link #incompleteStates}, remove any states that are too old.
-     *
-     * @param iterator an iterator that walks over a collection of signed states
-     */
-    private void removeOldUnsignedStates(@NonNull final Iterator<SignedState> iterator) {
-
-        // Any state older than this is unconditionally removed.
-        final long earliestPermittedRound = getEarliestPermittedRound();
-
-        while (iterator.hasNext()) {
-            final SignedState signedState = iterator.next();
-            if (signedState.getRound() < earliestPermittedRound) {
-                signedStateMetrics.getTotalUnsignedStatesMetric().increment();
-                notifyStateLacksSignatures(signedState);
-                iterator.remove();
-            }
-        }
-    }
-
-    /**
-     * Given an iterator that walks over the states in {@link #completeStates}, remove any states that are too old.
-     *
-     * @param iterator an iterator that walks over a collection of signed states
-     */
-    private void removeOldSignedStates(@NonNull final Iterator<SignedState> iterator) {
-
-        // Any state older than this is unconditionally removed.
-        final long earliestPermittedRound = getEarliestPermittedRound();
-
-        // The latest state that has gathered all of its signatures.
-        final long latestSignedRound = completeStates.getLatestRound();
-
-        // If state signing is working as desired, then this will be the oldest signed state we keep in this structure.
-        // If state signing breaks down, we will not remove the latest signed state when it becomes older than this
-        // round (unless it becomes so old that it is before the earliest permitted round).
-        final long desiredEarliestSignedRound = lastState.getRound() - stateConfig.roundsToKeepAfterSigning();
-
-        while (iterator.hasNext()) {
-            final SignedState signedState = iterator.next();
-            final long stateRound = signedState.getRound();
-
-            final boolean stateIsVeryOld = stateRound < earliestPermittedRound;
-
-            final boolean stateIsOldAndNotTheMostRecentlySigned =
-                    stateRound < desiredEarliestSignedRound && stateRound != latestSignedRound;
-
-            if (stateIsVeryOld || stateIsOldAndNotTheMostRecentlySigned) {
-                iterator.remove();
-            }
-        }
+        return lastStateRound - stateConfig.roundsToKeepForSigning() + 1;
     }
 
     /**
      * Get rid of old states.
      */
-    private void purgeOldStates() {
-        incompleteStates.atomicIteration(this::removeOldUnsignedStates);
-        completeStates.atomicIteration(this::removeOldSignedStates);
+    private List<ReservedSignedState> purgeOldStates() {
+        final List<ReservedSignedState> purgedStates = new ArrayList<>();
 
-        signedStateMetrics.getUnsignedStatesMetric().update(incompleteStates.getSize());
-        signedStateMetrics.geSignedStatesMetric().update(completeStates.getSize());
-    }
+        // Any state older than this is unconditionally removed.
+        final long earliestPermittedRound = getEarliestPermittedRound();
+        for (final Iterator<ReservedSignedState> iterator = incompleteStates.values().iterator();
+                iterator.hasNext(); ) {
+            final ReservedSignedState reservedSignedState = iterator.next();
+            final SignedState signedState = reservedSignedState.get();
+            if (signedState.getRound() < earliestPermittedRound) {
+                signedStateMetrics.getTotalUnsignedStatesMetric().increment();
+                purgedStates.add(reservedSignedState);
+                iterator.remove();
+            }
+        }
 
-    /**
-     * Get an unsigned state for a particular round, if it exists.
-     *
-     * @param round the round in question
-     * @return a signed state for a round, or a null reservation if a signed state for that round is not present
-     */
-    private @NonNull ReservedSignedState getIncompleteState(final long round) {
-        return incompleteStates.getAndReserve(round, "SignedStateManager.getIncompleteState()");
-    }
-
-    /**
-     * Gather and apply all signatures that were previously saved for a signed state.
-     *
-     * @param signedState a signed state that is now able to collect signatures
-     */
-    private void gatherSavedSignatures(@NonNull final SignedState signedState) {
-        savedSignatures.removeSequenceNumber(
-                signedState.getRound(),
-                savedSignature -> addSignature(signedState, savedSignature.memberId, savedSignature.signature));
+        signedStateMetrics.getUnsignedStatesMetric().update(incompleteStates.size());
+        return purgedStates;
     }
 
     /**
@@ -338,74 +267,8 @@ public class SignedStateManager {
     }
 
     /**
-     * Called when a signed state is first completed.
+     * A signature that was received when there was no state with a matching round.
      */
-    private void signedStateNewlyComplete(@NonNull final SignedState signedState) {
-        signedStateMetrics.getStatesSignedPerSecondMetric().cycle();
-        signedStateMetrics
-                .getAverageTimeToFullySignStateMetric()
-                .update(Duration.between(signedState.getCreationTimestamp(), Instant.now())
-                        .toMillis());
-
-        notifyStateHasEnoughSignatures(signedState);
-        if (completeStates.getLatestRound() < signedState.getRound()) {
-            notifyNewLatestCompleteState(signedState);
-        }
-
-        completeStates.put(signedState, "SignedStateManager.signedStateNewlyComplete()");
-        incompleteStates.remove(signedState.getRound());
-
-        purgeOldStates();
-    }
-
-    /**
-     * Add a new signature to a signed state.
-     *
-     * @param signedState the state being signed
-     * @param nodeId      the ID of the signer
-     * @param signature   the signature on the state
-     */
-    private void addSignature(
-            @NonNull final SignedState signedState, @NonNull final NodeId nodeId, @NonNull final Signature signature) {
-        Objects.requireNonNull(signedState, "signedState must not be null");
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(signature, "signature must not be null");
-
-        if (signedState.addSignature(nodeId, signature)) {
-            // at this point the signed state is complete for the first time
-            signedStateNewlyComplete(signedState);
-        }
-    }
-
-    /**
-     * Send out a notification that the most up-to-date and complete signed state has changed.
-     *
-     * @param signedState the new most recently and complete signed state
-     */
-    private void notifyNewLatestCompleteState(@NonNull final SignedState signedState) {
-        //newLatestCompleteStateConsumer.newLatestCompleteStateEvent(signedState);
-        //TODO
-    }
-
-    /**
-     * Send out a notification that a signed state was unable to be completely signed.
-     *
-     * @param signedState the state that was unable to be complete signed
-     */
-    private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
-        Objects.requireNonNull(signedState, "signedState must not be null");
-        //stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
-        //TODO
-    }
-
-    /**
-     * Send out a notification that a signed state was able to collect enough signatures to become complete.
-     *
-     * @param signedState the state that now has enough signatures
-     */
-    private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
-        Objects.requireNonNull(signedState, "signedState must not be null");
-        //stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
-        //TODO
+    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {
     }
 }

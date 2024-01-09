@@ -137,15 +137,11 @@ public class AbstractSignedStateManagerTest {
             if (shouldRoundBePresent.test(round)) {
                 assertEquals(-1, signedState.getReservationCount(), "state should have no reservations");
             } else {
-                int expectedReservationCount = 1;
-                if (round == highestRound.get()) {
-                    // the most recent state has an extra reservation inside the SSM
-                    expectedReservationCount++;
-                }
-                if (round == highestCompleteRound.get()) {
-                    // the most recent complete state has an extra reservation held by the nexus
-                    expectedReservationCount++;
-                }
+                // the most recent complete state has a reservation held by the nexus
+                // incomplete states are held by the collector
+                final int expectedReservationCount =
+                        round == highestCompleteRound.get() || !signedState.isComplete()
+                                ? 1 : -1;
                 assertEquals(
                         expectedReservationCount,
                         signedState.getReservationCount(),

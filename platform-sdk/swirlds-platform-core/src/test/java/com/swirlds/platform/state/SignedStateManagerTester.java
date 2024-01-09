@@ -43,7 +43,7 @@ public class SignedStateManagerTester extends SignedStateManager {
     private final LatestCompleteStateNexus latestSignedState;
     private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
-    
+
     private SignedStateManagerTester(
             @NonNull final StateConfig stateConfig,
             @NonNull final SignedStateMetrics signedStateMetrics,
@@ -73,6 +73,7 @@ public class SignedStateManagerTester extends SignedStateManager {
     @Override
     public List<ReservedSignedState> addReservedState(
             @NonNull final ReservedSignedState reservedSignedState) {
+        latestSignedState.newIncompleteState(reservedSignedState.get().getRound());
         return processStates(super.addReservedState(reservedSignedState));
     }
 
@@ -92,7 +93,7 @@ public class SignedStateManagerTester extends SignedStateManager {
     @Override
     public List<ReservedSignedState> handlePostconsensusScopedSystemTransactions(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return super.handlePostconsensusScopedSystemTransactions(transactions);
+        return processStates(super.handlePostconsensusScopedSystemTransactions(transactions));
     }
 
     public void handlePostconsensusSignatureTransaction(@NonNull final NodeId signerId,
@@ -116,7 +117,6 @@ public class SignedStateManagerTester extends SignedStateManager {
             latestSignedState.setStateIfNewer(rs.getAndReserve("LatestCompleteStateNexus.setState"));
             stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(rs.get());
         } else {
-            latestSignedState.newIncompleteState(rs.get().getRound());
             stateLacksSignaturesConsumer.stateLacksSignatures(rs.get());
         }
     }
