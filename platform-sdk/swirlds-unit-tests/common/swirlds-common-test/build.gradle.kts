@@ -18,12 +18,3 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
 }
-
-testModuleInfo {
-    requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.config.extensions.test.fixtures")
-    requires("com.swirlds.config.api")
-    requires("org.junit.jupiter.params")
-    requires("org.mockito")
-    requiresStatic("com.github.spotbugs.annotations")
-}
