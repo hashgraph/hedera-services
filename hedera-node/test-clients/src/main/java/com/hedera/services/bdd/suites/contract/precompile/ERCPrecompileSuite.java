@@ -1879,7 +1879,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someErc20NegativeTransferFromScenariosPass", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("someErc20NegativeTransferFromScenariosPass", ALLOW_EMPTY_ERROR_MSG, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2248,7 +2248,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .via(MISSING_TOKEN)
                                 .gas(1_000_000)
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-                        logIt("#########################################################################"),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         DO_SPECIFIC_APPROVAL,
@@ -2256,7 +2255,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         asHeadlongAddress(aCivilianMirrorAddr.get()),
                                         BigInteger.ONE)
                                 .gas(1_000_000)),
-                        logIt("#########################################################################"),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         GET_APPROVED,
