@@ -19,8 +19,6 @@ package com.swirlds.platform.components.state;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
-import com.swirlds.platform.state.signed.SignedStateManager;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This component responsible for:
@@ -34,5 +32,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * </ul>
  */
 public interface StateManagementComponent
-        extends PlatformComponent, SignedStateToLoadConsumer, NewSignedStateFromTransactionsConsumer {
-}
+        extends PlatformComponent, SignedStateToLoadConsumer, NewSignedStateFromTransactionsConsumer {}

@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -60,7 +59,7 @@ public abstract class AbstractEventHandlerTests {
         consensusMetrics = mock(ConsensusMetrics.class);
         consensusHandlingMetrics = mock(ConsensusHandlingMetrics.class);
         when(consensusHandlingMetrics.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
-        consensusSystemTransactionManager = (s,r)->{};
+        consensusSystemTransactionManager = (s, r) -> {};
         consEstimateSupplier = Instant::now;
         random = ThreadLocalRandom.current();
     }

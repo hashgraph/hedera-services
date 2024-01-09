@@ -41,25 +41,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class SignedStateNexusTest {
-    private static Stream<SignedStateNexus> allInstances(){
+    private static Stream<SignedStateNexus> allInstances() {
         return Stream.concat(
                 raceConditionInstances(),
-                Stream.of(
-                        new LatestCompleteStateNexus(
-                                ConfigurationBuilder.create()
-                                        .withConfigDataType(StateConfig.class)
-                                        .build()
-                                        .getConfigData(StateConfig.class),
-                                new NoOpMetrics()
-                        )
-                )
-        );
+                Stream.of(new LatestCompleteStateNexus(
+                        ConfigurationBuilder.create()
+                                .withConfigDataType(StateConfig.class)
+                                .build()
+                                .getConfigData(StateConfig.class),
+                        new NoOpMetrics())));
     }
-    private static Stream<SignedStateNexus> raceConditionInstances(){
-        return Stream.of(
-                new LockFreeStateNexus(),
-                new EmergencyStateNexus()
-        );
+
+    private static Stream<SignedStateNexus> raceConditionInstances() {
+        return Stream.of(new LockFreeStateNexus(), new EmergencyStateNexus());
     }
 
     @ParameterizedTest

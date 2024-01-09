@@ -88,7 +88,7 @@ class WinTab2Consensus extends PrePaintableJPanel {
             final List<StateInfo> stateInfo = new ArrayList<>();
             for (final SignedStateNexus nexus : List.of(latestCompleteStateComponent, latestImmutableStateComponent)) {
                 try (final ReservedSignedState state = nexus.getState("GUI")) {
-                    if(state == null){
+                    if (state == null) {
                         continue;
                     }
                     stateInfo.add(StateInfo.from(state));
@@ -107,22 +107,21 @@ class WinTab2Consensus extends PrePaintableJPanel {
 
             s += "\n     Signed state for round:            ";
             for (final StateInfo state : stateInfo) {
-                    s += String.format("%," + d + "d ", state.round());
-
+                s += String.format("%," + d + "d ", state.round());
             }
 
             s += "\n     Signatures collected:              ";
             for (final StateInfo state : stateInfo) {
-                    int c = state.numSigs();
-                    s += String.format("%," + d + "d ", c);
+                int c = state.numSigs();
+                s += String.format("%," + d + "d ", c);
             }
 
             s += "\n                                        ";
             for (StateInfo state : stateInfo) {
-                    int c = state.numSigs();
-                    int size = platform.getAddressBook().getSize();
+                int c = state.numSigs();
+                int size = platform.getAddressBook().getSize();
 
-                    s += String.format("%" + d + "s ", c == size ? "___" : state.isComplete() ? "ooo" : "###");
+                s += String.format("%" + d + "s ", c == size ? "___" : state.isComplete() ? "ooo" : "###");
             }
 
             s += wrap(

@@ -32,7 +32,7 @@ import java.util.Objects;
  */
 public class LatestCompleteStateNexus implements SignedStateNexus {
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
-            PLATFORM_CATEGORY, "roundSup")
+                    PLATFORM_CATEGORY, "roundSup")
             .withDescription("latest round with state signed by a supermajority")
             .withUnit("round");
 
@@ -65,7 +65,8 @@ public class LatestCompleteStateNexus implements SignedStateNexus {
         if (reservedSignedState == null) {
             return;
         }
-        if (reservedSignedState.isNotNull() && getRound() < reservedSignedState.get().getRound()) {
+        if (reservedSignedState.isNotNull()
+                && getRound() < reservedSignedState.get().getRound()) {
             setState(reservedSignedState);
         } else {
             reservedSignedState.close();

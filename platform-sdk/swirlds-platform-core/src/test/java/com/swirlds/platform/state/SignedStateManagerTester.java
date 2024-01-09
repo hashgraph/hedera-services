@@ -19,7 +19,6 @@ package com.swirlds.platform.state;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -32,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A SignedStateManager that is used for unit testing. Since the SignedStateManager is in the process of being broken up
@@ -71,8 +69,7 @@ public class SignedStateManagerTester extends SignedStateManager {
     }
 
     @Override
-    public List<ReservedSignedState> addReservedState(
-            @NonNull final ReservedSignedState reservedSignedState) {
+    public List<ReservedSignedState> addReservedState(@NonNull final ReservedSignedState reservedSignedState) {
         latestSignedState.newIncompleteState(reservedSignedState.get().getRound());
         return processStates(super.addReservedState(reservedSignedState));
     }
@@ -83,11 +80,10 @@ public class SignedStateManagerTester extends SignedStateManager {
         return processStates(super.handlePreconsensusScopedSystemTransactions(transactions));
     }
 
-    public void handlePreconsensusSignatureTransaction(@NonNull final NodeId signerId,
-            @NonNull final StateSignatureTransaction signatureTransaction) {
+    public void handlePreconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
         handlePreconsensusScopedSystemTransactions(
-                List.of(new ScopedSystemTransaction<>(signerId, signatureTransaction))
-        );
+                List.of(new ScopedSystemTransaction<>(signerId, signatureTransaction)));
     }
 
     @Override
@@ -96,11 +92,9 @@ public class SignedStateManagerTester extends SignedStateManager {
         return processStates(super.handlePostconsensusScopedSystemTransactions(transactions));
     }
 
-    public void handlePostconsensusSignatureTransaction(@NonNull final NodeId signerId,
-            @NonNull final StateSignatureTransaction transaction) {
-        handlePostconsensusScopedSystemTransactions(
-                List.of(new ScopedSystemTransaction<>(signerId, transaction))
-        );
+    public void handlePostconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
+        handlePostconsensusScopedSystemTransactions(List.of(new ScopedSystemTransaction<>(signerId, transaction)));
     }
 
     private List<ReservedSignedState> processStates(@Nullable final List<ReservedSignedState> states) {

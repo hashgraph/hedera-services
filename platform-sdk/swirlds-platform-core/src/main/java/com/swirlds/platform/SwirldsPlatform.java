@@ -66,7 +66,6 @@ import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
@@ -524,9 +523,8 @@ public class SwirldsPlatform implements Platform {
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         final SignedStateManager signedStateManager = new SignedStateManager(
-                platformContext.getConfiguration().getConfigData(StateConfig.class),
-                signedStateMetrics);
-        //TODO wire collector output to others
+                platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
+        // TODO wire collector output to others
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
@@ -566,11 +564,10 @@ public class SwirldsPlatform implements Platform {
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn, v) ->
                         consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
-        final BiConsumer<State, ConsensusRound> consensusSystemTransactionConsumer =
-                (state, round) -> {
-                    consensusSystemTransactionManager.handleRound(state, round);
-                    platformWiring.getSignatureCollectorConsensusInput().put(round);
-                };
+        final BiConsumer<State, ConsensusRound> consensusSystemTransactionConsumer = (state, round) -> {
+            consensusSystemTransactionManager.handleRound(state, round);
+            platformWiring.getSignatureCollectorConsensusInput().put(round);
+        };
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -725,10 +722,7 @@ public class SwirldsPlatform implements Platform {
                 .build());
 
         platformWiring.wireExternalComponents(
-                platformStatusManager,
-                appCommunicationComponent,
-                transactionPool,
-                latestCompleteState);
+                platformStatusManager, appCommunicationComponent, transactionPool, latestCompleteState);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,

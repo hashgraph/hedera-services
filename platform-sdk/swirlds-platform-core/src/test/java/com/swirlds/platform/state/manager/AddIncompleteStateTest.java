@@ -17,10 +17,8 @@
 package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher.emergencyStateCriteria;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.crypto.Hash;
@@ -31,7 +29,6 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.SignedStateManagerTester;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;

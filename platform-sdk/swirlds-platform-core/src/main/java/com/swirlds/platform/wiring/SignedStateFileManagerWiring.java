@@ -51,21 +51,18 @@ public record SignedStateFileManagerWiring(
      * @param scheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
-    public static SignedStateFileManagerWiring create(@NonNull final WiringModel model, @NonNull final TaskScheduler<StateSavingResult> scheduler) {
+    public static SignedStateFileManagerWiring create(
+            @NonNull final WiringModel model, @NonNull final TaskScheduler<StateSavingResult> scheduler) {
         final WireFilter<ReservedSignedState> saveToDiskFilter =
-                new WireFilter<>(
-                        model,
-                        "saveToDiskFilter",
-                        "SignedState.isStateToSave()==true",
-                        rs -> {
-                            if(rs.get().isStateToSave()){
-                                return true;
-                            }
-                            rs.close();
-                            return false;
-                        });
-        final BindableInputWire<ReservedSignedState, StateSavingResult> saveStateToDisk = scheduler.buildInputWire(
-                "save state to disk");
+                new WireFilter<>(model, "saveToDiskFilter", "SignedState.isStateToSave()==true", rs -> {
+                    if (rs.get().isStateToSave()) {
+                        return true;
+                    }
+                    rs.close();
+                    return false;
+                });
+        final BindableInputWire<ReservedSignedState, StateSavingResult> saveStateToDisk =
+                scheduler.buildInputWire("save state to disk");
         saveToDiskFilter.getOutputWire().solderTo(saveStateToDisk);
         return new SignedStateFileManagerWiring(
                 saveStateToDisk,

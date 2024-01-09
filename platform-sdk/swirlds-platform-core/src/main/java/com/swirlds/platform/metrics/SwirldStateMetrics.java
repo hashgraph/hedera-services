@@ -68,8 +68,6 @@ public class SwirldStateMetrics {
      */
     private final AverageTimeStat preHandleTime;
 
-
-
     /**
      * Constructor of {@code SwirldStateMetrics}
      *

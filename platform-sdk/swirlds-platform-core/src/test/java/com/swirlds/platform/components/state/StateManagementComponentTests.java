@@ -28,7 +28,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -43,14 +42,11 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -228,7 +224,7 @@ class StateManagementComponentTests {
                 dispatchBuilder,
                 (msg, t, code) -> {},
                 signer,
-                ss->{},
+                ss -> {},
                 new SignedStateMetrics(new NoOpMetrics()));
 
         dispatchBuilder.start();

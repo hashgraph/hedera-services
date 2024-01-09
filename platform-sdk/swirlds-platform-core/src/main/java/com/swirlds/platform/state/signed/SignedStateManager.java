@@ -76,8 +76,7 @@ public class SignedStateManager {
      * @param signedStateMetrics a collection of signed state metrics
      */
     public SignedStateManager(
-            @NonNull final StateConfig stateConfig,
-            @NonNull final SignedStateMetrics signedStateMetrics) {
+            @NonNull final StateConfig stateConfig, @NonNull final SignedStateMetrics signedStateMetrics) {
 
         this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig");
         this.signedStateMetrics = Objects.requireNonNull(signedStateMetrics, "signedStateMetrics");
@@ -115,12 +114,10 @@ public class SignedStateManager {
         if (!signedState.isComplete()) {
             final ReservedSignedState previousState = incompleteStates.put(signedState.getRound(), reservedSignedState);
             Optional.ofNullable(previousState).ifPresent(ReservedSignedState::close);
-            //TODO log a warning, this should not happen
+            // TODO log a warning, this should not happen
             return purgeOldStates();
         }
-        return Stream.concat(
-                        Stream.of(reservedSignedState),
-                        purgeOldStates().stream())
+        return Stream.concat(Stream.of(reservedSignedState), purgeOldStates().stream())
                 .filter(Objects::nonNull)
                 .toList();
     }
@@ -188,7 +185,9 @@ public class SignedStateManager {
             return null;
         }
 
-        return addSignature(reservedState, scopedTransaction.submitterId(),
+        return addSignature(
+                reservedState,
+                scopedTransaction.submitterId(),
                 scopedTransaction.transaction().getStateSignature());
     }
 
@@ -200,7 +199,8 @@ public class SignedStateManager {
      * @param signature           the signature on the state
      */
     private ReservedSignedState addSignature(
-            @NonNull final ReservedSignedState reservedSignedState, @NonNull final NodeId nodeId,
+            @NonNull final ReservedSignedState reservedSignedState,
+            @NonNull final NodeId nodeId,
             @NonNull final Signature signature) {
         Objects.requireNonNull(reservedSignedState, "signedState must not be null");
         Objects.requireNonNull(nodeId, "nodeId must not be null");
@@ -237,7 +237,8 @@ public class SignedStateManager {
 
         // Any state older than this is unconditionally removed.
         final long earliestPermittedRound = getEarliestPermittedRound();
-        for (final Iterator<ReservedSignedState> iterator = incompleteStates.values().iterator();
+        for (final Iterator<ReservedSignedState> iterator =
+                        incompleteStates.values().iterator();
                 iterator.hasNext(); ) {
             final ReservedSignedState reservedSignedState = iterator.next();
             final SignedState signedState = reservedSignedState.get();
@@ -269,6 +270,5 @@ public class SignedStateManager {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {
-    }
+    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {}
 }

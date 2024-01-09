@@ -347,7 +347,7 @@ public class EventImpl extends EventMetadata
      * @return system transaction iterator
      */
     public Iterator<SystemTransaction> systemTransactionIterator() {
-        //TODO this might go away
+        // TODO this might go away
         return new TypedIterator<>(systemTransactions.iterator());
     }
 

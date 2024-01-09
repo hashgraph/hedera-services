@@ -29,7 +29,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -140,8 +139,7 @@ public class AbstractSignedStateManagerTest {
                 // the most recent complete state has a reservation held by the nexus
                 // incomplete states are held by the collector
                 final int expectedReservationCount =
-                        round == highestCompleteRound.get() || !signedState.isComplete()
-                                ? 1 : -1;
+                        round == highestCompleteRound.get() || !signedState.isComplete() ? 1 : -1;
                 assertEquals(
                         expectedReservationCount,
                         signedState.getReservationCount(),

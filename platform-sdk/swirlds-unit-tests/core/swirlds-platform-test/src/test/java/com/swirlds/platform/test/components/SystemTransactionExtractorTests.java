@@ -20,8 +20,8 @@ import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
-import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -32,14 +32,14 @@ class SystemTransactionExtractorTests {
     @Test
     @DisplayName("tests handling system transactions")
     void testHandle() {
-        final SystemTransactionExtractor<DummySystemTransaction> manager = new SystemTransactionExtractor<>(
-                DummySystemTransaction.class);
+        final SystemTransactionExtractor<DummySystemTransaction> manager =
+                new SystemTransactionExtractor<>(DummySystemTransaction.class);
 
         final List<ScopedSystemTransaction<DummySystemTransaction>> transactions = new ArrayList<>();
         transactions.addAll(manager.handleEvent(newDummyEvent(0)));
         transactions.addAll(manager.handleEvent(newDummyEvent(1)));
         transactions.addAll(manager.handleEvent(newDummyEvent(2)));
 
-        assertEquals(3,transactions.size(), "incorrect number of transactions returned");
+        assertEquals(3, transactions.size(), "incorrect number of transactions returned");
     }
 }

@@ -22,8 +22,8 @@ import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -60,11 +60,12 @@ public class StateSignatureCollectorWiring {
             @NonNull final WiringModel model, @NonNull final TaskScheduler<List<ReservedSignedState>> taskScheduler) {
 
         this.taskScheduler = Objects.requireNonNull(taskScheduler);
-        final OutputWire<ReservedSignedState> stateSplitter = taskScheduler.getOutputWire()
-                .buildSplitter("reservedStateSplitter", "reserved states");
-        this.completeStateOutput = stateSplitter.buildFilter(
-                "filterOnlyCompleteStates",
-                "reservedStateOutput",
+        final OutputWire<ReservedSignedState> stateSplitter =
+                taskScheduler.getOutputWire().buildSplitter("reservedStateSplitter", "reserved states");
+        this.completeStateOutput = stateSplitter
+                .buildFilter(
+                        "filterOnlyCompleteStates",
+                        "reservedStateOutput",
                         StateSignatureCollectorWiring::completeStates)
                 .buildAdvancedTransformer(new SignedStateReserver("completeStatesReserver"));
         this.reservedStateOutput = stateSplitter.buildAdvancedTransformer(new SignedStateReserver("allStatesReserver"));
@@ -72,8 +73,8 @@ public class StateSignatureCollectorWiring {
         //
         // Create input for pre-consensus signatures
         //
-        final WireTransformer<GossipEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>> preConsensusTransformer =
-                new WireTransformer<>(
+        final WireTransformer<GossipEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                preConsensusTransformer = new WireTransformer<>(
                         model,
                         "preConsensusTransformer",
                         "pre-consensus events",
@@ -87,10 +88,10 @@ public class StateSignatureCollectorWiring {
         //
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 postConsensusTransformer = new WireTransformer<>(
-                model,
-                "gossipEventTransformer",
-                "consensus events",
-                new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
+                        model,
+                        "gossipEventTransformer",
+                        "consensus events",
+                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         postConsensusEventInput = postConsensusTransformer.getInputWire();
         postConsSigInput = taskScheduler.buildInputWire("post-consensus state signature transactions");
         postConsensusTransformer.getOutputWire().solderTo(postConsSigInput);

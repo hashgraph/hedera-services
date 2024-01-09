@@ -31,7 +31,6 @@ import java.util.Objects;
 public class SystemTransactionExtractor<T extends SystemTransaction> {
     final Class<T> systemTransactionType;
 
-
     public SystemTransactionExtractor(final Class<T> systemTransactionType) {
         this.systemTransactionType = Objects.requireNonNull(systemTransactionType);
     }

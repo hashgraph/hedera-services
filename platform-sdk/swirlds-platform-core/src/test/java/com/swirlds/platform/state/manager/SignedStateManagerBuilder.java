@@ -18,7 +18,6 @@ package com.swirlds.platform.state.manager;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.SignedStateManagerTester;
@@ -53,9 +52,6 @@ public class SignedStateManagerBuilder {
 
     public SignedStateManagerTester build() {
         return SignedStateManagerTester.create(
-                stateConfig,
-                metrics,
-                stateHasEnoughSignaturesConsumer,
-                stateLacksSignaturesConsumer);
+                stateConfig, metrics, stateHasEnoughSignaturesConsumer, stateLacksSignaturesConsumer);
     }
 }
