@@ -31,8 +31,6 @@ platformStatus.observingStatusDelay,      1ms
 
 event.enableEventStreaming,               false
 event.eventsLogDir,                       ./eventsStreams
-event.preconsensus.enableReplay,          true
-event.preconsensus.enableStorage,         true
 
                                           #############################
                                           #          Metrics          #
@@ -46,3 +44,5 @@ prometheus.endpointEnabled,               false
                                           #############################
 
 loadKeysFromPfxFiles,                     false
+crypto.cpuVerifierThreadRatio,            0.1
+crypto.cpuDigestThreadRatio,              0.1

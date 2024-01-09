@@ -265,7 +265,6 @@ class PcesWriterTests {
                 .withValue(TransactionConfig_.MAX_TRANSACTION_BYTES_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_COUNT_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, Integer.MAX_VALUE)
-                .withValue(TransactionConfig_.MAX_ADDRESS_SIZE_ALLOWED, Integer.MAX_VALUE)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();
