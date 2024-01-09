@@ -22,6 +22,7 @@ public class V1SecurityModelOverrides {
 
     public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
     public static final String CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF = "10_000_000";
+    public static final String CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF = "1";
 
     private V1SecurityModelOverrides() {}
 }
