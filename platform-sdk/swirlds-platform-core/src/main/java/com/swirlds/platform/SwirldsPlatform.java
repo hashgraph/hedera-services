@@ -335,7 +335,6 @@ public class SwirldsPlatform implements Platform {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
@@ -392,6 +391,8 @@ public class SwirldsPlatform implements Platform {
         RuntimeMetrics.setup(metrics);
 
         this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId);
+
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         final LatestEventTipsetTracker latestEventTipsetTracker;
         final boolean enableEventFiltering = platformContext

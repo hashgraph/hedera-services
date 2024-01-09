@@ -193,6 +193,7 @@ class OrphanBufferTests {
         maxGeneration = Math.max(maxGeneration, eventGeneration);
 
         final long maxParentBirthRound = Math.max(selfParent.getBirthRound(), otherParent.getBirthRound());
+        // simulate advancing consensus rounds by advancing birth round periodically.
         final long eventBirthRound = maxParentBirthRound + maybeAdvanceRound.apply(random);
 
         return createGossipEvent(eventHash, eventCreator, eventGeneration, eventBirthRound, selfParent, otherParent);
@@ -306,6 +307,7 @@ class OrphanBufferTests {
             if (random.nextFloat() < averageGenerationAdvancement / stepRandomness) {
                 minimumGenerationNonAncient += stepRandomness;
             }
+            // simulate advancing consensus rounds periodically
             latestConsensusRound += maybeAdvanceRound.apply(random);
             final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
                     latestConsensusRound,

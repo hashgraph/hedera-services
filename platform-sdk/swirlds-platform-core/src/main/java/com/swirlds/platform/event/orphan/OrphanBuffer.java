@@ -25,6 +25,7 @@ import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -100,7 +101,8 @@ public class OrphanBuffer {
                         .withDescription("number of orphaned events currently in the orphan buffer")
                         .withUnit("events"));
 
-        if (platformContext.getConfiguration().getConfigData(EventConfig.class).useBirthRoundAncientThreshold()) {
+        if (platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode()
+                == AncientMode.BIRTH_ROUND_THRESHOLD) {
             nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
             missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
             eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
@@ -114,8 +116,8 @@ public class OrphanBuffer {
     /**
      * Add a new event to the buffer if it is an orphan.
      * <p>
-     * Events that are ancient are ignored, and events that don't have any missing parents are
-     * immediately passed along down the pipeline.
+     * Events that are ancient are ignored, and events that don't have any missing parents are immediately passed along
+     * down the pipeline.
      *
      * @param event the event to handle
      * @return the list of events that are no longer orphans as a result of this event being handled
