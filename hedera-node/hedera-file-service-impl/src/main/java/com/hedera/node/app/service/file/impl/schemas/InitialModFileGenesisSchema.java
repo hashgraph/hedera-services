@@ -72,9 +72,12 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * The initial schema definition for the file service.
+ * (FUTURE) When mod-service release is finalized, rename this class to e.g.
+ * {@code Release47FileGenesisSchema} as it will no longer be appropriate to assume
+ * this schema is always correct for the current version of the software.
  */
-public class FileGenesisSchema extends Schema {
-    private static final Logger logger = LogManager.getLogger(FileGenesisSchema.class);
+public class InitialModFileGenesisSchema extends Schema {
+    private static final Logger logger = LogManager.getLogger(InitialModFileGenesisSchema.class);
     /**
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
      * changed, then the database has to be rebuilt.
@@ -84,7 +87,7 @@ public class FileGenesisSchema extends Schema {
     private final ConfigProvider configProvider;
 
     /** Create a new instance */
-    public FileGenesisSchema(final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
+    public InitialModFileGenesisSchema(final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
         super(version);
         this.configProvider = requireNonNull(configProvider);
     }

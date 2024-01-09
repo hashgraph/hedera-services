@@ -18,7 +18,7 @@ package com.hedera.node.app.service.file.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
+import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,6 +38,6 @@ public final class FileServiceImpl implements FileService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new FileGenesisSchema(version, configProvider));
+        registry.register(new InitialModFileGenesisSchema(version, configProvider));
     }
 }

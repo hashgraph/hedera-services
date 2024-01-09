@@ -50,7 +50,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -340,14 +340,14 @@ public abstract class AbstractXTest {
         return component()
                 .hederaState()
                 .getReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.STORAGE_KEY);
+                .get(InitialModServiceContractSchema.STORAGE_KEY);
     }
 
     private ReadableKVState<EntityNumber, Bytecode> finalBytecodes() {
         return component()
                 .hederaState()
                 .getReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.BYTECODE_KEY);
+                .get(InitialModServiceContractSchema.BYTECODE_KEY);
     }
 
     protected ReadableKVState<AccountID, Account> finalAccounts() {
@@ -426,9 +426,9 @@ public abstract class AbstractXTest {
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
                 Map.of(
-                        ContractSchema.BYTECODE_KEY,
+                        InitialModServiceContractSchema.BYTECODE_KEY,
                         initialBytecodes(),
-                        ContractSchema.STORAGE_KEY,
+                        InitialModServiceContractSchema.STORAGE_KEY,
                         new HashMap<SlotKey, SlotValue>()));
 
         component().workingStateAccessor().setHederaState(fakeHederaState);
