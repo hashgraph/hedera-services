@@ -354,12 +354,12 @@ public class RecordCacheImpl implements HederaRecordCache {
         if (hederaState == null) {
             throw new RuntimeException("HederaState is null. This can only happen very early during bootstrapping");
         }
-        return hederaState.createWritableStates(NAME);
+        return hederaState.getWritableStates(NAME);
     }
 
     /** Utility method that get the readable queue from the working state */
     private ReadableQueueState<TransactionRecordEntry> getReadableQueue() {
-        final var states = requireNonNull(workingStateAccessor.getHederaState()).createReadableStates(NAME);
+        final var states = requireNonNull(workingStateAccessor.getHederaState()).getReadableStates(NAME);
         return states.getQueue(TXN_RECORD_QUEUE);
     }
 }

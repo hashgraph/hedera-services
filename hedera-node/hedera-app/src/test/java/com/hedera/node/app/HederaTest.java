@@ -122,7 +122,7 @@ final class HederaTest extends MerkleTestBase {
 
     @BeforeEach
     void setUp() {
-        given(merkleHederaState.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+        given(merkleHederaState.getReadableStates(TokenService.NAME)).willReturn(readableStates);
         final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
                 .value(
                         EntityNumber.newBuilder().number(0L).build(),
