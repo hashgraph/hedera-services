@@ -252,7 +252,8 @@ public class TransactionProcessor {
     }
 
     private boolean contractNotRequired(@Nullable final HederaEvmAccount to, @NonNull final Configuration config) {
-        final var maybeGrandfatheredNumber = (to == null) ? null : to.hederaId().accountNumOrThrow();
+        final var maybeGrandfatheredNumber =
+                (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
 
         return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, maybeGrandfatheredNumber);
     }
