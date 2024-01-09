@@ -32,6 +32,7 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
@@ -48,6 +49,7 @@ import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.wiring.InOrderLinkerWiring;
 import com.swirlds.platform.wiring.LinkedEventIntakeWiring;
+import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.PlatformSchedulers;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -68,6 +70,7 @@ public class TestIntake implements LoadableFromSignedState {
     private final ConsensusConfig consensusConfig;
 
     private final EventHasherWiring hasherWiring;
+    private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring linkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
 
@@ -96,6 +99,10 @@ public class TestIntake implements LoadableFromSignedState {
         hasherWiring.bind(eventHasher);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
+        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
+        orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
+        orphanBufferWiring.bind(orphanBuffer);
+
         final InOrderLinker linker = new InOrderLinker(platformContext, time, intakeEventCounter);
         linkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         linkerWiring.bind(linker);
@@ -117,8 +124,11 @@ public class TestIntake implements LoadableFromSignedState {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);
 
-        hasherWiring.eventOutput().solderTo(linkerWiring.eventInput());
+        hasherWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+
+        linkedEventIntakeWiring.nonAncientEventWindowOutput().solderTo(orphanBufferWiring.nonAncientEventWindowInput());
         linkedEventIntakeWiring
                 .nonAncientEventWindowOutput()
                 .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
@@ -188,6 +198,13 @@ public class TestIntake implements LoadableFromSignedState {
         // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
         // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
         // production.
+        orphanBufferWiring
+                .nonAncientEventWindowInput()
+                .put(NonAncientEventWindow.createUsingRoundsNonAncient(
+                        consensus.getLastRoundDecided(),
+                        consensus.getMinGenerationNonAncient(),
+                        consensusConfig.roundsNonAncient(),
+                        false));
         linkerWiring
                 .nonAncientEventWindowInput()
                 .put(NonAncientEventWindow.createUsingRoundsNonAncient(
@@ -196,11 +213,14 @@ public class TestIntake implements LoadableFromSignedState {
                         consensusConfig.roundsNonAncient(),
                         false));
 
+
         shadowGraph.clear();
         shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());
     }
 
     public void flush() {
+        hasherWiring.flushRunnable().run();
+        orphanBufferWiring.flushRunnable().run();
         linkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
     }

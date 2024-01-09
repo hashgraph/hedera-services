@@ -115,15 +115,6 @@ class EventStreamSingleFileRepairTest {
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }
-        // get consensus info
-        final long roundToReportFrom = rounds.size() / 2;
-        final int numConsensusEvents = rounds.stream()
-                .filter(r -> r.getRoundNum() >= roundToReportFrom)
-                .mapToInt(ConsensusRound::getNumEvents)
-                .sum();
-        final List<EventImpl> lastRound =
-                Optional.ofNullable(rounds.peekLast()).orElseThrow().getConsensusEvents();
-        final Instant lastEventTime = lastRound.get(lastRound.size() - 1).getConsensusTimestamp();
 
         // write event stream
         StreamUtils.writeRoundsToStream(tmpDir, new RandomSigner(random), eventStreamWindowSize, rounds);
