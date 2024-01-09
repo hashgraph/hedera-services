@@ -27,6 +27,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.system.address.Address;
@@ -70,7 +71,9 @@ class TipsetTrackerTests {
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
 
-        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook);
+        // FUTURE WORK: Expand test to include birth round based ancient threshold.
+        final TipsetTracker tracker =
+                new TipsetTracker(Time.getCurrent(), addressBook, AncientMode.GENERATION_THRESHOLD);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 

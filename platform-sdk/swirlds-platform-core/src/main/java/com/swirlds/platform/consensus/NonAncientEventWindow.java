@@ -31,10 +31,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class NonAncientEventWindow {
 
     /**
-     * The initial NonAncientEventWindow. This constant is used to initialize NonAncientEventWindow variables before
-     * receiving an updated value.
+     * The initial NonAncientEventWindow for the BirthRound Ancient Threshold. This constant is used to initialize
+     * NonAncientEventWindow variables before receiving an updated value.
      */
-    public static NonAncientEventWindow INITIAL_EVENT_WINDOW = new NonAncientEventWindow(
+    public static NonAncientEventWindow INITIAL_EVENT_WINDOW_BIRTH_ROUND = new NonAncientEventWindow(
+            ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION, true);
+
+    /**
+     * The initial NonAncientEventWindow for the Generation Ancient Threshold. This constant is used to initialize
+     * NonAncientEventWindow variables before receiving an updated value.
+     */
+    public static NonAncientEventWindow INITIAL_EVENT_WINDOW_GENERATION = new NonAncientEventWindow(
             ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION, false);
 
     private final boolean useBirthRound;
@@ -105,7 +112,7 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final GossipEvent event) {
-        return isAncient(event.getGeneration());
+        return isAncient(event.getDescriptor());
     }
 
     /**
@@ -115,7 +122,11 @@ public class NonAncientEventWindow {
      * @return true if the event is ancient, false otherwise.
      */
     public boolean isAncient(@NonNull final EventDescriptor event) {
-        return isAncient(event.getGeneration());
+        if (useBirthRound) {
+            return event.getBirthRound() < minRoundNonAncient;
+        } else {
+            return event.getGeneration() < minGenNonAncient;
+        }
     }
 
     /**

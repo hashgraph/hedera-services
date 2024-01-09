@@ -39,6 +39,7 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
@@ -134,7 +135,8 @@ class TipsetEventCreatorTests {
             final EventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
+            // FUTURE WORK: Expand test to include birth round based ancient threshold.
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook, AncientMode.GENERATION_THRESHOLD);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(

@@ -27,7 +27,9 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -73,7 +75,7 @@ public class EventSignatureValidator {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -122,10 +124,18 @@ public class EventSignatureValidator {
         this.rateLimitedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
         this.validationFailedAccumulator = platformContext.getMetrics().getOrCreate(VALIDATION_FAILED_CONFIG);
+
+        if (platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode()
+                == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
+        } else {
+            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
+        }
     }
 
     /**
-     * Determine whether the previous address book or the current address book should be used to verify an event's signature.
+     * Determine whether the previous address book or the current address book should be used to verify an event's
+     * signature.
      * <p>
      * Logs an error and returns null if an applicable address book cannot be selected
      *

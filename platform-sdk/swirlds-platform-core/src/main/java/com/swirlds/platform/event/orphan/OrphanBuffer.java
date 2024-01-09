@@ -26,6 +26,7 @@ import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.wiring.ClearTrigger;
@@ -56,7 +57,7 @@ public class OrphanBuffer {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * The number of orphans currently in the buffer.
@@ -72,15 +73,13 @@ public class OrphanBuffer {
      * A set containing descriptors of all non-ancient events that have found their parents (or whose parents have
      * become ancient).
      */
-    private final SequenceSet<EventDescriptor> eventsWithParents =
-            new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+    private final SequenceSet<EventDescriptor> eventsWithParents;
 
     /**
      * A map where the key is the descriptor of a missing parent, and the value is a list of orphans that are missing
      * that parent.
      */
-    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap =
-            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap;
 
     /**
      * Constructor
@@ -100,6 +99,16 @@ public class OrphanBuffer {
                                 PLATFORM_CATEGORY, "orphanBufferSize", Integer.class, this::getCurrentOrphanCount)
                         .withDescription("number of orphaned events currently in the orphan buffer")
                         .withUnit("events"));
+
+        if (platformContext.getConfiguration().getConfigData(EventConfig.class).useBirthRoundAncientThreshold()) {
+            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
+            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+        } else {
+            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
+            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+        }
     }
 
     /**
