@@ -50,7 +50,7 @@ public class CallOperationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CallOperationSuite.class);
 
     public static void main(String... args) {
-        new CallOperationSuite().runSuiteSync();
+        new CallOperationSuite().runSuiteAsync();
     }
 
     @Override
@@ -60,7 +60,7 @@ public class CallOperationSuite extends HapiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @HapiTest
