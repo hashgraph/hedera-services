@@ -132,9 +132,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring);
 
-        signedStateFileManagerWiring =
-                SignedStateFileManagerWiring.create(model, schedulers.signedStateFileManagerScheduler());
-        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());

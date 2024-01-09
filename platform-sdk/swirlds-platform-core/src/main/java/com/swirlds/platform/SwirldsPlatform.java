@@ -519,18 +519,7 @@ public class SwirldsPlatform implements Platform {
         components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
-
-//        platformWiring.wireExternalComponents(
-//                preconsensusEventWriter,
-//                platformStatusManager,
-//                appCommunicationComponent,
-//                transactionPool,
-//                latestCompleteState);
-//
-//        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
-//        platformWiring.bind(signedStateFileManager, stateSigner);
-
-
+        
         savedStateController = new SavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
@@ -735,7 +724,11 @@ public class SwirldsPlatform implements Platform {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
-        platformWiring.wireExternalComponents(platformStatusManager, appCommunicationComponent, transactionPool);
+        platformWiring.wireExternalComponents(
+                platformStatusManager,
+                appCommunicationComponent,
+                transactionPool,
+                latestCompleteState);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
