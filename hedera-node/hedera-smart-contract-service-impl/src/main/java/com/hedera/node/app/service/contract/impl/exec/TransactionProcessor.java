@@ -41,7 +41,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
@@ -252,12 +251,10 @@ public class TransactionProcessor {
         return parties;
     }
 
-    private boolean contractNotRequired(@NonNull final HederaEvmAccount to, @NonNull final Configuration config) {
-        final var entityNumber = to != null && ConversionUtils.isLongZero(to.getAddress())
-                ? ConversionUtils.numberOfLongZero(to.getAddress())
-                : null;
+    private boolean contractNotRequired(@Nullable final HederaEvmAccount to, @NonNull final Configuration config) {
+        final var maybeGrandfatheredNumber = (to == null) ? null : to.hederaId().accountNumOrThrow();
 
-        return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, entityNumber);
+        return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, maybeGrandfatheredNumber);
     }
 
     private InvolvedParties partiesWhenContractRequired(

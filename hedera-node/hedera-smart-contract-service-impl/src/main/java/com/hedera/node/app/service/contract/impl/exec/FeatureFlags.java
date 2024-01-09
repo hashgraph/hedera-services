@@ -74,6 +74,9 @@ public interface FeatureFlags {
      * @#param possiblyGrandFathered the account number to check for grandfathering
      * @return true if calls to non-existing contract addresses will result in a successful NOOP.
      */
-    boolean isAllowCallsToNonContractAccountsEnabled(
-            @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum);
+    default boolean isAllowCallsToNonContractAccountsEnabled(
+            @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
+        return false;
+    }
+    ;
 }

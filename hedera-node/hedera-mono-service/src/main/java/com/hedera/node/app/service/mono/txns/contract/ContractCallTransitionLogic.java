@@ -230,13 +230,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         if (possiblySanityCheckOp(op, target)) {
             try {
                 final var receiver = accountStore.loadContract(target.toId());
-                if (!receiver.isSmartContract()) {
-                    return INVALID_CONTRACT_ID;
-                }
+                validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
             } catch (InvalidTransactionException e) {
-                // Continue silently as we wish to allow calls to deleted and non-existent contracts
-                // for evm equivalence.
-                return OK;
+                return e.getResponseCode();
             }
         }
         return OK;
