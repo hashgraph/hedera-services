@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkle.map.test.benchmark;
+package com.swirlds.merkle.test.map.benchmark;
 
-import static com.swirlds.merkle.map.test.benchmark.MerkleMapBenchmarkUtils.generateInitialState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -28,6 +27,10 @@ import com.swirlds.common.test.fixtures.benchmark.BenchmarkStatistic;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.map.test.benchmark.BenchmarkAccount;
+import com.swirlds.merkle.map.test.benchmark.BenchmarkKey;
+import com.swirlds.merkle.map.test.benchmark.MerkleMapBenchmarkMetadata;
+import com.swirlds.merkle.map.test.benchmark.MerkleMapBenchmarkUtils;
 import com.swirlds.merkle.map.test.benchmark.operations.CreateAccountOperation;
 import com.swirlds.merkle.map.test.benchmark.operations.DeleteAccountOperation;
 import com.swirlds.merkle.map.test.benchmark.operations.ReadBalanceOperation;
@@ -65,8 +68,8 @@ class MerkleMapBenchmark {
         System.out.println("Generating initial state with " + initialStateSize + " accounts");
 
         final MerkleMapBenchmarkMetadata metadata = new MerkleMapBenchmarkMetadata();
-        final MerkleMap<BenchmarkKey, BenchmarkAccount> merkleState =
-                generateInitialState(random, DATA_SIZE, metadata, initialStateSize, BenchmarkAccount::new);
+        final MerkleMap<BenchmarkKey, BenchmarkAccount> merkleState = MerkleMapBenchmarkUtils.generateInitialState(
+                random, DATA_SIZE, metadata, initialStateSize, BenchmarkAccount::new);
 
         final double createAccountWeight = 0.5;
         final double deleteAccountWeight = createAccountWeight;

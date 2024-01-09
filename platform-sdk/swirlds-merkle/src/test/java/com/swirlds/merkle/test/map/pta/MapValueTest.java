@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkle.map.test.pta;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package com.swirlds.merkle.test.map.pta;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.merkle.map.test.pta.MapValue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class MapValueTest {
@@ -93,6 +93,6 @@ class MapValueTest {
             }
         };
 
-        assertEquals(0, value.getUid(), "Should match against default uid");
+        Assertions.assertEquals(0, value.getUid(), "Should match against default uid");
     }
 }

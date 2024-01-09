@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkle.map.test;
+package com.swirlds.merkle.test.map;
 
-import static com.swirlds.merkle.map.test.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 import static java.util.Map.Entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -756,7 +755,7 @@ class MerkleMapTests {
             MerkleMapTestUtil.random.nextBytes(content);
             final FCQValue<TransactionRecord> value = map.get(key);
             final TransactionRecord newRecord =
-                    new TransactionRecord(index + 1, newBalance, content, DEFAULT_EXPIRATION_TIME);
+                    new TransactionRecord(index + 1, newBalance, content, TransactionRecord.DEFAULT_EXPIRATION_TIME);
             final FCQValue<TransactionRecord> newValue = value.addRecord(newBalance, newRecord);
             map.replace(key, newValue);
         }
