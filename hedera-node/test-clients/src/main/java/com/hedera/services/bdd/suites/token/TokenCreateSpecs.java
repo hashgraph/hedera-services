@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemPropert
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
@@ -89,7 +90,7 @@ import org.junit.jupiter.api.Tag;
  *     <li>Default values.</li>
  * </ul>
  */
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
@@ -977,12 +978,12 @@ public class TokenCreateSpecs extends HapiSuite {
                         .initialSupply(initialSupply))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
-
+    // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
+    // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
     final HapiSpec prechecksWork() {
         return defaultHapiSpec("PrechecksWork", HIGHLY_NON_DETERMINISTIC_FEES,
-                NONDETERMINISTIC_TOKEN_NAMES,
-                IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS)
+                FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(TOKEN_TREASURY)
                                 .withUnknownFieldIn(TRANSACTION)

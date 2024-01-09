@@ -80,8 +80,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-//@HapiTestSuite
-//@Tag(TOKEN)
+@HapiTestSuite(fuzzyMatch = true)
+@Tag(TOKEN)
 public class TokenManagementSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -121,13 +121,15 @@ public class TokenManagementSpecs extends HapiSuite {
         return true;
     }
 
+    // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
+    // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
     final HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
         final var civilian = "civilian";
         final var adminKey = "adminKey";
         final var fungible = "fungible";
         final var nft = "non-fungible";
-        return defaultHapiSpec("zeroUnitTokenOperationsWorkAsExpected")
+        return defaultHapiSpec("zeroUnitTokenOperationsWorkAsExpected", SnapshotMatchMode.FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(adminKey),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -294,7 +296,7 @@ public class TokenManagementSpecs extends HapiSuite {
         var multiKey = "wipeAndSupplyKey";
         var someMeta = ByteString.copyFromUtf8("HEY");
 
-        return defaultHapiSpec("WipeAccountFailureCasesWork")
+        return defaultHapiSpec("WipeAccountFailureCasesWork", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(multiKey),
                         newKeyNamed("alias").type(KeyFactory.KeyType.SIMPLE),
@@ -346,7 +348,7 @@ public class TokenManagementSpecs extends HapiSuite {
         var withoutKycKey = "withoutKycKey";
         var withKycKey = "withKycKey";
 
-        return defaultHapiSpec("KycMgmtFailureCasesWork")
+        return defaultHapiSpec("KycMgmtFailureCasesWork", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ONE_KYC),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),

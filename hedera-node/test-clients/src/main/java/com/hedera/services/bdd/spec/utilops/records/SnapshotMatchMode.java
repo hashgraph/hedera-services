@@ -82,13 +82,5 @@ public enum SnapshotMatchMode {
     /**
      * Allows for non-deterministic token names.
      */
-    NONDETERMINISTIC_TOKEN_NAMES,
-    /**
-     * Ignore the tokenTransferLists when there is a zero amount transfer. In mono-service, we are recording the
-     * tokenTransferLists even when the amount is zero, which will just have tokenNum.
-     * But in modular service, we are not recording the tokenTransferLists when the amount is zero. So when we
-     * compare the snapshot records, we will have different tokenTransferLists. This mode allows for fuzzy-matching
-     * of records that have different tokenTransferLists.
-     */
-    IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS,
+    NONDETERMINISTIC_TOKEN_NAMES
 }

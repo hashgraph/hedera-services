@@ -420,15 +420,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 new ArrayList<>(expectedMessage.getAllFields().entrySet());
         final var actualFields = new ArrayList<>(actualMessage.getAllFields().entrySet());
         if (expectedFields.size() != actualFields.size()) {
-            if(matchModes.contains(IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS)){
-                // In case of token transfers, the amount field is not present in the record if the amount is zero.
-                // So we need to ignore the amount field in the record if the amount is zero.
-                expectedFields.remove("tokenTransferLists");
-            }else{
                 Assertions.fail("Mismatched field counts "
                         + " (" + describeFieldCountMismatch(expectedFields, actualFields) + ") " + "between expected "
                         + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
-            }
         }
         for (int i = 0, n = expectedFields.size(); i < n; i++) {
             final var expectedField = expectedFields.get(i);
@@ -767,8 +761,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return matchModes.contains(NONDETERMINISTIC_LOG_DATA);
         } else if ("ethereum_data".equals(expectedName) || "ethereum_hash".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_ETHEREUM_DATA);
-        } else if(matchModes.contains(IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS)){
-            return "tokenTransferLists".equals(expectedName);
+        } else if("tokenTransferLists".equals(expectedName)){
+            return matchModes.contains(IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }
