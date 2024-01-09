@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createCli
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -32,8 +30,6 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
@@ -45,19 +41,22 @@ import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
-import com.swirlds.platform.test.fixtures.event.EventUtils;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import com.swirlds.test.framework.ResourceLoader;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -68,8 +67,7 @@ public final class ConsensusTestDefinitions {
     private ConsensusTestDefinitions() {}
 
     /**
-     * Changing the order of events (without breaking topological order) should result in the same
-     * consensus events.
+     * Changing the order of events (without breaking topological order) should result in the same consensus events.
      */
     public static void orderInvarianceTests(@NonNull final TestInput input) {
         OrchestratorBuilder.builder()
@@ -380,8 +378,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * A quorum of nodes stop producing events, thus preventing consensus and round created
-     * advancement
+     * A quorum of nodes stop producing events, thus preventing consensus and round created advancement
      */
     public static void quorumOfNodesGoDown(@NonNull final TestInput input) {
         // Test setup
@@ -470,8 +467,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * There should be no problems when the probability of events landing on the same timestamp is
-     * higher than usual.
+     * There should be no problems when the probability of events landing on the same timestamp is higher than usual.
      */
     public static void repeatedTimestampTest(@NonNull final TestInput input) {
         OrchestratorBuilder.builder()
@@ -507,8 +503,8 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * Simulates a consensus restart. The number of nodes and number of events is chosen randomly
-     * between the supplied bounds
+     * Simulates a consensus restart. The number of nodes and number of events is chosen randomly between the supplied
+     * bounds
      */
     public static void restart(@NonNull final TestInput input) {
 
@@ -537,23 +533,6 @@ public final class ConsensusTestDefinitions {
 
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);
-        orchestrator.validateAndClear(
-                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
-    }
-
-    public static void migrationTest(@NonNull final TestInput input)
-            throws URISyntaxException, ConstructableRegistryException, IOException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        final Path ssPath = ResourceLoader.getFile("modified-mainnet-state.swh.bin");
-        final SignedState state = SignedStateFileReader.readSignedStateOnly(
-                TestPlatformContextBuilder.create().build(), ssPath);
-        EventUtils.convertEvents(state);
-
-        final ConsensusTestOrchestrator orchestrator =
-                OrchestratorBuilder.builder().setTestInput(input).build();
-        orchestrator.loadSignedState(state);
-
-        orchestrator.generateEvents(1);
         orchestrator.validateAndClear(
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }

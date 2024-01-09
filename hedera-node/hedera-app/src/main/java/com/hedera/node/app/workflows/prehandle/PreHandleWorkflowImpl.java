@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 // If some random exception happened, then we should not charge the node for it. Instead,
                 // we will just record the exception and try again during handle. Then if we fail again
                 // at handle, then we will throw away the transaction (hopefully, deterministically!)
-                logger.error("Unexpected error while pre handling a transaction!", unexpectedException);
+                logger.error(
+                        "Possibly CATASTROPHIC failure while running the pre-handle workflow", unexpectedException);
                 tx.setMetadata(unknownFailure());
             }
         });
@@ -172,7 +173,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // 1. Parse the Transaction and check the syntax
         final TransactionInfo txInfo;
         try {
-            // Transaction info is a pure function of the transaction, so we can always reuse it from a prior result
+            // Transaction info is a pure function of the transaction, so we can
+            // always reuse it from a prior result
             txInfo = previousResult == null
                     ? transactionChecker.parseAndCheck(Bytes.wrap(platformTx.getContents()))
                     : previousResult.txInfo();
@@ -180,17 +182,24 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 // In particular, a null transaction info means we already know the transaction's final failure status
                 return previousResult;
             }
+            // But we still re-check for node diligence failures
+            transactionChecker.checkParsed(txInfo);
             // The transaction account ID MUST have matched the creator!
             if (!creator.equals(txInfo.txBody().nodeAccountID())) {
-                throw new PreCheckException(INVALID_NODE_ACCOUNT);
+                throw new DueDiligenceException(INVALID_NODE_ACCOUNT, txInfo);
             }
-        } catch (PreCheckException preCheck) {
+        } catch (DueDiligenceException e) {
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
-            logger.debug("Transaction failed pre-check", preCheck);
             return nodeDueDiligenceFailure(
                     creator,
-                    preCheck.responseCode(),
+                    e.responseCode(),
+                    e.txInfo(),
+                    configProvider.getConfiguration().getVersion());
+        } catch (PreCheckException e) {
+            return nodeDueDiligenceFailure(
+                    creator,
+                    e.responseCode(),
                     null,
                     configProvider.getConfiguration().getVersion());
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ public class OrderedServiceMigrator {
         // EntityIdService is not directly injected into any genesis generation code. Instead, we'll inject
         // this entity ID writable states instance into the MigrationContext below, to enable generation of
         // entity IDs through an appropriate API.
-        final var entityIdWritableStates = state.createWritableStates(EntityIdService.NAME);
+        final var entityIdWritableStates = state.getWritableStates(EntityIdService.NAME);
         final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
 
         // Now that the Entity ID Service is migrated, migrate the remaining services in name order. Note: the name

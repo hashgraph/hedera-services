@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,10 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.is
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
@@ -38,11 +35,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -98,7 +93,7 @@ class HtsSystemContractTest {
 
     @Test
     void returnsResultFromImpliedCall() {
-        messageFrameMock();
+        commonMocks();
         givenValidCallAttempt();
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
@@ -126,18 +121,6 @@ class HtsSystemContractTest {
         assertSamePrecompileResult(expected, result);
     }
 
-    @Test
-    void callWithNonGasCostNotImplemented() {
-        messageFrameMock();
-
-        givenValidCallAttempt();
-        final var pricedResult =
-                new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L, SUCCESS, true);
-        given(call.execute(frame)).willReturn(pricedResult);
-
-        assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
-    }
-
     private void givenValidCallAttempt() {
         frameUtils.when(() -> isDelegateCall(frame)).thenReturn(false);
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
@@ -147,18 +130,9 @@ class HtsSystemContractTest {
         given(attempt.asExecutableCall()).willReturn(call);
     }
 
-    private void messageFrameMock() {
-        final var worldUpdater = mock(ProxyWorldUpdater.class);
-        final var address = Address.fromHexString("0x100");
+    private void commonMocks() {
         final var remainingGas = 10000L;
-        when(frame.getWorldUpdater()).thenReturn(worldUpdater);
-        when(frame.getSenderAddress()).thenReturn(address);
         when(frame.getRemainingGas()).thenReturn(remainingGas);
         when(frame.getInputData()).thenReturn(org.apache.tuweni.bytes.Bytes.EMPTY);
-
-        final var mutableAccount = mock(ProxyEvmAccount.class);
-        final var accountID = mock(AccountID.class);
-        when(worldUpdater.getAccount(address)).thenReturn(mutableAccount);
-        when(mutableAccount.hederaId()).thenReturn(accountID);
     }
 }

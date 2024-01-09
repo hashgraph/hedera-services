@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -247,8 +247,8 @@ class DefaultSignedStateValidatorTests {
         validator = new DefaultSignedStateValidator(platformContext);
 
         final SignedState signedState = stateSignedByNodes(signingNodes);
-        final SignedStateValidationData originalData = new SignedStateValidationData(
-                signedState.getState().getPlatformState().getPlatformData(), addressBook);
+        final SignedStateValidationData originalData =
+                new SignedStateValidationData(signedState.getState().getPlatformState(), addressBook);
 
         final boolean shouldSucceed = stateHasEnoughWeight(nodes, signingNodes);
         if (shouldSucceed) {

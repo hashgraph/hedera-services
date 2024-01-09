@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,11 @@ public class SyncMetrics {
             .withFormat(FORMAT_14_7);
     private final CountPerSecond syncsPerSec;
 
+    private static final RunningAverageMetric.Config SYNC_FILTER_TIME_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "syncFilterTime")
+            .withDescription("the average time spent filtering events during a sync")
+            .withUnit("nanoseconds");
+
     private final RunningAverageMetric tipsPerSync;
 
     private final AverageStat syncGenerationDiff;
@@ -121,14 +126,13 @@ public class SyncMetrics {
     private final AverageAndMax avgEventsPerSyncRec;
     private final MaxStat multiTipsPerSync;
     private final AverageStat gensWaitingForExpiry;
+    private final RunningAverageMetric syncFilterTime;
 
     /**
      * Constructor of {@code SyncMetrics}
      *
-     * @param metrics
-     * 		a reference to the metrics-system
-     * @throws IllegalArgumentException
-     * 		if {@code metrics} is {@code null}
+     * @param metrics a reference to the metrics-system
+     * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
     public SyncMetrics(final Metrics metrics) {
         avgBytesPerSecSync = metrics.getOrCreate(AVG_BYTES_PER_SEC_SYNC_CONFIG);
@@ -141,6 +145,7 @@ public class SyncMetrics {
         opportunitiesToInitiateSyncPerSec = new CountPerSecond(metrics, OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG);
         outgoingSyncRequestsPerSec = new CountPerSecond(metrics, OUTGOING_SYNC_REQUESTS_CONFIG);
         syncsPerSec = new CountPerSecond(metrics, SYNCS_PER_SECOND_CONFIG);
+        syncFilterTime = metrics.getOrCreate(SYNC_FILTER_TIME_CONFIG);
 
         avgSyncDuration = new AverageAndMaxTimeStat(
                 metrics,
@@ -228,10 +233,8 @@ public class SyncMetrics {
     /**
      * Supplies the generation numbers of a sync for statistics
      *
-     * @param self
-     * 		generations of our graph at the start of the sync
-     * @param other
-     * 		generations of their graph at the start of the sync
+     * @param self  generations of our graph at the start of the sync
+     * @param other generations of their graph at the start of the sync
      */
     public void generations(final GraphGenerations self, final GraphGenerations other) {
         syncGenerationDiff.update(self.getMaxRoundGeneration() - other.getMaxRoundGeneration());
@@ -240,10 +243,8 @@ public class SyncMetrics {
     /**
      * Supplies information about the rate of receiving events when all events are read
      *
-     * @param nanosStart
-     * 		The {@link System#nanoTime()} when we started receiving events
-     * @param numberReceived
-     * 		the number of events received
+     * @param nanosStart     The {@link System#nanoTime()} when we started receiving events
+     * @param numberReceived the number of events received
      */
     public void eventsReceived(final long nanosStart, final int numberReceived) {
         if (numberReceived == 0) {
@@ -257,10 +258,8 @@ public class SyncMetrics {
     /**
      * Record all stats related to sync timing
      *
-     * @param timing
-     * 		object that holds the timing data
-     * @param conn
-     * 		the sync connections
+     * @param timing object that holds the timing data
+     * @param conn   the sync connections
      */
     public void recordSyncTiming(final SyncTiming timing, final Connection conn) {
         avgSyncDuration1.update(timing.getTimePoint(0), timing.getTimePoint(1));
@@ -284,8 +283,7 @@ public class SyncMetrics {
      * Records the size of the known set during a sync. This is the most compute intensive part of the sync, so this is
      * useful information to validate sync performance.
      *
-     * @param knownSetSize
-     * 		the size of the known set
+     * @param knownSetSize the size of the known set
      */
     public void knownSetSize(final int knownSetSize) {
         this.knownSetSize.update(knownSetSize);
@@ -294,8 +292,7 @@ public class SyncMetrics {
     /**
      * Notifies the stats that a sync is done
      *
-     * @param info
-     * 		information about the sync that occurred
+     * @param info information about the sync that occurred
      */
     public void syncDone(final SyncResult info) {
         if (info.isCaller()) {
@@ -313,30 +310,27 @@ public class SyncMetrics {
      * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
      * that have more than one {@code sendTip} in the current synchronization.
      *
-     * @param multiTipCount
-     * 		the number of creators in the current synchronization that have more than one sending tip.
+     * @param multiTipCount the number of creators in the current synchronization that have more than one sending tip.
      */
     public void updateMultiTipsPerSync(final int multiTipCount) {
         multiTipsPerSync.update(multiTipCount);
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of {@code
-     * sendTips} in the current synchronization.
+     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of
+     * {@code sendTips} in the current synchronization.
      *
-     * @param tipCount
-     * 		the number of sending tips in the current synchronization.
+     * @param tipCount the number of sending tips in the current synchronization.
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
     }
 
     /**
-     * Called by {@link ShadowGraph} to update the number of generations that should
-     * be expired but can't be yet due to reservations.
+     * Called by {@link ShadowGraph} to update the number of generations that should be expired but can't be yet due to
+     * reservations.
      *
-     * @param numGenerations
-     * 		the new number of generations
+     * @param numGenerations the new number of generations
      */
     public void updateGensWaitingForExpiry(final long numGenerations) {
         gensWaitingForExpiry.update(numGenerations);
@@ -377,5 +371,14 @@ public class SyncMetrics {
      */
     public void outgoingSyncRequestSent() {
         outgoingSyncRequestsPerSec.count();
+    }
+
+    /**
+     * Record the amount of time spent filtering events during a sync.
+     *
+     * @param nanoseconds the amount of time spent filtering events during a sync
+     */
+    public void recordSyncFilterTime(final long nanoseconds) {
+        syncFilterTime.update(nanoseconds);
     }
 }

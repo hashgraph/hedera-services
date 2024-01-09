@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2017-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,10 +204,8 @@ public class SignedStateManager implements SignedStateFinder {
         }
 
         if (firstStateTimestamp.get() == null) {
-            firstStateTimestamp.set(
-                    signedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
-            firstStateRound.set(
-                    signedState.getState().getPlatformState().getPlatformData().getRound());
+            firstStateTimestamp.set(signedState.getState().getPlatformState().getConsensusTimestamp());
+            firstStateRound.set(signedState.getState().getPlatformState().getRound());
         }
 
         // Double check that the signatures on this state are valid.

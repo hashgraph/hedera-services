@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
@@ -31,6 +32,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
@@ -56,24 +58,22 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            ensureSystemAccountsHaveSomeFunds(),
-            genesisCannotDeleteSystemAccountsFrom1To100(),
-            genesisCannotDeleteSystemAccountsFrom700To750(),
-            systemAdminCannotDeleteSystemAccountsFrom1To100(),
-            systemAdminCannotDeleteSystemAccountsFrom700To750(),
-            systemDeleteAdminCannotDeleteSystemAccountsFrom1To100(),
-            systemDeleteAdminCannotDeleteSystemAccountsFrom700To750(),
-            normalUserCannotDeleteSystemAccountsFrom1To100(),
-            normalUserCannotDeleteSystemAccountsFrom700To750(),
-            genesisCannotDeleteSystemFileIds(),
-            systemAdminCannotDeleteSystemFileIds(),
-            systemDeleteAdminCannotDeleteSystemFileIds(),
-            normalUserCannotDeleteSystemFileIds(),
-            genesisCannotSystemFileDeleteFileIds(),
-            systemAdminCannotSystemFileDeleteFileIds(),
-            systemDeleteAdminCannotSystemFileDeleteFileIds()
-        });
+        return List.of(
+                genesisCannotDeleteSystemAccountsFrom1To100(),
+                genesisCannotDeleteSystemAccountsFrom700To750(),
+                systemAdminCannotDeleteSystemAccountsFrom1To100(),
+                systemAdminCannotDeleteSystemAccountsFrom700To750(),
+                systemDeleteAdminCannotDeleteSystemAccountsFrom1To100(),
+                systemDeleteAdminCannotDeleteSystemAccountsFrom700To750(),
+                normalUserCannotDeleteSystemAccountsFrom1To100(),
+                normalUserCannotDeleteSystemAccountsFrom700To750(),
+                genesisCannotDeleteSystemFileIds(),
+                systemAdminCannotDeleteSystemFileIds(),
+                systemDeleteAdminCannotDeleteSystemFileIds(),
+                normalUserCannotDeleteSystemFileIds(),
+                genesisCannotSystemFileDeleteFileIds(),
+                systemAdminCannotSystemFileDeleteFileIds(),
+                systemDeleteAdminCannotSystemFileDeleteFileIds());
     }
 
     @HapiTest
@@ -82,7 +82,8 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 10 * ONE_HUNDRED_HBARS))
+                        cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
+                                        .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
                                 .payingWith(GENESIS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, 10 * ONE_HUNDRED_HBARS))
                                 .payingWith(GENESIS));
@@ -163,19 +164,25 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
         return systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN);
     }
 
+    @BddMethodIsNotATest
     final HapiSpec systemUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemAccounts")
-                .given(cryptoCreate("unluckyReceiver").balance(0L))
+                .given(
+                        cryptoCreate("unluckyReceiver").balance(0L),
+                        cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
+                                        .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
+                                .payingWith(GENESIS))
                 .when()
                 .then(inParallel(IntStream.rangeClosed(firstAccount, lastAccount)
                         .mapToObj(id -> cryptoDelete("0.0." + id)
                                 .transfer("unluckyReceiver")
                                 .payingWith(sysUser)
                                 .signedBy(sysUser)
-                                .hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE))
+                                .hasPrecheckFrom(ENTITY_NOT_ALLOWED_TO_DELETE))
                         .toArray(HapiSpecOperation[]::new)));
     }
 
+    @BddMethodIsNotATest
     final HapiSpec normalUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount) {
         return defaultHapiSpec("normalUserCannotDeleteSystemAccounts")
                 .given(newKeyNamed("normalKey"), cryptoCreate("unluckyReceiver").balance(0L))
@@ -189,6 +196,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
+    @BddMethodIsNotATest
     final HapiSpec systemUserCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemFiles")
                 .given()
@@ -201,6 +209,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
+    @BddMethodIsNotATest
     final HapiSpec normalUserCannotDeleteSystemFiles(int[] fileIds) {
         return defaultHapiSpec("normalUserCannotDeleteSystemFiles")
                 .given(newKeyNamed("normalKey"))
@@ -213,6 +222,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
+    @BddMethodIsNotATest
     final HapiSpec systemDeleteCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemDeleteCannotDeleteSystemFiles")
                 .given()

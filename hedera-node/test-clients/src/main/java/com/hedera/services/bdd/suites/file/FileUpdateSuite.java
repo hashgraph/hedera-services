@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,9 +96,13 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -239,14 +243,22 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(overriding(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES));
     }
 
+    @HapiTest
     final HapiSpec optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
-        final var specialFileContents = ByteString.copyFrom(randomUtf8Bytes(64 * BYTES_4K));
+        final var contents = randomUtf8Bytes(64 * BYTES_4K);
+        final var specialFileContents = ByteString.copyFrom(contents);
+        final byte[] expectedHash;
+        try {
+            expectedHash = MessageDigest.getInstance("SHA-384").digest(contents);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
         return defaultHapiSpec("OptimisticSpecialFileUpdate")
                 .given()
                 .when(updateSpecialFile(GENESIS, specialFile, specialFileContents, BYTES_4K, appendsPerBurst))
-                .then(getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray()));
+                .then(getFileInfo(specialFile).hasMemo(CommonUtils.hex(expectedHash)));
     }
 
     @HapiTest
@@ -576,7 +588,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
-    // It is not implemented yet in contracts
+    @BddMethodIsNotATest
     final HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";

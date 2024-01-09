@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,18 +28,28 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -88,33 +98,42 @@ public class Issue305Spec extends HapiSuite {
                         getFileInfo(nextFileId::get).hasDeleted(true));
     }
 
+    @HapiTest
     final HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";
-        final var postCongestionTxn = "postCongestionTxn";
         final var multipurposeContract = "Multipurpose";
         final var normalPrice = new AtomicLong();
         final var multipliedPrice = new AtomicLong();
+        final List<TransactionID> submittedTxnIds = new ArrayList<>();
 
         return propertyPreservingHapiSpec("CongestionMultipliersRefreshOnPropertyUpdate")
-                .preserving("fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec")
+                .preserving(
+                        "fees.percentCongestionMultipliers",
+                        "fees.minCongestionPeriod",
+                        "contracts.maxGasPerSec",
+                        "contracts.throttle.throttleByGas")
                 .given(
                         cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(multipurposeContract),
                         contractCreate(multipurposeContract).payingWith(GENESIS).logging(),
                         contractCall(multipurposeContract)
                                 .payingWith(civilian)
+                                .gas(200_000)
                                 .fee(10 * ONE_HBAR)
                                 .sending(ONE_HBAR)
                                 .via(preCongestionTxn),
                         getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
-                        overridingThree(
+                        overridingAllOf(Map.of(
                                 "contracts.maxGasPerSec", "3_000_000",
                                 "fees.percentCongestionMultipliers", "1,5x",
-                                "fees.minCongestionPeriod", "1"))
+                                "fees.minCongestionPeriod", "1",
+                                "contracts.throttle.throttleByGas", "true")))
                 .when(withOpContext((spec, opLog) -> {
-                    for (int i = 0; i < 25; i++) {
-                        TimeUnit.MILLISECONDS.sleep(50);
+                    // We submit 2.5 seconds of transactions with a 1 second congestion period, so
+                    // we should see a 5x multiplier in effect at some point here
+                    for (int i = 0; i < 100; i++) {
+                        TimeUnit.MILLISECONDS.sleep(25);
                         allRunFor(
                                 spec,
                                 contractCall(multipurposeContract)
@@ -122,21 +141,48 @@ public class Issue305Spec extends HapiSuite {
                                         .gas(200_000)
                                         .fee(10 * ONE_HBAR)
                                         .sending(ONE_HBAR)
+                                        .hasPrecheckFrom(BUSY, OK)
+                                        .withTxnTransform(txn -> {
+                                            submittedTxnIds.add(idOf(txn));
+                                            return txn;
+                                        })
+                                        .noLogging()
                                         .deferStatusResolution());
                     }
                 }))
-                .then(
-                        contractCall(multipurposeContract)
-                                .payingWith(civilian)
-                                .fee(10 * ONE_HBAR)
-                                .sending(ONE_HBAR)
-                                .via(postCongestionTxn),
-                        getTxnRecord(postCongestionTxn).providingFeeTo(multipliedPrice::set),
-                        withOpContext((spec, opLog) -> Assertions.assertEquals(
-                                5.0,
-                                (1.0 * multipliedPrice.get()) / normalPrice.get(),
-                                0.1,
-                                "~5x multiplier should be in affect!")));
+                .then(withOpContext((spec, opLog) -> {
+                    final var congestionInEffect = new AtomicBoolean();
+                    submittedTxnIds.reversed().forEach(id -> {
+                        if (congestionInEffect.get()) {
+                            return;
+                        }
+                        final var lookup = getTxnRecord(id)
+                                .payingWith(GENESIS)
+                                .assertingNothing()
+                                .nodePayment(1L)
+                                .hasAnswerOnlyPrecheckFrom(OK, RECORD_NOT_FOUND)
+                                .providingFeeTo(multipliedPrice::set);
+                        allRunFor(spec, lookup);
+                        try {
+                            Assertions.assertEquals(5.0, (1.0 * multipliedPrice.get()) / normalPrice.get(), 0.1);
+                            // As soon as any transaction is observed to have the 5x multiplier,
+                            // we can stop looking
+                            congestionInEffect.set(true);
+                        } catch (Throwable ignore) {
+                        }
+                    });
+                    if (!congestionInEffect.get()) {
+                        Assertions.fail("~5x multiplier was never observed");
+                    }
+                }));
+    }
+
+    private TransactionID idOf(@NonNull final Transaction txn) {
+        try {
+            return CommonUtils.extractTransactionBody(txn).getTransactionID();
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.swirlds.platform.gossip;
 
 import com.swirlds.base.state.Lifecycle;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * This object is responsible for talking to other nodes and distributing events.
  */
-public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
+public interface Gossip extends ConnectionTracker, Lifecycle {
 
     /**
      * Load data from a signed state.
@@ -45,18 +44,6 @@ public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
      * @return true if we have fallen behind
      */
     boolean hasFallenBehind();
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    void clear();
-
-    /**
-     * Get the number of active connections.
-     * @return the number of active connections
-     */
-    int activeConnectionNumber();
 
     /**
      * Stop gossiping until {@link #resume()} is called. If called when already paused then this has no effect.

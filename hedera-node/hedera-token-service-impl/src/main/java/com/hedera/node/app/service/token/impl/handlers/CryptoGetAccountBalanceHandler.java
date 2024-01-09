@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.TokenBalance;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery;
 import com.hedera.hapi.node.token.CryptoGetAccountBalanceResponse;
 import com.hedera.hapi.node.transaction.Query;
@@ -39,13 +45,14 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#CRYPTO_GET_ACCOUNT_BALANCE}.
- * The token balances field is deprecated and is no more returned by this query.
  */
 @Singleton
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
@@ -107,8 +114,54 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
                     : accountStore.getContractById(op.contractIDOrThrow());
             requireNonNull(account);
             response.accountID(account.accountIdOrThrow()).balance(account.tinybarBalance());
+            if (config.balancesInQueriesEnabled()) {
+                response.tokenBalances(getTokenBalances(config, account, tokenStore, tokenRelationStore));
+            }
         }
 
         return Response.newBuilder().cryptogetAccountBalance(response).build();
+    }
+
+    /**
+     * Calculate TokenBalance of an Account
+     *
+     * @param tokenConfig use TokenConfig to get maxRelsPerInfoQuery value
+     * @param account the account to be calculated from
+     * @param readableTokenStore readable token store
+     * @param tokenRelationStore token relation store
+     * @return ArrayList of TokenBalance object
+     */
+    private List<TokenBalance> getTokenBalances(
+            @NonNull final TokensConfig tokenConfig,
+            @NonNull final Account account,
+            @NonNull final ReadableTokenStore readableTokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelationStore) {
+        final var ret = new ArrayList<TokenBalance>();
+        var tokenId = account.headTokenId();
+        int count = 0;
+        TokenRelation tokenRelation;
+        Token token; // token from readableToken store by tokenID
+        AccountID accountID; // build from accountNumber
+        TokenBalance tokenBalance; // created TokenBalance object
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count < tokenConfig.maxRelsPerInfoQuery()) {
+            accountID = account.accountId();
+            tokenRelation = tokenRelationStore.get(accountID, tokenId);
+            if (tokenRelation != null) {
+                token = readableTokenStore.get(tokenId);
+                if (token != null) {
+                    tokenBalance = TokenBalance.newBuilder()
+                            .tokenId(tokenId)
+                            .balance(tokenRelation.balance())
+                            .decimals(token.decimals())
+                            .build();
+                    ret.add(tokenBalance);
+                }
+                tokenId = tokenRelation.nextToken();
+            } else {
+                break;
+            }
+            count++;
+        }
+        return ret;
     }
 }

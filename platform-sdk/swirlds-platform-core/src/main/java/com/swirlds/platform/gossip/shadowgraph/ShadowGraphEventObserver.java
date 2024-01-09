@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,16 +35,25 @@ import org.apache.logging.log4j.Logger;
 public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRoundObserver {
     private static final Logger logger = LogManager.getLogger(ShadowGraphEventObserver.class);
     private final ShadowGraph shadowGraph;
+    private final LatestEventTipsetTracker latestEventTipsetTracker;
 
-    public ShadowGraphEventObserver(final ShadowGraph shadowGraph) {
-        this.shadowGraph = shadowGraph;
+    /**
+     * Constructor.
+     *
+     * @param shadowGraph              the {@link ShadowGraph} to update
+     * @param latestEventTipsetTracker the {@link LatestEventTipsetTracker} to update, or null if this feature is not
+     *                                 enabled
+     */
+    public ShadowGraphEventObserver(
+            @NonNull final ShadowGraph shadowGraph, @Nullable final LatestEventTipsetTracker latestEventTipsetTracker) {
+        this.shadowGraph = Objects.requireNonNull(shadowGraph);
+        this.latestEventTipsetTracker = latestEventTipsetTracker;
     }
 
     /**
      * Expire events in {@link ShadowGraph} based on the new minimum round generation
      *
-     * @param consensusRound
-     * 		a new consensus round
+     * @param consensusRound a new consensus round
      */
     @Override
     public void consensusRound(final ConsensusRound consensusRound) {
@@ -51,8 +63,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
     /**
      * Add an event to the {@link ShadowGraph}
      *
-     * @param event
-     * 		the event to add
+     * @param event the event to add
      */
     @Override
     public void eventAdded(final EventImpl event) {
@@ -64,6 +75,9 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
                     "failed to add event {} to shadow graph",
                     EventStrings.toMediumString(event),
                     e);
+        }
+        if (latestEventTipsetTracker != null) {
+            latestEventTipsetTracker.addEvent(event);
         }
     }
 }

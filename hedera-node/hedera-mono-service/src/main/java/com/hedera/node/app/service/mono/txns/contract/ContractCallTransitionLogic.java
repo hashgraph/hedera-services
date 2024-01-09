@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
@@ -238,7 +239,33 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
+        final var target = targetOf(op);
+        if (possiblySanityCheckOp(op, target)) {
+            try {
+                final var receiver = accountStore.loadContract(target.toId());
+                validateTrue(receiver != null && receiver.isSmartContract(), INVALID_CONTRACT_ID);
+            } catch (InvalidTransactionException e) {
+                return e.getResponseCode();
+            }
+        }
         return OK;
+    }
+
+    // Determine if the operation should be sanity checked.
+    private boolean possiblySanityCheckOp(final ContractCallTransactionBody op, final EntityNum target) {
+        // Tokens are valid targets
+        if (entityAccess.isTokenAccount(target.toId().asEvmAddress())) {
+            return false;
+        }
+
+        // Check for possible lazy create
+        if (((target.equals(EntityNum.MISSING_NUM)
+                        && isOfEvmAddressSize(op.getContractID().getEvmAddress()))
+                || op.getAmount() > 0)) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override

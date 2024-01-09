@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,6 +231,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKEN_BALANCES_ENABLED_IN_QUERIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
@@ -569,7 +570,8 @@ public final class BootstrapProperties implements PropertySource {
             TOKENS_AUTO_CREATIONS_ENABLED,
             ACCOUNTS_BLOCKLIST_ENABLED,
             ACCOUNTS_BLOCKLIST_PATH,
-            CACHE_CRYPTO_TRANSFER_WARM_THREADS);
+            CACHE_CRYPTO_TRANSFER_WARM_THREADS,
+            TOKEN_BALANCES_ENABLED_IN_QUERIES);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -826,5 +828,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_PATH, AS_STRING),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),
-            entry(CONFIG_VERSION, AS_INT));
+            entry(CONFIG_VERSION, AS_INT),
+            entry(TOKEN_BALANCES_ENABLED_IN_QUERIES, AS_BOOLEAN));
 }

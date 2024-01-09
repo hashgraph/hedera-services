@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,6 @@ final class ReconnectTest {
                     .build();
 
             final MerkleCryptography cryptography = MerkleCryptoFactory.getInstance();
-            cryptography.digestSync(signedState.getState().getPlatformState());
             cryptography.digestSync(signedState.getState());
 
             final ReconnectLearner receiver = buildReceiver(
@@ -172,10 +171,14 @@ final class ReconnectTest {
             final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final NodeId selfId = new NodeId(0);
         final NodeId otherId = new NodeId(3);
         final long lastRoundReceived = 100;
         return new ReconnectTeacher(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 connection,

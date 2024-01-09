@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,11 +70,11 @@ import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -1037,9 +1037,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     /**
      * Handle the freeze transaction type.
      */
-    private void handleFreezeTransaction(final TestTransaction testTransaction, final SwirldDualState swirldDualState) {
+    private void handleFreezeTransaction(final TestTransaction testTransaction, final PlatformState platformState) {
         final FreezeTransaction freezeTx = testTransaction.getFreezeTransaction();
-        FreezeTransactionHandler.freeze(freezeTx, swirldDualState);
+        FreezeTransactionHandler.freeze(freezeTx, platformState);
     }
 
     /**
@@ -1057,7 +1057,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public synchronized void handleConsensusRound(final Round round, final PlatformState platformState) {
         throwIfImmutable();
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
@@ -1065,7 +1065,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         delay();
         updateTransactionCounters();
         round.forEachEventTransaction((event, transaction) ->
-                handleConsensusTransaction(event, transaction, swirldDualState, round.getRoundNum()));
+                handleConsensusTransaction(event, transaction, platformState, round.getRoundNum()));
     }
 
     /**
@@ -1089,12 +1089,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private void handleConsensusTransaction(
             final ConsensusEvent event,
             final ConsensusTransaction trans,
-            final SwirldDualState dualState,
+            final PlatformState platformState,
             final long roundNum) {
         try {
             waitForSignatureValidation(trans);
             handleTransaction(
-                    event.getCreatorId(), event.getTimeCreated(), trans.getConsensusTimestamp(), trans, dualState);
+                    event.getCreatorId(), event.getTimeCreated(), trans.getConsensusTimestamp(), trans, platformState);
         } catch (final InterruptedException e) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
@@ -1123,7 +1123,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             @NonNull final Instant timeCreated,
             @NonNull final Instant timestamp,
             @NonNull final ConsensusTransaction trans,
-            @NonNull final SwirldDualState swirldDualState) {
+            @NonNull final PlatformState platformState) {
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper =
@@ -1211,7 +1211,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 handleControlTransaction(testTransaction.get(), id, timestamp);
                 break;
             case FREEZETRANSACTION:
-                handleFreezeTransaction(testTransaction.get(), swirldDualState);
+                handleFreezeTransaction(testTransaction.get(), platformState);
                 break;
             case SIMPLEACTION:
                 handleSimpleAction(testTransaction.get().getSimpleAction());
@@ -1260,7 +1260,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState swirldDualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
 
@@ -1289,7 +1289,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         initializeExpirationQueueAndAccountsSet();
 
         logger.info(LOGM_DEMO_INFO, "Dual state received in init function {}", () -> new ApplicationDualStatePayload(
-                        swirldDualState.getFreezeTime(), swirldDualState.getLastFrozenTime())
+                        platformState.getFreezeTime(), platformState.getLastFrozenTime())
                 .toString());
 
         logger.info(LOGM_STARTUP, () -> new SoftwareVersionPayload(

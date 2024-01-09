@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
@@ -80,7 +81,8 @@ public class ConsensusBenchmark {
         consensus = new ConsensusImpl(
                 configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
-                emitter.getGraphGenerator().getAddressBook());
+                emitter.getGraphGenerator().getAddressBook(),
+                configuration.getConfigData(EventConfig.class).useBirthRoundAncientThreshold());
     }
 
     @Benchmark

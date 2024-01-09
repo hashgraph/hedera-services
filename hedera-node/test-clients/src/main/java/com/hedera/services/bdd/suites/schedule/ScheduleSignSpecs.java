@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,24 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFERRED_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.NEW_SENDER_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RANDOM_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SHARED_KEY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SOMEBODY;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TOKEN_A;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -59,7 +73,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURE
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -68,29 +81,16 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleSignSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
     private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
     private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
-
-    private static final String defaultTxExpiry =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
-    private static final String defaultWhitelist =
-            HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
-    private static final String NEW_SENDER_KEY = "newSKey";
-    private static final String DEFERRED_XFER = "deferredXfer";
-    private static final String ADMIN = "admin";
-    private static final String SHARED_KEY = "sharedKey";
-    private static final String TWO_SIG_XFER = "twoSigXfer";
-    private static final String PAYER = "payer";
-    private static final String SOMEBODY = "somebody";
-    private static final String RANDOM_KEY = "randomKey";
-    private static final String SENDER = "sender";
-    private static final String RECEIVER = "receiver";
-    private static final String BASIC_XFER = "basicXfer";
-    private static final String TOKEN_A = "tokenA";
 
     public static void main(String... args) {
         new ScheduleSignSpecs().runSuiteSync();
@@ -125,6 +125,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                 suiteCleanup()));
     }
 
+    @HapiTest
+    @Order(24)
     private HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
@@ -132,10 +134,12 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .then(fileUpdate(APP_PROPERTIES)
                         .payingWith(ADDRESS_BOOK_CONTROL)
                         .overridingProps(Map.of(
-                                LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, defaultTxExpiry,
-                                SCHEDULING_WHITELIST, defaultWhitelist)));
+                                LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, DEFAULT_TX_EXPIRY,
+                                SCHEDULING_WHITELIST, WHITELIST_DEFAULT)));
     }
 
+    @HapiTest
+    @Order(1)
     private HapiSpec suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
@@ -146,6 +150,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(21)
     final HapiSpec signingDeletedSchedulesHasNoEffect() {
         String sender = "X";
         String receiver = "Y";
@@ -169,6 +174,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(5)
     final HapiSpec changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -221,6 +227,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(12)
     final HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -259,6 +266,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
+    @HapiTest
+    @Order(13)
     final HapiSpec reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -311,6 +320,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(6)
     final HapiSpec nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
@@ -343,6 +353,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
+    @HapiTest
+    @Order(10)
     final HapiSpec receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -380,6 +392,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(9)
     final HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -417,6 +430,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(11)
     final HapiSpec receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -458,6 +472,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(16)
     final HapiSpec scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -494,6 +509,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(15)
     final HapiSpec scheduleAlreadyExecutedDoesntRepeatTransaction() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
@@ -528,6 +544,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(4)
     final HapiSpec basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -542,6 +559,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(19)
     final HapiSpec signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
@@ -559,6 +577,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(20)
     final HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
@@ -586,6 +605,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(3)
     final HapiSpec addingSignaturesToNonExistingTxFails() {
         return defaultHapiSpec("AddingSignaturesToNonExistingTxFails")
                 .given(cryptoCreate(SENDER), newKeyNamed(SOMEBODY))
@@ -597,6 +617,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
+    @HapiTest
+    @Order(2)
     final HapiSpec addingSignaturesToExecutedTxFails() {
         var txnBody = cryptoCreate(SOMEBODY);
         var creation = "basicCryptoCreate";
@@ -610,6 +632,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                         .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
     }
 
+    @HapiTest
+    @Order(23)
     public HapiSpec triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSig")
                 .given(
@@ -629,6 +653,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .then(getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
+    @HapiTest
+    @Order(22)
     public HapiSpec triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSig")
                 .given(
@@ -646,6 +672,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .then(getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
+    @HapiTest
+    @Order(17)
     public HapiSpec sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxns")
                 .given(
@@ -666,6 +694,7 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     @HapiTest
+    @Order(7)
     public HapiSpec okIfAdminKeyOverlapsWithActiveScheduleKey() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         var adminKey = "adminKey";
@@ -682,6 +711,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
+    @Order(8)
     public HapiSpec overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
@@ -720,6 +751,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot("before", +2)));
     }
 
+    @HapiTest
+    @Order(14)
     public HapiSpec retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
                 .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
@@ -737,6 +770,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(SENDER).hasTinyBars(664L));
     }
 
+    @HapiTest
+    @Order(18)
     public HapiSpec signFailsDueToDeletedExpiration() {
         final int FAST_EXPIRATION = 0;
         return defaultHapiSpec("SignFailsDueToDeletedExpiration")
@@ -752,6 +787,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .alsoSigningWith(SENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(0L))
                 .then(
+                        sleepFor(1000),
                         scheduleSign(TWO_SIG_XFER)
                                 .alsoSigningWith(RECEIVER)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
@@ -759,14 +795,16 @@ public class ScheduleSignSpecs extends HapiSuite {
                         sleepFor(2000),
                         scheduleSign(TWO_SIG_XFER)
                                 .alsoSigningWith(RECEIVER)
+                                .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
                         scheduleSign(TWO_SIG_XFER)
                                 .alsoSigningWith(RECEIVER)
+                                .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
                         getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + defaultTxExpiry));
+                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + DEFAULT_TX_EXPIRY));
     }
 
     @Override

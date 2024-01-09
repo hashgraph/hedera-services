@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
-import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +67,7 @@ public class UpgradeActions {
 
     private final UnzipAction unzipAction;
     private final GlobalDynamicProperties dynamicProperties;
-    private final Supplier<SwirldDualState> dualState;
+    private final Supplier<PlatformState> platformState;
     private final Supplier<MerkleSpecialFiles> specialFiles;
     private final Supplier<MerkleNetworkContext> networkCtx;
 
@@ -75,10 +75,10 @@ public class UpgradeActions {
     public UpgradeActions(
             final UnzipAction unzipAction,
             final GlobalDynamicProperties dynamicProperties,
-            final Supplier<SwirldDualState> dualState,
+            final Supplier<PlatformState> platformState,
             final Supplier<MerkleSpecialFiles> specialFiles,
             final Supplier<MerkleNetworkContext> networkCtx) {
-        this.dualState = dualState;
+        this.platformState = platformState;
         this.networkCtx = networkCtx;
         this.unzipAction = unzipAction;
         this.specialFiles = specialFiles;
@@ -100,18 +100,18 @@ public class UpgradeActions {
     }
 
     public void scheduleFreezeOnlyAt(final Instant freezeTime) {
-        withNonNullDualState("schedule freeze", ds -> ds.setFreezeTime(freezeTime));
+        withNonNullPlatformState("schedule freeze", ds -> ds.setFreezeTime(freezeTime));
     }
 
     public void scheduleFreezeUpgradeAt(final Instant freezeTime) {
-        withNonNullDualState("schedule freeze", ds -> {
+        withNonNullPlatformState("schedule freeze", ds -> {
             ds.setFreezeTime(freezeTime);
             writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
         });
     }
 
     public void abortScheduledFreeze() {
-        withNonNullDualState("abort freeze", ds -> {
+        withNonNullPlatformState("abort freeze", ds -> {
             ds.setFreezeTime(null);
             writeCheckMarker(FREEZE_ABORTED_MARKER);
         });
@@ -119,7 +119,7 @@ public class UpgradeActions {
 
     public boolean isFreezeScheduled() {
         final var ans = new AtomicBoolean();
-        withNonNullDualState("check freeze schedule", ds -> {
+        withNonNullPlatformState("check freeze schedule", ds -> {
             final var freezeTime = ds.getFreezeTime();
             ans.set(freezeTime != null && !freezeTime.equals(ds.getLastFrozenTime()));
         });
@@ -154,7 +154,7 @@ public class UpgradeActions {
     private void catchUpOnMissedFreezeScheduling() {
         final var isUpgradePrepared = networkCtx.get().hasPreparedUpgrade();
         if (isFreezeScheduled() && isUpgradePrepared) {
-            writeMarker(FREEZE_SCHEDULED_MARKER, dualState.get().getFreezeTime());
+            writeMarker(FREEZE_SCHEDULED_MARKER, platformState.get().getFreezeTime());
         }
         /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
         But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
@@ -183,10 +183,10 @@ public class UpgradeActions {
         extractSoftwareUpgrade(archiveData).join();
     }
 
-    private void withNonNullDualState(final String actionDesc, final Consumer<SwirldDualState> action) {
-        final var curDualState = dualState.get();
-        Objects.requireNonNull(curDualState, "Cannot " + actionDesc + " without access to the dual state");
-        action.accept(curDualState);
+    private void withNonNullPlatformState(final String actionDesc, final Consumer<PlatformState> action) {
+        final var curPlatformState = platformState.get();
+        Objects.requireNonNull(curPlatformState, "Cannot " + actionDesc + " without access to the platform state");
+        action.accept(curPlatformState);
     }
 
     private void writeCheckMarker(final String file) {

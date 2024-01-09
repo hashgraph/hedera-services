@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,6 @@ package com.swirlds.merkledb;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -53,7 +50,7 @@ class VirtualHashRecordSerializerTest {
 
     @Test
     void serializeEnforcesDefaultDigest() {
-        final ByteBuffer bbuf = mock(ByteBuffer.class);
+        final ByteBuffer bbuf = ByteBuffer.allocate(subject.getSerializedSize());
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
         assertEquals(Long.BYTES, subject.getHeaderSize(), "Header size should be 8 bytes");
@@ -69,13 +66,15 @@ class VirtualHashRecordSerializerTest {
 
     @Test
     void deserializeHappyPath() throws IOException {
-        final ByteBuffer bb = mock(ByteBuffer.class);
+        final ByteBuffer bb = ByteBuffer.allocate(subject.getSerializedSize());
         final Hash validHash = new Hash(DigestType.SHA_384);
         final VirtualHashRecord expectedData = new VirtualHashRecord(42L, validHash);
-        when(bb.getLong()).thenReturn(42L);
-        when(bb.get(any())).thenReturn(bb);
+        bb.putLong(42L);
+        bb.rewind();
+
         final DataItemHeader expectedHeader = new DataItemHeader(56, 42L);
         assertEquals(expectedHeader, subject.deserializeHeader(bb), "Deserialized header should match serialized");
+        bb.rewind();
         assertEquals(expectedData, subject.deserialize(bb, 1L), "Deserialized data should match serialized");
     }
 

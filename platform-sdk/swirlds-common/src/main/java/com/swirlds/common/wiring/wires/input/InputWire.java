@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 /**
  * An object that can insert work to be handled by a {@link TaskScheduler}.
  *
- * @param <IN>  the type of data that passes into the wire
+ * @param <IN> the type of data that passes into the wire
  */
 public abstract class InputWire<IN> {
 
@@ -40,6 +40,7 @@ public abstract class InputWire<IN> {
      * @param name          the name of the input wire
      */
     protected InputWire(@NonNull final TaskScheduler<?> taskScheduler, @NonNull final String name) {
+
         this.taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
         this.taskSchedulerName = taskScheduler.getName();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,13 @@ import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -196,6 +202,13 @@ public final class PlatformBuilder {
     public Platform build() {
         final Configuration configuration = buildConfiguration();
 
+        final Cryptography cryptography = CryptographyFactory.create(configuration);
+        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+
+        // For backwards compatibility with the old static access pattern.
+        CryptographyHolder.set(cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
+
         final boolean firstTimeSetup = doStaticSetup(configuration, configPath);
 
         final AddressBook configAddressBook = loadConfigAddressBook();
@@ -203,7 +216,8 @@ public final class PlatformBuilder {
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(selfId, getMetricsProvider(), configuration);
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration, getMetricsProvider().createPlatformMetrics(selfId), cryptography, Time.getCurrent());
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);

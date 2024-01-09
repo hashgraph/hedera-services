@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,12 +85,11 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.gui.SwirldsGui;
-import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
@@ -239,14 +238,14 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public void init(
             final Platform platform,
-            final SwirldDualState dualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
         // first store a reference to the platform
         this.platform = platform;
 
         if (trigger == GENESIS) {
-            genesisInit(platform, dualState);
+            genesisInit(platform, platformState);
         } else {
             if (deserializedVersion == null) {
                 throw new IllegalStateException(
@@ -266,7 +265,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
             // Note this returns the app in case we need to do something with it after making
             // final changes to state (e.g. after migrating something from memory to disk)
-            deserializedInit(platform, dualState, trigger, deserializedVersion);
+            deserializedInit(platform, platformState, trigger, deserializedVersion);
             final var isUpgrade = SEMANTIC_VERSIONS.deployedSoftwareVersion().isNonConfigUpgrade(deserializedVersion);
             if (isUpgrade) {
                 migrateFrom(deserializedVersion);
@@ -292,13 +291,13 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
+    public void handleConsensusRound(final Round round, final PlatformState platformState) {
         throwIfImmutable();
 
         final var app = metadata.app();
         app.mapWarmer().warmCache(round);
 
-        app.dualStateAccessor().setDualState(dualState);
+        app.platformStateAccessor().setPlatformState(platformState);
         app.logic().incorporateConsensus(round);
     }
 
@@ -327,7 +326,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     private ServicesApp deserializedInit(
             final Platform platform,
-            final SwirldDualState dualState,
+            final PlatformState platformState,
             final InitTrigger trigger,
             @NonNull final SoftwareVersion deserializedVersion) {
         log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
@@ -336,10 +335,10 @@ public class ServicesState extends PartialNaryMerkleInternal
         enableVirtualAccounts = bootstrapProps.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK);
         enableVirtualTokenRels = bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK);
         enabledVirtualNft = bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
-        return internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
+        return internalInit(platform, bootstrapProps, platformState, trigger, deserializedVersion);
     }
 
-    private void genesisInit(final Platform platform, final SwirldDualState dualState) {
+    private void genesisInit(final Platform platform, final PlatformState platformState) {
         log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
         // Create the top-level children in the Merkle tree
@@ -350,14 +349,14 @@ public class ServicesState extends PartialNaryMerkleInternal
         enabledVirtualNft = bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         consolidateRecordStorage = bootstrapProps.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ);
         createGenesisChildren(platform.getAddressBook(), seqStart, bootstrapProps);
-        internalInit(platform, bootstrapProps, dualState, GENESIS, null);
+        internalInit(platform, bootstrapProps, platformState, GENESIS, null);
         networkCtx().markPostUpgradeScanStatus();
     }
 
     private ServicesApp internalInit(
             final Platform platform,
             final BootstrapProperties bootstrapProps,
-            SwirldDualState dualState,
+            PlatformState platformState,
             final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         this.platform = platform;
@@ -385,14 +384,15 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.maybeNewRecoveredStateListener().ifPresent(listener -> platform.getNotificationEngine()
                 .register(NewRecoveredStateListener.class, listener));
 
-        if (dualState == null) {
-            dualState = new DualStateImpl();
+        if (platformState == null) {
+            log.error("Platform state is null, this is highly unusual.");
+            platformState = new PlatformState();
         }
-        app.dualStateAccessor().setDualState(dualState);
+        app.platformStateAccessor().setPlatformState(platformState);
         log.info(
-                "Dual state includes freeze time={} and last frozen={}",
-                dualState.getFreezeTime(),
-                dualState.getLastFrozenTime());
+                "Platform state includes freeze time={} and last frozen={}",
+                platformState.getFreezeTime(),
+                platformState.getLastFrozenTime());
 
         final var deployedVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
         if (deployedVersion.isBefore(deserializedVersion)) {
@@ -489,7 +489,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         if (metadata != null) {
             final var app = metadata.app();
             app.hashLogger().logHashesFor(this);
-            ctxSummary = networkCtx().summarizedWith(app.dualStateAccessor());
+            ctxSummary = networkCtx().summarizedWith(app.platformStateAccessor());
         } else {
             ctxSummary = networkCtx().summarized();
         }

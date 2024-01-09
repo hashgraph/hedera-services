@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
  */
 
 package com.swirlds.platform.state.signed;
-
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.platform.NodeId;
-import java.nio.file.Path;
 
 /**
  * Utility methods for dealing with signed states on disk.
@@ -51,76 +46,4 @@ public final class SignedStateFileUtils {
     public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 
     private SignedStateFileUtils() {}
-
-    /**
-     * Same as {@link SignedStateFilePath#getSignedStatesBaseDirectory()} but uses the config from
-     * {@link ConfigurationHolder}
-     *
-     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
-     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
-     */
-    @Deprecated(forRemoval = true)
-    public static Path getSignedStatesBaseDirectory() {
-        // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
-                .getSignedStatesBaseDirectory();
-    }
-
-    /**
-     * Same as {@link SignedStateFilePath#getSignedStatesDirectoryForApp(String)} but uses the config from
-     * {@link ConfigurationHolder}
-     *
-     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
-     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
-     */
-    @Deprecated(forRemoval = true)
-    public static Path getSignedStatesDirectoryForApp(final String mainClassName) {
-        // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
-                .getSignedStatesDirectoryForApp(mainClassName);
-    }
-
-    /**
-     * Same as {@link SignedStateFilePath#getSignedStatesDirectoryForNode(String, NodeId)} but uses the config from
-     * {@link ConfigurationHolder}
-     *
-     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
-     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
-     */
-    @Deprecated(forRemoval = true)
-    public static Path getSignedStatesDirectoryForNode(final String mainClassName, final NodeId selfId) {
-        // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
-                .getSignedStatesDirectoryForNode(mainClassName, selfId);
-    }
-
-    /**
-     * Same as {@link SignedStateFilePath#getSignedStatesDirectoryForSwirld(String, NodeId, String)} but uses the config
-     * from {@link ConfigurationHolder}
-     *
-     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
-     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
-     */
-    @Deprecated(forRemoval = true)
-    public static Path getSignedStatesDirectoryForSwirld(
-            final String mainClassName, final NodeId selfId, final String swirldName) {
-        // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
-                .getSignedStatesDirectoryForSwirld(mainClassName, selfId, swirldName);
-    }
-
-    /**
-     * Same as {@link SignedStateFilePath#getSignedStateDirectory(String, NodeId, String, long)} but uses the config
-     * from {@link ConfigurationHolder}
-     *
-     * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
-     * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.
-     */
-    @Deprecated(forRemoval = true)
-    public static Path getSignedStateDirectory(
-            final String mainClassName, final NodeId selfId, final String swirldName, final long round) {
-        // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
-                .getSignedStateDirectory(mainClassName, selfId, swirldName, round);
-    }
 }

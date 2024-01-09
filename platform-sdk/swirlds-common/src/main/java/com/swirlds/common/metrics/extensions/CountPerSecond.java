@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.extensions;
 
+import static com.swirlds.base.ArgumentUtils.throwArgBlank;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.units.UnitConstants;

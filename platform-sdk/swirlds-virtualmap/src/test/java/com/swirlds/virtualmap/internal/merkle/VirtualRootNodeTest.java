@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -393,9 +393,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Default zero flush threshold")
     void defaultZeroFlushThresholdTest() {
-        // Save the previous settings
-        final Configuration originalConfig = ConfigurationHolder.getInstance().get();
-
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
@@ -423,7 +420,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
         }
         assertFalse(root.shouldBeFlushed()); // should still have a custom flush threshold
         root.release();
-        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     @Test

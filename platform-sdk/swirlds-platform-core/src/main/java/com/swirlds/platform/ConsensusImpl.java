@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.swirlds.platform.consensus.ConsensusSorter;
 import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.CountingVote;
 import com.swirlds.platform.consensus.InitJudges;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
@@ -39,7 +40,6 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -144,6 +144,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** consensus configuration */
     private final ConsensusConfig config;
+    /**
+     * Indicates if an event's status of ancient should be determined by birthRound (true) or generation (false)
+     * FUTURE WORK: Delete this variable and its initialization when we switch to permanently using birthRound.
+     */
+    private final boolean useBirthRoundForAncient;
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
     /** metrics related to consensus */
@@ -191,11 +196,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @param config consensus configuration
      * @param consensusMetrics metrics related to consensus
      * @param addressBook the global address book, which never changes
+     * @param useBirthRoundForAncient indicates if we should compare birthRound for determining ancient.
      */
     public ConsensusImpl(
             @NonNull final ConsensusConfig config,
             @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final AddressBook addressBook,
+            final boolean useBirthRoundForAncient) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
@@ -204,49 +211,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.addressBook = addressBook;
 
         this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
+        this.useBirthRoundForAncient = useBirthRoundForAncient;
     }
 
     @Override
     public void loadFromSignedState(@NonNull final SignedState signedState) {
         reset();
-        final PlatformData platformData =
-                signedState.getState().getPlatformState().getPlatformData();
-        if (platformData.getEvents() != null) {
-            loadLegacyState(platformData);
-        } else {
-            loadSnapshot(platformData.getSnapshot());
-        }
-    }
-
-    private void loadLegacyState(@NonNull final PlatformData platformData) {
-        migrationMode = true;
-
-        // create all the rounds that we have events for
-        rounds.loadFromMinGen(platformData.getMinGenInfo());
-        updateRoundGenerations(rounds.getFameDecidedBelow());
-
-        for (final EventImpl event : platformData.getEvents()) {
-            event.setRoundCreated(
-                    // this is where round created used to be stored, only needed for migration
-                    event.getConsensusData().getRoundCreated());
-            calculateMetadata(event);
-            event.setConsensus(true);
-            // events are stored in consensus order, so the last event in consensus order should be
-            // incremented by 1 to get the numConsensus
-            numConsensus = event.getConsensusOrder() + 1;
-        }
-
-        // The lastConsensusTime is equal to the last transaction that has been handled
-        lastConsensusTime = platformData.getConsensusTimestamp();
-
-        logger.debug(
-                STARTUP.getMarker(),
-                "ConsensusImpl is initialized from signed state. minRound: {}(min gen = {}),"
-                        + " maxRound: {}(max gen = {})",
-                this::getMinRound,
-                this::getMinRoundGeneration,
-                this::getMaxRound,
-                this::getMaxRoundGeneration);
+        loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
     }
 
     /**
@@ -693,6 +664,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
+                // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
+                // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
+                // production.
+                NonAncientEventWindow.createUsingRoundsNonAncient(
+                        decidedRoundNumber, getMinGenerationNonAncient(), config.roundsNonAncient(), false),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),

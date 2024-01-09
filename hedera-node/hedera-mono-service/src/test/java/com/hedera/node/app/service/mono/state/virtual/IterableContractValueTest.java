@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -245,20 +245,23 @@ class IterableContractValueTest {
         final var rawPrevKey = prevUint256Key.toArrayUnsafe();
         final var rawNextKey = nextUint256Key.toArrayUnsafe();
 
-        final var out = mock(ByteBuffer.class);
-        final var inOrder = inOrder(out);
+        final ByteBuffer out = ByteBuffer.allocate(subject.getSerializedSize());
 
         subject.serialize(out);
 
-        inOrder.verify(out).put(subject.getValue());
-        inOrder.verify(out).put(numNonZeroBytesInPrev);
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(subject.getSerializedSize());
+
+        byteBuffer.put(subject.getValue());
+        byteBuffer.put(numNonZeroBytesInPrev);
         for (int i = 0, offset = 32 - numNonZeroBytesInPrev; i < numNonZeroBytesInPrev; i++) {
-            inOrder.verify(out).put(rawPrevKey[i + offset]);
+            byteBuffer.put(rawPrevKey[i + offset]);
         }
-        inOrder.verify(out).put(numNonZeroBytesInNext);
+        byteBuffer.put(numNonZeroBytesInNext);
         for (int i = 0, offset = 32 - numNonZeroBytesInNext; i < numNonZeroBytesInNext; i++) {
-            inOrder.verify(out).put(rawNextKey[i + offset]);
+            byteBuffer.put(rawNextKey[i + offset]);
         }
+
+        assertEquals(out, byteBuffer);
     }
 
     @Test
@@ -358,18 +361,15 @@ class IterableContractValueTest {
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
         subject = new IterableContractValue();
-        final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(invocation -> {
-                    subject.setValue(bytesValue);
-                    return null;
-                })
-                .when(byteBuffer)
-                .get(subject.getValue());
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(48);
+        byteBuffer.put(bytesValue); // for read uint256Value
+        byteBuffer.put(new byte[8]); // for read prevUint256Key
+        byteBuffer.put(new byte[8]); // for red nextUint256Key
+        byteBuffer.rewind();
 
         subject.deserialize(byteBuffer, ITERABLE_VERSION);
 
-        assertEquals(bytesValue, subject.getValue());
-        verify(byteBuffer).get(defaultEmpty);
+        assertArrayEquals(bytesValue, subject.getValue());
     }
 
     @Test
@@ -400,13 +400,7 @@ class IterableContractValueTest {
         assertThrows(IllegalStateException.class, () -> readOnly.deserialize(in, ITERABLE_VERSION));
 
         // and when
-        final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(invocation -> {
-                    subject.setValue(bytesValue);
-                    return null;
-                })
-                .when(byteBuffer)
-                .get(subject.getValue());
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(bytesValue.length);
 
         assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, ITERABLE_VERSION));
     }

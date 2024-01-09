@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,12 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
     @Override
     public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
         final var op = query.getContractGetInfo();
-        final var tentativeInfo = view.infoForContract(op.getContractID(), aliasManager, rewardCalculator);
+        final var tentativeInfo = view.infoForContract(
+                op.getContractID(),
+                aliasManager,
+                dynamicProperties.maxTokensRelsPerInfoQuery(),
+                rewardCalculator,
+                dynamicProperties.areTokenBalancesEnabledInQueries());
         if (tentativeInfo.isPresent()) {
             final var info = tentativeInfo.get();
             putIfNotNull(queryCtx, CONTRACT_INFO_CTX_KEY, info);

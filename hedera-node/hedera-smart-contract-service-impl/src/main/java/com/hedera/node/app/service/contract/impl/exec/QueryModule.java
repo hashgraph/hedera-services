@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,12 +113,16 @@ public interface QueryModule {
             @NonNull final HederaEvmBlocks hederaEvmBlocks,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
+        // Use null for the top-level record builder and reference to pending creation record builder,
+        // as neither is usable by any operation permitted in a static context
         return new HederaEvmContext(
                 hederaOperations.gasPriceInTinybars(),
                 true,
                 hederaEvmBlocks,
                 tinybarValues,
-                systemContractGasCalculator);
+                systemContractGasCalculator,
+                null,
+                null);
     }
 
     @Binds

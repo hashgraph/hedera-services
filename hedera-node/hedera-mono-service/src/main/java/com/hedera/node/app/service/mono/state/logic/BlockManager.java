@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.RunningHash;
@@ -51,7 +51,7 @@ public class BlockManager {
 
     private final long blockPeriodMs;
     private final boolean logEveryTransaction;
-    private final DualStateAccessor dualStateAccessor;
+    private final PlatformStateAccessor platformStateAccessor;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
 
@@ -68,13 +68,13 @@ public class BlockManager {
             final BootstrapProperties bootstrapProperties,
             final Supplier<MerkleNetworkContext> networkCtx,
             final Supplier<RecordsRunningHashLeaf> runningHashLeaf,
-            final DualStateAccessor dualStateAccessor) {
+            final PlatformStateAccessor platformStateAccessor) {
         this.networkCtx = networkCtx;
         this.runningHashLeaf = runningHashLeaf;
         this.blockPeriodMs =
                 bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD) * SECONDS_TO_MILLISECONDS;
         this.logEveryTransaction = bootstrapProperties.getBooleanProperty(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION);
-        this.dualStateAccessor = dualStateAccessor;
+        this.platformStateAccessor = platformStateAccessor;
     }
 
     /** Clears all provisional block metadata for the current transaction. */
@@ -193,11 +193,11 @@ public class BlockManager {
     private boolean willCreateNewBlock(@NonNull final Instant timestamp) {
         final var curNetworkCtx = networkCtx.get();
         final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
-        final var dualState = dualStateAccessor.getDualState();
-        final var isFirstTransactionAfterFreezeRestart =
-                dualState.getFreezeTime() != null && dualState.getFreezeTime().equals(dualState.getLastFrozenTime());
+        final var platformState = platformStateAccessor.getPlatformState();
+        final var isFirstTransactionAfterFreezeRestart = platformState.getFreezeTime() != null
+                && platformState.getFreezeTime().equals(platformState.getLastFrozenTime());
         if (isFirstTransactionAfterFreezeRestart) {
-            dualState.setFreezeTime(null);
+            platformState.setFreezeTime(null);
         }
         return firstBlockTime == null
                 || isFirstTransactionAfterFreezeRestart

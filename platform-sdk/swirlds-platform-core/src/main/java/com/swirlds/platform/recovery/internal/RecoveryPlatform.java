@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.recovery.internal;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
@@ -87,7 +88,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
-        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get());
+        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
 
         setLatestState(initialState);
     }

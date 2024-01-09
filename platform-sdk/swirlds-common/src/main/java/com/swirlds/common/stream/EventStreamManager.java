@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -30,10 +31,12 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -76,8 +79,11 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      */
     private volatile boolean freezePeriodStarted = false;
 
+    private final RateLimitedLogger eventAfterFreezeLogger;
+
     /**
      * @param platformContext          the platform context
+     * @param time                     provides wall clock time
      * @param threadManager            responsible for managing thread lifecycles
      * @param selfId                   the id of this node
      * @param signer                   an object that can sign things
@@ -89,6 +95,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      */
     public EventStreamManager(
             @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
             final ThreadManager threadManager,
             final NodeId selfId,
             final Signer signer,
@@ -98,6 +105,8 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
             final long eventsLogPeriod,
             final int eventStreamQueueCapacity,
             final Predicate<T> isLastEventInFreezeCheck) {
+
+        eventAfterFreezeLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
         if (enableEventStreaming) {
             // the directory to which event stream files are written
@@ -162,11 +171,14 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
     }
 
     /**
+     * @param time                     provides wall clock time
      * @param multiStream              the instance which receives consensus events from ConsensusRoundHandler, then
      *                                 passes to nextStreams
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
      */
-    public EventStreamManager(final MultiStream<T> multiStream, final Predicate<T> isLastEventInFreezeCheck) {
+    public EventStreamManager(
+            @NonNull final Time time, final MultiStream<T> multiStream, final Predicate<T> isLastEventInFreezeCheck) {
+        eventAfterFreezeLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         this.multiStream = multiStream;
         multiStream.setRunningHash(initialHash);
         this.isLastEventInFreezeCheck = isLastEventInFreezeCheck;
@@ -207,7 +219,8 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                 multiStream.close();
             }
         } else {
-            logger.warn(EVENT_STREAM.getMarker(), "Event {} dropped after freezePeriodStarted!", event.getTimestamp());
+            eventAfterFreezeLogger.warn(
+                    EVENT_STREAM.getMarker(), "Event {} dropped after freezePeriodStarted!", event.getTimestamp());
         }
     }
 

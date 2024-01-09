@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -30,7 +30,7 @@ public interface OnStateInitialized {
     void onStateInitialized(
             @NonNull MerkleHederaState state,
             @NonNull Platform platform,
-            @NonNull SwirldDualState dualState,
+            @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion deserializedVersion);
 }

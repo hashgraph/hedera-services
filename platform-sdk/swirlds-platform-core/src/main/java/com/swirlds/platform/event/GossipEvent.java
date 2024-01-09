@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.event;
 
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
+
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -30,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
@@ -78,6 +81,11 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      * of the event in any way.
      */
     private NodeId senderId;
+
+    /**
+     * This latch counts down when prehandle has been called on all application transactions contained in this event.
+     */
+    private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
@@ -224,6 +232,20 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     public void setSenderId(@NonNull final NodeId senderId) {
         this.senderId = senderId;
+    }
+
+    /**
+     * Signal that all transactions have been prehandled for this event.
+     */
+    public void signalPrehandleCompletion() {
+        prehandleCompleted.countDown();
+    }
+
+    /**
+     * Wait until all transactions have been prehandled for this event.
+     */
+    public void awaitPrehandleCompletion() {
+        abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
     }
 
     /**

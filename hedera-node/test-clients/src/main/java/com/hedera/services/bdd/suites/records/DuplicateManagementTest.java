@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
@@ -39,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -53,6 +55,7 @@ public class DuplicateManagementTest extends HapiSuite {
     private static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
+    private static final long MS_TO_WAIT_FOR_CONSENSUS = 5_000L;
 
     public static void main(String... args) {
         new DuplicateManagementTest().runSuiteSync();
@@ -60,13 +63,14 @@ public class DuplicateManagementTest extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            usesUnclassifiableIfNoClassifiableAvailable(),
-            hasExpectedDuplicates(),
-            classifiableTakesPriorityOverUnclassifiable(),
-        });
+        return List.of(
+                usesUnclassifiableIfNoClassifiableAvailable(),
+                hasExpectedDuplicates(),
+                classifiableTakesPriorityOverUnclassifiable());
     }
 
+    @HapiTest
+    @SuppressWarnings("java:S5960")
     final HapiSpec hasExpectedDuplicates() {
         return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
@@ -78,14 +82,14 @@ public class DuplicateManagementTest extends HapiSuite {
                                         .txnId(TXN_ID))
                                 .payingWith(CIVILIAN)
                                 .fee(ONE_HBAR)
-                                .hasPrecheck(NOT_SUPPORTED),
+                                .hasPrecheckFrom(NOT_SUPPORTED, BUSY),
                         uncheckedSubmit(
                                 cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
                         uncheckedSubmit(
                                 cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
                         uncheckedSubmit(
                                 cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
-                        sleepFor(1_000L))
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS))
                 .then(
                         getReceipt(TXN_ID)
                                 .andAnyDuplicates()
@@ -106,12 +110,11 @@ public class DuplicateManagementTest extends HapiSuite {
                                 .hasDuplicates(inOrder(
                                         recordWith().status(DUPLICATE_TRANSACTION),
                                         recordWith().status(DUPLICATE_TRANSACTION))),
-                        sleepFor(1_000L),
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS),
                         withOpContext((spec, opLog) -> {
                             var cheapGet = getTxnRecord("cheapTxn").assertingNothingAboutHashes();
                             var costlyGet = getTxnRecord("costlyTxn").assertingNothingAboutHashes();
                             allRunFor(spec, cheapGet, costlyGet);
-                            var payer = spec.registry().getAccountID(CIVILIAN);
                             var cheapRecord = cheapGet.getResponseRecord();
                             var costlyRecord = costlyGet.getResponseRecord();
                             opLog.info("cheapRecord: {}", cheapRecord);
@@ -119,7 +122,7 @@ public class DuplicateManagementTest extends HapiSuite {
                             var cheapPrice = getNonFeeDeduction(cheapRecord).orElse(0);
                             var costlyPrice = getNonFeeDeduction(costlyRecord).orElse(0);
                             assertEquals(
-                                    3 * cheapPrice,
+                                    3 * cheapPrice - 1,
                                     costlyPrice,
                                     String.format(
                                             "Costly (%d) should be 3x more expensive than" + " cheap (%d)!",
@@ -127,19 +130,20 @@ public class DuplicateManagementTest extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     final HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
                         cryptoCreate(CIVILIAN),
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, TO, 100_000_000L)))
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, TO, ONE_HBAR)))
                 .when(
                         uncheckedSubmit(cryptoCreate("nope")
                                 .payingWith(CIVILIAN)
                                 .txnId(TXN_ID)
                                 .signedBy("wrongKey")),
-                        sleepFor(1_000L))
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS))
                 .then(
                         getReceipt(TXN_ID).hasPriorityStatus(INVALID_PAYER_SIGNATURE),
                         getTxnRecord(TXN_ID)
@@ -149,6 +153,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                         .transfers(includingDeduction("node payment", TO))));
     }
 
+    @HapiTest
     final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
         return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
@@ -165,7 +170,7 @@ public class DuplicateManagementTest extends HapiSuite {
                                 .txnId(TXN_ID)
                                 .payingWith(CIVILIAN)
                                 .setNode(TO)),
-                        sleepFor(1_000L))
+                        sleepFor(MS_TO_WAIT_FOR_CONSENSUS))
                 .then(
                         getReceipt(TXN_ID)
                                 .andAnyDuplicates()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -75,6 +76,7 @@ public class ReconnectProtocol implements Protocol {
     private final RateLimitedLogger notActiveLogger;
 
     private final Time time;
+    private final PlatformContext platformContext;
 
     /**
      * @param threadManager           responsible for creating and managing threads
@@ -90,6 +92,7 @@ public class ReconnectProtocol implements Protocol {
      * @param time                    the time object to use
      */
     public ReconnectProtocol(
+            @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final NodeId peerId,
             @NonNull final ReconnectThrottle teacherThrottle,
@@ -103,19 +106,18 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final Configuration configuration,
             @NonNull final Time time) {
 
-        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
-        this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
-        this.teacherThrottle = Objects.requireNonNull(teacherThrottle, "teacherThrottle must not be null");
-        this.lastCompleteSignedState =
-                Objects.requireNonNull(lastCompleteSignedState, "lastCompleteSignedState must not be null");
-        this.reconnectSocketTimeout =
-                Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
-        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
-        this.reconnectController = Objects.requireNonNull(reconnectController, "reconnectController must not be null");
-        this.validator = Objects.requireNonNull(validator, "validator must not be null");
-        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
+        this.platformContext = Objects.requireNonNull(platformContext);
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.peerId = Objects.requireNonNull(peerId);
+        this.teacherThrottle = Objects.requireNonNull(teacherThrottle);
+        this.lastCompleteSignedState = Objects.requireNonNull(lastCompleteSignedState);
+        this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
+        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
+        this.reconnectController = Objects.requireNonNull(reconnectController);
+        this.validator = Objects.requireNonNull(validator);
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
-        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        this.configuration = Objects.requireNonNull(configuration);
         Objects.requireNonNull(time);
 
         final Duration minimumTimeBetweenReconnects =
@@ -282,6 +284,7 @@ public class ReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try (final ReservedSignedState state = teacherState) {
             new ReconnectTeacher(
+                            platformContext,
                             time,
                             threadManager,
                             connection,

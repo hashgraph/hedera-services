@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
                 forgetOp ? Query.newBuilder().build() : txnReceiptQueryFor(txnId, requestDuplicates, getChildReceipts);
         response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
         childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
+        final var duplicateReceipts = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList();
         if (verboseLoggingOn) {
             String message = String.format(
                     "Receipt: %s", response.getTransactionGetReceipt().getReceipt());
@@ -147,6 +148,15 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
                     spec.logPrefix(), childReceipts.size(), childReceipts.size() > 1 ? "s" : "", childReceipts);
 
             log.info(message2);
+
+            String message3 = String.format(
+                    "%s  And %d duplicate receipts%s: %s",
+                    spec.logPrefix(),
+                    duplicateReceipts.size(),
+                    duplicateReceipts.size() > 1 ? "s" : "",
+                    duplicateReceipts);
+
+            log.info(message3);
         }
     }
 

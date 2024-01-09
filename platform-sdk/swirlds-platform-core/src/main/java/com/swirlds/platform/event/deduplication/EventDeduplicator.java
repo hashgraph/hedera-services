@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -40,6 +41,13 @@ import java.util.function.Function;
  * <p>
  * A duplicate event is defined as an event with an identical descriptor and identical signature to an event that has
  * already been observed.
+ * <p>
+ * It is necessary to consider the signature bytes when determining if an event is a duplicate, not just the descriptor
+ * or hash. This guards against a malicious node gossiping the same event with different signatures, or a node gossiping
+ * another node's event with a modified signature. If we went only off the descriptor or hash, we might discard the
+ * correct version of an event as a duplicate, because a malicious version has already been received.
+ * Instead, the deduplicator lets all versions of the event through that have a unique descriptor/signature pair, and
+ * the signature validator further along the pipeline will handle discarding bad versions.
  */
 public class EventDeduplicator {
     /**
@@ -53,9 +61,9 @@ public class EventDeduplicator {
     private static final int INITIAL_CAPACITY = 1024;
 
     /**
-     * The current minimum generation required for an event to be non-ancient.
+     * The current non-ancient event window.
      */
-    private long minimumGenerationNonAncient = 0;
+    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -111,7 +119,7 @@ public class EventDeduplicator {
      */
     @Nullable
     public GossipEvent handleEvent(@NonNull final GossipEvent event) {
-        if (event.getGeneration() < minimumGenerationNonAncient) {
+        if (nonAncientEventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -137,14 +145,14 @@ public class EventDeduplicator {
     }
 
     /**
-     * Set the minimum generation required for an event to be non-ancient.
+     * Set the NonAncientEventWindow, defines the minimum threshold for an event to be non-ancient.
      *
-     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     * @param nonAncientEventWindow the non-ancient event window
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        observedEvents.shiftWindow(minimumGenerationNonAncient);
+        observedEvents.shiftWindow(nonAncientEventWindow.getLowerBound());
     }
 
     /**

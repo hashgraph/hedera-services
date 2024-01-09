@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,7 @@ package com.swirlds.common.merkle.synchronization.internal;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -63,9 +61,11 @@ public class NodeToSend {
     /**
      * Create an object that represents a node that may be sent in the future.
      *
-     * @param node the node that may be sent.
+     * @param node                    the node that may be sent.
+     * @param maxAckDelayMilliseconds the maximum amount of time to wait for a response from the learner before sending
+     *                                the node.
      */
-    public NodeToSend(final MerkleNode node) {
+    public NodeToSend(final MerkleNode node, final int maxAckDelayMilliseconds) {
         this.node = node;
         this.responseReceived = false;
         this.responseStatus = false;
@@ -75,9 +75,7 @@ public class NodeToSend {
             children = null;
         }
 
-        final ReconnectConfig reconnectConfig = ConfigurationHolder.getConfigData(ReconnectConfig.class);
-        unconditionalSendTimeMilliseconds =
-                System.currentTimeMillis() + reconnectConfig.maxAckDelay().toMillis();
+        unconditionalSendTimeMilliseconds = System.currentTimeMillis() + maxAckDelayMilliseconds;
     }
 
     /**
@@ -131,9 +129,9 @@ public class NodeToSend {
     }
 
     /**
-     * Wait for a response from the learner. Will return immediately if a response has already been received or
-     * if an ancestor has received a positive response. May sleep a short period if neither are true.
-     * There is no guarantee that a response will have been received when this method returns.
+     * Wait for a response from the learner. Will return immediately if a response has already been received or if an
+     * ancestor has received a positive response. May sleep a short period if neither are true. There is no guarantee
+     * that a response will have been received when this method returns.
      */
     public void waitForResponse() {
         if (responseReceived || responseStatus) {

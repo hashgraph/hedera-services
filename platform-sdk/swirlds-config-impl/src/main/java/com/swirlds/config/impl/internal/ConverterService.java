@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.swirlds.config.impl.converters.ByteConverter;
 import com.swirlds.config.impl.converters.ChronoUnitConverter;
 import com.swirlds.config.impl.converters.DoubleConverter;
 import com.swirlds.config.impl.converters.DurationConverter;
+import com.swirlds.config.impl.converters.EnumConverter;
 import com.swirlds.config.impl.converters.FileConverter;
 import com.swirlds.config.impl.converters.FloatConverter;
 import com.swirlds.config.impl.converters.IntegerConverter;
@@ -37,7 +38,6 @@ import com.swirlds.config.impl.converters.ZonedDateTimeConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
-import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -46,10 +46,9 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 class ConverterService implements ConfigLifecycle {
     private final Map<Class<?>, ConfigConverter<?>> converters;
@@ -94,28 +93,9 @@ class ConverterService implements ConfigLifecycle {
     private static final ConfigConverter<ChronoUnit> CHRONO_UNIT_CONVERTER = new ChronoUnitConverter();
 
     ConverterService() {
-        this.converters = new HashMap<>();
+        this.converters = new ConcurrentHashMap<>();
     }
 
-    @NonNull
-    private <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
-        Objects.requireNonNull(converterClass, "converterClass must not be null");
-        return Arrays.stream(converterClass.getGenericInterfaces())
-                .filter(ParameterizedType.class::isInstance)
-                .map(ParameterizedType.class::cast)
-                .filter(parameterizedType -> Objects.equals(ConfigConverter.class, parameterizedType.getRawType()))
-                .map(ParameterizedType::getActualTypeArguments)
-                .findAny()
-                .map(typeArguments -> {
-                    if (typeArguments.length != 1) {
-                        throw new IllegalStateException("Can not extract generic type for converter " + converterClass);
-                    }
-                    return (Class<T>) typeArguments[0];
-                })
-                .orElseGet(() -> getConverterType((Class<C>) converterClass.getSuperclass()));
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Nullable
     <T> T convert(@Nullable final String value, @NonNull final Class<T> targetClass) {
         throwIfNotInitialized();
@@ -126,20 +106,7 @@ class ConverterService implements ConfigLifecycle {
         if (Objects.equals(targetClass, String.class)) {
             return (T) value;
         }
-        final ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(targetClass);
-
-        if (converter == null && targetClass.isEnum()) {
-            // FUTURE WORK: once logging is added to this module, log a warning here
-            // ("No converter defined for type '" + targetClass + "'. Converting using backup enum converter.");
-            try {
-                return (T) Enum.valueOf((Class<Enum>) targetClass, value);
-            } catch (final IllegalArgumentException e) {
-                throw new IllegalArgumentException(
-                        "Can not convert value '%s' of Enum '%s' by default. Please add a custom config converter."
-                                .formatted(value, targetClass),
-                        e);
-            }
-        }
+        final ConfigConverter<T> converter = getOrAdConverter(targetClass);
 
         if (converter == null) {
             throw new IllegalArgumentException("No converter defined for type '" + targetClass + "'");
@@ -151,14 +118,17 @@ class ConverterService implements ConfigLifecycle {
         }
     }
 
-    <T> void addConverter(@NonNull final ConfigConverter<T> converter) {
-        throwIfInitialized();
-        Objects.requireNonNull(converter, "converter must not be null");
-        final Class<T> converterType = getConverterType(converter.getClass());
-        add(converterType, converter);
-    }
-
-    private <T> void add(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
+    /**
+     * Associates a {@code ConfigConverter} to a {@code Class} so each conversion of that type is performed by the converter.
+     *
+     * @throws IllegalStateException if {@code ConverterService} instance is already initialized
+     * @throws NullPointerException if any of the following parameters are {@code null}.
+     *     <ul>
+     *       <li>{@code converterType}</li>
+     *       <li>{@code converter}</li>
+     *     </ul>
+     */
+    <T> void addConverter(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         throwIfInitialized();
         Objects.requireNonNull(converterType, "converterType must not be null");
         Objects.requireNonNull(converter, "converter must not be null");
@@ -177,31 +147,31 @@ class ConverterService implements ConfigLifecycle {
     public void init() {
         throwIfInitialized();
         // Primitives
-        add(Integer.TYPE, INTEGER_CONVERTER);
-        add(Long.TYPE, LONG_CONVERTER);
-        add(Double.TYPE, DOUBLE_CONVERTER);
-        add(Float.TYPE, FLOAT_CONVERTER);
-        add(Short.TYPE, SHORT_CONVERTER);
-        add(Byte.TYPE, BYTE_CONVERTER);
-        add(Boolean.TYPE, BOOLEAN_CONVERTER);
+        addConverter(Integer.TYPE, INTEGER_CONVERTER);
+        addConverter(Long.TYPE, LONG_CONVERTER);
+        addConverter(Double.TYPE, DOUBLE_CONVERTER);
+        addConverter(Float.TYPE, FLOAT_CONVERTER);
+        addConverter(Short.TYPE, SHORT_CONVERTER);
+        addConverter(Byte.TYPE, BYTE_CONVERTER);
+        addConverter(Boolean.TYPE, BOOLEAN_CONVERTER);
 
-        add(String.class, STRING_CONVERTER);
-        add(Integer.class, INTEGER_CONVERTER);
-        add(Long.class, LONG_CONVERTER);
-        add(Double.class, DOUBLE_CONVERTER);
-        add(Float.class, FLOAT_CONVERTER);
-        add(Short.class, SHORT_CONVERTER);
-        add(Byte.class, BYTE_CONVERTER);
-        add(Boolean.class, BOOLEAN_CONVERTER);
-        add(BigDecimal.class, BIG_DECIMAL_CONVERTER);
-        add(BigInteger.class, BIG_INTEGER_CONVERTER);
-        add(URL.class, URL_CONVERTER);
-        add(URI.class, URI_CONVERTER);
-        add(Path.class, PATH_CONVERTER);
-        add(File.class, FILE_CONVERTER);
-        add(ZonedDateTime.class, ZONED_DATE_TIME_CONVERTER);
-        add(Duration.class, DURATION_CONVERTER);
-        add(ChronoUnit.class, CHRONO_UNIT_CONVERTER);
+        addConverter(String.class, STRING_CONVERTER);
+        addConverter(Integer.class, INTEGER_CONVERTER);
+        addConverter(Long.class, LONG_CONVERTER);
+        addConverter(Double.class, DOUBLE_CONVERTER);
+        addConverter(Float.class, FLOAT_CONVERTER);
+        addConverter(Short.class, SHORT_CONVERTER);
+        addConverter(Byte.class, BYTE_CONVERTER);
+        addConverter(Boolean.class, BOOLEAN_CONVERTER);
+        addConverter(BigDecimal.class, BIG_DECIMAL_CONVERTER);
+        addConverter(BigInteger.class, BIG_INTEGER_CONVERTER);
+        addConverter(URL.class, URL_CONVERTER);
+        addConverter(URI.class, URI_CONVERTER);
+        addConverter(Path.class, PATH_CONVERTER);
+        addConverter(File.class, FILE_CONVERTER);
+        addConverter(ZonedDateTime.class, ZONED_DATE_TIME_CONVERTER);
+        addConverter(Duration.class, DURATION_CONVERTER);
+        addConverter(ChronoUnit.class, CHRONO_UNIT_CONVERTER);
         initialized = true;
     }
 
@@ -216,11 +186,30 @@ class ConverterService implements ConfigLifecycle {
         return initialized;
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     <T> ConfigConverter<T> getConverterForType(@NonNull final Class<T> valueType) {
         throwIfNotInitialized();
         Objects.requireNonNull(valueType, "valueType must not be null");
-        return (ConfigConverter<T>) converters.get(valueType);
+        return getOrAdConverter(valueType);
+    }
+
+    /**
+     * @param valueType type to convert to
+     * @return
+     *     <ul>
+     *       <li>the previously configured {@code ConfigConverter} if exist for {@code valueType}</li>
+     *       <li>a new instance of {@code EnumConverter} if {@code valueType} is an enum
+     *       and no {@code ConfigConverter} was found</li>
+     *       <li>{@code null} otherwise</li>
+     *     </ul>
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private <T> ConfigConverter<T> getOrAdConverter(@NonNull Class<T> valueType) {
+        ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(valueType);
+
+        if (converter == null && valueType.isEnum()) {
+            return (ConfigConverter<T>) converters.computeIfAbsent(valueType, c -> new EnumConverter(c));
+        }
+        return converter;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
@@ -73,6 +74,7 @@ public class SigningReqsSuite extends HapiSuite {
         return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
     }
 
+    @HapiTest
     final HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewMirrorAddr = new AtomicReference<>();
@@ -115,7 +117,7 @@ public class SigningReqsSuite extends HapiSuite {
                             final var propertyUpdate = overriding(LEGACY_ACTIVATIONS_PROP, overrideValue);
                             CustomSpecAssert.allRunFor(spec, propertyUpdate);
                         }),
-                        // Succeeds with the full-prefix signature
+                        // Succeeds now because the called contract received legacy activation privilege
                         sourcing(() -> contractCall(
                                         MINIMAL_CREATIONS_CONTRACT,
                                         "makeRenewableTokenIndirectly",
