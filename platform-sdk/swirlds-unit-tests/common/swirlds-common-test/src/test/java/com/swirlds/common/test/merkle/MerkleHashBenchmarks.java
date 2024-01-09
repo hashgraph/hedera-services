@@ -18,11 +18,11 @@ package com.swirlds.common.test.merkle;
 
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.common.utility.StopWatch;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;

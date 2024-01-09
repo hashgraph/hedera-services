@@ -23,7 +23,7 @@ import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;

@@ -19,7 +19,7 @@ package com.swirlds.platform.system;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

@@ -19,8 +19,8 @@ package com.swirlds.virtualmap.internal.hash;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;

@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkledb.collections.LongListHeap;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;

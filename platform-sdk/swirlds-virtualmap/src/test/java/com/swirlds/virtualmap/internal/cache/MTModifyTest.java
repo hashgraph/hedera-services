@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;

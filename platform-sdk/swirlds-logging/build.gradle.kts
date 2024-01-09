@@ -20,7 +20,6 @@ plugins {
 }
 
 testModuleInfo {
-    requires("com.swirlds.test.framework")
     requires("org.apache.logging.log4j.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

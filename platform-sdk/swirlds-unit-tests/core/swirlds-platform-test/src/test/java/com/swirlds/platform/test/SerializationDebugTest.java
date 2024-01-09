@@ -26,7 +26,7 @@ import static com.swirlds.common.io.streams.internal.SerializationOperation.READ
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE_LIST;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.STREAM_OPENED;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

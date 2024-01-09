@@ -28,7 +28,6 @@ testModuleInfo {
     requires("com.swirlds.common.testing")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
-    requires("com.swirlds.test.framework")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.apache.commons.lang3")
     requires("org.apache.logging.log4j.core")

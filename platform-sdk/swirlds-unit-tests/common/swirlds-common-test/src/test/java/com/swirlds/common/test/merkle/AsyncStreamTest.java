@@ -16,8 +16,8 @@
 
 package com.swirlds.common.test.merkle;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,6 +30,8 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.common.test.merkle.dummy.BlockingInputStream;
 import com.swirlds.common.test.merkle.dummy.BlockingOutputStream;
 import com.swirlds.common.test.merkle.util.PairedStreams;
@@ -37,8 +39,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

@@ -2,7 +2,6 @@ module com.hedera.node.config.test.fixtures {
     exports com.hedera.node.config.testfixtures;
 
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.test.framework;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.mono;

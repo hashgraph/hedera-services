@@ -23,6 +23,6 @@ application.mainClass.set("com.swirlds.signingtool.FileSignTool")
 
 testModuleInfo {
     requires("com.swirlds.base")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.common.test.fixtures")
     requires("org.junit.jupiter.api")
 }

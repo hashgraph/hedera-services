@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;

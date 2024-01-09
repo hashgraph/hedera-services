@@ -18,7 +18,7 @@ package com.swirlds.virtual.merkle.reconnect;
 
 import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

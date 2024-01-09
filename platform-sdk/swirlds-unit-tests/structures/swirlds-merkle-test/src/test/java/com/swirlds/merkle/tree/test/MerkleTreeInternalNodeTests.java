@@ -16,8 +16,8 @@
 
 package com.swirlds.merkle.tree.test;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.merkle.tree.test.MerkleBinaryTreeTests.insertIntoTree;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,10 +32,10 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

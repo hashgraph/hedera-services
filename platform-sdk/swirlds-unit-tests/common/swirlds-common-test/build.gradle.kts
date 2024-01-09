@@ -23,7 +23,6 @@ testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.test.framework")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
     requiresStatic("com.github.spotbugs.annotations")

@@ -16,9 +16,9 @@
 
 package com.swirlds.fcqueue;
 
-import static com.swirlds.test.framework.TestComponentTags.FCQUEUE;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
-import static com.swirlds.test.framework.TestTypeTags.FUNCTIONAL;
+import static com.swirlds.common.test.fixtures.junit.tags.TestComponentTags.FCQUEUE;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestTypeTags.FUNCTIONAL;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

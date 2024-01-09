@@ -17,13 +17,13 @@
 package com.swirlds.common.test.merkle;
 
 import static com.swirlds.common.merkle.copy.MerklePathReplacement.replacePath;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.areTreesEqual;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildSmallTreeList;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.getNodeInTree;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.haveAnyNodesBeenReleased;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.isFullyInitialized;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,9 +39,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;

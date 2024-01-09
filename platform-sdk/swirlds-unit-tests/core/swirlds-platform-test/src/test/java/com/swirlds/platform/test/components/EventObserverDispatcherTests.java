@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
@@ -38,8 +40,6 @@ import com.swirlds.platform.test.observers.ObservationType;
 import com.swirlds.platform.test.observers.PreConsensusObserver;
 import com.swirlds.platform.test.observers.SimpleEventTracker;
 import com.swirlds.platform.test.observers.StaleObserver;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

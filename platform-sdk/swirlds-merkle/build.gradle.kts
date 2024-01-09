@@ -26,7 +26,6 @@ testModuleInfo {
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions")
     requires("com.swirlds.merkledb")
-    requires("com.swirlds.test.framework")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.virtualmap")
     requires("com.swirlds.config.api.test.fixtures")

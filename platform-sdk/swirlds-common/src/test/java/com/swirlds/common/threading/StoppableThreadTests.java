@@ -32,15 +32,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
-import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;

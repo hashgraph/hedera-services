@@ -17,7 +17,6 @@
 plugins { id("com.hedera.hashgraph.sdk.conventions") }
 
 testModuleInfo {
-    requires("com.swirlds.test.framework")
     requires("com.swirlds.common.testing")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

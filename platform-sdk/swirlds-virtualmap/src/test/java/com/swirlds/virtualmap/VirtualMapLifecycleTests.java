@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;

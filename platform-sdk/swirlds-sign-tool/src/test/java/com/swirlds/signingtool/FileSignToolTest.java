@@ -45,7 +45,7 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.StreamValidationResult;
-import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;

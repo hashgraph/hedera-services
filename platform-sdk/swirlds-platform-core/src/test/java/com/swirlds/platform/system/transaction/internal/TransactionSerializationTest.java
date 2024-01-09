@@ -20,10 +20,10 @@ import static com.swirlds.common.io.streams.SerializableDataOutputStream.getInst
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_BITS_PER_SECOND;
 import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_PING_MICROSECONDS;
 import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

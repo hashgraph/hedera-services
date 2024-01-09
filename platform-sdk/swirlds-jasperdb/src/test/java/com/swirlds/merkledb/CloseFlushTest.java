@@ -19,7 +19,7 @@ package com.swirlds.merkledb;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualMap;

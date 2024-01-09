@@ -42,7 +42,6 @@ testModuleInfo {
     requires("com.swirlds.common.testing")
     requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.platform.core")
-    requires("com.swirlds.test.framework")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")
     requires("awaitility")

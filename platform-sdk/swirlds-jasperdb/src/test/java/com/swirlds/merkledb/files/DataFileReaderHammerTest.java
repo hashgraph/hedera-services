@@ -19,10 +19,10 @@ package com.swirlds.merkledb.files;
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
+import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
