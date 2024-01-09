@@ -168,7 +168,7 @@ public class SignedStateManager {
      * @param signerId             the node that created the signature
      * @param signatureTransaction the signature transaction
      */
-    public void handlePreconsensusSignatureTransaction(
+    private void handlePreconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
 
         Objects.requireNonNull(signerId);
@@ -199,14 +199,9 @@ public class SignedStateManager {
     public List<ReservedSignedState> handlePostconsensusScopedSystemTransactions(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         for (final ScopedSystemTransaction<StateSignatureTransaction> transaction : transactions) {
-            handlePostconsensusSignatureTransaction(transaction);
+            handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
         }
         return null;
-    }
-
-    public void handlePostconsensusSignatureTransaction(
-            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
-        handlePostconsensusSignatureTransaction(transaction.submitterId(), transaction.transaction());
     }
 
     /**
@@ -215,7 +210,7 @@ public class SignedStateManager {
      * @param signerId    the node that created the signature
      * @param transaction the signature transaction
      */
-    public void handlePostconsensusSignatureTransaction(
+    private void handlePostconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
 
         Objects.requireNonNull(signerId);

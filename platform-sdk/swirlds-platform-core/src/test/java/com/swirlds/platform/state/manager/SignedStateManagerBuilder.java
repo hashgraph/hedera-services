@@ -32,7 +32,6 @@ public class SignedStateManagerBuilder {
 
     private final StateConfig stateConfig;
     private final SignedStateMetrics metrics;
-    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = x -> {};
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = x -> {};
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = x -> {};
 
@@ -56,7 +55,6 @@ public class SignedStateManagerBuilder {
         return SignedStateManagerTester.create(
                 stateConfig,
                 metrics,
-                newLatestCompleteStateConsumer,
                 stateHasEnoughSignaturesConsumer,
                 stateLacksSignaturesConsumer);
     }

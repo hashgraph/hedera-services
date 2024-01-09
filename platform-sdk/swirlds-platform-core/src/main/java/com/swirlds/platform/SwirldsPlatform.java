@@ -519,7 +519,7 @@ public class SwirldsPlatform implements Platform {
         components.add(model);
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
-        
+
         savedStateController = new SavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
