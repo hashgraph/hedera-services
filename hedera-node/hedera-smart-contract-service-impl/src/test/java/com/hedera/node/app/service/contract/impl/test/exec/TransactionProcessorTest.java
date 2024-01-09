@@ -31,6 +31,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NO_ALLOWANCE_CHARGING_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RECEIVER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
@@ -676,6 +677,7 @@ class TransactionProcessorTest {
                         eq(contractCreationProcessor)))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
+
         willThrow(new ResourceExhaustedException(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES))
                 .given(worldUpdater)
                 .commit();
@@ -732,5 +734,6 @@ class TransactionProcessorTest {
 
     private void givenReceiverAccount() {
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(receiverAccount);
+        given(receiverAccount.hederaId()).willReturn(RECEIVER_ID);
     }
 }
