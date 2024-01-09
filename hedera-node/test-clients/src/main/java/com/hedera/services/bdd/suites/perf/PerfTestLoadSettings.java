@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAU
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import java.util.Arrays;
 
 public class PerfTestLoadSettings {
     public static final int DEFAULT_TPS = 500;
@@ -131,8 +132,8 @@ public class PerfTestLoadSettings {
     private String upgradeFilePath = DEFAULT_UPGRADE_FILE_PATH;
     private String upgradeFileId = DEFAULT_UPGRADE_FILE_ID;
     private int upgradeFileAppendsPerBurst = DEFAULT_APPENDS_PER_BURST;
-
     private int nodeToStake = DEFAULT_NODE_TO_STAKE;
+    private int[] extraNodesToStake = {};
     private HapiPropertySource ciProps = null;
 
     public PerfTestLoadSettings() {}
@@ -193,6 +194,10 @@ public class PerfTestLoadSettings {
 
     public int getNodeToStake() {
         return nodeToStake;
+    }
+
+    public int[] getExtraNodesToStake() {
+        return extraNodesToStake;
     }
 
     public int getTotalTopics() {
@@ -346,6 +351,11 @@ public class PerfTestLoadSettings {
         if (ciProps.has("nodeToStake")) {
             nodeToStake = ciProps.getInteger("nodeToStake");
         }
+        if (ciProps.has("extraNodesToStake")) {
+            extraNodesToStake = Arrays.stream(ciProps.get("extraNodesToStake").split("[+]"))
+                    .mapToInt(Integer::parseInt)
+                    .toArray();
+        }
     }
 
     @Override
@@ -379,6 +389,7 @@ public class PerfTestLoadSettings {
                 .add("upgradeFileId", upgradeFileId)
                 .add("upgradeFileAppendsPerBurst", upgradeFileAppendsPerBurst)
                 .add("nodeToStake", nodeToStake)
+                .add("extraNodesToStake", extraNodesToStake)
                 .toString();
     }
 }
