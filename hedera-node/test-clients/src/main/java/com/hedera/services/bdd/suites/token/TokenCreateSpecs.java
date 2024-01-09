@@ -52,6 +52,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemPropert
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -86,8 +89,8 @@ import org.junit.jupiter.api.Tag;
  *     <li>Default values.</li>
  * </ul>
  */
-//@HapiTestSuite
-//@Tag(TOKEN)
+@HapiTestSuite
+@Tag(TOKEN)
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
@@ -270,7 +273,7 @@ public class TokenCreateSpecs extends HapiSuite {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-        return defaultHapiSpec("CannotCreateWithExcessiveLifetime")
+        return defaultHapiSpec("CannotCreateWithExcessiveLifetime", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
                 .then(
@@ -322,7 +325,7 @@ public class TokenCreateSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec creationSetsExpectedName() {
         String saltedName = salted(PRIMARY);
-        return defaultHapiSpec("CreationSetsExpectedName")
+        return defaultHapiSpec("CreationSetsExpectedName", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
@@ -331,7 +334,7 @@ public class TokenCreateSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
         String saltedName = salted(PRIMARY);
-        return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
+        return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getAccountInfo(TOKEN_TREASURY)
@@ -354,7 +357,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
         final var customFeeKey = "customFeeKey";
 
-        return defaultHapiSpec("BaseCreationsHaveExpectedPrices", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("BaseCreationsHaveExpectedPrices", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -430,7 +433,7 @@ public class TokenCreateSpecs extends HapiSuite {
         String saltedName = salted(PRIMARY);
         final var secondCreation = "secondCreation";
         final var pauseKey = "pauseKey";
-        return defaultHapiSpec("CreationHappyPath")
+        return defaultHapiSpec("CreationHappyPath", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -966,7 +969,7 @@ public class TokenCreateSpecs extends HapiSuite {
         int decimals = 1;
         long initialSupply = 100_000;
 
-        return defaultHapiSpec("TreasuryHasCorrectBalance")
+        return defaultHapiSpec("TreasuryHasCorrectBalance", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(1L))
                 .when(tokenCreate(token)
                         .treasury(TOKEN_TREASURY)
@@ -977,7 +980,9 @@ public class TokenCreateSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec prechecksWork() {
-        return defaultHapiSpec("PrechecksWork", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("PrechecksWork", HIGHLY_NON_DETERMINISTIC_FEES,
+                NONDETERMINISTIC_TOKEN_NAMES,
+                IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY)
                                 .withUnknownFieldIn(TRANSACTION)
