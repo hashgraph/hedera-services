@@ -66,7 +66,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -163,18 +162,11 @@ class PcesFileReaderTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    0,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound =
-                    Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -215,18 +207,11 @@ class PcesFileReaderTests {
                     sequenceNumber < firstSequenceNumber + fileCount;
                     sequenceNumber++) {
 
-                final PcesFile file = PcesFile.of(
-                        ancientMode,
-                        timestamp,
-                        sequenceNumber,
-                        lowerBound,
-                        upperBound,
-                        0,
-                        fileDirectory);
+                final PcesFile file =
+                        PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
                 lowerBound = random.nextLong(lowerBound, upperBound + 1);
-                upperBound =
-                        Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+                upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
                 timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
                 if (sequenceNumber == sequenceNumberToSkip) {
@@ -242,12 +227,7 @@ class PcesFileReaderTests {
 
             if (permitGaps) {
                 final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        fileDirectory,
-                        0,
-                        true,
-                        ancientMode);
+                        platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, true, ancientMode);
                 // Gaps are allowed. We should see all files except for the one that was skipped.
                 assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
             } else {
@@ -283,18 +263,11 @@ class PcesFileReaderTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    0,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound =
-                    Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -359,20 +332,13 @@ class PcesFileReaderTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    0,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             // Advance the bounds only 10% of the time
             if (random.nextLong() < 0.1) {
                 lowerBound = random.nextLong(lowerBound, upperBound + 1);
-                upperBound =
-                        Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+                upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             }
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
@@ -381,8 +347,7 @@ class PcesFileReaderTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false,
-                ancientMode);
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with an ancient identifier greater than or equal to the target. Choose an ancient identifier that falls
@@ -434,18 +399,11 @@ class PcesFileReaderTests {
                 sequenceNumber < firstSequenceNumber + fileCount;
                 sequenceNumber++) {
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    0,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound =
-                    Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -453,8 +411,7 @@ class PcesFileReaderTests {
         }
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false,
-                ancientMode);
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         // Request an ancient identifier higher than all files in the data store
         final long targetAncientIdentifier = files.get(fileCount - 1).getUpperBound() + 1;
@@ -470,12 +427,7 @@ class PcesFileReaderTests {
         assertThrows(
                 NoSuchFileException.class,
                 () -> PcesFileReader.readFilesFromDisk(
-                        buildContext(ancientMode),
-                        TestRecycleBin.getInstance(),
-                        fileDirectory,
-                        0,
-                        false,
-                        ancientMode));
+                        buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode));
     }
 
     /**
@@ -545,18 +497,11 @@ class PcesFileReaderTests {
                 origin = random.nextLong(origin + 1, origin + 1000);
             }
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    origin,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound =
-                    Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -651,14 +596,8 @@ class PcesFileReaderTests {
                 origin = random.nextLong(origin + 1, origin + 1000);
             }
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    origin,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound + 1, upperBound + 1);
             upperBound = random.nextLong(upperBound + 1, upperBound + maxDelta);
@@ -694,14 +633,16 @@ class PcesFileReaderTests {
         final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound1, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startAncientIdentifier, startingRound1));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker1.getFileIterator(startAncientIdentifier, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
         final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound2, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startAncientIdentifier, startingRound2));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker2.getFileIterator(startAncientIdentifier, startingRound2));
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
@@ -709,7 +650,8 @@ class PcesFileReaderTests {
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
         assertIteratorEquality(
-                filesBeforeDiscontinuity.iterator(), fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
+                filesBeforeDiscontinuity.iterator(),
+                fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
 
         validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
 
@@ -761,14 +703,8 @@ class PcesFileReaderTests {
                 origin = random.nextLong(origin + 1, origin + 1000);
             }
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    origin,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound + 1, upperBound + 1);
             upperBound = random.nextLong(upperBound + 1, upperBound + maxDelta);
@@ -802,14 +738,16 @@ class PcesFileReaderTests {
         final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound1, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startAncientIdentifier, startingRound1));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker1.getFileIterator(startAncientIdentifier, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
         final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound2, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startAncientIdentifier, startingRound2));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker2.getFileIterator(startAncientIdentifier, startingRound2));
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
@@ -870,14 +808,8 @@ class PcesFileReaderTests {
                 origin = random.nextLong(origin + 1, origin + 1000);
             }
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    timestamp,
-                    sequenceNumber,
-                    lowerBound,
-                    upperBound,
-                    origin,
-                    fileDirectory);
+            final PcesFile file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound + 1, upperBound + 1);
             upperBound = random.nextLong(upperBound + 1, upperBound + maxDelta);
