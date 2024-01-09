@@ -71,9 +71,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
-//@HapiTestSuite
-//@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-//@Tag(TIME_CONSUMING)
+@HapiTestSuite
+ @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+ @Tag(TIME_CONSUMING)
 public class StakingSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(StakingSuite.class);

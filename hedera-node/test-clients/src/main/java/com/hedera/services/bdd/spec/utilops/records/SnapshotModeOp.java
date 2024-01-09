@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -420,9 +419,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 new ArrayList<>(expectedMessage.getAllFields().entrySet());
         final var actualFields = new ArrayList<>(actualMessage.getAllFields().entrySet());
         if (expectedFields.size() != actualFields.size()) {
-                Assertions.fail("Mismatched field counts "
-                        + " (" + describeFieldCountMismatch(expectedFields, actualFields) + ") " + "between expected "
-                        + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
+            Assertions.fail("Mismatched field counts "
+                    + " (" + describeFieldCountMismatch(expectedFields, actualFields) + ") " + "between expected "
+                    + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
         }
         for (int i = 0, n = expectedFields.size(); i < n; i++) {
             final var expectedField = expectedFields.get(i);
@@ -592,9 +591,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
-            } else if("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
+            } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
                 Assertions.assertTrue(expected != null && actual != null, "Token name is null");
-            }else {
+            } else {
                 Assertions.assertEquals(
                         expected,
                         actual,
@@ -761,8 +760,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return matchModes.contains(NONDETERMINISTIC_LOG_DATA);
         } else if ("ethereum_data".equals(expectedName) || "ethereum_hash".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_ETHEREUM_DATA);
-        } else if("tokenTransferLists".equals(expectedName)){
-            return matchModes.contains(IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }

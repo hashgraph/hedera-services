@@ -100,7 +100,8 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(freezeMgmtSuccessCasesWork(),
+        return List.of(
+                freezeMgmtSuccessCasesWork(),
                 kycMgmtFailureCasesWork(),
                 kycMgmtSuccessCasesWork(),
                 supplyMgmtSuccessCasesWork(),
@@ -204,7 +205,8 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
-        return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned", SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS)
+        return defaultHapiSpec(
+                        "RevokedKYCTreasuryCannotBeMintedOrBurned", SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("kycKey"),

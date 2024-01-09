@@ -54,7 +54,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.IGNORE_ZERO_AMOUNT_TOKEN_TRANSFERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -65,7 +64,6 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -982,8 +980,7 @@ public class TokenCreateSpecs extends HapiSuite {
     // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
     final HapiSpec prechecksWork() {
-        return defaultHapiSpec("PrechecksWork", HIGHLY_NON_DETERMINISTIC_FEES,
-                FULLY_NONDETERMINISTIC)
+        return defaultHapiSpec("PrechecksWork", HIGHLY_NON_DETERMINISTIC_FEES, FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(TOKEN_TREASURY)
                                 .withUnknownFieldIn(TRANSACTION)
