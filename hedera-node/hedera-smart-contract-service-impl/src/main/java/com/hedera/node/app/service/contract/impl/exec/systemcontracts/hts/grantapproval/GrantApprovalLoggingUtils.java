@@ -22,6 +22,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiCon
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -55,11 +56,13 @@ public class GrantApprovalLoggingUtils {
             @NonNull final ReadableAccountStore accountStore) {
         final var tokenAddress = asLongZeroAddress(tokenId.tokenNum());
         final var senderAddress = priorityAddressOf(requireNonNull(accountStore.getAccountById(senderId)));
-        final var receiverAddress = priorityAddressOf(requireNonNull(accountStore.getAccountById(spenderId)));
+
+        final var spenderAccount = accountStore.getAccountById(spenderId);
+        final var spenderAddress = spenderAccount != null ? priorityAddressOf(spenderAccount) : Address.EMPTY; //todo - check how to handle nulls here... what if null?
         return LogBuilder.logBuilder()
                 .forLogger(tokenAddress)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(senderAddress)
-                .forIndexedArgument(receiverAddress);
+                .forIndexedArgument(spenderAddress);
     }
 }
