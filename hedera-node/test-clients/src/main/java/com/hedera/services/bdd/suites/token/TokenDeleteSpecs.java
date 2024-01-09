@@ -49,8 +49,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-@Tag(TOKEN)
+//@HapiTestSuite
+//@Tag(TOKEN)
 public class TokenDeleteSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);

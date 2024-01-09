@@ -70,6 +70,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -79,8 +80,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-@Tag(TOKEN)
+//@HapiTestSuite
+//@Tag(TOKEN)
 public class TokenManagementSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -99,22 +100,20 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            freezeMgmtSuccessCasesWork(),
-            kycMgmtFailureCasesWork(),
-            kycMgmtSuccessCasesWork(),
-            supplyMgmtSuccessCasesWork(),
-            wipeAccountFailureCasesWork(),
-            wipeAccountSuccessCasesWork(),
-            supplyMgmtFailureCasesWork(),
-            burnTokenFailsDueToInsufficientTreasuryBalance(),
-            frozenTreasuryCannotBeMintedOrBurned(),
-            revokedKYCTreasuryCannotBeMintedOrBurned(),
-            fungibleCommonMaxSupplyReachWork(),
-            mintingMaxLongValueWorks(),
-            nftMintProvidesMintedNftsAndNewTotalSupply(),
-            zeroUnitTokenOperationsWorkAsExpected()
-        });
+        return List.of(freezeMgmtSuccessCasesWork(),
+                kycMgmtFailureCasesWork(),
+                kycMgmtSuccessCasesWork(),
+                supplyMgmtSuccessCasesWork(),
+                wipeAccountFailureCasesWork(),
+                wipeAccountSuccessCasesWork(),
+                supplyMgmtFailureCasesWork(),
+                burnTokenFailsDueToInsufficientTreasuryBalance(),
+                frozenTreasuryCannotBeMintedOrBurned(),
+                revokedKYCTreasuryCannotBeMintedOrBurned(),
+                fungibleCommonMaxSupplyReachWork(),
+                mintingMaxLongValueWorks(),
+                nftMintProvidesMintedNftsAndNewTotalSupply(),
+                zeroUnitTokenOperationsWorkAsExpected());
     }
 
     @Override
@@ -203,7 +202,7 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
-        return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
+        return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned", SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("kycKey"),

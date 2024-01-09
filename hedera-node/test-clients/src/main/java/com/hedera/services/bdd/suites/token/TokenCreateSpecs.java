@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemPropert
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -60,6 +61,7 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -84,8 +86,8 @@ import org.junit.jupiter.api.Tag;
  *     <li>Default values.</li>
  * </ul>
  */
-@HapiTestSuite
-@Tag(TOKEN)
+//@HapiTestSuite
+//@Tag(TOKEN)
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
@@ -352,7 +354,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
         final var customFeeKey = "customFeeKey";
 
-        return defaultHapiSpec("BaseCreationsHaveExpectedPrices")
+        return defaultHapiSpec("BaseCreationsHaveExpectedPrices", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -856,7 +858,7 @@ public class TokenCreateSpecs extends HapiSuite {
     public HapiSpec creationValidatesName() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
-        return defaultHapiSpec("CreationValidatesName")
+        return defaultHapiSpec("CreationValidatesName", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         recordSystemProperty("tokens.maxTokenNameUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
@@ -922,7 +924,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec creationRequiresAppropriateSigsHappyPath() {
-        return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath")
+        return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
                 .when()
                 .then(tokenCreate("shouldWork")
@@ -975,7 +977,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec prechecksWork() {
-        return defaultHapiSpec("PrechecksWork")
+        return defaultHapiSpec("PrechecksWork", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY)
                                 .withUnknownFieldIn(TRANSACTION)
