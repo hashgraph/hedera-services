@@ -76,6 +76,7 @@ public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
         return this;
     }
 
+    /*  The constant fees will be modified later once new fee calculation model is implemented */
     @Override
     protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return HapiSuite.ONE_HUNDRED_HBARS;
@@ -94,8 +95,9 @@ public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
         return b -> b.setTokenCreatePartition(opBody);
     }
 
-    protected List<Function<HapiSpec, Key>> defaultSigners() {
-        List<Function<HapiSpec, Key>> signers = new ArrayList<>();
+    protected List<Function<HapiSpec, Key>> defaultSigners(final Function<HapiSpec, String> effectivePayer) {
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
+        signers.add(spec -> spec.registry().getKey(effectivePayer.apply(spec)));
         signers.add(spec -> {
             try {
                 return spec.registry().getPartitionKey(token);
