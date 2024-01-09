@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,17 @@ import java.util.Set;
 
 /**
  * Defines the schema for the contract service's state.
+ * (FUTURE) When mod-service release is finalized, rename this class to e.g.
+ * {@code Release47ContractSchema} as it will no longer be appropriate to assume
+ * this schema is always correct for the current version of the software.
  */
-public class ContractSchema extends Schema {
+public class InitialModServiceContractSchema extends Schema {
     public static final String STORAGE_KEY = "STORAGE";
     public static final String BYTECODE_KEY = "BYTECODE";
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
 
-    public ContractSchema(final SemanticVersion version) {
+    public InitialModServiceContractSchema(final SemanticVersion version) {
         super(version);
     }
 

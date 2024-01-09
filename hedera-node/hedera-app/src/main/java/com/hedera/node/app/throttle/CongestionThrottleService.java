@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema.readThrottleDefinitionsBytes;
+import static com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema.readThrottleDefinitionsBytes;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
 import com.hedera.hapi.node.base.SemanticVersion;

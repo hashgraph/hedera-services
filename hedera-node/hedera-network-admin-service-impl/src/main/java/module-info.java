@@ -30,4 +30,6 @@ module com.hedera.node.app.service.network.admin.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.networkadmin.impl.handlers;
     exports com.hedera.node.app.service.networkadmin.impl.codec;
+    exports com.hedera.node.app.service.networkadmin.impl.schemas to
+            com.hedera.node.app;
 }
