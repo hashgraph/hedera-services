@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.ethereum;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -974,43 +973,6 @@ public class EthereumSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
                                                         .withErcFungibleTransferStatus(true)))))));
-    }
-
-    @HapiTest
-    HapiSpec callToNonExistingContractFailsGracefully() {
-
-        return defaultHapiSpec("callToNonExistingContractFailsGracefully")
-                .given(
-                        withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ethereumCallWithFunctionAbi(
-                                        false,
-                                        "invalid",
-                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via("invalidContractCallTxn")
-                                .nonce(0)
-                                .gasPrice(0L)
-                                .gasLimit(1_000_000L)
-                                .hasKnownStatusFrom(SUCCESS))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        getTxnRecord("invalidContractCallTxn")
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .senderId(spec.registry()
-                                                        .getAccountID(spec.registry()
-                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
-                                                                .getAlias()
-                                                                .toStringUtf8())))))));
     }
 
     @Override

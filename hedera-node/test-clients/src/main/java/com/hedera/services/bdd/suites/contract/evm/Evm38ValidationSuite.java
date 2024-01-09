@@ -128,9 +128,7 @@ public class Evm38ValidationSuite extends HapiSuite {
                         withOpContext(
                                 (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
                 .when()
-                .then(contractCallWithFunctionAbi("invalid", function)
-                        .hasPrecheck(INVALID_CONTRACT_ID)
-                        .hasKnownStatus(SUCCESS));
+                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
