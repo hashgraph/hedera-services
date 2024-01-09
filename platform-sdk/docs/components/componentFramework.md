@@ -2,12 +2,12 @@
 
 ## Goals
 
-The goals of this framework is to provide a structure for defining software components in which:
+The goal of this framework is to provide a structure for defining software components in which:
 
-1. Logical units of business logic can be defined in isolation from other logical units of business logic.
-2. A unit of business logic can be connected (or wired) together with other business logic to form a data pipeline.
-3. Each unit of business logic allows its threading model to be changed individually without modifying the business
-   logic itself.
+1. Components can be defined in isolation, each with their own unit of business logic.
+2. Components can be connected (or wired) together with other components to form a data pipeline.
+3. Each component allows its threading model to be changed individually without modifying the business
+   logic.
 
 These goals allow software to be well organized, flexible, and easily tuned for performance.
 
@@ -15,7 +15,7 @@ These goals allow software to be well organized, flexible, and easily tuned for 
 
 At the most basic level, a component in this framework is composed of a task scheduler, business logic, and wires. Each
 component has a unit of business logic that performs some action on a piece of data. The component receives the data on
-an input wire, performs the action, and optionally produces data on an output wire. The components are connected, or 
+an input wire, performs the action, and optionally produces data on an output wire. The components are connected, or
 "soldered", together by joining input and output wires of the same data type to form a data pipeline.
 
 The concurrency of the component is determined by the task scheduler type. Each component has a task scheduler which
@@ -29,17 +29,17 @@ Here is a picture of a simple component with one input wire of type `Integer`, a
 
 ### Business Logic
 
-Business logic is defined in one or more classes that work together and accept optional data, perform an
+Business logic is defined in one or more classes that work together and accept data, perform an
 operation, and produce optional output. This framework allows business logic to be defined completely independently
-of the threading model and other business logic. Each unit of business logic does not know where it's input comes from
+of the threading model and other business logic. Each unit of business logic does not know where its input comes from
 or who consumes its output. The threading is handled by its task scheduler, and the connection of inputs and outputs is
 handled externally. Changes to concurrency and wiring have no impact on the business logic.
 
 ### Wires
 
-Wires are the construct on which data flows between components. Each component can have zero or more input wires 
+Wires are the construct on which data flows between components. Each component can have one or more input wires
 (restrictions apply based on the concurrency of the task scheduler) and one or more output wires. Components that do not
-produce any data have an output void of type `Void`. Wires are strongly typed to the data they transport. Wires of the
+produce any data have an output of type `Void`. Wires are strongly typed to the data they transport. Wires of the
 same type can be "soldered" or connected to determine the flow of data between components.
 
 ### Task Schedulers
@@ -97,7 +97,7 @@ steps.
 ### Step 1 - Create the Task Scheduler
 
 Create the `TaskScheduler` parameterized with the type of data the component will produce. The `TaskScheduler` comes
-with an `OutputWire` build in.
+with an `OutputWire` built in.
 
 ```
 TaskScheduler<String> fooTaskScheduler = WiringModel.schedulerBuilder("Foo");
@@ -166,11 +166,13 @@ example, a `WireListSplitter` takes data from a wire with a `List` type and stre
 one, onto another wire. Wire transformers operate on the thread defined in the task scheduler and do not come with their
 own concurrency logic. Some types of transformers are described below:
 
-**Wire Filter:** A predicate that operates on the data type of the output wire. Data is only passed to the filter output wire if the
+**Wire Filter:** A predicate that operates on the data type of the output wire. Data is only passed to the filter output
+wire if the
 predicate passes.
 
-**Wire Transformer:** A function that operates on the data type of the output wire. Data produced by the wire transformer and forwarded on its
-output wire may be a different type that the input.
+**Wire Transformer:** A function that operates on the data type of the output wire. Data produced by the wire
+transformer and forwarded on its
+output wire may be a different type than the input.
 
 **Wire List Splitter:** A function that operates on a list of data and streams the individual items on the output wire.
 
