@@ -190,10 +190,16 @@ detected.
 
 ### Secondary Output Wires
 
-Each task schedulers comes with a built in output wire. If additional output wires are necessary, they can be created
-using the task scheduler, but they must be passed to the business logic in the constructor so that they can be invoked
-directly by the business logic. It is a violation of the framework principles to invoke a secondary output wire from
-anywhere outside the business logic.
+Each task scheduler comes with a built-in output wire, also referred to as the "primary output wire". The task
+scheduler takes the data produced by each task execution and sends it on the primary output wire. Additional output
+wires may be created, but they do not follow the same paradigm as primary output wires. These are referred to as
+"secondary output wires". Secondary output wires must be invoked by the business logic directly. Task schedulers are
+unaware of such secondary output wires. The business logic still does not know who consumes the data of these secondary
+output wires, but must know that the secondary output wire exists in order to send data on it. Therefore, secondary
+output wires must be provided to the business logic, ideally in the constructor. A component is the sole owner of its
+output wires. Only the business logic of a component should be allowed to push data into its output wires. It is a
+violation of the framework principles to share ownership of a secondary output wire by allowing anything external to the
+component to push data onto the output wire.
 
 ## Comprehensive Component Diagram
 
