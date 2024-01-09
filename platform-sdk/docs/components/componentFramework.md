@@ -59,7 +59,8 @@ Data coming into the task scheduler goes through a few phases:
    returned).
 
 If a component is wired to another component such that data is passed from one to the next, part of the task execution
-is scheduling the next component's task.
+is scheduling the next component's task. Each data item received on an input wire created one task, and that task is
+executed exactly once.
 
 The details of how a task is scheduled changes with the task scheduler type. Some examples of such scheduling include
 adding the task to a concurrent queue which a dedicated thread pulls from, or submitting the task to the `ForkJoinPool`.
@@ -200,6 +201,14 @@ output wires must be provided to the business logic, ideally in the constructor.
 output wires. Only the business logic of a component should be allowed to push data into its output wires. It is a
 violation of the framework principles to share ownership of a secondary output wire by allowing anything external to the
 component to push data onto the output wire.
+
+### Error Handling
+
+Each task scheduler may be provided with an `UncaughtExceptionHandler`. If none is provided, a default handler is used
+that logs the exception. Any `Throwable` error that gets thrown by the business logic is provided to the uncaught
+exception handler as part of task execution. Exceptions do not cause the task scheduler to stop or crash unless the task
+scheduler has a dedicated thread or is direct, and the uncaught exception handler kills the execution thread. In all
+other cases, the task scheduler will continue with the next task.
 
 ## Comprehensive Component Diagram
 
