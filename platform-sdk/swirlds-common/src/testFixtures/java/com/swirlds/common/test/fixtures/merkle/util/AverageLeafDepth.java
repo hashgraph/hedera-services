@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.util;
+package com.swirlds.common.test.fixtures.merkle.util;
 
 /**
  * Utility container class for measuring average leaf depth of a merkle tree.

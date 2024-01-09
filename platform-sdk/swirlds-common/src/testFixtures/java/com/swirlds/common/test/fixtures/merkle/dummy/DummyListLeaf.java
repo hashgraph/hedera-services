@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.dummy;
+package com.swirlds.common.test.fixtures.merkle.dummy;
 
-/**
- * The exact same behavior as a DummyMerkleLeaf but with a different class Id.
- */
-public class DummyMerkleLeaf2 extends DummyMerkleLeaf {
+import com.swirlds.common.merkle.utility.AbstractListLeaf;
+import com.swirlds.common.merkle.utility.SerializableLong;
 
-    public DummyMerkleLeaf2() {
-        super();
+public class DummyListLeaf extends AbstractListLeaf<SerializableLong> {
+
+    private static final long CLASS_ID = 0x44d7d917eedb94d2L;
+
+    public DummyListLeaf() {}
+
+    private DummyListLeaf(final DummyListLeaf that) {
+        super(that);
     }
 
-    public DummyMerkleLeaf2(String value) {
-        super(value);
+    @Override
+    public DummyListLeaf copy() {
+        return new DummyListLeaf(this);
     }
 
     @Override
     public long getClassId() {
-        return super.getClassId() + 1;
+        return CLASS_ID;
     }
 }

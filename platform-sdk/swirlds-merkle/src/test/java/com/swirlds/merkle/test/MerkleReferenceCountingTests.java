@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.test;
 
-import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildTreeList;
+import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildTreeList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,9 +26,9 @@ import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;

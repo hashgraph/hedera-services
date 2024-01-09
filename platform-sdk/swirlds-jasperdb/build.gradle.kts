@@ -25,7 +25,6 @@ mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 jmhModuleInfo { requires("jmh.core") }
 
 testModuleInfo {
-    requires("com.swirlds.common.testing")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")

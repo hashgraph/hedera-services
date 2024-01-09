@@ -30,7 +30,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;

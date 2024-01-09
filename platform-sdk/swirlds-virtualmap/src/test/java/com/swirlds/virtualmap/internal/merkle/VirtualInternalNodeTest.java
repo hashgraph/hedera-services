@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
-import com.swirlds.common.test.merkle.dummy.DummyBinaryMerkleInternal;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyBinaryMerkleInternal;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualTestBase;

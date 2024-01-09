@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,39 +14,39 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.util;
+package com.swirlds.common.test.fixtures.merkle.util;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
+import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
+import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 
 /**
- * A {@link TeachingSynchronizer} with simulated latency.
+ * A {@link LearningSynchronizer} with simulated latency.
  */
-public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
+public class LaggingLearningSynchronizer extends LearningSynchronizer {
 
     private final int latencyMilliseconds;
 
     /**
-     * Create a new teaching synchronizer with simulated latency.
+     * Create a new learning synchronizer with simulated latency.
      */
-    public LaggingTeachingSynchronizer(
+    public LaggingLearningSynchronizer(
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
             final int latencyMilliseconds,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
-        super(Time.getCurrent(), getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
+        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
+
         this.latencyMilliseconds = latencyMilliseconds;
     }
 
@@ -54,7 +54,7 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
      * {@inheritDoc}
      */
     @Override
-    protected <T> AsyncOutputStream<Lesson<T>> buildOutputStream(
+    protected AsyncOutputStream<QueryResponse> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new LaggingAsyncOutputStream<>(out, workGroup, latencyMilliseconds, reconnectConfig);
     }

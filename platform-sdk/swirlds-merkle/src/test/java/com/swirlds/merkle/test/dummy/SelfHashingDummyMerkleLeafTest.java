@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
-import com.swirlds.common.test.merkle.dummy.SelfHashingDummyMerkleLeaf;
+import com.swirlds.common.test.fixtures.merkle.dummy.SelfHashingDummyMerkleLeaf;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

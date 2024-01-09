@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,40 +14,40 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.dummy;
+package com.swirlds.common.test.fixtures.merkle.dummy;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * An output stream that can be caused to block.
+ * An input stream that can be caused to block.
  */
-public class BlockingOutputStream extends OutputStream {
+public class BlockingInputStream extends InputStream {
 
     private final AtomicBoolean locked;
-    private final OutputStream out;
+    private final InputStream in;
 
     /**
      * Create a new blocking stream by wrapping another stream.
      *
-     * @param out
+     * @param in
      * 		the stream to wrap
      */
-    public BlockingOutputStream(final OutputStream out) {
+    public BlockingInputStream(final InputStream in) {
         locked = new AtomicBoolean(false);
-        this.out = out;
+        this.in = in;
     }
 
     /**
-     * Lock the stream. No bytes will be accepted, causing write calls to block.
+     * Lock the stream, causing read calls to block.
      */
     public void lock() {
         locked.set(true);
     }
 
     /**
-     * Unlock the stream. Write calls will not block.
+     * Unlock the stream. Read calls will not block.
      */
     public void unlock() {
         locked.set(false);
@@ -57,10 +57,10 @@ public class BlockingOutputStream extends OutputStream {
      * {@inheritDoc}
      */
     @Override
-    public void write(final int b) throws IOException {
+    public int read() throws IOException {
         while (locked.get()) {
             Thread.onSpinWait();
         }
-        out.write(b);
+        return in.read();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.dummy;
+package com.swirlds.common.test.fixtures.merkle.dummy;
 
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
 
-public class DummyLearnerTreeView extends StandardLearnerTreeView {
-
-    /**
-     * Create a new standard tree view out of an in-memory merkle tree (or subtree).
-     *
-     * @param root
-     * 		the root of the tree (or subtree)
-     */
-    public DummyLearnerTreeView(final MerkleNode root) {
-        super(root);
-    }
+public interface DummyMerkleNode extends MerkleNode {
 
     /**
-     * {@inheritDoc}
+     * Get a String value representing this node.
      */
-    @Override
-    public boolean isRootOfState() {
-        return false;
-    }
+    String getValue();
 }

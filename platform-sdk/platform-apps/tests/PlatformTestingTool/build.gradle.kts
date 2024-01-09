@@ -24,7 +24,6 @@ plugins {
 application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
 
 testModuleInfo {
-    requires("com.swirlds.common.testing")
     requires("org.apache.logging.log4j.core")
     requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.params")

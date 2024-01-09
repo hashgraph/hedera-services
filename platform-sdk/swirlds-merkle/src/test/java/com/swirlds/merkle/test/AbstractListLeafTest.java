@@ -22,7 +22,7 @@ import com.swirlds.common.merkle.utility.AbstractListLeaf;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
-import com.swirlds.common.test.merkle.dummy.DummyListLeaf;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyListLeaf;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.util;
+package com.swirlds.common.test.fixtures.merkle.util;
 
 import static com.swirlds.common.merkle.copy.MerkleInitialize.initializeTreeAfterCopy;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -34,13 +34,13 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
-import com.swirlds.common.test.merkle.dummy.DummyCustomReconnectRoot;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleExternalLeaf;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal2;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf2;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyCustomReconnectRoot;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleExternalLeaf;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal2;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf2;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

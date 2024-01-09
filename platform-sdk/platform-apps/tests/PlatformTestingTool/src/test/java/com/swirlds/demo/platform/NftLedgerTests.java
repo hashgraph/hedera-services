@@ -27,7 +27,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestTypeTags;
-import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.demo.platform.nft.Nft;
 import com.swirlds.demo.platform.nft.NftId;
 import com.swirlds.demo.platform.nft.NftLedger;

@@ -1,7 +1,5 @@
 open module com.swirlds.common.testing {
-    exports com.swirlds.common.test.merkle.util;
-    exports com.swirlds.common.test.merkle.dummy;
-
+  
     requires transitive com.swirlds.common;
     requires transitive org.apache.logging.log4j.core;
     requires com.swirlds.base;

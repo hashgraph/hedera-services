@@ -43,7 +43,7 @@ import com.swirlds.common.merkle.impl.destroyable.DestroyableMerkleLeaf;
 import com.swirlds.common.merkle.impl.destroyable.DestroyableNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
-import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;

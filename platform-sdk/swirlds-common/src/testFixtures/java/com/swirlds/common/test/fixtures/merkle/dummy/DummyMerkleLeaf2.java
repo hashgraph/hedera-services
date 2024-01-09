@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.dummy;
+package com.swirlds.common.test.fixtures.merkle.dummy;
 
-import com.swirlds.common.merkle.MerkleNode;
+/**
+ * The exact same behavior as a DummyMerkleLeaf but with a different class Id.
+ */
+public class DummyMerkleLeaf2 extends DummyMerkleLeaf {
 
-public interface DummyMerkleNode extends MerkleNode {
+    public DummyMerkleLeaf2() {
+        super();
+    }
 
-    /**
-     * Get a String value representing this node.
-     */
-    String getValue();
+    public DummyMerkleLeaf2(String value) {
+        super(value);
+    }
+
+    @Override
+    public long getClassId() {
+        return super.getClassId() + 1;
+    }
 }
