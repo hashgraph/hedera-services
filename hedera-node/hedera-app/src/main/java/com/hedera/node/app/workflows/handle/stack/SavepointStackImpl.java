@@ -124,12 +124,28 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         return root.getReadableStates(serviceName);
     }
 
-    @NonNull
+    /**
+     * {@inheritDoc}
+     *
+     * The {@link ReadableStates} instances returned from this method are based on the {@link WritableStates} instances
+     * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
+     * in the {@link ReadableStates} instances returned from this method.
+     * <p>
+     * Unlike other {@link HederaState} implementations, the returned {@link ReadableStates} of this implementation
+     * must only be used in the handle workflow.
+     */
     @Override
+    @NonNull
     public ReadableStates getReadableStates(@NonNull String serviceName) {
         return new ReadonlyStatesWrapper(getWritableStates(serviceName));
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * This method guarantees that the same {@link WritableStates} instance is returned for the same {@code serviceName}
+     * to ensure all modifications to a {@link WritableStates} are kept together.
+     */
     @Override
     @NonNull
     public WritableStates getWritableStates(@NonNull final String serviceName) {

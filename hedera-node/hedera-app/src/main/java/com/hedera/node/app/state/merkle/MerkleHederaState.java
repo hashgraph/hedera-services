@@ -500,9 +500,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         MerkleStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             this.stateMetadata = requireNonNull(stateMetadata);
             this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
-            this.kvInstances = new ConcurrentHashMap<>();
-            this.singletonInstances = new ConcurrentHashMap<>();
-            this.queueInstances = new ConcurrentHashMap<>();
+            this.kvInstances = new HashMap<>();
+            this.singletonInstances = new HashMap<>();
+            this.queueInstances = new HashMap<>();
         }
 
         @NonNull
