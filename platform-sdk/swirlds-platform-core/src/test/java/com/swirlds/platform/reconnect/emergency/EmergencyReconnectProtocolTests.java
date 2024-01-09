@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.notification.NotificationEngine;
@@ -57,6 +58,8 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 public class EmergencyReconnectProtocolTests {
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    private final PlatformContext platformContext =
+            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
     private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
@@ -99,6 +102,7 @@ public class EmergencyReconnectProtocolTests {
         when(reconnectController.acquireLearnerPermit()).thenReturn(initiateParams.getsPermit);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -123,6 +127,7 @@ public class EmergencyReconnectProtocolTests {
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!teacherIsThrottled);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -155,6 +160,7 @@ public class EmergencyReconnectProtocolTests {
                 reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -206,6 +212,7 @@ public class EmergencyReconnectProtocolTests {
                 new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),

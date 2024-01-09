@@ -50,5 +50,6 @@ class DefaultPlatformContextTest {
         assertNotNull(context.getConfiguration(), "Configuration must not be null");
         assertNotNull(context.getMetrics(), "Metrics must not be null");
         assertNotNull(context.getCryptography(), "Cryptography must not be null");
+        assertNotNull(context.getTime(), "Time must not be null");
     }
 }

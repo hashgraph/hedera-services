@@ -171,10 +171,14 @@ final class ReconnectTest {
             final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final NodeId selfId = new NodeId(0);
         final NodeId otherId = new NodeId(3);
         final long lastRoundReceived = 100;
         return new ReconnectTeacher(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 connection,

@@ -139,7 +139,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
-                .withConfigDataType(FCHashMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 /*
                 These data types from the platform were not available on the classpath. Add if needed later.
