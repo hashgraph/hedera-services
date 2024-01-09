@@ -198,9 +198,10 @@ wires may be created, but they do not follow the same paradigm as primary output
 unaware of such secondary output wires. The business logic still does not know who consumes the data of these secondary
 output wires, but must know that the secondary output wire exists in order to send data on it. Therefore, secondary
 output wires must be provided to the business logic, ideally in the constructor. A component is the sole owner of its
-output wires. Only the business logic of a component should be allowed to push data into its output wires. It is a
-violation of the framework principles to share ownership of a secondary output wire by allowing anything external to the
-component to push data onto the output wire.
+output wires. Only the task scheduler of a component should be allowed to push data onto its primary output wire, and
+only the business logic of a component should be allowed to push data onto its secondary output wires. It is a violation
+of the framework principles to share ownership of a secondary output wire by allowing anything external to the component
+to push data onto the output wire.
 
 ### Error Handling
 
