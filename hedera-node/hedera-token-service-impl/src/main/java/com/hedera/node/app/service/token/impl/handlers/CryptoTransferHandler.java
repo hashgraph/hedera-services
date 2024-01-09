@@ -33,6 +33,7 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
@@ -448,6 +449,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = body.cryptoTransferOrThrow();
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
+        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
@@ -488,6 +490,14 @@ public class CryptoTransferHandler implements TransactionHandler {
             assessedCustomFees = new ArrayList<>();
         }
         totalXfers += assessedCustomFees.size();
+        // Even if the transaction fails we need to charge fees based on the token having customFees
+        // So we need to count the number of token transfers that have custom fees
+        for(final var xfer : op.tokenTransfersOrElse(emptyList())){
+           final var token = readableTokenStore.get(xfer.token());
+           if(!token.customFeesOrElse(emptyList()).isEmpty()){
+               customFeeTokenTransfers++;
+           }
+        }
         for (final var fee : assessedCustomFees) {
             if (!fee.hasTokenId()) {
                 customFeeHbarTransfers++;

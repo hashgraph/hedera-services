@@ -88,7 +88,7 @@ public class RecordFinalizerBase {
      * modified token relations
      */
     @NonNull
-    protected Map<EntityIDPair, Long> tokenChangesFrom(
+    protected Map<EntityIDPair, Long> tokenRelChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull TokenType tokenType) {
@@ -168,7 +168,8 @@ public class RecordFinalizerBase {
      */
     @NonNull
     protected Map<TokenID, List<NftTransfer>> nftChangesFrom(
-            @NonNull final WritableNftStore writableNftStore, @NonNull final ReadableTokenStore readableTokenStore) {
+            @NonNull final WritableNftStore writableNftStore,
+            @NonNull final WritableTokenStore writableTokenStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
@@ -176,7 +177,7 @@ public class RecordFinalizerBase {
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             AccountID senderAccountId = null;
-            final var token = requireNonNull(readableTokenStore.get(nftId.tokenIdOrThrow()));
+            final var token = requireNonNull(writableTokenStore.get(nftId.tokenIdOrThrow()));
             if (persistedNft != null) {
                 // If the NFT did not have an owner before set it to the treasury account
                 senderAccountId = persistedNft.hasOwnerId() ? persistedNft.ownerId() : token.treasuryAccountIdOrThrow();
@@ -187,7 +188,6 @@ public class RecordFinalizerBase {
             // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
             // will be explicitly set as 0.0.0
             AccountID receiverAccountId;
-            final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
                 if (modifiedNft.hasOwnerId()) {
                     receiverAccountId = modifiedNft.ownerId();
@@ -201,20 +201,38 @@ public class RecordFinalizerBase {
             if (receiverAccountId.equals(senderAccountId)) {
                 continue;
             }
-            final var nftTransfer = builder.serialNumber(nftId.serialNumber())
-                    .senderAccountID(senderAccountId)
-                    .receiverAccountID(receiverAccountId)
-                    .build();
+            updateNftChanges(nftId, senderAccountId, receiverAccountId, nftChanges);
+        }
 
-            if (!nftChanges.containsKey(nftId.tokenId())) {
-                nftChanges.put(nftId.tokenId(), new ArrayList<>());
+        for(final var tokenId : writableTokenStore.modifiedTokens()) {
+            final var originalToken = writableTokenStore.getOriginalValue(tokenId);
+            final var modifiedToken = writableTokenStore.get(tokenId);
+            if(!originalToken.treasuryAccountId().equals(modifiedToken.treasuryAccountId())) {
+               updateNftChanges(NftID.newBuilder().tokenId(tokenId).serialNumber(-1).build(),
+                       originalToken.treasuryAccountId(),
+                       modifiedToken.treasuryAccountId(),
+                       nftChanges);
             }
-
-            final var currentNftChanges = nftChanges.get(nftId.tokenId());
-            currentNftChanges.add(nftTransfer);
-            nftChanges.put(nftId.tokenId(), currentNftChanges);
         }
         return nftChanges;
+    }
+
+    private static void updateNftChanges(final NftID nftId,
+                                         final AccountID senderAccountId,
+                                         final AccountID receiverAccountId,
+                                         final HashMap<TokenID, List<NftTransfer>> nftChanges) {
+        final var nftTransfer = NftTransfer.newBuilder().serialNumber(nftId.serialNumber())
+                .senderAccountID(senderAccountId)
+                .receiverAccountID(receiverAccountId)
+                .build();
+
+        if (!nftChanges.containsKey(nftId.tokenId())) {
+            nftChanges.put(nftId.tokenId(), new ArrayList<>());
+        }
+
+        final var currentNftChanges = nftChanges.get(nftId.tokenId());
+        currentNftChanges.add(nftTransfer);
+        nftChanges.put(nftId.tokenId(), currentNftChanges);
     }
 
     /**

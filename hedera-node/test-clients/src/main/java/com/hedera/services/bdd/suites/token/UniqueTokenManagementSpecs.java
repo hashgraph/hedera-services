@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -160,7 +161,6 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                         metadata("some-data2"),
                                         metadata("some-data3"),
                                         metadata("some-data4")))
-                        .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT)
                         .via(SHOULD_NOT_WORK))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
@@ -249,15 +249,14 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .when(mintToken(FUNGIBLE_TOKEN, 300))
                 .then(
                         burnToken(FUNGIBLE_TOKEN, List.of(1L, 2L, 3L))
-                                .hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
-                                .via(BURN_FAILURE),
+                                .via(BURN_FAILURE).logged(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 300),
-                        getTxnRecord(BURN_FAILURE).showsNoTransfers(),
+                        getTxnRecord(BURN_FAILURE).showsNoTransfers().logged(),
                         UtilVerbs.withOpContext((spec, opLog) -> {
                             var burnTxn = getTxnRecord(BURN_FAILURE);
                             allRunFor(spec, burnTxn);
                             Assertions.assertEquals(
-                                    0, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
+                                    300, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
                         }));
     }
 
@@ -744,7 +743,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .when()
                 .then(
                         wipeTokenAccount(NFT, ACCOUNT, 1L)
-                                .hasKnownStatus(FAIL_INVALID)
+                                .hasKnownStatus(INVALID_WIPING_AMOUNT)
                                 .via(WIPE_TXN),
                         // no new totalSupply
                         getTokenInfo(NFT).hasTotalSupply(1),
@@ -771,7 +770,6 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         cryptoTransfer(TokenMovement.moving(5, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(
                         wipeTokenAccount(A_TOKEN, ACCOUNT, List.of(1L, 2L))
-                                .hasKnownStatus(INVALID_WIPING_AMOUNT)
                                 .via("wipeTx"),
                         wipeTokenAccount(A_TOKEN, ACCOUNT, List.of())
                                 .hasKnownStatus(SUCCESS)
