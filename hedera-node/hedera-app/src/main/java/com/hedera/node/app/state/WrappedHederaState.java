@@ -18,10 +18,11 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A {@link HederaState} that wraps another {@link HederaState} and provides a {@link #commit()} method that
@@ -30,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WrappedHederaState implements HederaState {
 
     private final HederaState delegate;
-    private final Map<String, WrappedWritableStates> writableStatesMap = new ConcurrentHashMap<>();
+    private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
 
     /**
      * Constructs a {@link WrappedHederaState} that wraps the given {@link HederaState}.
@@ -54,6 +55,12 @@ public class WrappedHederaState implements HederaState {
             }
         }
         return false;
+    }
+
+    @NonNull
+    @Override
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return new ReadonlyStatesWrapper(getWritableStates(serviceName));
     }
 
     /**

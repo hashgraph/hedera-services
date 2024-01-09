@@ -36,9 +36,7 @@ public interface HederaState {
      * @return A collection of {@link ReadableKVState} instances belonging to the service.
      */
     @NonNull
-    default ReadableStates getReadableStates(@NonNull String serviceName) {
-        return new ReadonlyStatesWrapper(getWritableStates(serviceName));
-    }
+    ReadableStates getReadableStates(@NonNull String serviceName);
 
     /**
      * Returns a {@link WritableStates} for the given named service. If such a service doesn't

@@ -122,6 +122,12 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         state = new HederaState() {
             @NonNull
             @Override
+            public ReadableStates getReadableStates(@NonNull String serviceName) {
+                return TokenService.NAME.equals(serviceName) ? writableStates : null;
+            }
+
+            @NonNull
+            @Override
             public WritableStates getWritableStates(@NonNull String serviceName) {
                 return TokenService.NAME.equals(serviceName) ? writableStates : null;
             }

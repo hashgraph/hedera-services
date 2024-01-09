@@ -27,9 +27,9 @@ import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A wrapper around a {@link WritableStates} that provides a wrapped instances of {@link WritableKVState} and
@@ -38,9 +38,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WrappedWritableStates implements WritableStates {
 
     private final WritableStates delegate;
-    private final Map<String, WrappedWritableKVState<?, ?>> writableKVStateMap = new ConcurrentHashMap<>();
-    private final Map<String, WrappedWritableSingletonState<?>> writableSingletonStateMap = new ConcurrentHashMap<>();
-    private final Map<String, WrappedWritableQueueState<?>> writableQueueStateMap = new ConcurrentHashMap<>();
+    private final Map<String, WrappedWritableKVState<?, ?>> writableKVStateMap = new HashMap<>();
+    private final Map<String, WrappedWritableSingletonState<?>> writableSingletonStateMap = new HashMap<>();
+    private final Map<String, WrappedWritableQueueState<?>> writableQueueStateMap = new HashMap<>();
 
     /**
      * Constructs a {@link WrappedWritableStates} that wraps the given {@link WritableStates}.

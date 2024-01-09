@@ -22,12 +22,13 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The default implementation of {@link SavepointStack}.
@@ -36,7 +37,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     private final HederaState root;
     private final Deque<WrappedHederaState> stack = new ArrayDeque<>();
-    private final Map<String, WritableStatesStack> writableStatesMap = new ConcurrentHashMap<>();
+    private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
 
     /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.
@@ -121,6 +122,12 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     @NonNull
     public ReadableStates rootStates(@NonNull final String serviceName) {
         return root.getReadableStates(serviceName);
+    }
+
+    @NonNull
+    @Override
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return new ReadonlyStatesWrapper(getWritableStates(serviceName));
     }
 
     @Override
