@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,13 @@ import java.util.function.Function;
  * <p>
  * A duplicate event is defined as an event with an identical descriptor and identical signature to an event that has
  * already been observed.
+ * <p>
+ * It is necessary to consider the signature bytes when determining if an event is a duplicate, not just the descriptor
+ * or hash. This guards against a malicious node gossiping the same event with different signatures, or a node gossiping
+ * another node's event with a modified signature. If we went only off the descriptor or hash, we might discard the
+ * correct version of an event as a duplicate, because a malicious version has already been received.
+ * Instead, the deduplicator lets all versions of the event through that have a unique descriptor/signature pair, and
+ * the signature validator further along the pipeline will handle discarding bad versions.
  */
 public class EventDeduplicator {
     /**

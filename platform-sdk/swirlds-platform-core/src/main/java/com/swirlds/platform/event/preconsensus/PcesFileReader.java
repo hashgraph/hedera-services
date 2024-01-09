@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,8 +78,8 @@ public class PcesFileReader {
                     .forEachOrdered(buildFileHandler(files, permitGaps));
         }
 
-        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final boolean doInitialGenerationalCompaction = preconsensusEventStreamConfig.compactLastFileOnStartup();
 
         if (files.getFileCount() != 0 && doInitialGenerationalCompaction) {
@@ -98,17 +98,17 @@ public class PcesFileReader {
     private static void compactGenerationalSpanOfLastFile(@NonNull final PcesFileTracker files) {
         Objects.requireNonNull(files);
 
-        final PreconsensusEventFile lastFile = files.getFile(files.getFileCount() - 1);
+        final PcesFile lastFile = files.getFile(files.getFileCount() - 1);
 
         final long previousMaximumGeneration;
         if (files.getFileCount() > 1) {
-            final PreconsensusEventFile secondToLastFile = files.getFile(files.getFileCount() - 2);
+            final PcesFile secondToLastFile = files.getFile(files.getFileCount() - 2);
             previousMaximumGeneration = secondToLastFile.getMaximumGeneration();
         } else {
             previousMaximumGeneration = 0;
         }
 
-        final PreconsensusEventFile compactedFile = compactPreconsensusEventFile(lastFile, previousMaximumGeneration);
+        final PcesFile compactedFile = compactPreconsensusEventFile(lastFile, previousMaximumGeneration);
         files.setFile(files.getFileCount() - 1, compactedFile);
     }
 
@@ -120,8 +120,7 @@ public class PcesFileReader {
      * @return the handler
      */
     @NonNull
-    private static Consumer<PreconsensusEventFile> buildFileHandler(
-            @NonNull final PcesFileTracker files, final boolean permitGaps) {
+    private static Consumer<PcesFile> buildFileHandler(@NonNull final PcesFileTracker files, final boolean permitGaps) {
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
         final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);
         final ValueReference<Long> previousMaximumGeneration = new ValueReference<>(-1L);
@@ -172,7 +171,7 @@ public class PcesFileReader {
         final int firstRelevantFileIndex = files.getFirstRelevantFileIndex(startingRound);
         int firstIndexToDelete = firstRelevantFileIndex + 1;
         for (; firstIndexToDelete < files.getFileCount(); firstIndexToDelete++) {
-            final PreconsensusEventFile file = files.getFile(firstIndexToDelete);
+            final PcesFile file = files.getFile(firstIndexToDelete);
             if (file.getOrigin() != initialOrigin) {
                 // as soon as we find a file that has a different origin, this and all subsequent files must be deleted
                 break;
@@ -184,8 +183,7 @@ public class PcesFileReader {
             return;
         }
 
-        final PreconsensusEventFile lastUndeletedFile =
-                firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
+        final PcesFile lastUndeletedFile = firstIndexToDelete > 0 ? files.getFile(firstIndexToDelete - 1) : null;
 
         logger.warn(
                 STARTUP.getMarker(),

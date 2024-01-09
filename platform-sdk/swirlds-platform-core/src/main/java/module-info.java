@@ -37,7 +37,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.health.clock;
     exports com.swirlds.platform.health.entropy;
     exports com.swirlds.platform.health.filesystem;
-    exports com.swirlds.platform.intake;
     exports com.swirlds.platform.listeners;
     exports com.swirlds.platform.metrics;
     exports com.swirlds.platform.network;
@@ -135,6 +134,7 @@ module com.swirlds.platform.core {
             com.hedera.node.test.clients,
             com.swirlds.common,
             com.swirlds.config.impl;
+    exports com.swirlds.platform.wiring;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
@@ -145,7 +145,6 @@ module com.swirlds.platform.core {
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
-    requires com.swirlds.fchashmap;
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;

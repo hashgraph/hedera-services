@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1575,9 +1575,15 @@ public class ContractCallSuite extends HapiSuite {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
         return defaultHapiSpec("InvalidContract")
-                .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))))
-                .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
+                .given(withOpContext(
+                        (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ifHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
+                        ifNotHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
+                .then();
     }
 
     @HapiTest
@@ -1587,15 +1593,14 @@ public class ContractCallSuite extends HapiSuite {
 
         return defaultHapiSpec("invalidContractDoesNotExist")
                 .given()
-                .when(
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                ifHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
-                                        .hasKnownStatus(INVALID_CONTRACT_ID)
-                                        .via("contractDoesNotExist")))),
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ifHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
+                                .hasKnownStatus(INVALID_CONTRACT_ID)
+                                .via("contractDoesNotExist")),
                         ifNotHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
                                 .hasPrecheck(INVALID_CONTRACT_ID)
-                                .via("contractDoesNotExist")))
+                                .via("contractDoesNotExist")))))
                 .then(ifNotHapiTest(getTxnRecord("contractDoesNotExist").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 

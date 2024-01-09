@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,13 @@ public class StartNodesOp extends LifecycleOp {
     @Override
     protected boolean run(@NonNull final HapiTestNode node) {
         logger.info("Starting node {}...", node);
-        node.start();
+        try {
+            node.start();
+        } catch (Exception e) {
+            logger.error("Node {} failed to start", node);
+            throw e;
+        }
+        logger.info("Node {} has started...", node);
         return false;
     }
 }

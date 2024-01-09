@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.swirlds.platform.cli;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities;
+import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.nio.file.Path;
 import picocli.CommandLine;
@@ -43,7 +43,7 @@ public class PcesCompactCommand extends AbstractCommand {
     @Override
     public Integer call() {
         BootstrapUtils.setupConstructableRegistry();
-        PreconsensusEventUtilities.compactPreconsensusEventFiles(rootDirectory);
+        PcesUtilities.compactPreconsensusEventFiles(rootDirectory);
         return 0;
     }
 }

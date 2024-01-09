@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,4 +26,6 @@ public class TestTags {
     public static final String SMART_CONTRACT = "SMART_CONTRACT";
     public static final String TIME_CONSUMING = "TIME_CONSUMING";
     public static final String TOKEN = "TOKEN";
+    public static final String RESTART = "RESTART";
+    public static final String ND_RECONNECT = "ND_RECONNECT";
 }

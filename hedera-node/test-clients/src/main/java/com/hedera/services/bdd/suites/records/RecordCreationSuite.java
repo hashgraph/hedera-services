@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -270,8 +271,9 @@ public class RecordCreationSuite extends HapiSuite {
                     final var payerId = spec.registry().getAccountID(PAYER);
                     final var subOp = getAccountRecords(PAYER).logged();
                     allRunFor(spec, subOp);
-                    final var records =
-                            subOp.getResponse().getCryptoGetAccountRecords().getRecordsList();
+                    final var records = subOp.getResponse().getCryptoGetAccountRecords().getRecordsList().stream()
+                            .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
+                            .toList();
                     assertEquals(3, records.size());
                     for (var record : records) {
                         assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));

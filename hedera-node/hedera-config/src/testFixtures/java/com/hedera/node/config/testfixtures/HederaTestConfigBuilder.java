@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,16 @@
 
 package com.hedera.node.config.testfixtures;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
+import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
+import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
+import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.AccountIDConverter;
@@ -66,7 +76,11 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.HederaFunctionalitySet;
+import com.hedera.node.config.types.KeyValuePair;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.node.config.validation.EmulatesMapValidator;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.TransactionConfig;
@@ -77,7 +91,6 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.components.appcomm.WiringConfig;
 import com.swirlds.platform.config.PathsConfig;
@@ -125,7 +138,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
-                .withConfigDataType(FCHashMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 /*
                 These data types from the platform were not available on the classpath. Add if needed later.
@@ -175,20 +187,20 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(UpgradeConfig.class)
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
-                .withConverter(new CongestionMultipliersConverter())
-                .withConverter(new EntityScaleFactorsConverter())
-                .withConverter(new KnownBlockValuesConverter())
-                .withConverter(new LegacyContractIdActivationsConverter())
-                .withConverter(new ScaleFactorConverter())
-                .withConverter(new AccountIDConverter())
-                .withConverter(new ContractIDConverter())
-                .withConverter(new FileIDConverter())
-                .withConverter(new PermissionedAccountsRangeConverter())
-                .withConverter(new SemanticVersionConverter())
-                .withConverter(new KeyValuePairConverter())
-                .withConverter(new LongPairConverter())
-                .withConverter(new FunctionalitySetConverter())
-                .withConverter(new BytesConverter())
+                .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
+                .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())
+                .withConverter(KnownBlockValues.class, new KnownBlockValuesConverter())
+                .withConverter(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter())
+                .withConverter(ScaleFactor.class, new ScaleFactorConverter())
+                .withConverter(AccountID.class, new AccountIDConverter())
+                .withConverter(ContractID.class, new ContractIDConverter())
+                .withConverter(FileID.class, new FileIDConverter())
+                .withConverter(PermissionedAccountsRange.class, new PermissionedAccountsRangeConverter())
+                .withConverter(SemanticVersion.class, new SemanticVersionConverter())
+                .withConverter(KeyValuePair.class, new KeyValuePairConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
+                .withConverter(HederaFunctionalitySet.class, new FunctionalitySetConverter())
+                .withConverter(Bytes.class, new BytesConverter())
                 .withValidator(new EmulatesMapValidator());
     }
 

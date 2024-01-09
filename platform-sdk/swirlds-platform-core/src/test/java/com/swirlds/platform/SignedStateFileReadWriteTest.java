@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesDirectoryForApp;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesDirectoryForNode;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesDirectoryForSwirld;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeHashInfoFile;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeStateFile;
@@ -88,7 +82,9 @@ class SignedStateFileReadWriteTest {
     void writeHashInfoFileTest() throws IOException {
 
         final State state = new RandomSignedStateGenerator().build().getState();
-        writeHashInfoFile(testDirectory, state);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        writeHashInfoFile(platformContext, testDirectory, state);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
@@ -158,100 +154,6 @@ class SignedStateFileReadWriteTest {
         assertTrue(exists(hashInfoFile), "hash info file should exist");
         assertTrue(exists(settingsUsedFile), "settings used file should exist");
         assertTrue(exists(addressBookFile), "address book file should exist");
-    }
-
-    @Test
-    @DisplayName("getSignedStateBaseDirectory() Test")
-    void getSignedStateBaseDirectoryTest() {
-        changeConfigAndConfigHolder("data/saved");
-
-        assertEquals(getAbsolutePath("./data/saved"), getSignedStatesBaseDirectory(), "unexpected saved state file");
-
-        changeConfigAndConfigHolder("foo/bar/baz");
-
-        assertEquals(getAbsolutePath("./foo/bar/baz"), getSignedStatesBaseDirectory(), "unexpected saved state file");
-
-        changeConfigAndConfigHolder("data/saved");
-    }
-
-    @Test
-    @DisplayName("getSignedStatesDirectoryForApp() Test")
-    void getSignedStatesDirectoryForAppTest() {
-        changeConfigAndConfigHolder("data/saved");
-
-        assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar"),
-                getSignedStatesDirectoryForApp("com.swirlds.foobar"),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("foo/bar/baz");
-
-        assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo"),
-                getSignedStatesDirectoryForApp("com.swirlds.barfoo"),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("data/saved");
-    }
-
-    @Test
-    @DisplayName("getSignedStatesDirectoryForNode() Test")
-    void getSignedStatesDirectoryForNodeTest() {
-        changeConfigAndConfigHolder("data/saved");
-
-        assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar/1234"),
-                getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(1234)),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("foo/bar/baz");
-
-        assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321"),
-                getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(4321)),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("data/saved");
-    }
-
-    @Test
-    @DisplayName("getSignedStatesDirectoryForSwirld() Test")
-    void getSignedStatesDirectoryForSwirldTest() {
-        changeConfigAndConfigHolder("data/saved");
-
-        assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(1234), "mySwirld"),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("foo/bar/baz");
-
-        assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld"),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("data/saved");
-    }
-
-    @Test
-    @DisplayName("getSignedStateDirectory() Test")
-    void getSignedStateDirectoryTest() {
-        changeConfigAndConfigHolder("data/saved");
-
-        assertEquals(
-                getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld/1337"),
-                getSignedStateDirectory("com.swirlds.foobar", new NodeId(1234), "mySwirld", 1337),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("foo/bar/baz");
-
-        assertEquals(
-                getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld/42"),
-                getSignedStateDirectory("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld", 42),
-                "unexpected saved state file");
-
-        changeConfigAndConfigHolder("data/saved");
     }
 
     private Configuration changeConfigAndConfigHolder(String directory) {
