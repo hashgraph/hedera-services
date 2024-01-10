@@ -78,5 +78,9 @@ public enum SnapshotMatchMode {
     /**
      * Allows for non-deterministic ethereum data.
      */
-    NONDETERMINISTIC_ETHEREUM_DATA
+    NONDETERMINISTIC_ETHEREUM_DATA,
+    /**
+     * Allows for non-deterministic token names.
+     */
+    NONDETERMINISTIC_TOKEN_NAMES
 }

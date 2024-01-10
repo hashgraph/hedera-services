@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -48,7 +49,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class BalanceOperationSuite extends HapiSuite {
 
@@ -76,7 +77,7 @@ public class BalanceOperationSuite extends HapiSuite {
         final var ACCOUNT = "test";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
-        return defaultHapiSpec("VerifiesExistenceOfAccountsAndContracts")
+        return defaultHapiSpec("VerifiesExistenceOfAccountsAndContracts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(cryptoCreate("test").balance(BALANCE), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(

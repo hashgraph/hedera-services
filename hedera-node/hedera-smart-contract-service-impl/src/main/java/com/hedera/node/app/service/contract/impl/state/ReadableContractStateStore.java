@@ -41,8 +41,8 @@ public class ReadableContractStateStore implements ContractStateStore {
 
     public ReadableContractStateStore(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.storage = states.get(ContractSchema.STORAGE_KEY);
-        this.bytecode = states.get(ContractSchema.BYTECODE_KEY);
+        this.storage = states.get(InitialModServiceContractSchema.STORAGE_KEY);
+        this.bytecode = states.get(InitialModServiceContractSchema.BYTECODE_KEY);
     }
 
     @Override

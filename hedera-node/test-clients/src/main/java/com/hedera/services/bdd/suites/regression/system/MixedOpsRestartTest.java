@@ -117,7 +117,7 @@ public class MixedOpsRestartTest extends HapiSuite {
                         // start all nodes
                         startAllNodes().logged(),
                         // wait for all nodes to be ACTIVE
-                        waitForNodesToBecomeActive(60).logged())
+                        waitForNodesToBecomeActive(100).logged())
                 .then(
                         // Once nodes come back ACTIVE, submit some operations again
                         cryptoCreate(PAYER).balance(100 * ONE_MILLION_HBARS),

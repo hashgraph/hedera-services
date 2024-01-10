@@ -171,7 +171,7 @@ class SerializationTest extends MerkleTestBase {
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again
-        final var states = loadedTree.createReadableStates(FIRST_SERVICE);
+        final var states = loadedTree.getReadableStates(FIRST_SERVICE);
         final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
         assertThat(fruitState.get(A_KEY)).isEqualTo(APPLE);
         assertThat(fruitState.get(B_KEY)).isEqualTo(BANANA);

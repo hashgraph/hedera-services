@@ -187,7 +187,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
             final var state = wsa.getHederaState();
             assertThat(state).isNotNull();
-            final var services = state.createWritableStates(RecordCacheService.NAME);
+            final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =
                     services.getQueue(RecordCacheService.TXN_RECORD_QUEUE);
             assertThat(queue).isNotNull();
@@ -257,7 +257,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
             final var state = wsa.getHederaState();
             assertThat(state).isNotNull();
-            final var services = state.createWritableStates(RecordCacheService.NAME);
+            final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =
                     services.getQueue(RecordCacheService.TXN_RECORD_QUEUE);
             assertThat(queue).isNotNull();
