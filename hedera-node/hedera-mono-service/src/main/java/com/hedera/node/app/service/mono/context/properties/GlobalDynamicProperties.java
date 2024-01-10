@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
@@ -1013,5 +1014,11 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean areTokenBalancesEnabledInQueries() {
         return tokenBalancesEnabledInQueries;
+    }
+
+    public boolean callsToNonExistingEntitiesEnabled(Address target) {
+        return !(!evmVersion.equals(EVM_VERSION_0_46)
+                || !allowCallsToNonContractAccounts
+                || grandfatherContracts.contains(target));
     }
 }

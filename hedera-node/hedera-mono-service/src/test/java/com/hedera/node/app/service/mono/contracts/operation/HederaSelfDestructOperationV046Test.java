@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -114,8 +113,7 @@ class HederaSelfDestructOperationV046Test {
         given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, beneficiaryMirror, eip1014Address, null, ContractCall))
                 .willReturn(true);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
-        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
 
@@ -196,8 +194,7 @@ class HederaSelfDestructOperationV046Test {
                 .willReturn(false);
         given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
         given(account.getAddress()).willReturn(beneficiaryMirror);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
-        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
 
@@ -219,8 +216,7 @@ class HederaSelfDestructOperationV046Test {
                 .willReturn(false);
         given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
         given(account.getAddress()).willReturn(beneficiaryMirror);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
-        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
 

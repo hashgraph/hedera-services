@@ -44,4 +44,6 @@ public interface EvmProperties {
     boolean allowCallsToNonContractAccounts();
 
     Set<Address> grandfatherContracts();
+
+    boolean callsToNonExistingEntitiesEnabled(Address target);
 }

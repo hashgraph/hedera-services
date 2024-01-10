@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -240,9 +239,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
     // Determine if the operation should be sanity checked.
     private boolean possiblySanityCheckOp(final ContractCallTransactionBody op, final EntityNum target) {
-        if (properties.evmVersion().equals(EVM_VERSION_0_46)
-                && properties.allowCallsToNonContractAccounts()
-                && !properties.grandfatherContracts().contains(target.toId().asEvmAddress())) {
+        if (properties.callsToNonExistingEntitiesEnabled(target.toId().asEvmAddress())) {
             return false;
         }
 

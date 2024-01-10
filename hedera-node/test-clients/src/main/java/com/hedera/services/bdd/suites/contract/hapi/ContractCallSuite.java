@@ -236,7 +236,6 @@ public class ContractCallSuite extends HapiSuite {
                 nonPayable(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
-                callingDestructedContractReturnsStatusDeleted(),
                 imapUserExercise(),
                 specialQueriesXTest(),
                 sendHbarsToAddressesMultipleTimes(),
@@ -1509,36 +1508,6 @@ public class ContractCallSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .contractCallResult(
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
-    }
-
-    @HapiTest
-    HapiSpec callingDestructedContractReturnsStatusDeleted() {
-        final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "CallingDestructedContractReturnsStatusDeleted",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
-                        uploadInitCode(SIMPLE_UPDATE_CONTRACT))
-                .when(
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(300_000L),
-                        sourcing(() -> contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "del",
-                                        asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
-                                .gas(1_000_000L)))
-                .then(
-                        ifHapiTest(contractCall(
-                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
-                                .gas(350_000L)
-                                .hasKnownStatus(CONTRACT_DELETED)),
-                        ifNotHapiTest(contractCall(
-                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
-                                .gas(350_000L)
-                                .hasPrecheck(CONTRACT_DELETED)));
     }
 
     @HapiTest

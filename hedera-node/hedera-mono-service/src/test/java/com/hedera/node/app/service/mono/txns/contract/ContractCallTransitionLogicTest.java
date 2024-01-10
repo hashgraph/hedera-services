@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -492,7 +490,6 @@ class ContractCallTransitionLogicTest {
         contractCallTxn = op.build();
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_38);
         given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
 
         assertFailsWith(
@@ -789,8 +786,7 @@ class ContractCallTransitionLogicTest {
     void acceptsOkSyntax() {
         givenValidTxnCtx();
         given(properties.maxGasPerSec()).willReturn(gas + 1);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
-        given(properties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         contractAccount.setSmartContract(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
@@ -799,8 +795,7 @@ class ContractCallTransitionLogicTest {
     @Test
     void acceptsOkSyntaxIfTokenAddress() {
         givenValidTxnCtx();
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
-        given(properties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
@@ -809,8 +804,7 @@ class ContractCallTransitionLogicTest {
     @Test
     void acceptsOkSyntaxIfPossibleLazyCreate() {
         givenMissingContractIDTxnCtx();
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_46);
-        given(properties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
 
@@ -821,7 +815,7 @@ class ContractCallTransitionLogicTest {
     @Test
     void failsIfNotSmartContractSyntax() {
         givenValidTxnCtxWithNoAmount();
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);

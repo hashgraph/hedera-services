@@ -41,8 +41,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_GRANDFATHER_CONTRACTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
@@ -144,6 +146,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -168,6 +171,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GlobalDynamicPropertiesTest {
+    private final String EVM_VERSION_0_38 = "v0.38";
+    private final String EVM_VERSION_0_46 = "v0.46";
 
     private static final String[] balanceExportPaths =
             new String[] {"/opt/hgcapp/accountBalances", "data/saved/accountBalances"};
@@ -539,6 +544,31 @@ class GlobalDynamicPropertiesTest {
         assertEquals(66L, subject.exchangeRateGasReq());
         assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
         assertEquals(evmVersions[0], subject.evmVersion());
+    }
+
+    @Test
+    void callsToNonExistingEntitiesEnabledForEvm38() {
+        givenPropsWithSeed(1);
+        given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(EVM_VERSION_0_38);
+
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        assertFalse(subject.callsToNonExistingEntitiesEnabled(any()));
+    }
+
+    @Test
+    void callsToNonExistingEntitiesEnabledForGrandfatheredContract() {
+        final Address addr = Address.ZERO;
+
+        givenPropsWithSeed(1);
+        given(properties.getEvmAddresses(CONTRACTS_GRANDFATHER_CONTRACTS)).willReturn(Set.of(addr));
+        given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(EVM_VERSION_0_46);
+        given(properties.getBooleanProperty(CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS))
+                .willReturn(true);
+
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        assertFalse(subject.callsToNonExistingEntitiesEnabled(addr));
     }
 
     private void givenPropsWithSeed(final int i) {

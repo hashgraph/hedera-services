@@ -93,7 +93,7 @@ class HederaStaticCallOperationV038Test {
         given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -120,7 +120,7 @@ class HederaStaticCallOperationV038Test {
         given(addressValidator.test(any(), any())).willReturn(true);
 
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());
