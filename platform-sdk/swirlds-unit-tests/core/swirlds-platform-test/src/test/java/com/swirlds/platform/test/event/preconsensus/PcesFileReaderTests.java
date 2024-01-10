@@ -66,6 +66,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -86,14 +87,11 @@ class PcesFileReaderTests {
 
     private final int fileCount = 100;
 
-    private List<PcesFile> files;
-
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
         fileDirectory = testDirectory.resolve("data").resolve("0");
         random = getRandomPrintSeed();
-        files = new ArrayList<>();
     }
 
     @AfterEach
@@ -152,6 +150,8 @@ class PcesFileReaderTests {
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
+        final List<PcesFile> files = new ArrayList<>();
+
         final long maxDelta = random.nextLong(10, 20);
         long lowerBound = random.nextLong(0, 1000);
         final long nonExistentValue = lowerBound - 1;
@@ -194,6 +194,8 @@ class PcesFileReaderTests {
             // This will cause the files not to line up alphabetically, and this is a scenario that the
             // code should be able to handle.
             final long firstSequenceNumber = random.nextLong(950, 1000);
+
+            final List<PcesFile> files = new ArrayList<>();
 
             final long maxDelta = random.nextLong(10, 20);
             long lowerBound = random.nextLong(0, 1000);
@@ -253,6 +255,8 @@ class PcesFileReaderTests {
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final List<PcesFile> files = new ArrayList<>();
 
         final long maxDelta = random.nextLong(10, 20);
         long lowerBound = random.nextLong(0, 1000);
@@ -323,6 +327,8 @@ class PcesFileReaderTests {
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
+        final List<PcesFile> files = new ArrayList<>();
+
         final long maxDelta = random.nextLong(10, 20);
         long lowerBound = random.nextLong(0, 1000);
         long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
@@ -389,6 +395,8 @@ class PcesFileReaderTests {
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final List<PcesFile> files = new ArrayList<>();
 
         final long maxDelta = random.nextLong(10, 20);
         long lowerBound = random.nextLong(0, 1000);
@@ -472,6 +480,8 @@ class PcesFileReaderTests {
     void startAtFirstFileDiscontinuityInMiddleTest(@NonNull final AncientMode ancientMode) throws IOException {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
+
+        final List<PcesFile> files = new ArrayList<>();
 
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -569,6 +579,8 @@ class PcesFileReaderTests {
     void startAtMiddleFileDiscontinuityInMiddleTest(@NonNull final AncientMode ancientMode) throws IOException {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
+
+        final List<PcesFile> files = new ArrayList<>();
 
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -676,6 +688,8 @@ class PcesFileReaderTests {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
 
+        final List<PcesFile> files = new ArrayList<>();
+
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
@@ -781,6 +795,8 @@ class PcesFileReaderTests {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
 
+        final List<PcesFile> files = new ArrayList<>();
+
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
@@ -872,5 +888,74 @@ class PcesFileReaderTests {
         validateRecycledFiles(List.of(), files, platformContext);
     }
 
-    // TODO test with both types of PCES files, read just one type
+    @Test
+    void readFilesOfBothTypesTest() throws IOException {
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final long maxDelta = random.nextLong(10, 20);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
+        Instant timestamp = Instant.now();
+
+        // Phase 1: write files using generations
+
+        final List<PcesFile> generationFiles = new ArrayList<>();
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final PcesFile file = PcesFile.of(
+                    GENERATION_THRESHOLD, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
+
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            generationFiles.add(file);
+            createDummyFile(file);
+        }
+
+        // Phase 2: write files using birth rounds
+        final List<PcesFile> birthRoundFiles = new ArrayList<>();
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final PcesFile file = PcesFile.of(
+                    BIRTH_ROUND_THRESHOLD, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
+
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            birthRoundFiles.add(file);
+            createDummyFile(file);
+        }
+
+        // Phase 3: read files of both types
+
+        final PcesFileTracker generationFileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(GENERATION_THRESHOLD),
+                TestRecycleBin.getInstance(),
+                fileDirectory,
+                0,
+                false,
+                GENERATION_THRESHOLD);
+
+        final PcesFileTracker birthRoundFileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(BIRTH_ROUND_THRESHOLD),
+                TestRecycleBin.getInstance(),
+                fileDirectory,
+                0,
+                false,
+                BIRTH_ROUND_THRESHOLD);
+
+        assertIteratorEquality(generationFiles.iterator(), generationFileTracker.getFileIterator(NO_LOWER_BOUND, 0));
+        assertIteratorEquality(birthRoundFiles.iterator(), birthRoundFileTracker.getFileIterator(NO_LOWER_BOUND, 0));
+    }
 }

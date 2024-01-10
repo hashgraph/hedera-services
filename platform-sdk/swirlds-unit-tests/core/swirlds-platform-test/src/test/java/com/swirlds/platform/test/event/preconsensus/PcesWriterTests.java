@@ -381,7 +381,7 @@ class PcesWriterTests {
             lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
                     writer.updateNonAncientEventBoundary(
-                            new NonAncientEventWindow(1, lowerBound, lowerBound, false) /* TODO*/),
+                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
                     eventDurabilityNexus);
 
             if (event.getAncientIdentifier(ancientMode) < lowerBound) {
@@ -402,7 +402,7 @@ class PcesWriterTests {
                                 1,
                                 ancientEvent.getAncientIdentifier(ancientMode) + 1,
                                 ancientEvent.getAncientIdentifier(ancientMode) + 1,
-                                false) /* TODO*/),
+                                ancientMode == BIRTH_ROUND_THRESHOLD)),
                         eventDurabilityNexus);
             } catch (final IllegalArgumentException e) {
                 // ignore, more likely than not this event is way older than the actual ancient threshold
@@ -498,7 +498,7 @@ class PcesWriterTests {
             lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
                     writer.updateNonAncientEventBoundary(
-                            new NonAncientEventWindow(1, lowerBound, lowerBound, false) /* TODO*/),
+                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
                     eventDurabilityNexus);
         }
 
