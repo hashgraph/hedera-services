@@ -21,7 +21,6 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 
 /**
@@ -40,7 +39,8 @@ public class StateSignatureCollectorBuilder {
         this.metrics = new SignedStateMetrics(new NoOpMetrics());
     }
 
-    public StateSignatureCollectorBuilder stateHasEnoughSignaturesConsumer(final StateHasEnoughSignaturesConsumer consumer) {
+    public StateSignatureCollectorBuilder stateHasEnoughSignaturesConsumer(
+            final StateHasEnoughSignaturesConsumer consumer) {
         this.stateHasEnoughSignaturesConsumer = consumer;
         return this;
     }

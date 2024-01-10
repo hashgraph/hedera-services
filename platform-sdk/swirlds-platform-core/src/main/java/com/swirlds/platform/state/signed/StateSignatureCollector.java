@@ -74,8 +74,7 @@ public class StateSignatureCollector {
      * @param signedStateMetrics a collection of signed state metrics
      */
     public StateSignatureCollector(
-            @NonNull final StateConfig stateConfig,
-            @NonNull final SignedStateMetrics signedStateMetrics) {
+            @NonNull final StateConfig stateConfig, @NonNull final SignedStateMetrics signedStateMetrics) {
         this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig");
         this.signedStateMetrics = Objects.requireNonNull(signedStateMetrics, "signedStateMetrics");
 
@@ -114,7 +113,8 @@ public class StateSignatureCollector {
         if (!signedState.isComplete()) {
             final ReservedSignedState previousState = incompleteStates.put(signedState.getRound(), reservedSignedState);
             Optional.ofNullable(previousState).ifPresent(ReservedSignedState::close);
-            logger.warn(LogMarker.EXCEPTION.getMarker(),
+            logger.warn(
+                    LogMarker.EXCEPTION.getMarker(),
                     "Two states with the same round ({}) have been added to the signature collector",
                     signedState.getRound());
             return Optional.of(purgeOldStates()).filter(l -> !l.isEmpty()).orElse(null);
@@ -245,7 +245,7 @@ public class StateSignatureCollector {
         // Any state older than this is unconditionally removed.
         final long earliestPermittedRound = getEarliestPermittedRound();
         for (final Iterator<ReservedSignedState> iterator =
-                incompleteStates.values().iterator();
+                        incompleteStates.values().iterator();
                 iterator.hasNext(); ) {
             final ReservedSignedState reservedSignedState = iterator.next();
             final SignedState signedState = reservedSignedState.get();
@@ -280,7 +280,9 @@ public class StateSignatureCollector {
      * @param ignored ignored trigger object
      */
     public void clear(@NonNull final Object ignored) {
-        for (final Iterator<ReservedSignedState> iterator = incompleteStates.values().iterator(); iterator.hasNext(); ) {
+        for (final Iterator<ReservedSignedState> iterator =
+                        incompleteStates.values().iterator();
+                iterator.hasNext(); ) {
             final ReservedSignedState state = iterator.next();
             state.close();
             iterator.remove();
@@ -292,6 +294,5 @@ public class StateSignatureCollector {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {
-    }
+    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {}
 }

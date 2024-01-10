@@ -51,8 +51,8 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.StateDumpRequest;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -181,9 +181,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .eventOutput()
                 .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
-        stateSignatureCollectorWiring
-                .getAllStatesOutput()
-                .solderTo(signedStateFileManagerWiring.saveToDiskFilter());
+        stateSignatureCollectorWiring.getAllStatesOutput().solderTo(signedStateFileManagerWiring.saveToDiskFilter());
 
         solderNonAncientEventWindow();
         linkedEventIntakeWiring

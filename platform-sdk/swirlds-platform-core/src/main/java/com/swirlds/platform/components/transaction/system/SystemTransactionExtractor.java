@@ -28,7 +28,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Extracts a particular type of system transaction from an event or a round.
@@ -59,7 +58,7 @@ public class SystemTransactionExtractor<T extends SystemTransaction> {
                 .map(this::handleEvent)
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
-                .collect(collectingAndThen(toList(), l->l.isEmpty() ? null : l));
+                .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
 
     /**

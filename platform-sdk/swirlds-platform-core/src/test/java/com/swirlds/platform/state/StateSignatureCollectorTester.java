@@ -24,8 +24,8 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -81,8 +81,7 @@ public class StateSignatureCollectorTester extends StateSignatureCollector {
 
     public void handlePreconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
-        handlePreConsensusSignatures(
-                List.of(new ScopedSystemTransaction<>(signerId, signatureTransaction)));
+        handlePreConsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, signatureTransaction)));
     }
 
     @Override
