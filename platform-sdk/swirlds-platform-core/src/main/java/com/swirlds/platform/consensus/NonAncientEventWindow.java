@@ -72,7 +72,7 @@ public class NonAncientEventWindow {
      * Creates a genesis non-ancient event window for the given ancient mode.
      *
      * @param ancientMode the ancient mode to use
-     * @return a genesis non-ancience event window.
+     * @return a genesis non-ancient event window.
      */
     @NonNull
     public static NonAncientEventWindow getGenesisNonAncientEventWindow(@NonNull final AncientMode ancientMode) {
@@ -86,7 +86,6 @@ public class NonAncientEventWindow {
     /**
      * @return true if this is a genesis non-ancient event window, false otherwise.
      */
-    @NonNull
     public boolean isGenesis() {
         return this.latestConsensusRound == ConsensusConstants.ROUND_FIRST
                 && this.minRoundNonAncient == ConsensusConstants.ROUND_FIRST
