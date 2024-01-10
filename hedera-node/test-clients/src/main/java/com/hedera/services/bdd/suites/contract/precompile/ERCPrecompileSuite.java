@@ -188,50 +188,49 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     List<HapiSpec> erc20() {
         return List.of(
-//                getErc20TokenName(),
-//                getErc20TokenSymbol(),
-//                getErc20TokenDecimals(),
-//                getErc20TotalSupply(),
-//                getErc20BalanceOfAccount(),
-//                transferErc20Token(),
-//                transferErc20TokenFailWithAccount(),
-//                erc20Allowance(),
-//                erc20Approve(),
-//                someErc20ApproveAllowanceScenariosPass(),
-//                someErc20NegativeTransferFromScenariosPass(),
-//                someErc20ApproveAllowanceScenarioInOneCall(),
-//                getErc20TokenDecimalsFromErc721TokenFails(),
-//                transferErc20TokenReceiverContract(),
-//                directCallsWorkForErc20(),
-//                erc20TransferFromAllowance(),
-//                erc20TransferFromSelf(),
-//                transferErc20TokenFromContractWithNoApproval()
-                );
+                getErc20TokenName(),
+                getErc20TokenSymbol(),
+                getErc20TokenDecimals(),
+                getErc20TotalSupply(),
+                getErc20BalanceOfAccount(),
+                transferErc20Token(),
+                transferErc20TokenFailWithAccount(),
+                erc20Allowance(),
+                erc20Approve(),
+                someErc20ApproveAllowanceScenariosPass(),
+                someErc20NegativeTransferFromScenariosPass(),
+                someErc20ApproveAllowanceScenarioInOneCall(),
+                getErc20TokenDecimalsFromErc721TokenFails(),
+                transferErc20TokenReceiverContract(),
+                directCallsWorkForErc20(),
+                erc20TransferFromAllowance(),
+                erc20TransferFromSelf(),
+                transferErc20TokenFromContractWithNoApproval());
     }
 
     List<HapiSpec> erc721() {
         return List.of(
-//                getErc721TokenName(),
-//                getErc721Symbol(),
-//                getErc721TokenURI(),
-//                getErc721OwnerOf(),
-//                getErc721BalanceOf(),
-//                getErc721TotalSupply(),
-//                erc721TokenApprove(),
-//                erc721GetApproved(),
-                getErc721TokenURIFromErc20TokenFails());
-//                getErc721OwnerOfFromErc20TokenFails(),
-//                directCallsWorkForErc721(),
-////                someErc721ApproveAndRemoveScenariosPass());
-//                someErc721NegativeTransferFromScenariosPass(),
-//                erc721TransferFromWithApproval(),
-//                erc721TransferFromWithApproveForAll(),
-//                someErc721GetApprovedScenariosPass(),
-//                someErc721BalanceOfScenariosPass(),
-//                someErc721OwnerOfScenariosPass(),
-//                someErc721IsApprovedForAllScenariosPass(),
-//                getErc721IsApprovedForAll(),
-//                someErc721SetApprovedForAllScenariosPass());
+                getErc721TokenName(),
+                getErc721Symbol(),
+                getErc721TokenURI(),
+                getErc721OwnerOf(),
+                getErc721BalanceOf(),
+                getErc721TotalSupply(),
+                erc721TokenApprove(),
+                erc721GetApproved(),
+                getErc721TokenURIFromErc20TokenFails(),
+                getErc721OwnerOfFromErc20TokenFails(),
+                directCallsWorkForErc721(),
+                someErc721ApproveAndRemoveScenariosPass(),
+                someErc721NegativeTransferFromScenariosPass(),
+                erc721TransferFromWithApproval(),
+                erc721TransferFromWithApproveForAll(),
+                someErc721GetApprovedScenariosPass(),
+                someErc721BalanceOfScenariosPass(),
+                someErc721OwnerOfScenariosPass(),
+                someErc721IsApprovedForAllScenariosPass(),
+                getErc721IsApprovedForAll(),
+                someErc721SetApprovedForAllScenariosPass());
     }
 
     @HapiTest
@@ -1426,6 +1425,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
         return defaultHapiSpec("someErc721NegativeTransferFromScenariosPass", ALLOW_EMPTY_ERROR_MSG, NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES,
                 NONDETERMINISTIC_CONTRACT_CALL_RESULTS // todo check if really results are nondeterministic
                 )
                 .given(
@@ -2845,7 +2845,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec erc721TokenApprove() {
-        return defaultHapiSpec("erc721TokenApprove", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return defaultHapiSpec("erc721TokenApprove", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),

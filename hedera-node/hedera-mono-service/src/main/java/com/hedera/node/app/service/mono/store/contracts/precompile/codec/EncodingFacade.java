@@ -54,6 +54,7 @@ public class EncodingFacade {
     }
 
     public static Bytes resultFrom(@NonNull final ResponseCodeEnum status) {
+
         return UInt256.valueOf(status.getNumber());
     }
 

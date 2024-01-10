@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
@@ -79,7 +80,8 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        Bytes.wrap(recordBuilder.status().protoName().getBytes())),
+                        //todo check if all failed result should return this
+                        Bytes.wrap(UInt256.valueOf(recordBuilder.status().protoOrdinal()))),
                 gasRequirement,
                 recordBuilder);
     }
