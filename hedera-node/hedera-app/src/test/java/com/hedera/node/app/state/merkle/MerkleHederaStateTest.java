@@ -352,7 +352,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @Test
         @DisplayName("Getting ReadableStates on an unknown service returns an empty entity")
         void unknownServiceNameUsingReadableStates() {
-            final var states = hederaMerkle.createReadableStates(UNKNOWN_SERVICE);
+            final var states = hederaMerkle.getReadableStates(UNKNOWN_SERVICE);
             assertThat(states).isNotNull();
             assertThat(states.isEmpty()).isTrue();
         }
@@ -367,7 +367,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // When we get the ReadableStates
-            final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
 
             // Then query it for an unknown state and get an IAE
             assertThatThrownBy(() -> states.get(UNKNOWN_STATE_KEY)).isInstanceOf(IllegalArgumentException.class);
@@ -381,7 +381,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitVirtualMap);
 
             // When we get the ReadableStates
-            final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
 
             // Then it isn't null
             assertThat(states.get(FRUIT_STATE_KEY)).isNotNull();
@@ -396,7 +396,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.setChild(0, null);
 
             // When we get the ReadableStates
-            final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
 
             // Then try to read the state and find it is missing!
             assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY)).isInstanceOf(IllegalStateException.class);
@@ -412,7 +412,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // When we get the ReadableStates and the state keys
-            final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
             final var stateKeys = states.stateKeys();
 
             // Then we find "contains" is true for every state in stateKeys
@@ -430,7 +430,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void getReturnsSameInstanceIfCalledTwice() {
             // Given a HederaState with the fruit and the ReadableStates for it
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
 
             // When we call get twice
             final var kvState1 = states.get(FRUIT_STATE_KEY);
@@ -450,7 +450,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // When we get the ReadableStates
-            final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
 
             // Then query it, we find the data we expected to find
             assertThat(states).isNotNull();
@@ -550,7 +550,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @Test
         @DisplayName("Getting WritableStates on an unknown service returns an empty entity")
         void unknownServiceNameUsingWritableStates() {
-            final var states = hederaMerkle.createWritableStates(UNKNOWN_SERVICE);
+            final var states = hederaMerkle.getWritableStates(UNKNOWN_SERVICE);
             assertThat(states).isNotNull();
             assertThat(states.isEmpty()).isTrue();
         }
@@ -565,7 +565,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // When we get the WritableStates
-            final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getWritableStates(FIRST_SERVICE);
 
             // Then query it for an unknown state and get an IAE
             assertThatThrownBy(() -> states.get(UNKNOWN_STATE_KEY)).isInstanceOf(IllegalArgumentException.class);
@@ -580,7 +580,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.setChild(0, null);
 
             // When we get the WritableStates
-            final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getWritableStates(FIRST_SERVICE);
 
             // Then try to read the state and find it is missing!
             assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY)).isInstanceOf(IllegalStateException.class);
@@ -594,7 +594,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitVirtualMap);
 
             // When we get the WritableStates
-            final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getWritableStates(FIRST_SERVICE);
 
             // Then it isn't null
             assertThat(states.get(FRUIT_STATE_KEY)).isNotNull();
@@ -610,7 +610,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // When we get the WritableStates and the state keys
-            final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getWritableStates(FIRST_SERVICE);
             final var stateKeys = states.stateKeys();
 
             // Then we find "contains" is true for every state in stateKeys
@@ -628,7 +628,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void getReturnsSameInstanceIfCalledTwice() {
             // Given a HederaState with the fruit and the WritableStates for it
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getWritableStates(FIRST_SERVICE);
 
             // When we call get twice
             final var kvState1 = states.get(FRUIT_STATE_KEY);
@@ -648,7 +648,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             hederaMerkle.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // When we get the WritableStates
-            final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
+            final var states = hederaMerkle.getWritableStates(FIRST_SERVICE);
 
             // We find the data we expected to find
             assertThat(states).isNotNull();
@@ -757,7 +757,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @DisplayName("Cannot call createWritableStates on original after copy")
         void createWritableStatesOnOriginalAfterCopyThrows() {
             hederaMerkle.copy();
-            assertThatThrownBy(() -> hederaMerkle.createWritableStates(FRUIT_STATE_KEY))
+            assertThatThrownBy(() -> hederaMerkle.getWritableStates(FRUIT_STATE_KEY))
                     .isInstanceOf(MutabilityException.class);
         }
     }

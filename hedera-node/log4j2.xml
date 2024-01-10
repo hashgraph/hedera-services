@@ -198,7 +198,7 @@
     </Logger>
 
     <!-- Send transaction state logs to their own appender   -->
-    <Logger name="com.hedera.node.app.state.logging.TransactionStateLogger" level="trace" additivity="false">
+    <Logger name="com.hedera.node.app.state.logging.TransactionStateLogger" level="info" additivity="false">
       <AppenderRef ref="TransactionStateLogs"/>
     </Logger>
 

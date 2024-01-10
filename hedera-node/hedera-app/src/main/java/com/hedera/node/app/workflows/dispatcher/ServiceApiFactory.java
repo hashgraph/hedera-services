@@ -48,7 +48,7 @@ public class ServiceApiFactory {
         requireNonNull(apiInterface);
         final var provider = API_PROVIDER.get(apiInterface);
         if (provider != null) {
-            final var writableStates = stack.createWritableStates(provider.serviceName());
+            final var writableStates = stack.getWritableStates(provider.serviceName());
             final var api = provider.newInstance(configuration, writableStates);
             assert apiInterface.isInstance(api); // This needs to be ensured while apis are registered
             return apiInterface.cast(api);
