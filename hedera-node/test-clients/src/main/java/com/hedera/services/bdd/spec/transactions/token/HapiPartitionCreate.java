@@ -123,8 +123,8 @@ public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
         parent_token_id.ifPresent(s -> registry.saveTokenId(token, id));
         name.ifPresent(s -> registry.saveName(token, s));
         memo.ifPresent(s -> registry.saveMemo(token, s));
-        final TokenID partition_id = lastReceipt.getTokenID();
-        registry.savePartitionId(token, partition_id);
+        final TokenID partitionId = lastReceipt.getTokenID();
+        registry.savePartitionId(token, partitionId);
     }
 
     @Override
