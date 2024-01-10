@@ -104,8 +104,11 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
         stateFromDisk.getState().setHash(stateHash);
 
         signedStates.put(firstRound, stateFromDisk);
-        highestRound.set(firstRound);
+        // the validation in stateHasEnoughSignaturesConsumer does not work well with adding a complete state,
+        // so we set the highest round to pass the validation
+        highestRound.set(firstRound + roundAgeToSign);
         manager.addReservedState(stateFromDisk.reserve("test"));
+        highestRound.set(firstRound);
 
         // Create a series of signed states.
         final int count = 100;
@@ -141,8 +144,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
             }
 
             final int roundsAfterRestart = (int) (round - firstRound);
-
-            validateCallbackCounts(0, Math.max(0, roundsAfterRestart - roundAgeToSign));
+            validateCallbackCounts(0, Math.max(1, roundsAfterRestart - roundAgeToSign + 1));
         }
 
         // Check reservation counts.
@@ -151,6 +153,6 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
         // We don't expect any further callbacks. But wait a little while longer in case there is something unexpected.
         SECONDS.sleep(1);
 
-        validateCallbackCounts(0, count - roundAgeToSign - 1);
+        validateCallbackCounts(0, count - roundAgeToSign);
     }
 }

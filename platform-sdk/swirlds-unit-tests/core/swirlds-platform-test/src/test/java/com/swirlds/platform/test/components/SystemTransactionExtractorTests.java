@@ -18,6 +18,7 @@ package com.swirlds.platform.test.components;
 
 import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -36,7 +37,7 @@ class SystemTransactionExtractorTests {
                 new SystemTransactionExtractor<>(DummySystemTransaction.class);
 
         final List<ScopedSystemTransaction<DummySystemTransaction>> transactions = new ArrayList<>();
-        transactions.addAll(manager.handleEvent(newDummyEvent(0)));
+        assertNull(manager.handleEvent(newDummyEvent(0)));
         transactions.addAll(manager.handleEvent(newDummyEvent(1)));
         transactions.addAll(manager.handleEvent(newDummyEvent(2)));
 
