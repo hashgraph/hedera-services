@@ -52,8 +52,6 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
             .build();
 
-    private final long firstRound = 50;
-
     /**
      * Called on each state as it gets too old without collecting enough signatures.
      * <p>
@@ -81,7 +79,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     @DisplayName("Add Incomplete State Test")
     void addIncompleteStateTest() {
 
-        SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -93,6 +91,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
             signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
         }
 
+        final long firstRound = 50;
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setRound(firstRound)
@@ -110,9 +109,9 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         assertEquals(-1, manager.getLastCompleteRound());
 
         assertEquals(
-                2,
+                1,
                 stateFromDisk.getReservationCount(),
-                "Two reservations expected, one for the freshSignedStates, one for lastState");
+                "One reservation expected, for collecting signatures, since the hash changed");
 
         validateCallbackCounts(0, 0);
     }

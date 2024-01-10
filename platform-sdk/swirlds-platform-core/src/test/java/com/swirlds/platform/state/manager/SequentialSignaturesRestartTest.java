@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.crypto.Hash;
@@ -130,6 +131,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
             }
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
+                assertNotNull(lastCompletedState, "there should be a complete state");
                 if (roundToSign >= firstRound) {
                     assertSame(
                             signedStates.get(roundToSign), lastCompletedState.get(), "unexpected last completed state");
