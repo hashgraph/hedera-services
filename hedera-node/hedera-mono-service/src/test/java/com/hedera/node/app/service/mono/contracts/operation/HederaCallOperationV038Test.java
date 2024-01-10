@@ -109,7 +109,7 @@ class HederaCallOperationV038Test {
         given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -148,7 +148,7 @@ class HederaCallOperationV038Test {
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(isFlagEnabled);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());
@@ -180,7 +180,7 @@ class HederaCallOperationV038Test {
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.isMirror(any(Address.class))).willReturn(false);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
@@ -207,7 +207,7 @@ class HederaCallOperationV038Test {
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.isMirror(any(Address.class))).willReturn(true);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
@@ -272,7 +272,7 @@ class HederaCallOperationV038Test {
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(addressValidator.test(any(), any())).willReturn(true);
         given(evmMsgFrame.isStatic()).willReturn(true);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());

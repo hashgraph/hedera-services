@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
@@ -105,7 +106,7 @@ class HederaOperationUtilV038Test {
         final var degenerateResult = new Operation.OperationResult(0, null);
         given(executionSupplier.get()).willReturn(degenerateResult);
         given(isChildStatic.getAsBoolean()).willReturn(true);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
@@ -126,7 +127,7 @@ class HederaOperationUtilV038Test {
     void haltsWithInvalidSolidityAddressWhenAccountSignatureCheckExecution() {
         // given:
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -162,7 +163,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -225,7 +226,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -266,7 +267,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(true);
         long expectedSuccessfulGas = 100L;
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(

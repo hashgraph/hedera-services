@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -79,9 +78,7 @@ public final class HederaOperationUtilV038 {
             // and let HederaEvmMessageCallProcessor#start() handle those calls accordingly
             return supplierExecution.get();
         }
-        if (!globalDynamicProperties.evmVersion().equals(EVM_VERSION_0_46)
-                || !globalDynamicProperties.allowCallsToNonContractAccounts()
-                || globalDynamicProperties.grandfatherContracts().contains(frame.getContractAddress())) {
+        if (!globalDynamicProperties.callsToNonExistingEntitiesEnabled(frame.getContractAddress())) {
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return failingOperationResultFrom(
                         supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
@@ -119,8 +116,7 @@ public final class HederaOperationUtilV038 {
         final var isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
         boolean sigReqIsMet;
 
-        if (globalDynamicProperties.evmVersion().equals(EVM_VERSION_0_46)
-                && globalDynamicProperties.allowCallsToNonContractAccounts()) {
+        if (globalDynamicProperties.callsToNonExistingEntitiesEnabled(address)) {
             if (account == null) {
                 return true;
             }

@@ -62,11 +62,8 @@ public interface HederaEvmOperationsUtilV038 {
             if (systemAccountDetector.test(address)) {
                 return systemAccountExecutionSupplier.get();
             }
-            // skip target entity existing check when
-            // evm >= 0.46 or FF is enabled or the target is grandfather contract
-            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_46)
-                    || !evmProperties.allowCallsToNonContractAccounts()
-                    || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {
+
+            if (!evmProperties.callsToNonExistingEntitiesEnabled(frame.getContractAddress())) {
                 if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                     return new Operation.OperationResult(
                             supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
