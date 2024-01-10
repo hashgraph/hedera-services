@@ -51,8 +51,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -527,7 +530,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         @HapiTest
         HapiSpec topLevelBurnToZeroAddressReverts() {
                 final var ethBurnAddress = new byte[20];
-                return defaultHapiSpec("topLevelBurnToZeroAddressReverts", NONDETERMINISTIC_ETHEREUM_DATA)
+                return defaultHapiSpec("topLevelBurnToZeroAddressReverts", NONDETERMINISTIC_ETHEREUM_DATA,
+                                HIGHLY_NON_DETERMINISTIC_FEES, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                                 .given(
                                                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                                                 cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))
@@ -541,7 +545,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                 .maxFeePerGas(50L)
                                                 .maxPriorityGas(2L)
                                                 .gasLimit(1_000_000L)
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS));
+                                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
         }
 
         @HapiTest

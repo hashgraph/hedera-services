@@ -117,7 +117,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
             // The Ethereum transaction was a top-level MESSAGE_CALL
-            recordBuilder.contractID(outcome.recipientId()).contractCallResult(outcome.result());
+            recordBuilder.contractCallResult(outcome.result());
         } else {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
