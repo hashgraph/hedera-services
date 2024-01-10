@@ -689,7 +689,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "cannotUseMirrorAddressOfAliasedContractInPrecompileMethod",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate("Treasury"),
                         sourcing(() -> createLargeFile(DEFAULT_PAYER, ASSOCIATOR, literalInitcodeFor("Associator"))),
