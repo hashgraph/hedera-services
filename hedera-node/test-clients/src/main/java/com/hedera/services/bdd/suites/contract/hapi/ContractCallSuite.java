@@ -2162,7 +2162,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsFromDifferentAddressessToAddress",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS)
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
