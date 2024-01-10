@@ -347,7 +347,7 @@ public class EventImpl extends EventMetadata
      * @return system transaction iterator
      */
     public Iterator<SystemTransaction> systemTransactionIterator() {
-        // TODO this might go away
+        // FUTURE WORK: remove this once ConsensusSystemTransactionManager is removed
         return new TypedIterator<>(systemTransactions.iterator());
     }
 

@@ -26,23 +26,45 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Extracts a particular type of system transaction from an event or a  round.
+ * Extracts a particular type of system transaction from an event or a round.
  */
 public class SystemTransactionExtractor<T extends SystemTransaction> {
-    final Class<T> systemTransactionType;
+    /** the system transaction type to extract */
+    private final Class<T> systemTransactionType;
 
+    /**
+     * Constructs a new extractor for the given system transaction type.
+     *
+     * @param systemTransactionType
+     * 		the system transaction type to extract
+     */
     public SystemTransactionExtractor(final Class<T> systemTransactionType) {
         this.systemTransactionType = Objects.requireNonNull(systemTransactionType);
     }
 
+    /**
+     * Extracts the system transactions from the given round.
+     *
+     * @param round
+     * 		the round to extract from
+     * @return the extracted system transactions, or {@code null} if there are none
+     */
     public List<ScopedSystemTransaction<T>> handleRound(@NonNull final ConsensusRound round) {
-        return round.getConsensusEvents().stream()
+        final List<ScopedSystemTransaction<T>> list = round.getConsensusEvents().stream()
                 .map(this::handleEvent)
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .toList();
+        return list.isEmpty() ? null : list;
     }
 
+    /**
+     * Extracts the system transactions from the given event.
+     *
+     * @param event
+     * 		the event to extract from
+     * @return the extracted system transactions, or {@code null} if there are none
+     */
     @SuppressWarnings("unchecked")
     public List<ScopedSystemTransaction<T>> handleEvent(@NonNull final BaseEvent event) {
         // no transactions to transform

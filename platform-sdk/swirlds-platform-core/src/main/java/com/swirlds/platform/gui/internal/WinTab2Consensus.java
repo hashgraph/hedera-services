@@ -84,18 +84,17 @@ class WinTab2Consensus extends PrePaintableJPanel {
             s += String.format("\n%,10d = latest round-decided (delete round +%,d)", r2, r2 - r1);
             s += String.format("\n%,10d = latest round-created (deleted round +%,d)", r3, r3 - r1);
 
-            // the hash of a signed state is: Reference.toHex(state.getHash(), 0, 2)
-            final List<StateInfo> stateInfo = new ArrayList<>();
+            final List<GuiStateInfo> stateInfo = new ArrayList<>();
             for (final SignedStateNexus nexus : List.of(latestCompleteStateComponent, latestImmutableStateComponent)) {
                 try (final ReservedSignedState state = nexus.getState("GUI")) {
                     if (state == null) {
                         continue;
                     }
-                    stateInfo.add(StateInfo.from(state));
+                    stateInfo.add(GuiStateInfo.from(state));
                 }
             }
 
-            StateInfo first = null;
+            GuiStateInfo first = null;
             if (!stateInfo.isEmpty()) {
                 first = stateInfo.get(0);
             }
@@ -106,18 +105,18 @@ class WinTab2Consensus extends PrePaintableJPanel {
             d += 2;
 
             s += "\n     Signed state for round:            ";
-            for (final StateInfo state : stateInfo) {
+            for (final GuiStateInfo state : stateInfo) {
                 s += String.format("%," + d + "d ", state.round());
             }
 
             s += "\n     Signatures collected:              ";
-            for (final StateInfo state : stateInfo) {
+            for (final GuiStateInfo state : stateInfo) {
                 int c = state.numSigs();
                 s += String.format("%," + d + "d ", c);
             }
 
             s += "\n                                        ";
-            for (StateInfo state : stateInfo) {
+            for (GuiStateInfo state : stateInfo) {
                 int c = state.numSigs();
                 int size = platform.getAddressBook().getSize();
 

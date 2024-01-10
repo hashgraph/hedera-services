@@ -59,16 +59,19 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * Used to track signed state leaks, if enabled
      */
     private final SignedStateSentinel signedStateSentinel;
-
+    /** signs a state */
     private final Consumer<ReservedSignedState> stateSigner;
+    /** collects signatures for a state */
     private final Consumer<ReservedSignedState> sigCollector;
 
     /**
-     * @param platformContext                    the platform context
-     * @param threadManager                      manages platform thread resources
-     * @param dispatchBuilder                    builds dispatchers. This is deprecated, do not wire new things together
-     *                                           with this.
-     * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
+     * @param platformContext    the platform context
+     * @param threadManager      manages platform thread resources
+     * @param dispatchBuilder    builds dispatchers. This is deprecated, do not wire new things together with this.
+     * @param fatalErrorConsumer consumer to invoke when a fatal error has occurred
+     * @param stateSigner        signs a state
+     * @param sigCollector       collects signatures for a state
+     * @param signedStateMetrics metrics about signed states
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -77,7 +80,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final Consumer<ReservedSignedState> stateSigner,
             @NonNull final Consumer<ReservedSignedState> sigCollector,
-            final SignedStateMetrics signedStateMetrics) {
+            @NonNull final SignedStateMetrics signedStateMetrics) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);

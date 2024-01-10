@@ -524,7 +524,6 @@ public class SwirldsPlatform implements Platform {
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         final SignedStateManager signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
-        // TODO wire collector output to others
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
