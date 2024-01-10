@@ -38,6 +38,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -63,7 +66,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractUpdateSuite extends HapiSuite {
 
@@ -107,7 +110,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec updateStakingFieldsWorks() {
-        return defaultHapiSpec("updateStakingFieldsWorks")
+        return defaultHapiSpec("updateStakingFieldsWorks", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
@@ -166,7 +169,7 @@ public class ContractUpdateSuite extends HapiSuite {
         final AtomicReference<String> childMirror = new AtomicReference<>();
         final AtomicReference<String> childEip1014 = new AtomicReference<>();
 
-        return defaultHapiSpec("Eip1014AddressAlwaysHasPriority")
+        return defaultHapiSpec("Eip1014AddressAlwaysHasPriority", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(uploadInitCode(contract), contractCreate(contract).via(creationTxn))
                 .when(captureChildCreate2MetaFor(2, 0, "setup", creationTxn, childMirror, childEip1014))
                 .then(
@@ -267,7 +270,7 @@ public class ContractUpdateSuite extends HapiSuite {
     final HapiSpec updateAutoRenewAccountWorks() {
         final var autoRenewAccount = "autoRenewAccount";
         final var newAutoRenewAccount = "newAutoRenewAccount";
-        return defaultHapiSpec("UpdateAutoRenewAccountWorks")
+        return defaultHapiSpec("UpdateAutoRenewAccountWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         cryptoCreate(autoRenewAccount),
@@ -292,7 +295,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec updateAdminKeyWorks() {
-        return defaultHapiSpec("UpdateAdminKeyWorks")
+        return defaultHapiSpec("UpdateAdminKeyWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(NEW_ADMIN_KEY),
@@ -353,7 +356,7 @@ public class ContractUpdateSuite extends HapiSuite {
         final var newKeyShape = listOf(3);
         final var payer = "payer";
 
-        return defaultHapiSpec("FridayThe13thSpec")
+        return defaultHapiSpec("FridayThe13thSpec", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(INITIAL_ADMIN_KEY).shape(initialKeyShape),
                         newKeyNamed(NEW_ADMIN_KEY).shape(newKeyShape),
@@ -438,7 +441,7 @@ public class ContractUpdateSuite extends HapiSuite {
         // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";
         final var emptyConstructorContract = "EmptyConstructor";
-        return defaultHapiSpec("updateDoesNotChangeBytecode")
+        return defaultHapiSpec("updateDoesNotChangeBytecode", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(simpleStorageContract, emptyConstructorContract),
                         contractCreate(simpleStorageContract),

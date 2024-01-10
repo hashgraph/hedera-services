@@ -38,6 +38,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class FakeHederaState implements HederaState {
     // Key is Service, value is Map of state name to HashMap or List or Object (depending on state type)
     private final Map<String, Map<String, Object>> states = new HashMap<>();
+    private final Map<String, ReadableStates> readableStates = new HashMap<>();
+    private final Map<String, WritableStates> writableStates = new HashMap<>();
 
     /** Adds to the service with the given name the {@link ReadableKVState} {@code states} */
     public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
@@ -49,40 +51,44 @@ public class FakeHederaState implements HederaState {
     @NonNull
     @Override
     @SuppressWarnings("java:S3740") // provide the parameterized type for the generic state variable
-    public ReadableStates createReadableStates(@NonNull String serviceName) {
-        final var serviceStates = states.get(serviceName);
-        final var data = new HashMap<String, Object>();
-        for (final var entry : serviceStates.entrySet()) {
-            final var stateName = entry.getKey();
-            final var state = entry.getValue();
-            if (state instanceof Queue queue) {
-                data.put(stateName, new ListReadableQueueState(stateName, queue));
-            } else if (state instanceof Map map) {
-                data.put(stateName, new MapReadableKVState(stateName, map));
-            } else if (state instanceof AtomicReference ref) {
-                data.put(stateName, new ReadableSingletonStateBase(stateName, ref::get));
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return readableStates.computeIfAbsent(serviceName, s -> {
+            final var serviceStates = states.get(s);
+            final var data = new HashMap<String, Object>();
+            for (final var entry : serviceStates.entrySet()) {
+                final var stateName = entry.getKey();
+                final var state = entry.getValue();
+                if (state instanceof Queue queue) {
+                    data.put(stateName, new ListReadableQueueState(stateName, queue));
+                } else if (state instanceof Map map) {
+                    data.put(stateName, new MapReadableKVState(stateName, map));
+                } else if (state instanceof AtomicReference ref) {
+                    data.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
+                }
             }
-        }
-        return new MapReadableStates(data);
+            return new MapReadableStates(data);
+        });
     }
 
     @NonNull
     @Override
     @SuppressWarnings("java:S3740") // provide the parameterized type for the generic state variable
-    public WritableStates createWritableStates(@NonNull String serviceName) {
-        final var serviceStates = states.get(serviceName);
-        final var data = new HashMap<String, Object>();
-        for (final var entry : serviceStates.entrySet()) {
-            final var stateName = entry.getKey();
-            final var state = entry.getValue();
-            if (state instanceof Queue queue) {
-                data.put(stateName, new ListWritableQueueState(stateName, queue));
-            } else if (state instanceof Map map) {
-                data.put(stateName, new MapWritableKVState(stateName, map));
-            } else if (state instanceof AtomicReference ref) {
-                data.put(stateName, new WritableSingletonStateBase(stateName, ref::get, ref::set));
+    public WritableStates getWritableStates(@NonNull String serviceName) {
+        return writableStates.computeIfAbsent(serviceName, s -> {
+            final var serviceStates = states.get(s);
+            final var data = new HashMap<String, Object>();
+            for (final var entry : serviceStates.entrySet()) {
+                final var stateName = entry.getKey();
+                final var state = entry.getValue();
+                if (state instanceof Queue queue) {
+                    data.put(stateName, new ListWritableQueueState(stateName, queue));
+                } else if (state instanceof Map map) {
+                    data.put(stateName, new MapWritableKVState(stateName, map));
+                } else if (state instanceof AtomicReference ref) {
+                    data.put(stateName, new WritableSingletonStateBase(stateName, ref::get, ref::set));
+                }
             }
-        }
-        return new MapWritableStates(data);
+            return new MapWritableStates(data);
+        });
     }
 }
