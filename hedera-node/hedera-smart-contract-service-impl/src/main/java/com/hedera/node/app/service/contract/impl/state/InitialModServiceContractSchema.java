@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public class InitialModServiceContractSchema extends Schema {
     public static final String STORAGE_KEY = "STORAGE";
-    public static final String BYTECODE_KEY = "BYTECODE";
+    public static final String CONTRACT_ID_KEY = "CONTRACT_ID";
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
 
@@ -59,7 +59,7 @@ public class InitialModServiceContractSchema extends Schema {
         return StateDefinition.onDisk(STORAGE_KEY, SlotKey.PROTOBUF, SlotValue.PROTOBUF, MAX_STORAGE_ENTRIES);
     }
 
-    private @NonNull StateDefinition<EntityNumber, Bytecode> bytecodeDef() {
-        return StateDefinition.onDisk(BYTECODE_KEY, EntityNumber.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
+    private @NonNull StateDefinition<ContractID, Bytecode> bytecodeDef() {
+        return StateDefinition.onDisk(CONTRACT_ID_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
     }
 }

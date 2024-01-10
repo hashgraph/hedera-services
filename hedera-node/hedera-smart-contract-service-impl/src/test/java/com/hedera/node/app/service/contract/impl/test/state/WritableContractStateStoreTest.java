@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.BYTECODE_KEY;
+import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.CONTRACT_ID_KEY;
 import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.STORAGE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BYTECODE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ENTITY_NUMBER;
@@ -58,7 +58,7 @@ class WritableContractStateStoreTest {
     @BeforeEach
     void setUp() {
         given(states.<SlotKey, SlotValue>get(STORAGE_KEY)).willReturn(storage);
-        given(states.<EntityNumber, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
+        given(states.<EntityNumber, Bytecode>get(CONTRACT_ID_KEY)).willReturn(bytecode);
 
         subject = new WritableContractStateStore(states);
     }

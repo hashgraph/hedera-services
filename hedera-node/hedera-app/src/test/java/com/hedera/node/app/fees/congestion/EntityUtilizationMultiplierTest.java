@@ -157,7 +157,7 @@ class EntityUtilizationMultiplierTest {
                         Map.of(
                                 InitialModServiceContractSchema.STORAGE_KEY,
                                 new HashMap<>(),
-                                InitialModServiceContractSchema.BYTECODE_KEY,
+                                InitialModServiceContractSchema.CONTRACT_ID_KEY,
                                 Map.of(
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
@@ -185,7 +185,7 @@ class EntityUtilizationMultiplierTest {
                         Map.of(
                                 InitialModServiceContractSchema.STORAGE_KEY,
                                 new HashMap<>(),
-                                InitialModServiceContractSchema.BYTECODE_KEY,
+                                InitialModServiceContractSchema.CONTRACT_ID_KEY,
                                 Map.of(
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));

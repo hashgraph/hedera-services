@@ -347,7 +347,7 @@ public abstract class AbstractXTest {
         return component()
                 .hederaState()
                 .getReadableStates(ContractServiceImpl.NAME)
-                .get(InitialModServiceContractSchema.BYTECODE_KEY);
+                .get(InitialModServiceContractSchema.CONTRACT_ID_KEY);
     }
 
     protected ReadableKVState<AccountID, Account> finalAccounts() {
@@ -426,7 +426,7 @@ public abstract class AbstractXTest {
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
                 Map.of(
-                        InitialModServiceContractSchema.BYTECODE_KEY,
+                        InitialModServiceContractSchema.CONTRACT_ID_KEY,
                         initialBytecodes(),
                         InitialModServiceContractSchema.STORAGE_KEY,
                         new HashMap<SlotKey, SlotValue>()));

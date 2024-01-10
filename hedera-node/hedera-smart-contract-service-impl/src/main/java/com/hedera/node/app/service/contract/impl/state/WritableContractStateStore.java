@@ -38,7 +38,7 @@ public class WritableContractStateStore implements ContractStateStore {
     public WritableContractStateStore(@NonNull final WritableStates states) {
         requireNonNull(states);
         this.storage = states.get(InitialModServiceContractSchema.STORAGE_KEY);
-        this.bytecode = states.get(InitialModServiceContractSchema.BYTECODE_KEY);
+        this.bytecode = states.get(InitialModServiceContractSchema.CONTRACT_ID_KEY);
     }
 
     /**
