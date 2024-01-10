@@ -34,7 +34,7 @@ import java.util.Optional;
 
 /**
  * A StateSignatureCollector that is used for unit testing. In the future, these unit tests should become small
- * integration tests that test multiple components, this class is should be removed once we have achieved that.
+ * integration tests that test multiple components, this class should be removed once we have achieved that.
  */
 public class StateSignatureCollectorTester extends StateSignatureCollector {
     private final LatestCompleteStateNexus latestSignedState;
