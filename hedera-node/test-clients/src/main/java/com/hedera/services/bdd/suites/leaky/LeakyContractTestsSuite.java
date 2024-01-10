@@ -1800,7 +1800,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<ByteString> expectedChildAddress = new AtomicReference<>();
         final AtomicReference<ByteString> expectedParentAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("PropagatesNestedCreations", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
+        // Fully non-deterministic for fuzzy matching because mod-service externalizes
+        // nested contract creations in the order they are ATTEMPTED; while mono-service
+        // externalizes them in the order they are COMPLETED
+        return defaultHapiSpec("PropagatesNestedCreations", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(adminKey),
                         uploadInitCode(contract),
