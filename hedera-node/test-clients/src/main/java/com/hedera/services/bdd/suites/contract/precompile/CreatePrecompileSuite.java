@@ -130,9 +130,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec tokenCreateWithEmptyKeysReverts() {
         return defaultHapiSpec(
-            "tokenCreateWithEmptyKeysReverts",
-            NONDETERMINISTIC_TRANSACTION_FEES,
-            NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "tokenCreateWithEmptyKeysReverts",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -179,9 +179,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
         return defaultHapiSpec(
-            "tokenCreateWithKeyWithMultipleKeyValuesReverts",
-            NONDETERMINISTIC_TRANSACTION_FEES,
-            NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "tokenCreateWithKeyWithMultipleKeyValuesReverts",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -211,9 +211,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
         return defaultHapiSpec(
-            "tokenCreateWithFixedFeeWithMultiplePaymentsReverts",
-            NONDETERMINISTIC_TRANSACTION_FEES,
-            NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "tokenCreateWithFixedFeeWithMultiplePaymentsReverts",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -251,7 +251,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec createTokenWithEmptyTokenStruct() {
         return defaultHapiSpec("createTokenWithEmptyTokenStruct", NONDETERMINISTIC_TRANSACTION_FEES)
-            .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
+                .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
                 .when(withOpContext((spec, opLog) ->
                         allRunFor(spec, contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))))
                 .then(
@@ -299,9 +299,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec createTokenWithInvalidExpiry() {
         return defaultHapiSpec(
-            "createTokenWithInvalidExpiry",
-            NONDETERMINISTIC_TRANSACTION_FEES,
-            NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "createTokenWithInvalidExpiry",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -338,9 +338,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec createTokenWithInvalidTreasury() {
         return defaultHapiSpec(
-            "createTokenWithInvalidTreasury",
-            NONDETERMINISTIC_TRANSACTION_FEES,
-            NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "createTokenWithInvalidTreasury",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
@@ -384,9 +384,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec createTokenWithInsufficientValueSent() {
         return defaultHapiSpec(
-            "createTokenWithInsufficientValueSent",
-            NONDETERMINISTIC_TRANSACTION_FEES,
-            NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "createTokenWithInsufficientValueSent",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT).key(ED25519KEY).balance(ONE_MILLION_HBARS),
@@ -446,9 +446,9 @@ public class CreatePrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec delegateCallTokenCreateFails() {
         return defaultHapiSpec(
-            "delegateCallTokenCreateFails",
-            NONDETERMINISTIC_TRANSACTION_FEES,
-            NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        "delegateCallTokenCreateFails",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
