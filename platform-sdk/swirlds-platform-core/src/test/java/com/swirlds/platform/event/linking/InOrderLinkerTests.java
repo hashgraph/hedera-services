@@ -104,6 +104,10 @@ class InOrderLinkerTests {
         when(event.getDescriptor()).thenReturn(descriptor);
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getUnhashedData()).thenReturn(unhashedData);
+        //FUTURE WORK: Add birthRound to arguments and replace the first round constant below.
+        when(event.getAncientIndicator(any())).thenAnswer(
+                args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD ? ConsensusConstants.ROUND_FIRST
+                        : selfGeneration);
 
         return event;
     }
@@ -120,9 +124,9 @@ class InOrderLinkerTests {
         exitedIntakePipelineCount = new AtomicLong(0);
         final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
         doAnswer(invocation -> {
-                    exitedIntakePipelineCount.incrementAndGet();
-                    return null;
-                })
+            exitedIntakePipelineCount.incrementAndGet();
+            return null;
+        })
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
