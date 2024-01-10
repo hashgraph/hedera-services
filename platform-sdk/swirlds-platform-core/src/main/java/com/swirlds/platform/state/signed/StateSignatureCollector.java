@@ -177,7 +177,7 @@ public class StateSignatureCollector {
                 .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
 
-    private @Nullable ReservedSignedState handlePostConsensusSignature(
+    private @Nullable ReservedSignedState handlePostconsensusSignature(
             @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
         Objects.requireNonNull(scopedTransaction);
 
