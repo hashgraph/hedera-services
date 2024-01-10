@@ -23,6 +23,7 @@ import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -52,6 +53,7 @@ import javax.inject.Inject;
 @TransactionScope
 public class ContextTransactionProcessor implements Callable<CallOutcome> {
     private final HandleContext context;
+    private final CustomGasCharging customGasCharging;
     private final ContractsConfig contractsConfig;
     private final Configuration configuration;
     private final HederaEvmContext hederaEvmContext;
@@ -69,6 +71,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     public ContextTransactionProcessor(
             @Nullable final HydratedEthTxData hydratedEthTxData,
             @NonNull final HandleContext context,
+            @NonNull final CustomGasCharging customGasCharging,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final Configuration configuration,
             @NonNull final HederaEvmContext hederaEvmContext,
@@ -79,6 +82,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             @NonNull final Map<HederaEvmVersion, TransactionProcessor> processors) {
         this.context = Objects.requireNonNull(context);
         this.hydratedEthTxData = hydratedEthTxData;
+        this.customGasCharging = customGasCharging;
         this.tracer = Objects.requireNonNull(tracer);
         this.feesOnlyUpdater = Objects.requireNonNull(feesOnlyUpdater);
         this.processors = Objects.requireNonNull(processors);
@@ -114,6 +118,14 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             return CallOutcome.fromResultsWithMaybeSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         } catch (AbortException e) {
+            if (e.isChargeable()) {
+                customGasCharging.chargeForGas(
+                        requireNonNull(rootProxyWorldUpdater.getHederaAccount(e.senderId())),
+                        e.relayerId() == null ? null : rootProxyWorldUpdater.getHederaAccount(e.relayerId()),
+                        hederaEvmContext,
+                        rootProxyWorldUpdater,
+                        hevmTransaction);
+            }
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
             final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());

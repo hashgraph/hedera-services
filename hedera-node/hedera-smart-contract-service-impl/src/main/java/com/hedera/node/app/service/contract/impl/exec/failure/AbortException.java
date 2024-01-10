@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An exception thrown when a transaction is aborted before entering the EVM.
@@ -30,10 +31,28 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class AbortException extends HandleException {
     private final AccountID senderId;
+    @Nullable
+    private final AccountID relayerId;
+    // Whether gas can still be charged for the transaction
+    private final boolean isChargeable;
 
+    // TODO - add constructors that take the other fields; set those fields when
+    // throwing CONTRACT_EXECUTION_EXCEPTION in TransactionProcessor.computeInvolvedParties()
+    // on a lazy-create targeting a long-zero address
     public AbortException(@NonNull final ResponseCodeEnum status, @NonNull final AccountID senderId) {
         super(status);
         this.senderId = requireNonNull(senderId);
+        relayerId = null;
+        isChargeable = false;
+    }
+
+    public boolean isChargeable() {
+        return isChargeable;
+    }
+
+    @Nullable
+    public AccountID relayerId() {
+        return relayerId;
     }
 
     /**
