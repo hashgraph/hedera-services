@@ -894,7 +894,7 @@ class TipsetEventCreatorTests {
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         // FUTURE WORK: expand to cover birthRound for determining ancient.
-        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(1, 0, 100, false));
+        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(1, 0, 100, AncientMode.GENERATION_THRESHOLD));
 
         // Since there are no other parents available, the next event created would have a generation of 0
         // (if event creation were permitted). Since the current minimum generation non ancient is 100,
@@ -942,7 +942,12 @@ class TipsetEventCreatorTests {
                 if (eventIndex > 0) {
                     // Set non-ancientEventWindow after creating genesis event from each node.
                     eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
-                            pendingConsensusRound - 1, eventIndex - 26, 0, useBirthRoundForAncient));
+                            pendingConsensusRound - 1,
+                            eventIndex - 26,
+                            0,
+                            useBirthRoundForAncient
+                                    ? AncientMode.BIRTH_ROUND_THRESHOLD
+                                    : AncientMode.GENERATION_THRESHOLD));
                 }
 
                 final GossipEvent event = eventCreator.maybeCreateEvent();

@@ -23,7 +23,6 @@ import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -109,12 +108,10 @@ public class EventDeduplicator {
         this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
 
         this.disparateSignatureAccumulator = platformContext.getMetrics().getOrCreate(DISPARATE_SIGNATURE_CONFIG);
-        if (platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode()
-                == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
-        } else {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
-        }
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode());
     }
 
     /**
@@ -161,7 +158,7 @@ public class EventDeduplicator {
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        observedEvents.shiftWindow(nonAncientEventWindow.getLowerBound());
+        observedEvents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
     }
 
     /**

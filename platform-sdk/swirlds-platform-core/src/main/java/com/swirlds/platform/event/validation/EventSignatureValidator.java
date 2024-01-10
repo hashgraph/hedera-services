@@ -27,7 +27,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -125,12 +124,10 @@ public class EventSignatureValidator {
 
         this.validationFailedAccumulator = platformContext.getMetrics().getOrCreate(VALIDATION_FAILED_CONFIG);
 
-        if (platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode()
-                == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
-        } else {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
-        }
+        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode());
     }
 
     /**

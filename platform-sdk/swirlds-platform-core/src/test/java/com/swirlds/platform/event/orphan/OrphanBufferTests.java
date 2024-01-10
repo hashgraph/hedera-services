@@ -29,6 +29,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -313,7 +314,7 @@ class OrphanBufferTests {
                     latestConsensusRound,
                     Math.max(0, latestConsensusRound - 26 + 1),
                     minimumGenerationNonAncient,
-                    useBirthRoundForAncient);
+                    useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
             unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {

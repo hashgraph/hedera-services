@@ -101,13 +101,15 @@ public class OrphanBuffer {
                         .withDescription("number of orphaned events currently in the orphan buffer")
                         .withUnit("events"));
 
-        if (platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode()
-                == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
             eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
         } else {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
             missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
             eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
         }
@@ -155,14 +157,14 @@ public class OrphanBuffer {
     public List<GossipEvent> setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        eventsWithParents.shiftWindow(nonAncientEventWindow.getLowerBound());
+        eventsWithParents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
 
         // As the map is cleared out, we need to gather the ancient parents and their orphans. We can't
         // modify the data structure as the window is being shifted, so we collect that data and act on
         // it once the window has finished shifting.
         final List<ParentAndOrphans> ancientParents = new ArrayList<>();
         missingParentMap.shiftWindow(
-                nonAncientEventWindow.getLowerBound(),
+                nonAncientEventWindow.getAncientThreshold(),
                 (parent, orphans) -> ancientParents.add(new ParentAndOrphans(parent, orphans)));
 
         final List<GossipEvent> unorphanedEvents = new ArrayList<>();

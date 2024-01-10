@@ -156,11 +156,7 @@ public class TipsetEventCreator implements EventCreator {
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            this.nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
-        } else {
-            this.nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
-        }
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
     }
 
     /**
@@ -287,9 +283,7 @@ public class TipsetEventCreator implements EventCreator {
             // If there are no available other parents, it is only legal to create a new event if we are
             // creating a genesis event. In order to create a genesis event, we must have never created
             // an event before and the current non-ancient event window must have never been advanced.
-            if (nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION
-                    || nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND
-                    || lastSelfEvent != null) {
+            if (!nonAncientEventWindow.isGenesis() || lastSelfEvent != null) {
                 // event creation isn't legal
                 return null;
             }
@@ -435,7 +429,7 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                nonAncientEventWindow.useBirthRoundForAncient()
+                nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
                         ? nonAncientEventWindow.pendingConsensusRound()
                         : addressBook.getRound(),
                 timeCreated,

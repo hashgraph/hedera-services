@@ -28,7 +28,6 @@ import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -140,12 +139,10 @@ public class InOrderLinker {
                                 .withDescription(
                                         "Parent child relationships where child time created wasn't strictly after parent time created"));
 
-        if (platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode()
-                == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
-        } else {
-            nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
-        }
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode());
     }
 
     /**
@@ -259,7 +256,7 @@ public class InOrderLinker {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
         parentDescriptorMap.shiftWindow(
-                nonAncientEventWindow.getLowerBound(),
+                nonAncientEventWindow.getAncientThreshold(),
                 (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
     }
 

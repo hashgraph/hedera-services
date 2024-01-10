@@ -147,7 +147,7 @@ class TipsetTrackerTests {
             minimumGenerationNonAncient += random.nextInt(1, 5);
             // FUTURE WORK: change test to use birthRound number instead of minimum generation non-ancient.
             final NonAncientEventWindow nonAncientEventWindow =
-                    new NonAncientEventWindow(1, 0, minimumGenerationNonAncient, false);
+                    new NonAncientEventWindow(1, 0, minimumGenerationNonAncient, AncientMode.GENERATION_THRESHOLD);
             tracker.setNonAncientEventWindow(nonAncientEventWindow);
             assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {

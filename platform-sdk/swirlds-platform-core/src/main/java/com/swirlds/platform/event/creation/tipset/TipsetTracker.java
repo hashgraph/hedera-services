@@ -82,11 +82,7 @@ public class TipsetTracker {
 
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            this.nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_BIRTH_ROUND;
-        } else {
-            this.nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW_GENERATION;
-        }
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
     }
 
     /**
@@ -96,7 +92,7 @@ public class TipsetTracker {
      */
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
-        tipsets.shiftWindow(nonAncientEventWindow.getLowerBound());
+        tipsets.shiftWindow(nonAncientEventWindow.getAncientThreshold());
     }
 
     /**

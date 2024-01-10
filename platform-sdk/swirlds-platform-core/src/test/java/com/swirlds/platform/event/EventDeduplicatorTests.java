@@ -188,7 +188,7 @@ class EventDeduplicatorTests {
                         ConsensusConstants.ROUND_FIRST,
                         ConsensusConstants.ROUND_FIRST,
                         minimumGenerationNonAncient,
-                        false));
+                        AncientMode.GENERATION_THRESHOLD));
             }
         }
 
