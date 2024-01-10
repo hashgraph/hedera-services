@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -37,7 +37,7 @@ public enum ContractServiceImpl implements ContractService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
-        registry.register(new ContractSchema(version));
+        registry.register(new InitialModServiceContractSchema(version));
     }
 
     public ContractHandlers handlers() {

@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
-import com.hedera.node.app.service.token.impl.schemas.TokenSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -82,6 +82,7 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         requireNonNull(registry);
-        registry.register(new TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, version));
+        registry.register(new InitialModServiceTokenSchema(
+                sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, version));
     }
 }

@@ -71,7 +71,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ContractCallLocalSuite extends HapiSuite {
 

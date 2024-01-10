@@ -79,15 +79,6 @@ import java.time.Duration;
  *                                                        relative to
  *                                                        {@link
  *                                                        com.swirlds.common.config.StateConfig#savedStateDirectory()}.
- * @param enableStorage                                   if true, then stream preconsensus events to files on disk. If
- *                                                        this is disabled then a network wide crash (perhaps due to a
- *                                                        bug) can cause transactions that previously reached consensus
- *                                                        to be "forgotten" and effectively rolled back.
- * @param enableReplay                                    if true, then replay preconsensus events at boot time after
- *                                                        loading a signed state. If this is disabled then a network
- *                                                        wide crash (perhaps due to a bug) can cause transactions that
- *                                                        previously reached consensus to be "forgotten" and effectively
- *                                                        rolled back.
  * @param replayQueueSize                                 the size of the queue used for holding preconsensus events
  *                                                        that are waiting to be replayed
  * @param replayHashPoolSize                              the number of threads used for hashing events during replay
@@ -113,8 +104,6 @@ public record PcesConfig(
         @ConfigProperty(defaultValue = "5") int minimumGenerationalCapacity,
         @ConfigProperty(defaultValue = "false") boolean permitGaps,
         @ConfigProperty(defaultValue = "preconsensus-events") Path databaseDirectory,
-        @ConfigProperty(defaultValue = "true") boolean enableStorage,
-        @ConfigProperty(defaultValue = "true") boolean enableReplay,
         @ConfigProperty(defaultValue = "1024") int replayQueueSize,
         @ConfigProperty(defaultValue = "8") int replayHashPoolSize,
         @ConfigProperty(defaultValue = "true") boolean copyRecentStreamToStateSnapshots,

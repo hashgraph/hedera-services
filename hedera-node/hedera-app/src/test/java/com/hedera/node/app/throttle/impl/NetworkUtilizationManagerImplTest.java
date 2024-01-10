@@ -141,7 +141,7 @@ class NetworkUtilizationManagerImplTest {
     void shouldNotResetIfDifferentFromState() {
         // given
         given(throttleAccumulator.allActiveThrottles()).willReturn(List.of(throttle));
-        given(state.createReadableStates(CongestionThrottleService.NAME)).willReturn(readableStates);
+        given(state.getReadableStates(CongestionThrottleService.NAME)).willReturn(readableStates);
         given(readableStates.getSingleton(CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY))
                 .willReturn(readableThrottleUsageSnapshotsState);
         given(readableThrottleUsageSnapshotsState.get())
@@ -163,7 +163,7 @@ class NetworkUtilizationManagerImplTest {
         given(throttleAccumulator.allActiveThrottles()).willReturn(List.of(throttle));
         given(throttleAccumulator.gasLimitThrottle()).willReturn(gasThrottle);
 
-        given(state.createReadableStates(CongestionThrottleService.NAME)).willReturn(readableStates);
+        given(state.getReadableStates(CongestionThrottleService.NAME)).willReturn(readableStates);
         given(readableStates.getSingleton(CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY))
                 .willReturn(readableThrottleUsageSnapshotsState);
         given(readableThrottleUsageSnapshotsState.get())
@@ -226,7 +226,7 @@ class NetworkUtilizationManagerImplTest {
                 .gasLevelStarts(Timestamp.newBuilder().seconds(56L).nanos(78).build())
                 .build();
 
-        given(state.createWritableStates(CongestionThrottleService.NAME)).willReturn(writableStates);
+        given(state.getWritableStates(CongestionThrottleService.NAME)).willReturn(writableStates);
         given(writableStates.getSingleton(CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY))
                 .willReturn(writableThrottleUsageSnapshotsState);
         given(writableStates.getSingleton(CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY))

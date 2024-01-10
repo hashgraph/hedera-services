@@ -16,18 +16,12 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
-import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.schemas.InitialModServiceScheduleSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
@@ -44,31 +38,6 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     private Schema scheduleSchema(final SemanticVersion version) {
         // Everything in memory for now
-        return new ScheduleServiceSchema(version);
-    }
-
-    private static final class ScheduleServiceSchema extends Schema {
-        public ScheduleServiceSchema(final SemanticVersion version) {
-            super(version);
-        }
-
-        @SuppressWarnings("rawtypes")
-        @NonNull
-        @Override
-        public Set<StateDefinition> statesToCreate() {
-            return Set.of(schedulesByIdDef(), schedulesByExpirySec(), schedulesByEquality());
-        }
-
-        private static StateDefinition<ScheduleID, Schedule> schedulesByIdDef() {
-            return StateDefinition.inMemory(SCHEDULES_BY_ID_KEY, ScheduleID.PROTOBUF, Schedule.PROTOBUF);
-        }
-
-        private static StateDefinition<ProtoLong, ScheduleList> schedulesByExpirySec() {
-            return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, ProtoLong.PROTOBUF, ScheduleList.PROTOBUF);
-        }
-
-        private static StateDefinition<ProtoString, ScheduleList> schedulesByEquality() {
-            return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, ProtoString.PROTOBUF, ScheduleList.PROTOBUF);
-        }
+        return new InitialModServiceScheduleSchema(version);
     }
 }

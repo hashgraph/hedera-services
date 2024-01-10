@@ -27,6 +27,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
@@ -47,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 /** - CONCURRENCY STATUS - . Can run concurrent without temporarySStoreRefundTest() */
 public class SStoreSuite extends HapiSuite {
@@ -76,7 +78,8 @@ public class SStoreSuite extends HapiSuite {
     HapiSpec multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiSpec.defaultHapiSpec("multipleSStoreOpsSucceed")
+        return HapiSpec.defaultHapiSpec(
+                        "multipleSStoreOpsSucceed", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var step = 16;
@@ -111,7 +114,7 @@ public class SStoreSuite extends HapiSuite {
     HapiSpec childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
-        return defaultHapiSpec("ChildStorage")
+        return defaultHapiSpec("ChildStorage", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
@@ -177,7 +180,7 @@ public class SStoreSuite extends HapiSuite {
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
                 .toArray();
-        return defaultHapiSpec("benchmarkSingleSetter")
+        return defaultHapiSpec("benchmarkSingleSetter", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
