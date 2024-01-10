@@ -24,6 +24,8 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -46,7 +48,7 @@ import org.junit.jupiter.api.Tag;
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class SigningReqsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SigningReqsSuite.class);
@@ -82,7 +84,10 @@ public class SigningReqsSuite extends HapiSuite {
         final var origKey = KeyShape.threshOf(1, ED25519, CONTRACT);
         final AtomicReference<TokenID> createdToken = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("AutoRenewAccountCanUseLegacySigActivationIfConfigured")
+        return propertyPreservingHapiSpec(
+                        "AutoRenewAccountCanUseLegacySigActivationIfConfigured",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .preserving(LEGACY_ACTIVATIONS_PROP)
                 .given(
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),

@@ -388,7 +388,7 @@ public final class Hedera implements SwirldMain {
         logConfiguration();
 
         // Determine if we need to create synthetic records for system entities
-        final var blockRecordState = state.createReadableStates(BlockRecordService.NAME);
+        final var blockRecordState = state.getReadableStates(BlockRecordService.NAME);
         boolean createSynthRecords = false;
         if (!blockRecordState.isEmpty()) {
             final var blockInfo = blockRecordState
@@ -513,7 +513,7 @@ public final class Hedera implements SwirldMain {
      * to publish any necessary records from the node's startup migration.
      */
     private void unmarkMigrationRecordsStreamed(HederaState state) {
-        final var blockServiceState = state.createWritableStates(BlockRecordService.NAME);
+        final var blockServiceState = state.getWritableStates(BlockRecordService.NAME);
         final var blockInfoState = blockServiceState.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
         final var currentBlockInfo = requireNonNull(blockInfoState.get());
         final var nextBlockInfo =
@@ -741,7 +741,7 @@ public final class Hedera implements SwirldMain {
             @NonNull final MerkleHederaState state,
             @NonNull AddressBook configAddressBook,
             @NonNull final PlatformContext context) {
-        final var tokenServiceState = state.createReadableStates(TokenService.NAME);
+        final var tokenServiceState = state.getReadableStates(TokenService.NAME);
         if (!tokenServiceState.isEmpty()) {
             final var readableStoreFactory = new ReadableStoreFactory(state);
             // Get all nodeIds added in the config.txt

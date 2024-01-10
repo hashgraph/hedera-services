@@ -46,7 +46,7 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.service.token.impl.schemas.TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -79,7 +79,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-final class TokenSchemaTest {
+final class InitialModServiceTokenSchemaTest {
 
     private static final long BEGINNING_ENTITY_ID = 3000;
 
@@ -90,7 +90,7 @@ final class TokenSchemaTest {
     }
 
     private static final long[] NON_CONTRACT_RESERVED_NUMS =
-            TokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES);
+            InitialModServiceTokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES);
 
     static {
         // Precondition check
@@ -262,7 +262,7 @@ final class TokenSchemaTest {
     void someAccountsAlreadyExist() {
         // Initializing the schema will happen with _all_ the expected account records, but only some of those accounts
         // should be created in the migration
-        final var schema = new TokenSchema(
+        final var schema = new InitialModServiceTokenSchema(
                 () -> allSysAccts(4),
                 this::allStakingAccts,
                 this::allMiscAccts,
@@ -492,7 +492,7 @@ final class TokenSchemaTest {
 
     @Test
     void createsSystemAccountsOnly() {
-        final var schema = new TokenSchema(
+        final var schema = new InitialModServiceTokenSchema(
                 this::allDefaultSysAccts,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
@@ -522,7 +522,7 @@ final class TokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new TokenSchema(
+        final var schema = new InitialModServiceTokenSchema(
                 Collections::emptySortedSet,
                 this::allStakingAccts,
                 Collections::emptySortedSet,
@@ -554,7 +554,7 @@ final class TokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new TokenSchema(
+        final var schema = new InitialModServiceTokenSchema(
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 this::allTreasuryClones,
@@ -584,7 +584,7 @@ final class TokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new TokenSchema(
+        final var schema = new InitialModServiceTokenSchema(
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
@@ -613,7 +613,7 @@ final class TokenSchemaTest {
         // to be present in the resulting objects
         config = overridingLedgerBalanceWithZero();
 
-        final var schema = new TokenSchema(
+        final var schema = new InitialModServiceTokenSchema(
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
                 Collections::emptySortedSet,
@@ -737,8 +737,8 @@ final class TokenSchemaTest {
         return accts;
     }
 
-    private TokenSchema newSubjectWithAllExpected() {
-        return new TokenSchema(
+    private InitialModServiceTokenSchema newSubjectWithAllExpected() {
+        return new InitialModServiceTokenSchema(
                 this::allDefaultSysAccts,
                 this::allStakingAccts,
                 this::allMiscAccts,
