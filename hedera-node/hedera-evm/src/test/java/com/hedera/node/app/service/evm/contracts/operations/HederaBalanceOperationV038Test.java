@@ -84,7 +84,7 @@ class HederaBalanceOperationV038Test {
         initializeSubject();
         given(frame.popStackItem()).willThrow(new UnderflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
     }
@@ -94,7 +94,7 @@ class HederaBalanceOperationV038Test {
         initializeSubject();
         given(frame.popStackItem()).willThrow(new OverflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(TOO_MANY_STACK_ITEMS);
     }
@@ -103,7 +103,7 @@ class HederaBalanceOperationV038Test {
     void haltsWithInvalidSolidityAddressOperationResult() {
         initializeSubject();
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(INVALID_SOLIDITY_ADDRESS);
     }
@@ -115,7 +115,7 @@ class HederaBalanceOperationV038Test {
         given(frame.warmUpAddress(any())).willReturn(true);
         given(frame.getRemainingGas()).willReturn(0L);
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(INSUFFICIENT_GAS);
     }
@@ -129,7 +129,7 @@ class HederaBalanceOperationV038Test {
         given(frame.warmUpAddress(any())).willReturn(true);
         given(frame.getRemainingGas()).willReturn(10_000L);
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         final var result = subject.execute(frame, evm);
 

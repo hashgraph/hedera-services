@@ -80,7 +80,7 @@ class HederaExtCodeSizeOperationV038Test {
     void executeWorldUpdaterResolvesToNull() {
         given(mf.getStackItem(0)).willReturn(ethAddressInstance);
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -110,7 +110,7 @@ class HederaExtCodeSizeOperationV038Test {
         given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
         given(mf.getRemainingGas()).willReturn(100L);
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         var opResult = subject.execute(mf, evm);

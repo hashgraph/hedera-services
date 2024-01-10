@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,7 +88,7 @@ class HederaExtCodeHashOperationV038Test {
     void executeResolvesToInvalidSolidityAddress() {
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -98,11 +97,10 @@ class HederaExtCodeHashOperationV038Test {
     }
 
     @Test
-    void executeResolvesToInvalidSolidityAddressAndAllowCallsToNonContractAccountsDisabled() {
+    void executeResolvesToInvalidSolidityAddressAndcallsToNonExistingEntitiesEnabledFalse() {
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
-        given(evmProperties.allowCallsToNonContractAccounts()).willReturn(false);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -114,7 +112,7 @@ class HederaExtCodeHashOperationV038Test {
     void executeResolvesToInsufficientGas() {
         givenMessageFrameWithRemainingGas(ACTUAL_COST - 1L);
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -127,7 +125,7 @@ class HederaExtCodeHashOperationV038Test {
         givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
         given(account.isEmpty()).willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -151,7 +149,7 @@ class HederaExtCodeHashOperationV038Test {
         givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
         given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -164,7 +162,7 @@ class HederaExtCodeHashOperationV038Test {
         given(account.isEmpty()).willReturn(false);
         given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 

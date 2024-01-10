@@ -146,7 +146,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -553,7 +552,7 @@ class GlobalDynamicPropertiesTest {
 
         subject = new GlobalDynamicProperties(numbers, properties);
 
-        assertFalse(subject.callsToNonExistingEntitiesEnabled(any()));
+        assertFalse(subject.callsToNonExistingEntitiesEnabled(Address.ZERO));
     }
 
     @Test
