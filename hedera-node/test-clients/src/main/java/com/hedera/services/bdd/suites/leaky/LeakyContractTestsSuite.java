@@ -1099,6 +1099,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         "createTokenWithInvalidFeeCollector",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
