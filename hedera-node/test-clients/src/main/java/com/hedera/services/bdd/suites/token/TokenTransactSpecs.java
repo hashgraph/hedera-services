@@ -1540,7 +1540,8 @@ public class TokenTransactSpecs extends HapiSuite {
         final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromAmelie = "txnFromAmelie";
 
-        return defaultHapiSpec("RoyaltyAndFractionalTogetherCaseStudy", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "RoyaltyAndFractionalTogetherCaseStudy", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(supplyKey),
                         cryptoCreate(alice).balance(10 * ONE_HUNDRED_HBARS),
@@ -1890,7 +1891,9 @@ public class TokenTransactSpecs extends HapiSuite {
 
         final var txnFromCollector = "txnFromCollector";
 
-        return defaultHapiSpec("CollectorsAreExemptFromTheirOwnFeesButNotOthers", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CollectorsAreExemptFromTheirOwnFeesButNotOthers",
+                        SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(edgar),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1939,7 +1942,8 @@ public class TokenTransactSpecs extends HapiSuite {
     // HIP-573 tests below
     @HapiTest
     public HapiSpec collectorIsChargedFixedFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedFixedFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CollectorIsChargedFixedFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 NON_FUNGIBLE_UNIQUE, this::fixedFeeWith),
@@ -1995,7 +1999,9 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec collectorIsChargedNetOfTransferFractionalFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedNetOfTransferFractionalFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CollectorIsChargedNetOfTransferFractionalFeeUnlessExempt",
+                        SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 FUNGIBLE_COMMON, this::netOfTransferFractionalFeeWith),
@@ -2023,7 +2029,8 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec collectorIsChargedRoyaltyFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedRoyaltyFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CollectorIsChargedRoyaltyFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 NON_FUNGIBLE_UNIQUE, this::royaltyFeeNoFallbackWith),
@@ -2056,7 +2063,9 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec collectorIsChargedRoyaltyFallbackFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedRoyaltyFallbackFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CollectorIsChargedRoyaltyFallbackFeeUnlessExempt",
+                        SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 NON_FUNGIBLE_UNIQUE, this::royaltyFeePlusFallbackWith),

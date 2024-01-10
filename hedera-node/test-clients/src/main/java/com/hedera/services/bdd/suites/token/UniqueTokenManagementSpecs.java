@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -44,11 +43,8 @@ import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadataOfLength
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
@@ -249,14 +245,16 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .when(mintToken(FUNGIBLE_TOKEN, 300))
                 .then(
                         burnToken(FUNGIBLE_TOKEN, List.of(1L, 2L, 3L))
-                                .via(BURN_FAILURE).logged(),
+                                .via(BURN_FAILURE)
+                                .logged(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 300),
                         getTxnRecord(BURN_FAILURE).showsNoTransfers().logged(),
                         UtilVerbs.withOpContext((spec, opLog) -> {
                             var burnTxn = getTxnRecord(BURN_FAILURE);
                             allRunFor(spec, burnTxn);
                             Assertions.assertEquals(
-                                    300, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
+                                    300,
+                                    burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
                         }));
     }
 
@@ -769,8 +767,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         tokenAssociate(ACCOUNT, A_TOKEN),
                         cryptoTransfer(TokenMovement.moving(5, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(
-                        wipeTokenAccount(A_TOKEN, ACCOUNT, List.of(1L, 2L))
-                                .via("wipeTx"),
+                        wipeTokenAccount(A_TOKEN, ACCOUNT, List.of(1L, 2L)).via("wipeTx"),
                         wipeTokenAccount(A_TOKEN, ACCOUNT, List.of())
                                 .hasKnownStatus(SUCCESS)
                                 .via("wipeEmptySerialTx"))

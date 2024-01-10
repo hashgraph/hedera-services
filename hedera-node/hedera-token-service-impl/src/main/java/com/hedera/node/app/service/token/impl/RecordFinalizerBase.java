@@ -168,8 +168,7 @@ public class RecordFinalizerBase {
      */
     @NonNull
     protected Map<TokenID, List<NftTransfer>> nftChangesFrom(
-            @NonNull final WritableNftStore writableNftStore,
-            @NonNull final WritableTokenStore writableTokenStore) {
+            @NonNull final WritableNftStore writableNftStore, @NonNull final WritableTokenStore writableTokenStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
@@ -204,24 +203,30 @@ public class RecordFinalizerBase {
             updateNftChanges(nftId, senderAccountId, receiverAccountId, nftChanges);
         }
 
-        for(final var tokenId : writableTokenStore.modifiedTokens()) {
+        for (final var tokenId : writableTokenStore.modifiedTokens()) {
             final var originalToken = writableTokenStore.getOriginalValue(tokenId);
             final var modifiedToken = writableTokenStore.get(tokenId);
-            if(!originalToken.treasuryAccountId().equals(modifiedToken.treasuryAccountId())) {
-               updateNftChanges(NftID.newBuilder().tokenId(tokenId).serialNumber(-1).build(),
-                       originalToken.treasuryAccountId(),
-                       modifiedToken.treasuryAccountId(),
-                       nftChanges);
+            if (originalToken != null
+                    && !originalToken
+                            .treasuryAccountId()
+                            .equals(modifiedToken.treasuryAccountIdOrElse(AccountID.DEFAULT))) {
+                updateNftChanges(
+                        NftID.newBuilder().tokenId(tokenId).serialNumber(-1).build(),
+                        originalToken.treasuryAccountId(),
+                        modifiedToken.treasuryAccountId(),
+                        nftChanges);
             }
         }
         return nftChanges;
     }
 
-    private static void updateNftChanges(final NftID nftId,
-                                         final AccountID senderAccountId,
-                                         final AccountID receiverAccountId,
-                                         final HashMap<TokenID, List<NftTransfer>> nftChanges) {
-        final var nftTransfer = NftTransfer.newBuilder().serialNumber(nftId.serialNumber())
+    private static void updateNftChanges(
+            final NftID nftId,
+            final AccountID senderAccountId,
+            final AccountID receiverAccountId,
+            final HashMap<TokenID, List<NftTransfer>> nftChanges) {
+        final var nftTransfer = NftTransfer.newBuilder()
+                .serialNumber(nftId.serialNumber())
                 .senderAccountID(senderAccountId)
                 .receiverAccountID(receiverAccountId)
                 .build();

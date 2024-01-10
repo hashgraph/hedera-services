@@ -73,7 +73,8 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers -------------------------
-        final var fungibleChanges = tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
+        final var fungibleChanges =
+                tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
