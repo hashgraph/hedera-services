@@ -92,7 +92,7 @@ public class StateSignatureCollectorWiring {
                         "consensus events",
                         new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         postConsensusEventInput = postConsensusTransformer.getInputWire();
-        postConsSigInput = taskScheduler.buildInputWire("post-consensus state signature transactions");
+        postConsSigInput = taskScheduler.buildInputWire("postconsensus state signature transactions");
         postConsensusTransformer.getOutputWire().solderTo(postConsSigInput);
 
         // Create input for signed states
