@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_COINBASE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -26,6 +27,9 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.v046.Version046FeatureFlags;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Deque;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -58,5 +62,23 @@ class FeatureFlagsTest {
         assertTrue(subject.isSidecarEnabled(frame, SidecarType.CONTRACT_BYTECODE));
         assertTrue(subject.isSidecarEnabled(frame, SidecarType.CONTRACT_ACTION));
         assertFalse(subject.isSidecarEnabled(frame, SidecarType.CONTRACT_STATE_CHANGE));
+    }
+
+    @Test
+    void isAllowCallsToNonContractAccountsEnabledGrandfatherTest() {
+        final var subject = new Version046FeatureFlags();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("contracts.evm.nonExtantContractsFail", 1000L)
+                .getOrCreateConfig();
+        final var config2 = HederaTestConfigBuilder.create()
+                .withValue(
+                        "contracts.evm.nonExtantContractsFail",
+                        ConversionUtils.numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
+                .getOrCreateConfig();
+        final var grandfathered = mock(HederaEvmAccount.class);
+
+        assertTrue(subject.isAllowCallsToNonContractAccountsEnabled(config, 1L));
+        assertFalse(subject.isAllowCallsToNonContractAccountsEnabled(
+                config2, ConversionUtils.numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)));
     }
 }
