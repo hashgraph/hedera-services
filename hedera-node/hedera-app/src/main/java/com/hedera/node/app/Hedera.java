@@ -150,7 +150,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -158,6 +160,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.IntSupplier;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -944,18 +948,21 @@ public final class Hedera implements SwirldMain {
                 final String fileName = "<path-to-.evts-file>"; // PUT EVENTS FILE HERE
                 System.out.println("DIFF-TEST: running events from file " + fileName);
 
-                final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
-                        platform.getAddressBook(),
-                        Path.of(fileName),
-                        151988064, // latest round of the state
-                        true);
-                while (roundIterator.hasNext()) {
-                    var nextRound = roundIterator.next();
-
-                    System.out.println("DIFF-TEST: file round: " + nextRound.getRoundNum() + "; counter: "
-                            + differentialEventTestCounter++);
-                    daggerApp.handleWorkflow().handleRound(state, platformState, nextRound);
-                    System.out.println("DIFF-TEST: file round " + nextRound.getRoundNum() + " processed");
+                    final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
+                            platform.getAddressBook(),
+                            fileName,
+                            startingRound,
+                            true);
+                    while (roundIterator.hasNext()) {
+                        var nextRound = roundIterator.next();
+                        System.out.println(
+                                "DIFF-TEST: file round: " + nextRound.getRoundNum() + "; counter: "
+                                        + differentialEventTestCounter++);
+                        daggerApp.handleWorkflow().handleRound(state, platformState, nextRound);
+                        System.out.println(
+                                "DIFF-TEST: file round " + nextRound.getRoundNum() + " processed");
+                        startingRound++;
+                    }
                 }
             } else if (normalHandleCounter < 100) {
                 // Handle some normal (empty) rounds after processing the events file. This gives a little time for the
@@ -963,7 +970,7 @@ public final class Hedera implements SwirldMain {
                 daggerApp.handleWorkflow().handleRound(state, platformState, round);
                 normalHandleCounter++;
             } else {
-                System.out.println("DIFF-TEST: finished events file (diff-test counter " + differentialEventTestCounter
+                System.out.println("DIFF-TEST: finished events files (diff-test counter " + differentialEventTestCounter
                         + ", normalHandleCounter " + normalHandleCounter + "). Exiting");
                 System.exit(0);
             }
