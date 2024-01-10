@@ -1095,12 +1095,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     @Order(9)
     final HapiSpec createTokenWithInvalidFeeCollector() {
-        return propertyPreservingHapiSpec(
-                        "createTokenWithInvalidFeeCollector",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
+        // Fully non-deterministic for fuzzy matching because the test uses an absolute account number (i.e. 15252L)
+        // but fuzzy matching compares relative account numbers
+        return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector", FULLY_NONDETERMINISTIC)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
