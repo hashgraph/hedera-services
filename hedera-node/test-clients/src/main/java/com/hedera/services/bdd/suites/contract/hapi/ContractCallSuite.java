@@ -577,7 +577,7 @@ public class ContractCallSuite extends HapiSuite {
                         "NestedContractCannotOverSendValue",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -881,7 +881,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(contractAlternatives),
                         contractCreate(contractAlternatives),
@@ -1471,7 +1472,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
-        return defaultHapiSpec("DepositDeleteSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("DepositDeleteSuccess", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(BENEFICIARY).balance(initBalance),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -2118,7 +2119,7 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsToDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_1).balance(10_000L),
@@ -2208,7 +2209,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsToOuterContractFromDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS)
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_TRANSFER_CONTRACT),

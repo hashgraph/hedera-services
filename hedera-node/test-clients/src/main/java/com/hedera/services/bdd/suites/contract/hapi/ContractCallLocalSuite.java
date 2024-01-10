@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -118,7 +119,7 @@ public class ContractCallLocalSuite extends HapiSuite {
         final AtomicReference<com.esaulpaugh.headlong.abi.Address> nftOwnerAddress = new AtomicReference<>();
         final AtomicReference<com.esaulpaugh.headlong.abi.Address> senderAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("htsOwnershipCheckWorksWithAliasAddress")
+        return defaultHapiSpec("htsOwnershipCheckWorksWithAliasAddress", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(SUPPLY_KEY),
@@ -256,7 +257,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     final HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
-        return defaultHapiSpec("lowBalanceFails")
+        return defaultHapiSpec("lowBalanceFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate("payer"),
                         cryptoCreate("payer").balance(adequateQueryPayment),
