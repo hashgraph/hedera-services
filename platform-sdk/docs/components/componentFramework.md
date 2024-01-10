@@ -182,8 +182,8 @@ adding data to a component that has reached the limit of unprocessed tasks. This
 building up in a given component and signals the components feeding into it to back off so that it can catch up. In
 order to prevent circular data flows that could result in a deadlock of backpressure, task schedulers provide a way to
 bypass the backpressure mechanism. The method `inject()` ignores the number of unprocessed tasks and the maximum
-configured value in order to prevent such deadlocks. **If backpressure is desired, the primary path of data flow must
-always pass data using the backpressure methods. Secondary data flows must use `inject()` to avoid deadlock**. Circular
+configured value in order to prevent such deadlocks. **If backpressure is desired, only a single non-cyclic data flow
+should use backpressure. Any data flow that forms a cycle should use `inject()` to avoid deadlock.** Circular
 data flows that use backpressure are identified by the wiring model, which logs a warning if cyclic backpressure is
 detected.
 
