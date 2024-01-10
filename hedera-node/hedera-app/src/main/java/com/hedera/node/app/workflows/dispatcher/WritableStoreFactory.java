@@ -104,7 +104,7 @@ public class WritableStoreFactory {
         requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
 
         this.serviceName = serviceName;
-        this.states = state.createWritableStates(serviceName);
+        this.states = state.getWritableStates(serviceName);
     }
 
     /**

@@ -500,7 +500,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         // a preceding transaction must be committed immediately
         stack.commitFullStack();
-        stack.createSavepoint();
 
         return result;
     }

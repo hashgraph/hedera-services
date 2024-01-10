@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import org.junit.jupiter.api.Test;
@@ -41,6 +41,6 @@ class ContractServiceImplTest {
         final var mockRegistry = mock(SchemaRegistry.class);
         CONTRACT_SERVICE.registerSchemas(mockRegistry, RELEASE_045_VERSION);
         verify(mockRegistry).register(captor.capture());
-        assertInstanceOf(ContractSchema.class, captor.getValue());
+        assertInstanceOf(InitialModServiceContractSchema.class, captor.getValue());
     }
 }
