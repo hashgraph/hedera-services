@@ -547,7 +547,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(WritableEntityIdStore.class));
 
                 // Then we see that the values for A, B, and C are available
-                final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
+                final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(1);
                 final ReadableKVState<String, String> fruitV1 = readableStates.get(FRUIT_STATE_KEY);
                 assertThat(fruitV1.keys()).toIterable().containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
@@ -573,7 +573,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(WritableEntityIdStore.class));
 
                 // We should see the v2 state (the delta from v2 after applied atop v1)
-                final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
+                final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(3);
 
                 final ReadableKVState<String, String> fruitV2 = readableStates.get(FRUIT_STATE_KEY);
@@ -610,7 +610,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         mock(WritableEntityIdStore.class));
 
                 // We should see the v3 state (the delta from v3 after applied atop v2 and v1)
-                final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
+                final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(1);
                 assertThat(readableStates.stateKeys()).containsExactlyInAnyOrder(ANIMAL_STATE_KEY);
 

@@ -1812,7 +1812,8 @@ public class TokenTransactSpecs extends HapiSuite {
         final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromNonTreasury = "txnFromNonTreasury";
 
-        return defaultHapiSpec("treasuriesAreExemptFromAllCustomFees", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "treasuriesAreExemptFromAllCustomFees", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(edgar),
                         cryptoCreate(nonTreasury),
@@ -1970,7 +1971,9 @@ public class TokenTransactSpecs extends HapiSuite {
 
     @HapiTest // HERE : fees
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
-        return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CollectorIsChargedFractionalFeeUnlessExempt",
+                        SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         setupWellKnownTokenWithTwoFeesOnlyOneExemptingCollectors(
                                 FUNGIBLE_COMMON, this::fractionalFeeWith),

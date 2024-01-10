@@ -18,12 +18,10 @@ package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.networkadmin.NetworkService;
-import com.hedera.node.app.spi.state.MigrationContext;
+import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceNetworkSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
@@ -36,15 +34,6 @@ public final class NetworkServiceImpl implements NetworkService {
     }
 
     private Schema networkSchema(final SemanticVersion version) {
-        return new Schema(version) {
-            @NonNull
-            @Override
-            public Set<StateDefinition> statesToCreate() {
-                return Set.of();
-            }
-
-            @Override
-            public void migrate(@NonNull MigrationContext ctx) {}
-        };
+        return new InitialModServiceNetworkSchema(version);
     }
 }

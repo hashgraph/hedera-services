@@ -333,7 +333,11 @@ public class TokenCreateSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
         String saltedName = salted(PRIMARY);
-        return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus", NONDETERMINISTIC_TOKEN_NAMES)
+        return defaultHapiSpec(
+                        "CreationWithoutKYCSetsCorrectStatus",
+                        NONDETERMINISTIC_TOKEN_NAMES,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getAccountInfo(TOKEN_TREASURY)

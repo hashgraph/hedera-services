@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.components;
 
 import static com.swirlds.platform.test.observers.ObservationType.ADDED;
-import static com.swirlds.platform.test.observers.ObservationType.PRE_CONSENSUS;
 import static com.swirlds.platform.test.observers.ObservationType.STALE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -31,11 +30,9 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.SimpleEvent;
-import com.swirlds.platform.test.observers.AddedAndStale;
 import com.swirlds.platform.test.observers.AddedObserver;
 import com.swirlds.platform.test.observers.ConsRound;
 import com.swirlds.platform.test.observers.ObservationType;
-import com.swirlds.platform.test.observers.PreConsensusObserver;
 import com.swirlds.platform.test.observers.SimpleEventTracker;
 import com.swirlds.platform.test.observers.StaleObserver;
 import com.swirlds.test.framework.TestComponentTags;
@@ -46,16 +43,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class EventObserverDispatcherTests {
-
-    PreConsensusObserver preCons = new PreConsensusObserver();
     AddedObserver added = new AddedObserver();
     StaleObserver stale = new StaleObserver();
-    AddedAndStale addedStale = new AddedAndStale();
     ConsRound consRound = new ConsRound();
 
-    List<SimpleEventTracker> allEventTrackers = List.of(preCons, added, stale, addedStale);
+    List<SimpleEventTracker> allEventTrackers = List.of(added, stale);
 
-    EventObserverDispatcher dispatcher = new EventObserverDispatcher(preCons, added, stale, consRound, addedStale);
+    EventObserverDispatcher dispatcher = new EventObserverDispatcher(added, stale, consRound);
 
     SimpleEvent e1 = new SimpleEvent(1);
     SimpleEvent e2 = new SimpleEvent(2);
@@ -65,15 +59,11 @@ class EventObserverDispatcherTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Verify Observations")
     void test() {
-        dispatchAndCheck(PRE_CONSENSUS, e1, preCons);
+        dispatchAndCheck(ADDED, e1, added);
 
-        dispatchAndCheck(PRE_CONSENSUS, e2, preCons);
+        dispatchAndCheck(ADDED, e2, added);
 
-        dispatchAndCheck(ADDED, e1, added, addedStale);
-
-        dispatchAndCheck(ADDED, e2, added, addedStale);
-
-        dispatchAndCheck(STALE, e1, stale, addedStale);
+        dispatchAndCheck(STALE, e1, stale);
 
         e2.setLastInRoundReceived(true);
 
@@ -93,9 +83,6 @@ class EventObserverDispatcherTests {
     private void dispatchAndCheck(
             final ObservationType type, final SimpleEvent event, final SimpleEventTracker... yes) {
         switch (type) {
-            case PRE_CONSENSUS:
-                dispatcher.preConsensusEvent(event);
-                break;
             case ADDED:
                 dispatcher.eventAdded(event);
                 break;

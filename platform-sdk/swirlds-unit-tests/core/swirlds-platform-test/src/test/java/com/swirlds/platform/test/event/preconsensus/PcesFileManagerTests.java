@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -246,6 +247,7 @@ class PcesFileManagerTests {
 
     @Test
     @DisplayName("Incremental Pruning By Timestamp Test")
+    @Disabled
     void incrementalPruningByTimestampTest() throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the

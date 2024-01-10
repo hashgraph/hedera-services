@@ -25,6 +25,7 @@ import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -97,7 +98,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     private static final Predicate<Method> IS_HAPI_TEST =
             methodCandidate -> isAnnotated(methodCandidate, HapiTest.class)
-                    || (methodCandidate.getParameterCount() == 0 && methodCandidate.getReturnType() == HapiSpec.class);
+                    || (!isAnnotated(methodCandidate, BddMethodIsNotATest.class)
+                            && methodCandidate.getParameterCount() == 0
+                            && methodCandidate.getReturnType() == HapiSpec.class);
 
     private static final Comparator<ClassTestDescriptor> SUITE_DESCRIPTOR_COMPARATOR =
             Comparator.comparingInt(ClassTestDescriptor::order);

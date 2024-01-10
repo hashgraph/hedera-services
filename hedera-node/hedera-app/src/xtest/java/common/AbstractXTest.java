@@ -50,7 +50,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -325,42 +325,42 @@ public abstract class AbstractXTest {
     private ReadableKVState<NftID, Nft> finalNfts() {
         return component()
                 .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
+                .getReadableStates(TokenServiceImpl.NAME)
                 .get(TokenServiceImpl.NFTS_KEY);
     }
 
     private ReadableKVState<ProtoBytes, AccountID> finalAliases() {
         return component()
                 .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
+                .getReadableStates(TokenServiceImpl.NAME)
                 .get(TokenServiceImpl.ALIASES_KEY);
     }
 
     private ReadableKVState<SlotKey, SlotValue> finalStorage() {
         return component()
                 .hederaState()
-                .createReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.STORAGE_KEY);
+                .getReadableStates(ContractServiceImpl.NAME)
+                .get(InitialModServiceContractSchema.STORAGE_KEY);
     }
 
     private ReadableKVState<EntityNumber, Bytecode> finalBytecodes() {
         return component()
                 .hederaState()
-                .createReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.BYTECODE_KEY);
+                .getReadableStates(ContractServiceImpl.NAME)
+                .get(InitialModServiceContractSchema.BYTECODE_KEY);
     }
 
     protected ReadableKVState<AccountID, Account> finalAccounts() {
         return component()
                 .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
+                .getReadableStates(TokenServiceImpl.NAME)
                 .get(TokenServiceImpl.ACCOUNTS_KEY);
     }
 
     private ReadableKVState<EntityIDPair, TokenRelation> finalTokenRelations() {
         return component()
                 .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
+                .getReadableStates(TokenServiceImpl.NAME)
                 .get(TokenServiceImpl.TOKEN_RELS_KEY);
     }
 
@@ -382,7 +382,7 @@ public abstract class AbstractXTest {
     private void setupExchangeManager() {
         final var state =
                 Objects.requireNonNull(component().workingStateAccessor().getHederaState());
-        final var midnightRates = state.createReadableStates(FeeService.NAME)
+        final var midnightRates = state.getReadableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton("MIDNIGHT_RATES")
                 .get();
 
@@ -426,9 +426,9 @@ public abstract class AbstractXTest {
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
                 Map.of(
-                        ContractSchema.BYTECODE_KEY,
+                        InitialModServiceContractSchema.BYTECODE_KEY,
                         initialBytecodes(),
-                        ContractSchema.STORAGE_KEY,
+                        InitialModServiceContractSchema.STORAGE_KEY,
                         new HashMap<SlotKey, SlotValue>()));
 
         component().workingStateAccessor().setHederaState(fakeHederaState);

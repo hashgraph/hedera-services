@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,9 +62,12 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * General schema for the token service
+ * (FUTURE) When mod-service release is finalized, rename this class to e.g.
+ * {@code Release47TokenSchema} as it will no longer be appropriate to assume
+ * this schema is always correct for the current version of the software.
  */
-public class TokenSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(TokenSchema.class);
+public class InitialModServiceTokenSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(InitialModServiceTokenSchema.class);
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
     // plenty of runway.
@@ -88,7 +91,7 @@ public class TokenSchema extends Schema {
      * objects, these account objects may or may not yet exist in state. They're usually not needed,
      * but are required for an event recovery situation.
      */
-    public TokenSchema(
+    public InitialModServiceTokenSchema(
             @NonNull final Supplier<SortedSet<Account>> sysAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> stakingAcctRcds,
             @NonNull final Supplier<SortedSet<Account>> treasuryAcctRcds,
