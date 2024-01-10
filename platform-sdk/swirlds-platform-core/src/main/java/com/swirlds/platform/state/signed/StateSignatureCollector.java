@@ -112,11 +112,13 @@ public class StateSignatureCollector {
 
         if (!signedState.isComplete()) {
             final ReservedSignedState previousState = incompleteStates.put(signedState.getRound(), reservedSignedState);
-            Optional.ofNullable(previousState).ifPresent(ReservedSignedState::close);
-            logger.warn(
-                    LogMarker.EXCEPTION.getMarker(),
-                    "Two states with the same round ({}) have been added to the signature collector",
-                    signedState.getRound());
+            if (previousState != null) {
+                previousState.close();
+                logger.warn(
+                        LogMarker.EXCEPTION.getMarker(),
+                        "Two states with the same round ({}) have been added to the signature collector",
+                        signedState.getRound());
+            }
             return Optional.of(purgeOldStates()).filter(l -> !l.isEmpty()).orElse(null);
         }
         return Stream.concat(Stream.of(reservedSignedState), purgeOldStates().stream())
