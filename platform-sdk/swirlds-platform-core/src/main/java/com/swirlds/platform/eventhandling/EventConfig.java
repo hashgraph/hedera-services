@@ -80,6 +80,7 @@ public record EventConfig(
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold
      */
+    @NonNull
     public AncientMode getAncientMode() {
         if (useBirthRoundAncientThreshold()) {
             return AncientMode.BIRTH_ROUND_THRESHOLD;
