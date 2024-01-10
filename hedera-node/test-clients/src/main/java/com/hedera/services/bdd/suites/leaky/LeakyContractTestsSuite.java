@@ -1067,7 +1067,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var overdraftAmount = payerBalance + ONE_HBAR;
         final var overAmbitiousPayer = "overAmbitiousPayer";
         final var uncheckedCC = "uncheckedCC";
-        return defaultHapiSpec("PayerCannotOverSendValue", NONDETERMINISTIC_NONCE)
+        return defaultHapiSpec("PayerCannotOverSendValue", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
@@ -1610,7 +1610,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     @Order(12)
     final HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck", NONDETERMINISTIC_NONCE)
+        return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
                 .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
