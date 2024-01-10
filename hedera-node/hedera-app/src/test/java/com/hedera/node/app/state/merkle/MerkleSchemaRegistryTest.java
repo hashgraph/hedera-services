@@ -48,15 +48,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Tests for the {@link MerkleSchemaRegistry}. The only thing not covered here are serialization
  * tests, they are covered in {@link SerializationTest}.
  */
+@ExtendWith(MockitoExtension.class)
 class MerkleSchemaRegistryTest extends MerkleTestBase {
+    @Mock
+    private HederaLifecycles lifecycles;
+
     private MerkleSchemaRegistry schemaRegistry;
     private Configuration config;
     private NetworkInfo networkInfo;
@@ -162,11 +169,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(
-                            (tree, state) -> {},
-                            (e, m, s) -> {},
-                            (state, platform, dualState, trigger, version) -> {},
-                            (s, ab, pc) -> {}),
+                    new MerkleHederaState(lifecycles),
                     version(9, 0, 0),
                     version(10, 0, 0),
                     config,
@@ -184,8 +187,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(
-                    (tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {}, (s, ab, pc) -> {});
+            merkleTree = new MerkleHederaState(lifecycles);
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];
