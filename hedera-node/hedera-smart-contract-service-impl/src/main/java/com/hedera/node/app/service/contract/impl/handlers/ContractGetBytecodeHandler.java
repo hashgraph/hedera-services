@@ -103,9 +103,9 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     private Bytes bytecodeFrom(@NonNull final QueryContext context, @NonNull Account contract) {
         final var store = context.createStore(ContractStateStore.class);
         var contractNumber = contract.accountId().accountNum();
-        var contractEntityNumber =
-                EntityNumber.newBuilder().number(contractNumber).build();
-        final var bytecode = store.getBytecode(contractEntityNumber);
+        var contractId =
+                ContractID.newBuilder().contractNum(contractNumber).build();
+        final var bytecode = store.getBytecode(contractId);
         return bytecode.code();
     }
 

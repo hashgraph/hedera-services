@@ -43,7 +43,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -173,8 +172,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Bytes getCode(final long number) {
-        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
+    public @NonNull Bytes getCode(final ContractID contractID) {
+        final var numberedBytecode = contractStateStore.getBytecode(contractID);
         if (numberedBytecode == null) {
             return Bytes.EMPTY;
         } else {
@@ -187,8 +186,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Hash getCodeHash(final long number) {
-        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
+    public @NonNull Hash getCodeHash(final ContractID contractID) {
+        final var numberedBytecode = contractStateStore.getBytecode(contractID);
         if (numberedBytecode == null) {
             return Hash.EMPTY;
         } else {
@@ -255,7 +254,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public void setCode(final ContractID contractID, @NonNull final Bytes code) {
-        contractStateStore.putBytecode(new EntityNumber(contractID.contractNumOrThrow()), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
+        contractStateStore.putBytecode(contractID, new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
     }
 
     /**

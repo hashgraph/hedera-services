@@ -81,12 +81,12 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
 
     @Override
     public @NonNull Bytes getCode() {
-        return state.getCode(accountID.accountNumOrThrow());
+        return state.getCode(hederaContractId());
     }
 
     @Override
     public @NonNull Hash getCodeHash() {
-        return state.getCodeHash(accountID.accountNumOrThrow());
+        return state.getCodeHash(hederaContractId());
     }
 
     @Override

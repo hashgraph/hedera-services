@@ -239,7 +239,7 @@ public interface HederaOperations {
      * modifications already dispatched. If the contract did not exist before the transaction, returns
      * zero.
      *
-     * @param contractNumber the contract number
+     * @param contractID the contract id
      * @return the number of storage slots used by the contract, ignoring any uncommitted modifications
      */
     long getOriginalSlotsUsed(ContractID contractID);

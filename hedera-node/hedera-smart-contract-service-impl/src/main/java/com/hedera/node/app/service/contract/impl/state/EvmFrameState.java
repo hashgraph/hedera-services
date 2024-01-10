@@ -151,16 +151,16 @@ public interface EvmFrameState {
     /**
      * Returns the code for the account with the given number, or empty code if no such code exists.
      *
-     * @param number the account number
+     * @param contractID the contract id
      * @return the code for the account
      */
     @NonNull
-    Bytes getCode(long number);
+    Bytes getCode(ContractID contractID);
 
     /**
      * Sets the code for the contract with the given number. Only used during contract creation.
      *
-     * @param number the contract number
+     * @param contractID the contract id
      * @param code the new code
      */
     void setCode(ContractID contractID, @NonNull Bytes code);
@@ -178,7 +178,7 @@ public interface EvmFrameState {
     Bytes getTokenRedirectCode(@NonNull Address address);
 
     @NonNull
-    Hash getCodeHash(long number);
+    Hash getCodeHash(ContractID contractID);
 
     /**
      * Returns the hash of the redirect bytecode for the token with the given address, which must be a
