@@ -127,7 +127,7 @@ public class StateSignatureCollector {
     }
 
     /**
-     * Handle pre-consensus state signatures.
+     * Handle preconsensus state signatures.
      *
      * @param transactions the signature transactions to handle
      * @return a list of signed states that are now complete or too old, or null if there are none
@@ -164,7 +164,7 @@ public class StateSignatureCollector {
     }
 
     /**
-     * Handle post-consensus state signatures.
+     * Handle postconsensus state signatures.
      *
      * @param transactions the signature transactions to handle
      * @return a list of signed states that are now complete or too old, or null if there are none
