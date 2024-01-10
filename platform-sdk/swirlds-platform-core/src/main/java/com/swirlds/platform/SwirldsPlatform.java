@@ -454,8 +454,8 @@ public class SwirldsPlatform implements Platform {
                     preconsensusEventStreamConfig.permitGaps(),
                     currentFileType);
 
-            preconsensusEventFileManager = new PcesFileManager(
-                    platformContext, Time.getCurrent(), initialPcesFiles, selfId, initialState.getRound());
+            preconsensusEventFileManager =
+                    new PcesFileManager(platformContext, initialPcesFiles, selfId, initialState.getRound());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

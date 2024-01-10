@@ -93,7 +93,6 @@ public class PcesFileManager {
      * Constructor
      *
      * @param platformContext the platform context for this node
-     * @param time            provides wall clock time
      * @param files           the files to track
      * @param selfId          the ID of this node
      * @param startingRound   the round number of the initial state of the system
@@ -101,7 +100,6 @@ public class PcesFileManager {
      */
     public PcesFileManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final PcesFileTracker files,
             @NonNull final NodeId selfId,
             final long startingRound)
@@ -117,7 +115,7 @@ public class PcesFileManager {
         final PcesConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
-        this.time = Objects.requireNonNull(time);
+        this.time = platformContext.getTime();
         this.files = Objects.requireNonNull(files);
         this.metrics = new PcesMetrics(platformContext.getMetrics());
         this.minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();

@@ -92,7 +92,7 @@ class PcesFileManagerTests {
         return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
     }
 
-    private PlatformContext buildContext(@NonNull final AncientMode ancientMode) {
+    private PlatformContext buildContext(@NonNull final AncientMode ancientMode, @NonNull final Time time) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
                 .withValue(
@@ -106,22 +106,22 @@ class PcesFileManagerTests {
 
         final Metrics metrics = new NoOpMetrics();
 
-        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
+        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), time);
     }
 
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Generate Descriptors With Manager Test")
     void generateDescriptorsWithManagerTest(@NonNull final AncientMode ancientMode) throws IOException {
-        final PlatformContext platformContext = buildContext(ancientMode);
+        final PlatformContext platformContext = buildContext(ancientMode, Time.getCurrent());
 
         final long maxDelta = random.nextLong(10, 20);
         long lowerBound = random.nextLong(0, 1000);
         long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
-        final PcesFileManager generatingManager = new PcesFileManager(
-                platformContext, Time.getCurrent(), new PcesFileTracker(ancientMode), new NodeId(0), 0);
+        final PcesFileManager generatingManager =
+                new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), new NodeId(0), 0);
 
         for (int i = 0; i < fileCount; i++) {
             final PcesFile file = generatingManager.getNextFileDescriptor(lowerBound, upperBound);
@@ -173,8 +173,6 @@ class PcesFileManagerTests {
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext(ancientMode);
-
         // Choose a file in the middle. The goal is to incrementally purge all files before this file, but not
         // to purge this file or any of the ones after it.
         final int middleFileIndex = fileCount / 2;
@@ -185,10 +183,11 @@ class PcesFileManagerTests {
 
         // Set the far in the future, we want all files to be GC eligible by temporal reckoning.
         final FakeTime time = new FakeTime(lastFile.getTimestamp().plus(Duration.ofHours(1)), Duration.ZERO);
+        final PlatformContext platformContext = buildContext(ancientMode, time);
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
-        final PcesFileManager manager = new PcesFileManager(platformContext, time, fileTracker, new NodeId(0), 0);
+                platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
+        final PcesFileManager manager = new PcesFileManager(platformContext, fileTracker, new NodeId(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
@@ -203,7 +202,7 @@ class PcesFileManagerTests {
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                    buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
+                    platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
             final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -243,7 +242,7 @@ class PcesFileManagerTests {
         // Parse files afresh to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
+                platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -287,22 +286,21 @@ class PcesFileManagerTests {
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext(ancientMode);
-
         // Choose a file in the middle. The goal is to incrementally purge all files before this file, but not
         // to purge this file or any of the ones after it.
         final int middleFileIndex = fileCount / 2;
 
         final PcesFile firstFile = files.getFirst();
         final PcesFile middleFile = files.get(middleFileIndex);
-        final PcesFile lastFile = files.getLast();
 
         // Set the clock before the first file is not garbage collection eligible
         final FakeTime time = new FakeTime(firstFile.getTimestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
 
+        final PlatformContext platformContext = buildContext(ancientMode, time);
+
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
-        final PcesFileManager manager = new PcesFileManager(platformContext, time, fileTracker, new NodeId(0), 0);
+                platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
+        final PcesFileManager manager = new PcesFileManager(platformContext, fileTracker, new NodeId(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
@@ -316,7 +314,7 @@ class PcesFileManagerTests {
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                    buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
+                    platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
             final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
@@ -359,7 +357,7 @@ class PcesFileManagerTests {
         // Parse files afresh to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
-                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
+                platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         final PcesFile firstUnPrunedFile = freshFileTracker.getFirstFile();
 
