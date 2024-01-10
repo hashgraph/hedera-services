@@ -168,12 +168,10 @@ one, onto another wire. Wire transformers operate on the thread defined in the t
 own concurrency logic. Some types of transformers are described below:
 
 **Wire Filter:** A predicate that operates on the data type of the output wire. Data is only passed to the filter output
-wire if the
-predicate passes.
+wire if the predicate passes.
 
 **Wire Transformer:** A function that operates on the data type of the output wire. Data produced by the wire
-transformer and forwarded on its
-output wire may be a different type than the input.
+transformer and forwarded on its output wire may be a different type than the input.
 
 **Wire List Splitter:** A function that operates on a list of data and streams the individual items on the output wire.
 
