@@ -130,8 +130,8 @@ public class StateSignatureCollectorWiring {
      */
     public void bind(@NonNull final StateSignatureCollector stateSignatureCollector) {
         Objects.requireNonNull(stateSignatureCollector);
-        preConsSigInput.bind(stateSignatureCollector::handlePreConsensusSignatures);
-        postConsSigInput.bind(stateSignatureCollector::handlePostConsensusSignatures);
+        preConsSigInput.bind(stateSignatureCollector::handlePreconsensusSignatures);
+        postConsSigInput.bind(stateSignatureCollector::handlePostconsensusSignatures);
         reservedStateInput.bind(stateSignatureCollector::addReservedState);
         clearInput.bind(stateSignatureCollector::clear);
     }

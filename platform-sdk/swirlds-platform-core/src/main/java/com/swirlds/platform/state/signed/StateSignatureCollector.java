@@ -132,10 +132,10 @@ public class StateSignatureCollector {
      * @param transactions the signature transactions to handle
      * @return a list of signed states that are now complete or too old, or null if there are none
      */
-    public @Nullable List<ReservedSignedState> handlePreConsensusSignatures(
+    public @Nullable List<ReservedSignedState> handlePreconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return transactions.stream()
-                .map(this::handlePreConsensusSignature)
+                .map(this::handlePreconsensusSignature)
                 .filter(Objects::nonNull)
                 .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
@@ -172,7 +172,7 @@ public class StateSignatureCollector {
     public @Nullable List<ReservedSignedState> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return transactions.stream()
-                .map(this::handlePostConsensusSignature)
+                .map(this::handlePostconsensusSignature)
                 .filter(Objects::nonNull)
                 .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }

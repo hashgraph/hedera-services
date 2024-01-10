@@ -74,25 +74,25 @@ public class StateSignatureCollectorTester extends StateSignatureCollector {
     }
 
     @Override
-    public List<ReservedSignedState> handlePreConsensusSignatures(
+    public List<ReservedSignedState> handlePreconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return processStates(super.handlePreConsensusSignatures(transactions));
+        return processStates(super.handlePreconsensusSignatures(transactions));
     }
 
     public void handlePreconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
-        handlePreConsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, signatureTransaction)));
+        handlePreconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, signatureTransaction)));
     }
 
     @Override
-    public List<ReservedSignedState> handlePostConsensusSignatures(
+    public List<ReservedSignedState> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return processStates(super.handlePostConsensusSignatures(transactions));
+        return processStates(super.handlePostconsensusSignatures(transactions));
     }
 
     public void handlePostconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
-        handlePostConsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, transaction)));
+        handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, transaction)));
     }
 
     private List<ReservedSignedState> processStates(@Nullable final List<ReservedSignedState> states) {
