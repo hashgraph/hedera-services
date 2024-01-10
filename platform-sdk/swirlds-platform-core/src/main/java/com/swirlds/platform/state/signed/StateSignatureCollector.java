@@ -169,7 +169,7 @@ public class StateSignatureCollector {
      * @param transactions the signature transactions to handle
      * @return a list of signed states that are now complete or too old, or null if there are none
      */
-    public @Nullable List<ReservedSignedState> handlePostConsensusSignatures(
+    public @Nullable List<ReservedSignedState> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return transactions.stream()
                 .map(this::handlePostConsensusSignature)
