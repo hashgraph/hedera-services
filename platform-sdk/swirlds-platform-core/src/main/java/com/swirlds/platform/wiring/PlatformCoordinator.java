@@ -89,7 +89,6 @@ public class PlatformCoordinator {
         inOrderLinkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
         applicationTransactionPrehandlerWiring.flushRunnable().run();
-        stateSignatureCollectorWiring.flush();
     }
 
     /**
@@ -98,8 +97,6 @@ public class PlatformCoordinator {
      * Future work: this method should be expanded to coordinate the clearing of the entire system
      */
     public void clear() {
-        // TODO clear collector
-
         // Phase 1: pause
         // Pause the linked event intake and event creator, to prevent any new events from making it through the intake
         // pipeline.
@@ -111,6 +108,7 @@ public class PlatformCoordinator {
         // Phase 2: flush
         // Flush everything remaining in the intake pipeline out into the void.
         flushIntakePipeline();
+        stateSignatureCollectorWiring.flush();
 
         // Phase 3: clear
         // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
@@ -120,6 +118,7 @@ public class PlatformCoordinator {
         orphanBufferWiring.flushRunnable().run();
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.flushRunnable().run();
+        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
 
         // Phase 4: unpause
         // Once everything has been flushed out of the system, it's safe to unpause event intake and creation.

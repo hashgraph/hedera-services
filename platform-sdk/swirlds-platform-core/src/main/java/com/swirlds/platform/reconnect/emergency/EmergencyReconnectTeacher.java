@@ -29,6 +29,7 @@ import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.reconnect.ReconnectTeacher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -79,7 +80,7 @@ public class EmergencyReconnectTeacher {
     }
 
     /**
-     * Builds a predicate used to find a state in a {@link com.swirlds.platform.state.signed.SignedStateManager} that is
+     * Builds a predicate used to find a state in a {@link StateSignatureCollector} that is
      * safe to use for an emergency reconnect. Finds a signed state for the given round number and hash even if it is
      * not fully signed, or a later round that is signed by more than half the network weight.
      *

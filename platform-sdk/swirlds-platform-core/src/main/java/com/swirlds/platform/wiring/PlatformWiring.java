@@ -51,7 +51,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
@@ -180,9 +180,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
-        orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
+        orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
         stateSignatureCollectorWiring
-                .getReservedStateOutput()
+                .getAllStatesOutput()
                 .solderTo(signedStateFileManagerWiring.saveToDiskFilter());
 
         solderNonAncientEventWindow();
@@ -226,10 +226,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
 
         stateSignatureCollectorWiring
-                .getCompleteStateOutput()
+                .getCompleteStatesOutput()
                 .solderTo("app comm", appCommunicationComponent::newLatestCompleteStateEvent);
         stateSignatureCollectorWiring
-                .getCompleteStateOutput()
+                .getCompleteStatesOutput()
                 .solderTo("latestCompleteStateNexus", latestCompleteStateNexus::setStateIfNewer);
     }
 
@@ -248,7 +248,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventCreationManager    the event creation manager to bind
      * @param pcesSequencer           the PCES sequencer to bind
      * @param swirldStateManager      the swirld state manager to bind
-     * @param signedStateManager      the signed state manager to bind
+     * @param stateSignatureCollector      the signed state manager to bind
      */
     public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -260,7 +260,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventCreationManager eventCreationManager,
             @NonNull final PcesSequencer pcesSequencer,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final SignedStateManager signedStateManager) {
+            @NonNull final StateSignatureCollector stateSignatureCollector) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -271,7 +271,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring.bind(eventCreationManager);
         pcesSequencerWiring.bind(pcesSequencer);
         applicationTransactionPrehandlerWiring.bind(swirldStateManager);
-        stateSignatureCollectorWiring.bind(signedStateManager);
+        stateSignatureCollectorWiring.bind(stateSignatureCollector);
     }
 
     /**
@@ -353,11 +353,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         return signedStateFileManagerWiring.dumpStateToDisk();
     }
 
+    /**
+     * @return the input wire for collecting post-consensus signatures
+     */
     @NonNull
     public InputWire<ConsensusRound> getSignatureCollectorConsensusInput() {
         return stateSignatureCollectorWiring.getConsensusRoundInput();
     }
 
+    /**
+     * @return the input wire for states that need their signatures collected
+     */
     @NonNull
     public InputWire<ReservedSignedState> getSignatureCollectorStateInput() {
         return stateSignatureCollectorWiring.getReservedStateInput();

@@ -142,7 +142,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
@@ -522,7 +522,7 @@ public class SwirldsPlatform implements Platform {
         savedStateController = new SavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
-        final SignedStateManager signedStateManager = new SignedStateManager(
+        final StateSignatureCollector stateSignatureCollector = new StateSignatureCollector(
                 platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
 
         stateManagementComponent = new DefaultStateManagementComponent(
@@ -706,7 +706,7 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 sequencer,
                 swirldStateManager,
-                signedStateManager);
+                stateSignatureCollector);
 
         intakeHandler = platformWiring.getEventInput()::put;
 

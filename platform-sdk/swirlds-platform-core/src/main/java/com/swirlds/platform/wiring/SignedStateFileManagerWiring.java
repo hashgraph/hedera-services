@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * The wiring for the {@link SignedStateFileManager}
  *
  * @param saveStateToDisk                         the input wire for saving the state to disk
+ * @param saveToDiskFilter                        the input wire that filters out states that should not be saved
  * @param dumpStateToDisk                         the input wire for dumping the state to disk
  * @param stateSavingResultOutputWire             the output wire for the state saving result
  * @param oldestMinimumGenerationOnDiskOutputWire the output wire for the oldest minimum generation on disk

@@ -16,14 +16,19 @@
 
 package com.swirlds.platform.components.transaction.system;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
+
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Extracts a particular type of system transaction from an event or a round.
@@ -38,7 +43,7 @@ public class SystemTransactionExtractor<T extends SystemTransaction> {
      * @param systemTransactionType
      * 		the system transaction type to extract
      */
-    public SystemTransactionExtractor(final Class<T> systemTransactionType) {
+    public SystemTransactionExtractor(@NonNull final Class<T> systemTransactionType) {
         this.systemTransactionType = Objects.requireNonNull(systemTransactionType);
     }
 
@@ -49,13 +54,12 @@ public class SystemTransactionExtractor<T extends SystemTransaction> {
      * 		the round to extract from
      * @return the extracted system transactions, or {@code null} if there are none
      */
-    public List<ScopedSystemTransaction<T>> handleRound(@NonNull final ConsensusRound round) {
-        final List<ScopedSystemTransaction<T>> list = round.getConsensusEvents().stream()
+    public @Nullable List<ScopedSystemTransaction<T>> handleRound(@NonNull final ConsensusRound round) {
+        return round.getConsensusEvents().stream()
                 .map(this::handleEvent)
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
-                .toList();
-        return list.isEmpty() ? null : list;
+                .collect(collectingAndThen(toList(), l->l.isEmpty() ? null : l));
     }
 
     /**
@@ -66,7 +70,7 @@ public class SystemTransactionExtractor<T extends SystemTransaction> {
      * @return the extracted system transactions, or {@code null} if there are none
      */
     @SuppressWarnings("unchecked")
-    public List<ScopedSystemTransaction<T>> handleEvent(@NonNull final BaseEvent event) {
+    public @Nullable List<ScopedSystemTransaction<T>> handleEvent(@NonNull final BaseEvent event) {
         // no transactions to transform
         final var transactions = event.getHashedData().getTransactions();
         if (transactions == null) {

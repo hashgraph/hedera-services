@@ -26,10 +26,10 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import java.util.ArrayList;
@@ -39,9 +39,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link SignedStateManager#handlePostconsensusScopedSystemTransactions(List)}
+ * Tests for {@link StateSignatureCollector#handlePostConsensusSignatures(List)}
  */
-class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
+class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
@@ -74,7 +74,7 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
         final int count = 100;
         final StateConfig stateConfig = buildStateConfig();
 
-        final SignedStateManagerTester manager = new SignedStateManagerBuilder(stateConfig)
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

@@ -27,7 +27,7 @@ import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -47,7 +47,7 @@ import org.junit.jupiter.api.AfterEach;
 /**
  * Boilerplate implementation for SignedStateManager tests.
  */
-public class AbstractSignedStateManagerTest {
+public class AbstractStateSignatureCollectorTest {
 
     protected final Random random = getRandomPrintSeed();
 
@@ -85,7 +85,7 @@ public class AbstractSignedStateManagerTest {
      * Add a signature for a node on a state from a given round.
      */
     protected void addSignature(
-            @NonNull final SignedStateManagerTester manager, final long round, @NonNull final NodeId nodeId) {
+            @NonNull final StateSignatureCollectorTester manager, final long round, @NonNull final NodeId nodeId) {
         Objects.requireNonNull(manager, "manager must not be null");
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 

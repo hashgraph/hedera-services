@@ -61,6 +61,10 @@ public class LatestCompleteStateNexus implements SignedStateNexus {
         currentState = reservedSignedState;
     }
 
+    /**
+     * Replace the current state with the given state if the given state is newer than the current state.
+     * @param reservedSignedState the new state
+     */
     public synchronized void setStateIfNewer(@Nullable final ReservedSignedState reservedSignedState) {
         if (reservedSignedState == null) {
             return;

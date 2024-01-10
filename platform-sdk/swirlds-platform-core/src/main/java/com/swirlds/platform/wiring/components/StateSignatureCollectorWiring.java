@@ -27,8 +27,9 @@ import com.swirlds.platform.components.transaction.system.SystemTransactionExtra
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.wiring.ClearTrigger;
 import com.swirlds.platform.wiring.SignedStateReserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -45,10 +46,11 @@ public class StateSignatureCollectorWiring {
     private final BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, List<ReservedSignedState>>
             postConsSigInput;
     private final BindableInputWire<ReservedSignedState, List<ReservedSignedState>> reservedStateInput;
+    private final BindableInputWire<ClearTrigger, List<ReservedSignedState>> clearInput;
     private final InputWire<GossipEvent> preConsensusEventInput;
     private final InputWire<ConsensusRound> postConsensusEventInput;
-    private final OutputWire<ReservedSignedState> reservedStateOutput;
-    private final OutputWire<ReservedSignedState> completeStateOutput;
+    private final OutputWire<ReservedSignedState> allStatesOutput;
+    private final OutputWire<ReservedSignedState> completeStatesOutput;
 
     /**
      * Constructor.
@@ -60,46 +62,52 @@ public class StateSignatureCollectorWiring {
             @NonNull final WiringModel model, @NonNull final TaskScheduler<List<ReservedSignedState>> taskScheduler) {
 
         this.taskScheduler = Objects.requireNonNull(taskScheduler);
+        // Create the outputs
         final OutputWire<ReservedSignedState> stateSplitter =
                 taskScheduler.getOutputWire().buildSplitter("reservedStateSplitter", "reserved states");
-        this.reservedStateOutput = stateSplitter.buildAdvancedTransformer(new SignedStateReserver("allStatesReserver"));
-        this.completeStateOutput = reservedStateOutput
+        this.allStatesOutput = stateSplitter.buildAdvancedTransformer(new SignedStateReserver("allStatesReserver"));
+        this.completeStatesOutput = allStatesOutput
                 .buildFilter(
                         "filterOnlyCompleteStates",
                         "reservedStateOutput",
                         StateSignatureCollectorWiring::completeStates)
                 .buildAdvancedTransformer(new SignedStateReserver("completeStatesReserver"));
 
-        //
         // Create input for pre-consensus signatures
-        //
         final WireTransformer<GossipEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 preConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "preConsensusTransformer",
-                        "pre-consensus events",
-                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleEvent);
+                model,
+                "preConsensusTransformer",
+                "pre-consensus events",
+                new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleEvent);
         preConsensusEventInput = preConsensusTransformer.getInputWire();
         preConsSigInput = taskScheduler.buildInputWire("pre-consensus state signature transactions");
         preConsensusTransformer.getOutputWire().solderTo(preConsSigInput);
 
-        //
         // Create input for post-consensus signatures
-        //
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 postConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "gossipEventTransformer",
-                        "consensus events",
-                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
+                model,
+                "gossipEventTransformer",
+                "consensus events",
+                new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
         postConsensusEventInput = postConsensusTransformer.getInputWire();
         postConsSigInput = taskScheduler.buildInputWire("post-consensus state signature transactions");
         postConsensusTransformer.getOutputWire().solderTo(postConsSigInput);
 
-        //
         // Create input for signed states
-        //
         reservedStateInput = taskScheduler.buildInputWire("reserved signed states");
+
+        // Create clear input
+        clearInput = taskScheduler.buildInputWire("clear");
+    }
+
+    private static boolean completeStates(@NonNull final ReservedSignedState rs) {
+        if (rs.get().isComplete()) {
+            return true;
+        }
+        rs.close();
+        return false;
     }
 
     /**
@@ -115,55 +123,56 @@ public class StateSignatureCollectorWiring {
         return new StateSignatureCollectorWiring(model, taskScheduler);
     }
 
-    private static boolean completeStates(@NonNull final ReservedSignedState rs) {
-        if (rs.get().isComplete()) {
-            return true;
-        }
-        rs.close();
-        return false;
-    }
-
     /**
      * Bind the preconsensus event handler to the input wire.
      *
-     * @param signedStateManager collects and manages state signatures
+     * @param stateSignatureCollector collects and manages state signatures
      */
-    public void bind(@NonNull final SignedStateManager signedStateManager) {
-        Objects.requireNonNull(signedStateManager);
-        preConsSigInput.bind(signedStateManager::handlePreconsensusScopedSystemTransactions);
-        postConsSigInput.bind(signedStateManager::handlePostconsensusScopedSystemTransactions);
-        reservedStateInput.bind(signedStateManager::addReservedState);
+    public void bind(@NonNull final StateSignatureCollector stateSignatureCollector) {
+        Objects.requireNonNull(stateSignatureCollector);
+        preConsSigInput.bind(stateSignatureCollector::handlePreConsensusSignatures);
+        postConsSigInput.bind(stateSignatureCollector::handlePostConsensusSignatures);
+        reservedStateInput.bind(stateSignatureCollector::addReservedState);
+        clearInput.bind(stateSignatureCollector::clear);
     }
 
-    /**
-     * Get the input wire for the preconsensus events.
-     *
-     * @return the input wire
-     */
+    /** @return the input wire for the pre-consensus events (which contain signatures) */
     @NonNull
-    public InputWire<GossipEvent> preconsensusEventInput() {
+    public InputWire<GossipEvent> preConsensusEventInput() {
         return preConsensusEventInput;
     }
 
+    /** @return the input wire for the states (that we need to collect signatures for) */
+    @NonNull
     public InputWire<ReservedSignedState> getReservedStateInput() {
         return reservedStateInput;
     }
 
+    /** @return the input wire for consensus rounds (which contain signatures) */
+    @NonNull
     public InputWire<ConsensusRound> getConsensusRoundInput() {
         return postConsensusEventInput;
     }
 
-    public OutputWire<ReservedSignedState> getReservedStateOutput() {
-        return reservedStateOutput;
+    /** @return the output wire all states returned by the collector (complete, and old incomplete) */
+    @NonNull
+    public OutputWire<ReservedSignedState> getAllStatesOutput() {
+        return allStatesOutput;
     }
 
-    public OutputWire<ReservedSignedState> getCompleteStateOutput() {
-        return completeStateOutput;
+    /** @return the output wire complete states returned by the collector */
+    @NonNull
+    public OutputWire<ReservedSignedState> getCompleteStatesOutput() {
+        return completeStatesOutput;
     }
 
-    /**
-     * Flush the task scheduler.
-     */
+    /** @return the input wire that clears the collector */
+    @NonNull
+    public InputWire<ClearTrigger> getClearInput() {
+        return clearInput;
+    }
+
+    /** Flush the task scheduler. */
     public void flush() {
         taskScheduler.flush();
     }

@@ -24,7 +24,7 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,16 +33,15 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A SignedStateManager that is used for unit testing. Since the SignedStateManager is in the process of being broken up
- * into smaller components, this class is a temporary solution to allow unit tests function. In the future, these unit
- * tests should become small integration tests that test multiple components.
+ * A StateSignatureCollector that is used for unit testing. In the future, these unit tests should become small
+ * integration tests that test multiple components, this class is should be removed once we have achieved that.
  */
-public class SignedStateManagerTester extends SignedStateManager {
+public class StateSignatureCollectorTester extends StateSignatureCollector {
     private final LatestCompleteStateNexus latestSignedState;
     private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
 
-    private SignedStateManagerTester(
+    private StateSignatureCollectorTester(
             @NonNull final StateConfig stateConfig,
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final LatestCompleteStateNexus latestSignedState,
@@ -54,13 +53,13 @@ public class SignedStateManagerTester extends SignedStateManager {
         this.stateLacksSignaturesConsumer = stateLacksSignaturesConsumer;
     }
 
-    public static SignedStateManagerTester create(
+    public static StateSignatureCollectorTester create(
             @NonNull final StateConfig stateConfig,
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
         final LatestCompleteStateNexus latestSignedState = new LatestCompleteStateNexus(stateConfig, new NoOpMetrics());
-        return new SignedStateManagerTester(
+        return new StateSignatureCollectorTester(
                 stateConfig,
                 signedStateMetrics,
                 latestSignedState,
@@ -75,26 +74,26 @@ public class SignedStateManagerTester extends SignedStateManager {
     }
 
     @Override
-    public List<ReservedSignedState> handlePreconsensusScopedSystemTransactions(
+    public List<ReservedSignedState> handlePreConsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return processStates(super.handlePreconsensusScopedSystemTransactions(transactions));
+        return processStates(super.handlePreConsensusSignatures(transactions));
     }
 
     public void handlePreconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
-        handlePreconsensusScopedSystemTransactions(
+        handlePreConsensusSignatures(
                 List.of(new ScopedSystemTransaction<>(signerId, signatureTransaction)));
     }
 
     @Override
-    public List<ReservedSignedState> handlePostconsensusScopedSystemTransactions(
+    public List<ReservedSignedState> handlePostConsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return processStates(super.handlePostconsensusScopedSystemTransactions(transactions));
+        return processStates(super.handlePostConsensusSignatures(transactions));
     }
 
     public void handlePostconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
-        handlePostconsensusScopedSystemTransactions(List.of(new ScopedSystemTransaction<>(signerId, transaction)));
+        handlePostConsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, transaction)));
     }
 
     private List<ReservedSignedState> processStates(@Nullable final List<ReservedSignedState> states) {

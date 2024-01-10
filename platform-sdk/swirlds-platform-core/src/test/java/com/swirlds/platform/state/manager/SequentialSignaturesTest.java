@@ -25,7 +25,7 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.SignedStateManagerTester;
+import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Sequential Signatures Test")
-public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
+public class SequentialSignaturesTest extends AbstractStateSignatureCollectorTest {
 
     // Note: this unit test was long and complex, so it was split into its own class.
     // As such, this test was designed differently than it would be designed if it were sharing
@@ -75,7 +75,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     @DisplayName("Sequential Signatures Test")
     void sequentialSignaturesTest() throws InterruptedException {
         this.roundsToKeepAfterSigning = 4;
-        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
