@@ -262,15 +262,16 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("repeatedCreate2FailsWithInterpretableActionSidecars")
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
                         contractCall(contract, "createUser", salt)
-                                .payingWith(GENESIS)
+                                .payingWith(ACCOUNT)
                                 .gas(4_000_000L)
                                 .via(firstCreation),
                         contractCall(contract, "createUser", salt)
-                                .payingWith(GENESIS)
+                                .payingWith(ACCOUNT)
                                 .gas(4_000_000L)
                                 .via(secondCreation)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
