@@ -257,7 +257,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec updateAutoRenewWorks() {
-        return defaultHapiSpec("UpdateAutoRenewWorks")
+        return defaultHapiSpec("UpdateAutoRenewWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
