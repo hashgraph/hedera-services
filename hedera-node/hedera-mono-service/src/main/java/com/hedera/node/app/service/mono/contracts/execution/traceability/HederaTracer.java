@@ -182,7 +182,7 @@ public class HederaTracer implements HederaOperationTracer {
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
             action.setTargetedAddress(contractAddress.toArray());
         } else {
-            final var recipient = getEntityIdOrNullByAddressAndMessageFrame(contractAddress, messageFrame);
+            final var recipient = getEntityIdOrNullByAddressAndMessageFrame(contractAddress, messageFrame, action);
             if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
                 // code can be empty when calling precompiles too, but we handle
                 // that in tracePrecompileCall, after precompile execution is completed
@@ -214,7 +214,7 @@ public class HederaTracer implements HederaOperationTracer {
                         // or set it to null if it's noop for non existing account
                         Address recipientAddress = Address.wrap(Bytes.of(action.getInvalidSolidityAddress()));
                         final var recipientAsHederaId =
-                                getEntityIdOrNullByAddressAndMessageFrame(recipientAddress, frame);
+                                getEntityIdOrNullByAddressAndMessageFrame(recipientAddress, frame, action);
                         action.setTargetedAddress(null);
                         action.setRecipientAccount(recipientAsHederaId);
                     }
@@ -374,10 +374,16 @@ public class HederaTracer implements HederaOperationTracer {
         return null != subject ? processor.compose(getter).apply(subject) : "null";
     }
 
-    private EntityId getEntityIdOrNullByAddressAndMessageFrame(Address address, MessageFrame frame) {
+    private EntityId getEntityIdOrNullByAddressAndMessageFrame(final Address address, final MessageFrame frame, final SolidityAction action) {
         try {
-            return EntityId.fromAddress(asMirrorAddress(address, frame));
-        } catch (Exception e) {
+            final var newEntity = EntityId.fromAddress(asMirrorAddress(address, frame));
+            if (newEntity.num() >= 0) {
+                return newEntity;
+            }
+            action.setTargetedAddress(address.toArray());
+            return null;
+        } catch (IllegalArgumentException e) {
+            action.setTargetedAddress(address.toArray());
             return null;
         }
     }

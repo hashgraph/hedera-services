@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REQUIRED_GAS;
@@ -30,6 +31,8 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -45,6 +48,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,6 +72,9 @@ class CustomCallOperationTest {
     @Mock
     private EVM evm;
 
+    @Mock
+    private ProxyWorldUpdater updater;
+
     private CustomCallOperation subject;
 
     @BeforeEach
@@ -76,14 +84,18 @@ class CustomCallOperationTest {
 
     @Test
     void withImplicitCreationEnabledDoesNoFurtherChecks() {
-        givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
-        given(frame.isStatic()).willReturn(true);
-        given(featureFlags.isImplicitCreationEnabled(frame)).willReturn(true);
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
+            given(frame.isStatic()).willReturn(true);
+            given(updater.contractMustBePresent()).willReturn(false);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
-        final var actual = subject.execute(frame, evm);
+            final var expected =
+                    new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
+            final var actual = subject.execute(frame, evm);
 
-        assertSameResult(expected, actual);
+            assertSameResult(expected, actual);
+        }
     }
 
     @Test
@@ -97,19 +109,25 @@ class CustomCallOperationTest {
 
     @Test
     void withPresentEip1014ContinuesAsExpected() {
-        givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
-        given(addressChecks.isPresent(EIP_1014_ADDRESS, frame)).willReturn(true);
-        given(frame.isStatic()).willReturn(true);
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
+            given(addressChecks.isPresent(EIP_1014_ADDRESS, frame)).willReturn(true);
+            given(frame.isStatic()).willReturn(true);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
-        final var actual = subject.execute(frame, evm);
+            final var expected =
+                    new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
+            final var actual = subject.execute(frame, evm);
 
-        assertSameResult(expected, actual);
+            assertSameResult(expected, actual);
+        }
     }
 
     @Test
     void withSystemAccountContinuesAsExpected() {
         given(frame.getStackItem(1)).willReturn(SYSTEM_ADDRESS);
+        given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(0)));
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
 
         final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
@@ -120,32 +138,57 @@ class CustomCallOperationTest {
 
     @Test
     void withLongZeroRejectsMissingAddress() {
-        givenWellKnownFrameWith(1L, TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(1L, TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
-        final var actual = subject.execute(frame, evm);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_ALIAS_KEY);
+            final var actual = subject.execute(frame, evm);
 
-        assertSameResult(expected, actual);
+            assertSameResult(expected, actual);
+        }
     }
 
     @Test
-    void withNoValueRejectsMissingAddress() {
-        givenWellKnownFrameWith(0L, TestHelpers.EIP_1014_ADDRESS, 2L);
+    void withNoValueRejectsMissingAddressIfAllowCallFeatureFlagOff() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(0L, TestHelpers.EIP_1014_ADDRESS, 2L);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
-        final var actual = subject.execute(frame, evm);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
+            final var actual = subject.execute(frame, evm);
 
-        assertSameResult(expected, actual);
+            assertSameResult(expected, actual);
+        }
+    }
+
+    @Test
+    void delegateToParentMissingAddressIfAllowCallFeatureFlagOn() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            given(frame.getStackItem(1)).willReturn(TestHelpers.EIP_1014_ADDRESS);
+            given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2l)));
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+
+            final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+            final var actual = subject.execute(frame, evm);
+
+            assertSameResult(expected, actual);
+        }
     }
 
     @Test
     void withoutImplicitCreationEnabledRejectsMissingAddress() {
-        givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
-        final var actual = subject.execute(frame, evm);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
+            final var actual = subject.execute(frame, evm);
 
-        assertSameResult(expected, actual);
+            assertSameResult(expected, actual);
+        }
     }
 
     /**

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -26,7 +27,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeCopyOperation;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,6 +44,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,6 +62,12 @@ class CustomExtCodeCopyOperationTest {
     @Mock
     private EVM evm;
 
+    @Mock
+    private FeatureFlags featureFlags;
+
+    @Mock
+    private ProxyWorldUpdater updater;
+
     private CustomExtCodeCopyOperation subject;
 
     @BeforeEach
@@ -71,13 +83,32 @@ class CustomExtCodeCopyOperationTest {
     }
 
     @Test
-    void rejectsMissingUserAddress() {
-        given(frame.getStackItem(1)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1L)));
-        given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
-        given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
-        givenWellKnownFrameWith(Address.fromHexString("0x123"));
-        final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
-        assertSameResult(expected, subject.execute(frame, evm));
+    void rejectsMissingUserAddressIfAllowCallFeatureFlagOff() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            given(frame.getStackItem(1)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1L)));
+            given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
+            given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
+            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
+            assertSameResult(expected, subject.execute(frame, evm));
+        }
+    }
+
+    @Test
+    void delegatesToParentIfAllowCallFeatureFlagOn() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            given(frame.getStackItem(1)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1L)));
+            given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
+            given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
+            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
+            assertSameResult(expected, subject.execute(frame, evm));
+        }
     }
 
     @Test
@@ -92,12 +123,17 @@ class CustomExtCodeCopyOperationTest {
 
     @Test
     void hasNormalBehaviorForUserAccount() {
-        given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-        given(addressChecks.isPresent(Address.fromHexString("0x123"), frame)).willReturn(true);
-        givenWellKnownFrameWith(Address.fromHexString("0x123"));
-        given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-        final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
-        assertSameResult(expected, subject.execute(frame, evm));
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
+            given(addressChecks.isPresent(Address.fromHexString("0x123"), frame))
+                    .willReturn(true);
+            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
+            assertSameResult(expected, subject.execute(frame, evm));
+        }
     }
 
     private void givenWellKnownFrameWith(final Address to) {

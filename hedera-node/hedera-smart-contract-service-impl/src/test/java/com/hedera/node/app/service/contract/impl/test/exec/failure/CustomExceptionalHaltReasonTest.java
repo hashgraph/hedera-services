@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.failure;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_ENTITY_LIMIT_REACHED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
@@ -33,9 +34,11 @@ class CustomExceptionalHaltReasonTest {
     void translatesSameStatusesAsMonoService() {
         assertEquals(ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID, statusFor(SELF_DESTRUCT_TO_SELF));
         assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, statusFor(INVALID_SOLIDITY_ADDRESS));
+        assertEquals(ResponseCodeEnum.INVALID_ALIAS_KEY, statusFor(INVALID_ALIAS_KEY));
         assertEquals(
                 ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED,
                 statusFor(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS));
+
         assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, statusFor(INVALID_SIGNATURE));
         assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, statusFor(ExceptionalHaltReason.INSUFFICIENT_GAS));
         assertEquals(

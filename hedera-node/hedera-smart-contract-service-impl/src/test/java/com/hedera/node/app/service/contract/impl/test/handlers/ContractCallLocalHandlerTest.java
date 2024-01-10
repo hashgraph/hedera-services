@@ -41,6 +41,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -84,6 +86,12 @@ class ContractCallLocalHandlerTest {
     @Mock
     private ContextQueryProcessor processor;
 
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
     private final ContractCallLocalHandler subject = new ContractCallLocalHandler(() -> factory);
 
     @Test
@@ -116,7 +124,7 @@ class ContractCallLocalHandlerTest {
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
-        givenDefaultConfig();
+        givenAllowCallsToNonContractAccountOffConfig();
 
         // when:
         assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
@@ -167,7 +175,7 @@ class ContractCallLocalHandlerTest {
         given(store.getContractById(contractID)).willReturn(null);
         given(context.createStore(ReadableTokenStore.class)).willReturn(tokenStore);
         given(tokenStore.get(any())).willReturn(null);
-        givenDefaultConfig();
+        givenAllowCallsToNonContractAccountOffConfig();
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
@@ -182,7 +190,7 @@ class ContractCallLocalHandlerTest {
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
         given(contract.deleted()).willReturn(true);
-        givenDefaultConfig();
+        givenAllowCallsToNonContractAccountOffConfig();
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
@@ -208,5 +216,10 @@ class ContractCallLocalHandlerTest {
 
     private void givenDefaultConfig() {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
+    }
+
+    private void givenAllowCallsToNonContractAccountOffConfig() {
+        given(context.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
     }
 }

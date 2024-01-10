@@ -24,7 +24,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -36,6 +39,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +55,13 @@ class CustomBalanceOperationTest {
     private MessageFrame frame;
 
     @Mock
+    private FeatureFlags featureFlags;
+
+    @Mock
     private EVM evm;
+
+    @Mock
+    private ProxyWorldUpdater updater;
 
     private CustomBalanceOperation subject;
 
@@ -81,24 +92,46 @@ class CustomBalanceOperationTest {
     }
 
     @Test
-    void rejectsMissingUserAddress() {
-        setupWarmGasCost();
-        given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var expected = new Operation.OperationResult(3L, INVALID_SOLIDITY_ADDRESS);
-        final var actual = subject.execute(frame, evm);
-        assertSameResult(expected, actual);
+    void rejectsMissingUserAddressIfAllowCallFeatureFlagOff() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            setupWarmGasCost();
+            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(3L, INVALID_SOLIDITY_ADDRESS);
+            final var actual = subject.execute(frame, evm);
+            assertSameResult(expected, actual);
+        }
+    }
+
+    @Test
+    void delegatesToSuperIfAllowCallFeatureFlagOn() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            setupWarmGasCost();
+            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            final var actual = subject.execute(frame, evm);
+            assertSameResult(expected, actual);
+        }
     }
 
     @Test
     void delegatesToSuperForPresentUserAddress() {
-        setupWarmGasCost();
-        given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
-        given(addressChecks.isPresent(NON_SYSTEM_LONG_ZERO_ADDRESS, frame)).willReturn(true);
-        final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
-        final var actual = subject.execute(frame, evm);
-        assertSameResult(expected, actual);
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            setupWarmGasCost();
+            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            given(addressChecks.isPresent(NON_SYSTEM_LONG_ZERO_ADDRESS, frame)).willReturn(true);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            final var actual = subject.execute(frame, evm);
+            assertSameResult(expected, actual);
+        }
     }
 
     private void setupWarmGasCost() {

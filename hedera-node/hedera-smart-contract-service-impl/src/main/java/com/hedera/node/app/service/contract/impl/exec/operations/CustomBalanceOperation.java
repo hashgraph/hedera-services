@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,7 +50,7 @@ public class CustomBalanceOperation extends BalanceOperation {
                 return new OperationResult(cost(true), null);
             }
             // Otherwise continue to enforce existence checks for backward compatibility
-            if (!addressChecks.isPresent(address, frame)) {
+            if (proxyUpdaterFor(frame).contractMustBePresent() && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);

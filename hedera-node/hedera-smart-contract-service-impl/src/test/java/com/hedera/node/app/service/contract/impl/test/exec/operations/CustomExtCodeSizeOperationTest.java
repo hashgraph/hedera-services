@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -23,7 +24,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeSizeOperation;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -38,6 +42,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +59,12 @@ class CustomExtCodeSizeOperationTest {
 
     @Mock
     private EVM evm;
+
+    @Mock
+    private FeatureFlags featureFlags;
+
+    @Mock
+    private ProxyWorldUpdater updater;
 
     private CustomExtCodeSizeOperation subject;
 
@@ -80,12 +92,28 @@ class CustomExtCodeSizeOperationTest {
     }
 
     @Test
+    void rejectsMissingNonSystemAddressIfAllowCallFeatureFlagOff() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
+            assertSameResult(expected, subject.execute(frame, evm));
+        }
+    }
+
+    @Test
     void delegatesForPresentAddress() {
-        givenWellKnownFrameWith(Address.fromHexString("0x123"));
-        given(addressChecks.isPresent(Address.fromHexString("0x123"), frame)).willReturn(true);
-        given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-        final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
-        assertSameResult(expected, subject.execute(frame, evm));
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            given(addressChecks.isPresent(Address.fromHexString("0x123"), frame))
+                    .willReturn(true);
+            given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
+            assertSameResult(expected, subject.execute(frame, evm));
+        }
     }
 
     private void givenWellKnownFrameWith(final Address to) {
