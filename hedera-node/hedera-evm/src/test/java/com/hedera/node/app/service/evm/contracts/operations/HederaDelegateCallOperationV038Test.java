@@ -89,7 +89,7 @@ class HederaDelegateCallOperationV038Test {
         given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
         given(addressValidator.test(any(), any())).willReturn(false);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -112,7 +112,7 @@ class HederaDelegateCallOperationV038Test {
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());
