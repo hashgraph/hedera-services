@@ -184,7 +184,7 @@ public class StateSignatureCollector {
         final long round = scopedTransaction.transaction().getRound();
 
         final ReservedSignedState reservedState = incompleteStates.get(round);
-        // it isn't possible to receive a post-consensus signature transaction for a future round,
+        // it isn't possible to receive a postconsensus signature transaction for a future round,
         // and if we don't have the state for an old round, we never will.
         // in both cases, the signature can be ignored
         if (reservedState == null) {
