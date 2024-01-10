@@ -518,7 +518,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
         assertTrue(reasonToHaltDeletion.isEmpty());
         final var strategy = assertInstanceOf(ActiveContractVerificationStrategy.class, captor.getValue());
-        assertEquals(ACCOUNT_NUM, strategy.getActiveNumber());
+        assertEquals(ACCOUNT_NUM, strategy.getActiveContractID());
         assertEquals(tuweniToPbjBytes(LONG_ZERO_ADDRESS), strategy.getActiveAddress());
         assertFalse(strategy.requiresDelegatePermission());
     }

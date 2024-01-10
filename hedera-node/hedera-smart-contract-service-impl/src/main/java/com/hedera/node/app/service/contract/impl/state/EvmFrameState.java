@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -139,12 +141,12 @@ public interface EvmFrameState {
     MutableAccount getMutableAccount(Address address);
 
     @NonNull
-    UInt256 getStorageValue(long number, @NonNull UInt256 key);
+    UInt256 getStorageValue(ContractID contractID, @NonNull UInt256 key);
 
-    void setStorageValue(long number, @NonNull UInt256 key, @NonNull UInt256 value);
+    void setStorageValue(ContractID contractID, @NonNull UInt256 key, @NonNull UInt256 value);
 
     @NonNull
-    UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key);
+    UInt256 getOriginalStorageValue(ContractID contractID, @NonNull UInt256 key);
 
     /**
      * Returns the code for the account with the given number, or empty code if no such code exists.
@@ -161,7 +163,7 @@ public interface EvmFrameState {
      * @param number the contract number
      * @param code the new code
      */
-    void setCode(long number, @NonNull Bytes code);
+    void setCode(ContractID contractID, @NonNull Bytes code);
 
     /**
      * Returns the redirect bytecode for the token with the given address, which must be a long-zero address.
@@ -194,18 +196,18 @@ public interface EvmFrameState {
     /**
      * Returns the native account with the given number.
      *
-     * @param number the account number
+     * @param accountID the account id
      * @return the native account
      */
-    com.hedera.hapi.node.state.token.Account getNativeAccount(long number);
+    com.hedera.hapi.node.state.token.Account getNativeAccount(AccountID accountID);
 
     /**
      * Returns the nonce for the account with the given number.
      *
-     * @param number the account number
+     * @param accountID the account id
      * @return the nonce
      */
-    long getNonce(long number);
+    long getNonce(AccountID accountID);
 
     /**
      * Returns the number of treasury titles for the account with the given number.
@@ -242,10 +244,10 @@ public interface EvmFrameState {
     /**
      * Returns the balance of the account with the given number.
      *
-     * @param number the account number
+     * @param accountID the account id
      * @return the balance
      */
-    Wei getBalance(long number);
+    Wei getBalance(AccountID accountID);
 
     /**
      * Returns the "priority" EVM address of the account with the given number, or null if the
@@ -260,6 +262,9 @@ public interface EvmFrameState {
      */
     @Nullable
     Address getAddress(long number);
+
+    @Nullable
+    Address getAddress(AccountID accountID);
 
     /**
      * Returns the Hedera entity number for the account or contract at the given address. Throws
@@ -286,12 +291,16 @@ public interface EvmFrameState {
      */
     long getKvStateSize();
 
-    /**
-     * Returns the rent factors for the account with the given number.
-     *
-     * @param number the account number
-     * @return the rent factors
-     */
+//    /**
+//     * Returns the rent factors for the account with the given number.
+//     *
+//     * @param number the account number
+//     * @return the rent factors
+//     */
+//    @NonNull
+//    RentFactors getRentFactorsFor(long number);
+
     @NonNull
-    RentFactors getRentFactorsFor(long number);
+    RentFactors getRentFactorsFor(ContractID contractID);
 }
+

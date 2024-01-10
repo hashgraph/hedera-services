@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -86,6 +87,16 @@ public interface HederaNativeOperations {
     default Account getAccount(final long number) {
         return readableAccountStore()
                 .getAccountById(AccountID.newBuilder().accountNum(number).build());
+    }
+
+    @Nullable
+    default Account getAccount(final ContractID contractID) {
+        return readableAccountStore().getContractById(contractID);
+    }
+
+    @Nullable
+    default Account getAccount(final AccountID accountID) {
+        return readableAccountStore().getAccountById(accountID);
     }
 
     /**
@@ -200,6 +211,20 @@ public interface HederaNativeOperations {
             long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
 
     /**
+     * Transfers value from one account or contract to another without creating a record in this {@link HandleHederaOperations},
+     * performing signature verification for a receiver with {@code receiverSigRequired=true} by giving priority
+     * to the included {@code VerificationStrategy}.
+     *
+     * @param amount           the amount to transfer
+     * @param fromEntityNumber the number of the entity to transfer from
+     * @param toEntityNumber   the number of the entity to transfer to
+     * @param strategy         the {@link VerificationStrategy} to use
+     * @return the result of the transfer attempt
+     */
+    ResponseCodeEnum transferWithReceiverSigCheck(
+            long amount, AccountID fromEntityNumber, AccountID toEntityNumber, @NonNull VerificationStrategy strategy);
+
+    /**
      * Tracks the self-destruction of a contract and the beneficiary that should receive any staking awards otherwise
      * earned by the deleted contract.
      *
@@ -208,6 +233,16 @@ public interface HederaNativeOperations {
      * @param frame the frame in which to track the self-destruct
      */
     void trackSelfDestructBeneficiary(long deletedNumber, long beneficiaryNumber, @NonNull MessageFrame frame);
+
+    /**
+     * Tracks the self-destruction of a contract and the beneficiary that should receive any staking awards otherwise
+     * earned by the deleted contract.
+     *
+     * @param deletedNumber the number of the deleted contract
+     * @param beneficiaryNumber the number of the beneficiary
+     * @param frame the frame in which to track the self-destruct
+     */
+    void trackSelfDestructBeneficiary(AccountID deletedNumber, AccountID beneficiaryNumber, @NonNull MessageFrame frame);
 
     /**
      * Checks if the given transfer operation uses custom fees.

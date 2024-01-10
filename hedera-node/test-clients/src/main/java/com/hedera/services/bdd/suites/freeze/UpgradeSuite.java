@@ -40,6 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
@@ -53,6 +55,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class UpgradeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpgradeSuite.class);
 
@@ -106,6 +109,7 @@ public class UpgradeSuite extends HapiSuite {
         });
     }
 
+    @HapiTest
     final HapiSpec precheckRejectsUnknownFreezeType() {
         return defaultHapiSpec("PrejeckRejectsUnknownFreezeType")
                 .given()
@@ -113,6 +117,7 @@ public class UpgradeSuite extends HapiSuite {
                 .then(freeze().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
+    @HapiTest
     final HapiSpec freezeOnlyPrecheckRejectsInvalid() {
         return defaultHapiSpec("freezeOnlyPrecheckRejectsInvalid")
                 .given()
@@ -125,6 +130,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeOnly().startingIn(-60).minutes().hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE));
     }
 
+    @HapiTest
     final HapiSpec freezeUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("freezeUpgradeValidationRejectsInvalid")
                 .given()
@@ -153,6 +159,7 @@ public class UpgradeSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
+    @HapiTest
     final HapiSpec freezeAbortIsIdempotent() {
         return defaultHapiSpec("FreezeAbortIsIdempotent")
                 .given()
@@ -220,6 +227,7 @@ public class UpgradeSuite extends HapiSuite {
                         freezeAbort());
     }
 
+    @HapiTest
     final HapiSpec telemetryUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("TelemetryUpgradeValidationRejectsInvalid")
                 .given(

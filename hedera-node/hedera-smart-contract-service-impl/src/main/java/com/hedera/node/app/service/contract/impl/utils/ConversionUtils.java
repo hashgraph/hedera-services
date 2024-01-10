@@ -285,9 +285,7 @@ public class ConversionUtils {
                                         requireNonNull(access.writtenValue()).trimLeadingZeros())));
             }
             allStateChanges.add(new ContractStateChange(
-                    ContractID.newBuilder()
-                            .contractNum(storageAccess.contractNumber())
-                            .build(),
+                    storageAccess.contractID(),
                     changes));
         }
         return new ContractStateChanges(allStateChanges);

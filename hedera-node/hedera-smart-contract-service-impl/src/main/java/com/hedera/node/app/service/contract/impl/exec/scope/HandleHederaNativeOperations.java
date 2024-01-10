@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -160,6 +161,28 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         tokenServiceApi.transferFromTo(
                 AccountID.newBuilder().accountNum(fromEntityNumber).build(),
                 AccountID.newBuilder().accountNum(toEntityNumber).build(),
+                amount);
+        return OK;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull ResponseCodeEnum transferWithReceiverSigCheck(
+            final long amount,
+            final AccountID fromEntityNumber,
+            final AccountID toEntityNumber,
+            @NonNull final VerificationStrategy strategy) {
+        final var to = requireNonNull(getAccount(toEntityNumber));
+        final var signatureTest = strategy.asSignatureTestIn(context);
+        if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
+            return INVALID_SIGNATURE;
+        }
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        tokenServiceApi.transferFromTo(
+                fromEntityNumber,
+                toEntityNumber,
                 amount);
         return OK;
     }
