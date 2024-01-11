@@ -335,6 +335,7 @@ public class SwirldsPlatform implements Platform {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
+
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
 
@@ -391,13 +392,16 @@ public class SwirldsPlatform implements Platform {
 
         this.shadowGraph = new ShadowGraph(time, syncMetrics, currentAddressBook, selfId);
 
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+
         final LatestEventTipsetTracker latestEventTipsetTracker;
         final boolean enableEventFiltering = platformContext
                 .getConfiguration()
                 .getConfigData(SyncConfig.class)
                 .filterLikelyDuplicates();
         if (enableEventFiltering) {
-            latestEventTipsetTracker = new LatestEventTipsetTracker(time, currentAddressBook, selfId);
+            latestEventTipsetTracker =
+                    new LatestEventTipsetTracker(time, currentAddressBook, selfId, eventConfig.getAncientMode());
         } else {
             latestEventTipsetTracker = null;
         }
@@ -578,8 +582,6 @@ public class SwirldsPlatform implements Platform {
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
-
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
