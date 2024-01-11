@@ -34,7 +34,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -97,18 +96,8 @@ public class TestIntake implements LoadableFromSignedState {
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph, null), output);
 
-        // FUTURE WORK: Expand test to include birth round based ancient threshold.
-        final LatestEventTipsetTracker latestEventTipsetTracker =
-                new LatestEventTipsetTracker(time, addressBook, selfId, AncientMode.GENERATION_THRESHOLD);
-
         final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
-                platformContext,
-                time,
-                () -> consensus,
-                dispatcher,
-                shadowGraph,
-                latestEventTipsetTracker,
-                intakeEventCounter);
+                platformContext, time, () -> consensus, dispatcher, shadowGraph, intakeEventCounter);
 
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);

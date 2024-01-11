@@ -20,13 +20,11 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -51,15 +49,8 @@ public class LinkedEventIntake {
      */
     private final ShadowGraph shadowGraph;
 
-    private final LatestEventTipsetTracker latestEventTipsetTracker;
-
     private final EventIntakeMetrics metrics;
     private final Time time;
-    /**
-     * FUTURE WORK: If nothing else is using it, delete platformContext when we switch to permanently using birthRound
-     * for determining Ancient.
-     */
-    private final PlatformContext platformContext;
 
     /**
      * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
@@ -81,7 +72,6 @@ public class LinkedEventIntake {
      * @param consensusSupplier        provides the current consensus instance
      * @param dispatcher               invokes event related callbacks
      * @param shadowGraph              tracks events in the hashgraph
-     * @param latestEventTipsetTracker tracks the tipset of the latest self event, null if feature is not enabled
      * @param intakeEventCounter       tracks the number of events from each peer that are currently in the intake
      *                                 pipeline
      */
@@ -91,15 +81,12 @@ public class LinkedEventIntake {
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final ShadowGraph shadowGraph,
-            @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
             @NonNull final IntakeEventCounter intakeEventCounter) {
-        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.latestEventTipsetTracker = latestEventTipsetTracker;
 
         this.paused = false;
         metrics = new EventIntakeMetrics(platformContext, () -> -1);
