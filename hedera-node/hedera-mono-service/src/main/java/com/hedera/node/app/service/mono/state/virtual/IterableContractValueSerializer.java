@@ -16,22 +16,20 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnDiskAccount> {
+public class IterableContractValueSerializer implements ValueSerializer<IterableContractValue> {
 
-    // Serializer class ID
-    static final long CLASS_ID = 0xe5d01987257f5efdL;
+    static final long CLASS_ID = 0x2137d0dcac9ab2b3L;
 
-    // Serializer version
     static final int CURRENT_VERSION = 1;
 
-    // Value data version
-    static final int DATA_VERSION = 1;
+    static final long DATA_VERSION = 1;
 
     // Serializer info
 
@@ -45,38 +43,60 @@ public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnD
         return CURRENT_VERSION;
     }
 
-    // Data version
+    // Value info
 
     @Override
     public long getCurrentDataVersion() {
         return DATA_VERSION;
     }
 
-    // Value serialization
-
     @Override
     public int getSerializedSize() {
         return VARIABLE_DATA_SIZE;
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
-    public int getTypicalSerializedSize() {
-        return OnDiskAccount.getTypicalSerializedSize();
+    @Override
+    public int getSerializedSize(IterableContractValue value) {
+        return value.getSerializedSize();
     }
 
     @Override
-    public int serialize(final OnDiskAccount value, final ByteBuffer out) throws IOException {
+    public int getTypicalSerializedSize() {
+        return IterableContractValue.getTypicalSerializedSize();
+    }
+
+    // Value serialization
+
+    @Override
+    public void serialize(@NonNull final IterableContractValue value, @NonNull final WritableSequentialData out) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
-        return value.serializeTo(out::put, out::putInt, out::putLong, out::put);
+        value.serialize(out);
     }
 
-    // Value deserializatioin
+    @Override
+    @Deprecated
+    public void serialize(final IterableContractValue value, final ByteBuffer buffer) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(buffer);
+        value.serialize(buffer);
+    }
+
+    // Value deserialization
 
     @Override
-    public OnDiskAccount deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    public IterableContractValue deserialize(@NonNull final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final IterableContractValue value = new IterableContractValue();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public IterableContractValue deserialize(final ByteBuffer buffer, final long version) {
         Objects.requireNonNull(buffer);
-        final OnDiskAccount value = new OnDiskAccount();
+        final IterableContractValue value = new IterableContractValue();
         value.deserialize(buffer, (int) version);
         return value;
     }

@@ -17,12 +17,14 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class OnDiskTokenRelMerkleDbValueSerializer implements ValueSerializer<OnDiskTokenRel> {
+public class OnDiskTokenRelValueSerializer implements ValueSerializer<OnDiskTokenRel> {
 
     // Serializer class ID
     static final long CLASS_ID = 0x0e52cff909625f56L;
@@ -64,17 +66,33 @@ public class OnDiskTokenRelMerkleDbValueSerializer implements ValueSerializer<On
     // Value serialization
 
     @Override
-    public int serialize(final OnDiskTokenRel value, final ByteBuffer out) throws IOException {
+    public void serialize(@NonNull final OnDiskTokenRel value, @NonNull final WritableSequentialData out) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
-        return getSerializedSize();
+    }
+
+    @Override
+    @Deprecated
+    public void serialize(final OnDiskTokenRel value, final ByteBuffer out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
+        value.serialize(out);
     }
 
     // Value deserialization
 
     @Override
-    public OnDiskTokenRel deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    public OnDiskTokenRel deserialize(@NonNull final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final OnDiskTokenRel value = new OnDiskTokenRel();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public OnDiskTokenRel deserialize(final ByteBuffer buffer, final long version) {
         Objects.requireNonNull(buffer);
         final OnDiskTokenRel value = new OnDiskTokenRel();
         value.deserialize(buffer, (int) version);

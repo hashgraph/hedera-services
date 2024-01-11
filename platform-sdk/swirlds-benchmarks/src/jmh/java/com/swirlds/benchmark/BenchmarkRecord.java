@@ -16,11 +16,12 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class BenchmarkRecord extends BenchmarkValue {
 
@@ -59,22 +60,19 @@ public class BenchmarkRecord extends BenchmarkValue {
     }
 
     @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        buffer.putLong(path);
-        super.serialize(buffer);
-    }
-
-    @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
-        path = buffer.getLong();
-        super.deserialize(buffer, dataVersion);
-    }
-
-    @Override
     public void serialize(SerializableDataOutputStream outputStream) throws IOException {
         outputStream.writeLong(path);
         super.serialize(outputStream);
+    }
+
+    public void serialize(final WritableSequentialData out) {
+        out.writeLong(path);
+        super.serialize(out);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        path = in.readLong();
+        super.deserialize(in);
     }
 
     @Override

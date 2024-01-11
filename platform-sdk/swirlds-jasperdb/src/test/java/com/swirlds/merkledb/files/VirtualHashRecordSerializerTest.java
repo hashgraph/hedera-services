@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb;
+package com.swirlds.merkledb.files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
-import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,42 +39,46 @@ class VirtualHashRecordSerializerTest {
     }
 
     @Test
-    void deserializeEnforcesCurrentVersion() {
-        final ByteBuffer someBuffer = ByteBuffer.allocate(1);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.deserialize(someBuffer, 123),
-                "Should have rejected attempt to deserialize data not using the current version");
+    void serializedSizeTest() {
+        final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
+        assertEquals(
+                VirtualHashRecordSerializer.VARIABLE_DATA_SIZE,
+                subject.getSerializedSize(),
+                "Serialized size should be variable");
+        final VirtualHashRecord data0 = new VirtualHashRecord(0L, nonDefaultHash);
+        assertEquals(
+                1 + 1 + nonDefaultHash.getValue().length, // tag + len + hash
+                subject.getSerializedSize(data0),
+                "Serialized size should be 0 bytes for path and 66 bytes for hash");
+        final VirtualHashRecord data1 = new VirtualHashRecord(1L, nonDefaultHash);
+        assertEquals(
+                1 + 8 + 1 + 1 + nonDefaultHash.getValue().length, // tag + path + tag + len + hash
+                subject.getSerializedSize(data1),
+                "Serialized size should be 9 bytes for path and 75 bytes for hash");
+        assertEquals(1L, subject.getCurrentDataVersion(), "Current version should be 1");
     }
 
     @Test
     void serializeEnforcesDefaultDigest() {
-        final ByteBuffer bbuf = ByteBuffer.allocate(subject.getSerializedSize());
+        final ByteBuffer bbuf = ByteBuffer.allocate(128);
+        final WritableSequentialData out = BufferedData.wrap(bbuf);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
-        assertEquals(Long.BYTES, subject.getHeaderSize(), "Header size should be 8 bytes");
-        assertEquals(
-                56, subject.getSerializedSize(), "Serialized size should be 8 bytes for header + 48 bytes for digest");
-        assertEquals(1L, subject.getCurrentDataVersion(), "Current version should be 1");
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.serialize(data, bbuf),
-                "Should have rejected attempt to serialize data with non-default hash digest");
+        assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, bbuf));
+        assertThrows(IllegalArgumentException.class, () -> subject.serialize(data, out));
     }
 
     @Test
-    void deserializeHappyPath() throws IOException {
-        final ByteBuffer bb = ByteBuffer.allocate(subject.getSerializedSize());
-        final Hash validHash = new Hash(DigestType.SHA_384);
-        final VirtualHashRecord expectedData = new VirtualHashRecord(42L, validHash);
-        bb.putLong(42L);
-        bb.rewind();
-
-        final DataItemHeader expectedHeader = new DataItemHeader(56, 42L);
-        assertEquals(expectedHeader, subject.deserializeHeader(bb), "Deserialized header should match serialized");
-        bb.rewind();
-        assertEquals(expectedData, subject.deserialize(bb, 1L), "Deserialized data should match serialized");
+    void serializedSizeEqualsToEstimation() {
+        final BufferedData out = BufferedData.allocate(128);
+        final Hash hash = new Hash(DigestType.SHA_384);
+        final VirtualHashRecord data0 = new VirtualHashRecord(0L, hash);
+        subject.serialize(data0, out);
+        assertEquals(subject.getSerializedSize(data0), out.position());
+        out.reset();
+        final VirtualHashRecord data1 = new VirtualHashRecord(1L, hash);
+        subject.serialize(data1, out);
+        assertEquals(subject.getSerializedSize(data1), out.position());
     }
 
     @Test

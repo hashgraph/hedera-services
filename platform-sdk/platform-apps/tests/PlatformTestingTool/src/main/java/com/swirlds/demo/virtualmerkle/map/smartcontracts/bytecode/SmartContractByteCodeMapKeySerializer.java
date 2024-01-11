@@ -16,15 +16,17 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
-import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
-import java.io.IOException;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 
 /**
  * This class is the serializer of {@link SmartContractByteCodeMapKey}.
  */
-public final class SmartContractByteCodeMapKeySerializer
-        extends AbstractFixedSizeKeySerializer<SmartContractByteCodeMapKey> {
+public final class SmartContractByteCodeMapKeySerializer implements KeySerializer<SmartContractByteCodeMapKey> {
 
     private static final long CLASS_ID = 0xee36c20c7ccc69daL;
 
@@ -32,25 +34,58 @@ public final class SmartContractByteCodeMapKeySerializer
         public static final int ORIGINAL = 1;
     }
 
-    public SmartContractByteCodeMapKeySerializer() {
-        super(CLASS_ID, ClassVersion.ORIGINAL, SmartContractByteCodeMapKey.getSizeInBytes(), 1);
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected SmartContractByteCodeMapKey newKey() {
-        return new SmartContractByteCodeMapKey();
+    public int getVersion() {
+        return ClassVersion.ORIGINAL;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public boolean equals(
-            final ByteBuffer buffer, final int dataVersion, final SmartContractByteCodeMapKey keyToCompare)
-            throws IOException {
-        return keyToCompare.equals(buffer, dataVersion);
+    public long getCurrentDataVersion() {
+        return 1;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return SmartContractByteCodeMapKey.getSizeInBytes();
+    }
+
+    @Override
+    public void serialize(@NonNull final SmartContractByteCodeMapKey key, @NonNull final WritableSequentialData out) {
+        key.serialize(out);
+    }
+
+    @Override
+    public void serialize(final SmartContractByteCodeMapKey key, final ByteBuffer buffer) {
+        key.serialize(buffer);
+    }
+
+    @Override
+    public SmartContractByteCodeMapKey deserialize(@NonNull final ReadableSequentialData in) {
+        final SmartContractByteCodeMapKey key = new SmartContractByteCodeMapKey();
+        key.deserialize(in);
+        return key;
+    }
+
+    @Override
+    public SmartContractByteCodeMapKey deserialize(final ByteBuffer buffer, final long dataVersion) {
+        final SmartContractByteCodeMapKey key = new SmartContractByteCodeMapKey();
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final SmartContractByteCodeMapKey keyToCompare) {
+        return keyToCompare.equals(buffer);
+    }
+
+    @Override
+    @Deprecated
+    public boolean equals(ByteBuffer buffer, int dataVersion, SmartContractByteCodeMapKey keyToCompare) {
+        return keyToCompare.equals(buffer);
     }
 }

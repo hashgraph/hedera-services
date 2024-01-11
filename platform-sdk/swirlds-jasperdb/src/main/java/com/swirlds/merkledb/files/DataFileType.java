@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.state.virtual.utils;
+package com.swirlds.merkledb.files;
 
-import java.io.IOException;
+public enum DataFileType {
 
-public interface CheckedConsumer2<T, U> {
-    void accept(T t, U u) throws IOException;
+    /** JasperDB / MerkleDb binary format */
+    JDB,
+
+    /** PBJ (protobuf) format */
+    PBJ;
 }

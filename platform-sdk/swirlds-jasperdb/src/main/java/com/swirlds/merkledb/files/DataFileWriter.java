@@ -16,217 +16,44 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
-import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
-import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
-
-import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.Instant;
-import java.util.Arrays;
-import sun.misc.Unsafe;
 
 /**
  * Writer for creating a data file. A data file contains a number of data items. Each data item can
  * be variable or fixed size and is considered as a black box. All access to contents of the data
  * item is done via the DataItemSerializer.
  *
- * <b>This is designed to be used from a single thread.</b>
- *
- * At the end of the file it is padded till a 4096 byte page boundary then a footer page is
- * written by DataFileMetadata.
+ * <p><b>This is designed to be used from a single thread.</b>
  *
  * @param <D> Data item type
  */
-public final class DataFileWriter<D> {
+public interface DataFileWriter<D> {
 
-    /** Mapped buffer size */
-    private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
-    /**
-     * The current mapped byte buffer used for writing. When overflowed, it is released, and another
-     * buffer is mapped from the file channel.
-     */
-    private MappedByteBuffer writingMmap;
-    /**
-     * Offset, in bytes, of the current mapped byte buffer in the file channel. After the file is
-     * completely written and closed, this field value is equal to the file size.
-     */
-    private long mmapPositionInFile = 0;
-    /** Serializer for converting raw data to/from data items */
-    private final DataItemSerializer<D> dataItemSerializer;
-    /** file index number */
-    private final int index;
-    /**
-     * The moment in time when the file should be considered as existing for. When we merge files,
-     * we take the newest timestamp of the set of merge files and give it to this new file.
-     */
-    private final Instant creationInstant;
-    /** The path to the data file we are writing */
-    private final Path path;
-    /** File metadata */
-    private final DataFileMetadata metadata;
-    /**
-     * Count of the number of data items we have written so far. Ready to be stored in footer
-     * metadata
-     */
-    private long dataItemCount = 0;
-
-    /** Access to sun.misc.Unsafe required for atomic compareAndSwapLong on off-heap memory */
-    private static final Unsafe UNSAFE;
-
-    static {
-        try {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            UNSAFE = (Unsafe) f.get(null);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-            throw new InternalError(e);
-        }
-    }
-
-    /**
-     * Create a new data file in the given directory, in append mode. Puts the object into "writing"
-     * mode (i.e. creates a lock file. So you'd better start writing data and be sure to finish it
-     * off).
-     *
-     * @param filePrefix string prefix for all files, must not contain "_" chars
-     * @param dataFileDir the path to directory to create the data file in
-     * @param index the index number for this file
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
-     * @param creationTime the time stamp for the creation time for this file
-     */
-    public DataFileWriter(
-            final String filePrefix,
-            final Path dataFileDir,
-            final int index,
-            final DataItemSerializer<D> dataItemSerializer,
-            final Instant creationTime,
-            final int compactionLevel)
-            throws IOException {
-        this.index = index;
-        this.dataItemSerializer = dataItemSerializer;
-        this.creationInstant = creationTime;
-        this.path = createDataFilePath(filePrefix, dataFileDir, index, creationInstant);
-        metadata = new DataFileMetadata(
-                DataFileCommon.FILE_FORMAT_VERSION,
-                dataItemSerializer.getSerializedSize(),
-                0, // data item count will be updated later in finishWriting()
-                index,
-                creationInstant,
-                dataItemSerializer.getCurrentDataVersion(),
-                compactionLevel);
-        Files.createFile(path);
-        moveMmapBuffer(0);
-    }
-
-    /**
-     * Maps the writing byte buffer to the given position in the file. Byte buffer size is always
-     * {@link #MMAP_BUF_SIZE}. Previous mapped byte buffer, if not null, is released.
-     *
-     * @param currentMmapPos new mapped byte buffer position in the file, in bytes
-     * @throws IOException if I/O error(s) occurred
-     */
-    private void moveMmapBuffer(final int currentMmapPos) throws IOException {
-        try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-            final MappedByteBuffer newMap =
-                    channel.map(MapMode.READ_WRITE, mmapPositionInFile + currentMmapPos, MMAP_BUF_SIZE);
-            // theoretically it's possible, we should check it
-            if (newMap == null) {
-                throw new IOException("Failed to map file channel to memory");
-            }
-            closeMmapBuffer();
-            writingMmap = newMap;
-            mmapPositionInFile += currentMmapPos;
-        }
-    }
-
-    /** Closes (unmaps) the current mapped byte buffer used to write bytes, if not null. */
-    private void closeMmapBuffer() {
-        if (writingMmap != null) {
-            UNSAFE.invokeCleaner(writingMmap);
-            writingMmap = null;
-        }
-    }
-
-    /**
-     * Get the number of bytes written so far plus footer size. Tells you what the size of the file
-     * would be at this moment in time if you were to close it now.
-     *
-     * If this method is called after {@link #finishWriting()}, it returns the total file size.
-     */
-    public long getFileSizeEstimate() {
-        if (writingMmap == null) {
-            // Done with writing, return mmapPositionInFile, which is equal to the file size
-            return mmapPositionInFile;
-        }
-        // Current mmap offset + position in mmap buffer + padding + footer
-        return mmapPositionInFile + writingMmap.position() + computePaddingLength() + FOOTER_SIZE;
-    }
+    DataFileType getFileType();
 
     /** Get the path for the file being written. Useful when needing to get a reader to the file. */
-    public Path getPath() {
-        return path;
-    }
+    Path getPath();
 
     /**
      * Get file metadata for the written file.
      *
      * @return data file metadata
      */
-    public DataFileMetadata getMetadata() {
-        return metadata;
-    }
+    DataFileMetadata getMetadata();
 
     /**
-     * Write a data item copied from another file like during merge. The data item serializer
-     * copyItem() method will be called to give it a chance to pass the data for or upgrade the
-     * serialization as needed.
+     * Write a data item copied from another file like during merge. If this writer doesn't support
+     * the provided raw data item type, this method should return null to indicate that the item
+     * needs to be fully deserialized and then serialized to the target file rather than copied as
+     * raw bytes.
      *
-     * @param serializedVersion the serialization version the item was written with
-     * @param dataItemData ByteBuffer containing the item's data, it is assumed
-     *     dataItemData.remaining() is the amount of data to write.
+     * @param dataItemBytes a buffer containing the item's data
      * @return New data location in this file where it was written
+     * @throws IllegalArgumentException If this writer doesn't support the given raw item bytes type
      * @throws IOException If there was a problem writing the data item
      */
-    public synchronized long writeCopiedDataItem(final long serializedVersion, final ByteBuffer dataItemData)
-            throws IOException {
-        // capture the current write position for beginning of data item
-        final int currentWritingMmapPos = writingMmap.position();
-        final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
-        // capture the current read position in the data item data buffer
-        final int currentDataItemPos = dataItemData.position();
-        try {
-            dataItemSerializer.copyItem(serializedVersion, dataItemData.remaining(), dataItemData, writingMmap);
-        } catch (final BufferOverflowException e) {
-            // Buffer overflow indicates the current writing mapped byte buffer needs to be
-            // mapped to a new location
-            moveMmapBuffer(currentWritingMmapPos);
-            // Reset dataItemData buffer position and retry
-            dataItemData.position(currentDataItemPos);
-            try {
-                dataItemSerializer.copyItem(serializedVersion, dataItemData.remaining(), dataItemData, writingMmap);
-            } catch (final BufferOverflowException t) {
-                // If still a buffer overflow, it means the mapped buffer is smaller than even a single
-                // data item
-                throw new IOException(
-                        "Data item is too large to write to a data file. Increase data file"
-                                + "mapped byte buffer size",
-                        e);
-            }
-        }
-        dataItemCount++;
-        // return the offset where we wrote the data
-        return DataFileCommon.dataLocation(index, byteOffset);
-    }
+    long writeCopiedDataItem(final Object dataItemBytes) throws IOException;
 
     /**
      * Store data item in file returning location it was stored at.
@@ -235,45 +62,7 @@ public final class DataFileWriter<D> {
      * @return the data location of written data in bytes
      * @throws IOException if there was a problem appending data to file
      */
-    public synchronized long storeDataItem(final D dataItem) throws IOException {
-        // find offset for the start of this new data item, we assume we always write data in a
-        // whole number of blocks
-        final int currentWritingMmapPos = writingMmap.position();
-        final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
-        // write serialized data
-        try {
-            dataItemSerializer.serialize(dataItem, writingMmap);
-        } catch (final BufferOverflowException e) {
-            // Buffer overflow indicates the current writing mapped byte buffer needs to be
-            // mapped to a new location and retry
-            moveMmapBuffer(currentWritingMmapPos);
-            try {
-                dataItemSerializer.serialize(dataItem, writingMmap);
-            } catch (final BufferOverflowException t) {
-                // If still a buffer overflow, it means the mapped buffer is smaller than even a single
-                // data item
-                throw new IOException(
-                        "Data item is too large to write to a data file. Increase data file"
-                                + "mapped byte buffer size",
-                        e);
-            }
-        }
-        // increment data item counter
-        dataItemCount++;
-        // return the offset where we wrote the data
-        return DataFileCommon.dataLocation(index, byteOffset);
-    }
-
-    /** A helper method to write a byte buffer to the file. */
-    private void writeBytes(final ByteBuffer data) throws IOException {
-        final int needToWrite = data.remaining();
-        if (needToWrite > writingMmap.remaining()) {
-            final int currentWritingMmapPos = writingMmap.position();
-            moveMmapBuffer(currentWritingMmapPos);
-        }
-        // Assuming the data is small enough to fit into the mmaped writing buffer
-        writingMmap.put(data);
-    }
+    long storeDataItem(final D dataItem) throws IOException;
 
     /**
      * When you finished append to a new file, call this to seal the file and make it read only for
@@ -281,35 +70,5 @@ public final class DataFileWriter<D> {
      *
      * @throws IOException if there was a problem sealing file or opening again as read only
      */
-    public synchronized void finishWriting() throws IOException {
-        // pad the end of file till we are a whole number of pages
-        int paddingBytesNeeded = computePaddingLength();
-        final ByteBuffer paddingBuf = ByteBuffer.allocate(paddingBytesNeeded);
-        Arrays.fill(paddingBuf.array(), (byte) 0);
-        writeBytes(paddingBuf);
-        // update data item count in the metadata
-        metadata.setDataItemCount(dataItemCount);
-        // write any metadata to end of file.
-        final ByteBuffer footerData = metadata.getFooterForWriting();
-        writeBytes(footerData);
-        // truncate to the right size
-        final long totalFileSize = mmapPositionInFile + writingMmap.position();
-        // release all the resources
-        closeMmapBuffer();
-
-        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-            channel.truncate(totalFileSize);
-            // after finishWriting(), mmapPositionInFile should be equal to the file size
-            mmapPositionInFile = totalFileSize;
-        }
-    }
-
-    /**
-     * Compute the amount of padding needed to append at the end of file to push the metadata footer
-     * so that it sits on a page boundary for fast random access reading later.
-     */
-    private int computePaddingLength() {
-        final long writePosition = mmapPositionInFile + writingMmap.position();
-        return (int) (PAGE_SIZE - (writePosition % PAGE_SIZE)) % PAGE_SIZE;
-    }
+    void finishWriting() throws IOException;
 }

@@ -50,8 +50,10 @@ import org.apache.logging.log4j.Logger;
  * This class is responsible performing compaction of data files in a {@link DataFileCollection}.
  * The compaction is supposed to happen in the background and can be paused and resumed with {@link #pauseCompaction()}
  * and {@link #resumeCompaction()} to prevent compaction from interfering with snapshots.
+ *
+ * @param <D> data file type
  */
-public class DataFileCompactor {
+public class DataFileCompactor<D> {
 
     private static final Logger logger = LogManager.getLogger(DataFileCompactor.class);
 
@@ -73,7 +75,7 @@ public class DataFileCompactor {
     /**
      * The data file collection to compact
      */
-    private final DataFileCollection<?> dataFileCollection;
+    private final DataFileCollection<D> dataFileCollection;
 
     /**
      * Index to update during compaction
@@ -113,17 +115,21 @@ public class DataFileCompactor {
      * Start time of the current compaction, or null if compaction isn't running
      */
     private final AtomicReference<Instant> currentCompactionStartTime = new AtomicReference<>();
+
+    /** Indicates whether to use PBJ for current compaction */
+    private final AtomicBoolean currentCompactionUsePbj = new AtomicBoolean();
+
     /**
      * Current data file writer during compaction, or null if compaction isn't running. The writer
      * is created at compaction start. If compaction is interrupted by a snapshot, the writer is
      * closed before the snapshot, and then a new writer / new file is created after the snapshot is
      * taken.
      */
-    private final AtomicReference<DataFileWriter<?>> currentWriter = new AtomicReference<>();
+    private final AtomicReference<DataFileWriter<D>> currentWriter = new AtomicReference<>();
     /**
      * Currrent data file reader for the compaction writer above.
      */
-    private final AtomicReference<DataFileReader<?>> currentReader = new AtomicReference<>();
+    private final AtomicReference<DataFileReader<D>> currentReader = new AtomicReference<>();
     /**
      * The list of new files created during compaction. Usually, all files to process are compacted
      * to a single new file, but if compaction is interrupted by a snapshot, there may be more than
@@ -155,7 +161,7 @@ public class DataFileCompactor {
      */
     public DataFileCompactor(
             String storeName,
-            final DataFileCollection<?> dataFileCollection,
+            final DataFileCollection<D> dataFileCollection,
             CASableLongIndex index,
             @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
             @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
@@ -182,11 +188,20 @@ public class DataFileCompactor {
      * @throws IOException          If there was a problem with the compaction
      * @throws InterruptedException If the compaction thread was interrupted
      */
+    synchronized List<Path> compactFiles(
+            final CASableLongIndex index,
+            final List<? extends DataFileReader<D>> filesToCompact,
+            final int targetCompactionLevel)
+            throws IOException, InterruptedException {
+        return compactFiles(index, filesToCompact, targetCompactionLevel, config.usePbj());
+    }
+
     // visible for testing
     synchronized List<Path> compactFiles(
             final CASableLongIndex index,
-            final List<? extends DataFileReader<?>> filesToCompact,
-            int targetCompactionLevel)
+            final List<? extends DataFileReader<D>> filesToCompact,
+            final int targetCompactionLevel,
+            final boolean usePbj)
             throws IOException, InterruptedException {
         if (filesToCompact.size() < getMinNumberOfFilesToCompact()) {
             // nothing to do we have merged since the last data update
@@ -202,6 +217,7 @@ public class DataFileCompactor {
                 .orElseGet(Instant::now);
         snapshotCompactionLock.acquire();
         try {
+            currentCompactionUsePbj.set(usePbj);
             currentCompactionStartTime.set(startTime);
             newCompactedFiles.clear();
             startNewCompactionFile(targetCompactionLevel);
@@ -215,14 +231,14 @@ public class DataFileCompactor {
         // will put significant load on GC. Let's do something different
         int minFileIndex = Integer.MAX_VALUE;
         int maxFileIndex = 0;
-        for (final DataFileReader<?> r : filesToCompact) {
+        for (final DataFileReader<D> r : filesToCompact) {
             minFileIndex = Math.min(minFileIndex, r.getIndex());
             maxFileIndex = Math.max(maxFileIndex, r.getIndex());
         }
         final int firstIndexInc = minFileIndex;
         final int lastIndexExc = maxFileIndex + 1;
-        final DataFileReader<?>[] readers = new DataFileReader[lastIndexExc - firstIndexInc];
-        for (DataFileReader<?> r : filesToCompact) {
+        final DataFileReader<D>[] readers = new DataFileReader[lastIndexExc - firstIndexInc];
+        for (DataFileReader<D> r : filesToCompact) {
             readers[r.getIndex() - firstIndexInc] = r;
         }
 
@@ -237,7 +253,7 @@ public class DataFileCompactor {
                 if ((fileIndex < firstIndexInc) || (fileIndex >= lastIndexExc)) {
                     return;
                 }
-                final DataFileReader<?> reader = readers[fileIndex - firstIndexInc];
+                final DataFileReader<D> reader = readers[fileIndex - firstIndexInc];
                 if (reader == null) {
                     return;
                 }
@@ -247,10 +263,20 @@ public class DataFileCompactor {
                 // and current data file writer and reader will point to a new file
                 snapshotCompactionLock.acquire();
                 try {
-                    final DataFileWriter<?> newFileWriter = currentWriter.get();
-                    long serializationVersion = reader.getMetadata().getSerializationVersion();
-                    final long newLocation = newFileWriter.writeCopiedDataItem(
-                            serializationVersion, reader.readDataItemBytes(fileOffset));
+                    final DataFileWriter<D> newFileWriter = currentWriter.get();
+                    long newLocation = -1;
+                    // Check if reader and writer are compatible
+                    if (newFileWriter.getFileType() == reader.getFileType()) {
+                        // Check if reader supports reading raw data item bytes
+                        final Object itemBytes = reader.readDataItemBytes(fileOffset);
+                        assert itemBytes != null;
+                        newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
+                    }
+                    if (newLocation == -1) {
+                        final D item = reader.readDataItem(fileOffset);
+                        assert item != null;
+                        newLocation = newFileWriter.storeDataItem(item);
+                    }
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
 
@@ -309,13 +335,15 @@ public class DataFileCompactor {
     private void startNewCompactionFile(int compactionLevel) throws IOException {
         final Instant startTime = currentCompactionStartTime.get();
         assert startTime != null;
-        final DataFileWriter<?> newFileWriter = dataFileCollection.newDataFile(startTime, compactionLevel);
+        // no way to force JDB or PBJ format for compacted files, always get the value from config
+        final DataFileWriter<D> newFileWriter =
+                dataFileCollection.newDataFile(startTime, compactionLevel, currentCompactionUsePbj.get());
         currentWriter.set(newFileWriter);
         final Path newFileCreated = newFileWriter.getPath();
         newCompactedFiles.add(newFileCreated);
         final DataFileMetadata newFileMetadata = newFileWriter.getMetadata();
-        final DataFileReader<?> newFileReader =
-                dataFileCollection.addNewDataFileReader(newFileCreated, newFileMetadata);
+        final DataFileReader<D> newFileReader =
+                dataFileCollection.addNewDataFileReader(newFileCreated, newFileMetadata, currentCompactionUsePbj.get());
         currentReader.set(newFileReader);
     }
 
@@ -402,10 +430,9 @@ public class DataFileCompactor {
      * @return true if compaction was performed, false otherwise
      */
     public boolean compact() throws IOException, InterruptedException {
-
-        final List<? extends DataFileReader<?>> completedFiles = dataFileCollection.getAllCompletedFiles();
+        final List<DataFileReader<D>> completedFiles = dataFileCollection.getAllCompletedFiles();
         reportFileSizeByLevel(completedFiles);
-        final List<? extends DataFileReader<?>> filesToCompact =
+        final List<DataFileReader<D>> filesToCompact =
                 compactionPlan(completedFiles, getMinNumberOfFilesToCompact(), config.maxCompactionLevel());
         if (filesToCompact.isEmpty()) {
             logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
@@ -467,11 +494,11 @@ public class DataFileCompactor {
         return true;
     }
 
-    private void reportFileSizeByLevel(List<? extends DataFileReader<?>> allCompletedFiles) {
+    private void reportFileSizeByLevel(List<DataFileReader<D>> allCompletedFiles) {
         if (reportFileSizeByLevelMetricFunction != null) {
-            Map<Integer, List<DataFileReader<?>>> readersByLevel = getReadersByLevel(allCompletedFiles);
+            final Map<Integer, List<DataFileReader<D>>> readersByLevel = getReadersByLevel(allCompletedFiles);
             for (int i = 0; i < readersByLevel.size(); i++) {
-                List<DataFileReader<?>> readers = readersByLevel.get(i);
+                final List<DataFileReader<D>> readers = readersByLevel.get(i);
                 if (readers != null) {
                     reportFileSizeByLevelMetricFunction.accept(
                             i, getSizeOfFiles(readers) * UnitConstants.BYTES_TO_MEBIBYTES);
@@ -500,24 +527,24 @@ public class DataFileCompactor {
      * then this level and the levels above it are not included in the plan.
      * @return filter creating a compaction plan
      */
-    static List<? extends DataFileReader<?>> compactionPlan(
-            List<? extends DataFileReader<?>> dataFileReaders, int minNumberOfFilesToCompact, int maxCompactionLevel) {
+    static <D> List<DataFileReader<D>> compactionPlan(
+            List<DataFileReader<D>> dataFileReaders, int minNumberOfFilesToCompact, int maxCompactionLevel) {
         if (dataFileReaders.isEmpty()) {
             return dataFileReaders;
         }
 
-        Map<Integer, List<DataFileReader<?>>> readersByLevel = getReadersByLevel(dataFileReaders);
+        final Map<Integer, List<DataFileReader<D>>> readersByLevel = getReadersByLevel(dataFileReaders);
 
-        List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
+        final List<DataFileReader<D>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
         if (nonCompactedReaders == null || nonCompactedReaders.size() < minNumberOfFilesToCompact) {
             return Collections.emptyList();
         }
 
         // we always compact files from level 0 if we have enough files
-        final List<DataFileReader<?>> readersToCompact = new ArrayList<>(nonCompactedReaders);
+        final List<DataFileReader<D>> readersToCompact = new ArrayList<>(nonCompactedReaders);
 
         for (int i = 1; i <= maxCompactionLevel; i++) {
-            final List<DataFileReader<?>> readers = readersByLevel.get(i);
+            final List<DataFileReader<D>> readers = readersByLevel.get(i);
             // Presumably, one file comes from the compaction of the previous level.
             // If, counting this file in, it still doesn't have enough, then it stops collecting.
             if (readers == null || readers.size() < minNumberOfFilesToCompact - 1) {
@@ -528,8 +555,8 @@ public class DataFileCompactor {
         return readersToCompact;
     }
 
-    private static Map<Integer, List<DataFileReader<?>>> getReadersByLevel(
-            List<? extends DataFileReader<?>> dataFileReaders) {
+    private static <D> Map<Integer, List<DataFileReader<D>>> getReadersByLevel(
+            final List<DataFileReader<D>> dataFileReaders) {
         return dataFileReaders.stream()
                 .collect(Collectors.groupingBy(r -> r.getMetadata().getCompactionLevel()));
     }
