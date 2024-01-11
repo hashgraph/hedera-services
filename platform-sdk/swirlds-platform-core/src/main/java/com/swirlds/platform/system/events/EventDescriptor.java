@@ -24,6 +24,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
@@ -244,5 +245,18 @@ public class EventDescriptor implements SelfSerializable {
                 .append("birthRound", birthRound)
                 .append("hash", hex(hash.getValue()).substring(0, 12))
                 .toString();
+    }
+
+    /**
+     * Get the value used to determine if this event is ancient or not. Will be the event's generation prior to
+     * migration, and the event's birth round after migration.
+     *
+     * @return the value used to determine if this event is ancient or not
+     */
+    public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
+        return switch (ancientMode) {
+            case GENERATION_THRESHOLD -> getGeneration();
+            case BIRTH_ROUND_THRESHOLD -> getBirthRound();
+        };
     }
 }

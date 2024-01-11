@@ -52,6 +52,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemPropert
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -84,7 +88,7 @@ import org.junit.jupiter.api.Tag;
  *     <li>Default values.</li>
  * </ul>
  */
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
@@ -268,7 +272,7 @@ public class TokenCreateSpecs extends HapiSuite {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-        return defaultHapiSpec("CannotCreateWithExcessiveLifetime")
+        return defaultHapiSpec("CannotCreateWithExcessiveLifetime", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
                 .then(
@@ -320,7 +324,7 @@ public class TokenCreateSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec creationSetsExpectedName() {
         String saltedName = salted(PRIMARY);
-        return defaultHapiSpec("CreationSetsExpectedName")
+        return defaultHapiSpec("CreationSetsExpectedName", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
@@ -329,7 +333,10 @@ public class TokenCreateSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
         String saltedName = salted(PRIMARY);
-        return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
+        return defaultHapiSpec(
+                        "CreationWithoutKYCSetsCorrectStatus",
+                        NONDETERMINISTIC_TOKEN_NAMES,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getAccountInfo(TOKEN_TREASURY)
@@ -352,7 +359,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
         final var customFeeKey = "customFeeKey";
 
-        return defaultHapiSpec("BaseCreationsHaveExpectedPrices")
+        return defaultHapiSpec("BaseCreationsHaveExpectedPrices", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -428,7 +435,7 @@ public class TokenCreateSpecs extends HapiSuite {
         String saltedName = salted(PRIMARY);
         final var secondCreation = "secondCreation";
         final var pauseKey = "pauseKey";
-        return defaultHapiSpec("CreationHappyPath")
+        return defaultHapiSpec("CreationHappyPath", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -856,7 +863,7 @@ public class TokenCreateSpecs extends HapiSuite {
     public HapiSpec creationValidatesName() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
-        return defaultHapiSpec("CreationValidatesName")
+        return defaultHapiSpec("CreationValidatesName", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         recordSystemProperty("tokens.maxTokenNameUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
@@ -922,7 +929,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec creationRequiresAppropriateSigsHappyPath() {
-        return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath")
+        return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
                 .when()
                 .then(tokenCreate("shouldWork")
@@ -964,7 +971,7 @@ public class TokenCreateSpecs extends HapiSuite {
         int decimals = 1;
         long initialSupply = 100_000;
 
-        return defaultHapiSpec("TreasuryHasCorrectBalance")
+        return defaultHapiSpec("TreasuryHasCorrectBalance", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(1L))
                 .when(tokenCreate(token)
                         .treasury(TOKEN_TREASURY)
@@ -972,10 +979,11 @@ public class TokenCreateSpecs extends HapiSuite {
                         .initialSupply(initialSupply))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
-
+    // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
+    // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
     final HapiSpec prechecksWork() {
-        return defaultHapiSpec("PrechecksWork")
+        return defaultHapiSpec("PrechecksWork", HIGHLY_NON_DETERMINISTIC_FEES, FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(TOKEN_TREASURY)
                                 .withUnknownFieldIn(TRANSACTION)

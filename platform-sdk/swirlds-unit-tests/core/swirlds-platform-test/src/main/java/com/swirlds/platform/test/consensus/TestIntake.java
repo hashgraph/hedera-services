@@ -29,6 +29,7 @@ import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -95,8 +96,10 @@ public class TestIntake implements LoadableFromSignedState {
 
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph, null), output);
+
+        // FUTURE WORK: Expand test to include birth round based ancient threshold.
         final LatestEventTipsetTracker latestEventTipsetTracker =
-                new LatestEventTipsetTracker(time, addressBook, selfId);
+                new LatestEventTipsetTracker(time, addressBook, selfId, AncientMode.GENERATION_THRESHOLD);
 
         final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
                 platformContext,
@@ -186,7 +189,7 @@ public class TestIntake implements LoadableFromSignedState {
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
                         consensusConfig.roundsNonAncient(),
-                        false));
+                        AncientMode.GENERATION_THRESHOLD));
 
         shadowGraph.clear();
         shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());

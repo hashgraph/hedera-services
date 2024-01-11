@@ -569,7 +569,7 @@ public class ContractCallSuite extends HapiSuite {
                         "NestedContractCannotOverSendValue",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -624,7 +624,10 @@ public class ContractCallSuite extends HapiSuite {
         final AtomicReference<String> childMirror = new AtomicReference<>();
         final AtomicReference<String> childEip1014 = new AtomicReference<>();
 
-        return defaultHapiSpec("whitelistingAliasedContract", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "whitelistingAliasedContract",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         sourcing(() -> createLargeFile(DEFAULT_PAYER, WHITELISTER, literalInitcodeFor("Whitelister"))),
                         sourcing(() -> createLargeFile(DEFAULT_PAYER, CREATOR, literalInitcodeFor("Creator"))),
@@ -678,7 +681,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "cannotUseMirrorAddressOfAliasedContractInPrecompileMethod",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate("Treasury"),
                         sourcing(() -> createLargeFile(DEFAULT_PAYER, ASSOCIATOR, literalInitcodeFor("Associator"))),
@@ -815,7 +819,7 @@ public class ContractCallSuite extends HapiSuite {
         final var minPriceToAccessGatedMethod = 666L;
         final var minValueToAccessGatedMethodAtCurrentRate = new AtomicLong();
 
-        return defaultHapiSpec("ExchangeRatePrecompileWorks")
+        return defaultHapiSpec("ExchangeRatePrecompileWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(rateAware),
                         contractCreate(rateAware, BigInteger.valueOf(minPriceToAccessGatedMethod)),
@@ -1128,7 +1132,8 @@ public class ContractCallSuite extends HapiSuite {
                         "ocToken",
                         HIGHLY_NON_DETERMINISTIC_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_ISSUER).balance(1_000_000_000_000L),
                         cryptoCreate(ALICE).balance(10_000_000_000L).payingWith(TOKEN_ISSUER),
@@ -1427,7 +1432,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec depositSuccess() {
-        return defaultHapiSpec("DepositSuccess")
+        return defaultHapiSpec("DepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
@@ -1463,7 +1468,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
-        return defaultHapiSpec("DepositDeleteSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("DepositDeleteSuccess", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(BENEFICIARY).balance(initBalance),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -1514,7 +1519,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec insufficientGas() {
-        return defaultHapiSpec("InsufficientGas", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return defaultHapiSpec("InsufficientGas", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT),
                         contractCreate(SIMPLE_STORAGE_CONTRACT).adminKey(THRESHOLD),
@@ -1530,7 +1535,7 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 
-        return defaultHapiSpec("InsufficientFee")
+        return defaultHapiSpec("InsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate("accountToPay"), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(contractCall(contract, "create")
@@ -1543,7 +1548,7 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec nonPayable() {
         final var contract = CREATE_TRIVIAL;
 
-        return defaultHapiSpec("NonPayable")
+        return defaultHapiSpec("NonPayable", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(contractCall(contract, "create")
                         .via("callTxn")
@@ -1723,7 +1728,10 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec contractTransferToSigReqAccountWithoutKeyFails() {
-        return defaultHapiSpec("ContractTransferToSigReqAccountWithoutKeyFails", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return defaultHapiSpec(
+                        "ContractTransferToSigReqAccountWithoutKeyFails",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(RECEIVABLE_SIG_REQ_ACCOUNT)
                                 .balance(1_000_000_000_000L)
@@ -1748,7 +1756,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec minChargeIsTXGasUsedByContractCall() {
-        return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
+        return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -1769,7 +1777,10 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec hscsEvm006ContractHBarTransferToAccount() {
-        return defaultHapiSpec("hscsEvm006ContractHBarTransferToAccount", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "hscsEvm006ContractHBarTransferToAccount",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -1802,7 +1813,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "hscsEvm005TransfersWithSubLevelCallsBetweenContracts",
                         HIGHLY_NON_DETERMINISTIC_FEES,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(topLevelContract, subLevelContract))
@@ -1936,7 +1948,10 @@ public class ContractCallSuite extends HapiSuite {
         final var PAYER_KEY = "pkey";
         final var OTHER_KEY = "okey";
         final var KEY_LIST = "klist";
-        return defaultHapiSpec("hscsEvm010MultiSignatureAccounts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "hscsEvm010MultiSignatureAccounts",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(PAYER_KEY),
                         newKeyNamed(OTHER_KEY),
@@ -2020,7 +2035,7 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsToDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_1).balance(10_000L),
@@ -2063,7 +2078,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsFromDifferentAddressessToAddress",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS)
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -2110,7 +2126,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "sendHbarsToOuterContractFromDifferentAddresses",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS)
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_TRANSFER_CONTRACT),
@@ -2378,7 +2395,9 @@ public class ContractCallSuite extends HapiSuite {
         final var failingCall = "FailingCall";
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
         return defaultHapiSpec(
-                        "ConsTimeManagementWorksWithRevertedInternalCreations", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                        "ConsTimeManagementWorksWithRevertedInternalCreations",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(contractCall(
                                 contract,

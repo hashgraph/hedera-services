@@ -39,6 +39,7 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
@@ -134,7 +135,8 @@ class TipsetEventCreatorTests {
             final EventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
+            // FUTURE WORK: Expand test to include birth round based ancient threshold.
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook, AncientMode.GENERATION_THRESHOLD);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
@@ -892,7 +894,7 @@ class TipsetEventCreatorTests {
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         // FUTURE WORK: expand to cover birthRound for determining ancient.
-        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(1, 0, 100, false));
+        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(1, 0, 100, AncientMode.GENERATION_THRESHOLD));
 
         // Since there are no other parents available, the next event created would have a generation of 0
         // (if event creation were permitted). Since the current minimum generation non ancient is 100,
@@ -940,7 +942,12 @@ class TipsetEventCreatorTests {
                 if (eventIndex > 0) {
                     // Set non-ancientEventWindow after creating genesis event from each node.
                     eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
-                            pendingConsensusRound - 1, eventIndex - 26, 0, useBirthRoundForAncient));
+                            pendingConsensusRound - 1,
+                            eventIndex - 26,
+                            0,
+                            useBirthRoundForAncient
+                                    ? AncientMode.BIRTH_ROUND_THRESHOLD
+                                    : AncientMode.GENERATION_THRESHOLD));
                 }
 
                 final GossipEvent event = eventCreator.maybeCreateEvent();

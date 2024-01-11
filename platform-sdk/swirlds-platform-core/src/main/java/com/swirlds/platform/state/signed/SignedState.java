@@ -243,10 +243,13 @@ public class SignedState implements SignedStateInfo {
     public void setSigSet(@NonNull final SigSet sigSet) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
-        final AddressBook addressBook = getAddressBook();
-        for (final NodeId signingNode : sigSet) {
-            if (addressBook.contains(signingNode)) {
-                signingWeight += addressBook.getAddress(signingNode).getWeight();
+        if (!isGenesisState()) {
+            // Only non-genesis states will have signing weight
+            final AddressBook addressBook = getAddressBook();
+            for (final NodeId signingNode : sigSet) {
+                if (addressBook.contains(signingNode)) {
+                    signingWeight += addressBook.getAddress(signingNode).getWeight();
+                }
             }
         }
     }
