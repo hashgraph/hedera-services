@@ -51,7 +51,6 @@ import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -289,8 +288,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             boolean placeholderFound = false;
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
-                if (parsedItem.isPropertyOverride()) {
-                    // Property overrides vary with the previous contents of 0.0.121
+                if (parsedItem.isSpecialFileChange()) {
+                    // Special file changes vary from their previous contents e.g. file update or append to 0.0.121 or
+                    // 0.0.111
                     continue;
                 }
                 final var body = parsedItem.itemBody();
@@ -432,18 +432,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 Assertions.fail(
                         "Mismatched field names ('" + expectedName + "' vs '" + actualName + "' between expected "
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
-            }
-
-            final boolean isFileUpdate = FileUpdateTransactionBody.class.isAssignableFrom(expectedType);
-            final boolean isForFile121 =
-                    FileID.newBuilder().setFileNum(121).build().equals(expectedField.getValue());
-            final boolean isForFile111 =
-                    FileID.newBuilder().setFileNum(111).build().equals(expectedField.getValue());
-            // skip matching FileUpdate for properties file 121 or fee schedules file 111 since depending on if leaky
-            // tests are run before or not,
-            // the FileUpdate contents can be different
-            if (isFileUpdate && (isForFile121 || isForFile111)) {
-                return;
             }
 
             if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
