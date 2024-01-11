@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,8 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         validateTruePreCheck(requestedGas <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
-        // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have nothing
+        // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have
+        // nothing
         // to call)
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
         if (contract != null) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ class ScheduleEqualityVirtualKeySerializerTest {
     void gettersWork() {
         final ByteBuffer bin = ByteBuffer.allocate(Long.BYTES);
 
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(ScheduleEqualityVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(ScheduleEqualityVirtualKeySerializer.CLASS_ID, subject.getClassId());
@@ -62,7 +61,9 @@ class ScheduleEqualityVirtualKeySerializerTest {
         final var virtualKey = new ScheduleEqualityVirtualKey(longKey);
         verify.putLong(longKey);
         verify.rewind();
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualKey, out));
+
+        subject.serialize(virtualKey, out);
+        assertEquals(BYTES_IN_SERIALIZED_FORM, out.position());
         out.rewind();
 
         assertEquals(verify, out);

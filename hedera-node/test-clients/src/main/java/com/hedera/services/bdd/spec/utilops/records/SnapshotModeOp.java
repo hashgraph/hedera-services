@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,11 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
@@ -37,7 +40,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEngine;
@@ -138,7 +140,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "prng_bytes");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
-    private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";
+    private static final String MONO_STREAMS_LOC = "hedera-node/hedera-app/build/node/data/recordStreams/record0.0.3";
     private static final String HAPI_TEST_STREAMS_LOC_TPL =
             "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
@@ -179,8 +181,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta(
-                "ContractKeysHTS", "DissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla");
+        final var snapshotFileMeta =
+                new SnapshotFileMeta("HelloWorldEthereum", "createWithSelfDestructInConstructorHasSaneRecord");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -201,9 +203,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     public SnapshotModeOp(@NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... specialMatchModes) {
         this.mode = requireNonNull(mode);
-        this.matchModes = specialMatchModes.length > 0
-                ? EnumSet.copyOf(Arrays.asList(specialMatchModes))
-                : EnumSet.noneOf(SnapshotMatchMode.class);
+        this.matchModes = computeMatchModesIncluding(specialMatchModes);
         // Each snapshot should have a unique placeholder memo so that we can take multiple snapshots
         // without clearing the record streams directory in between
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -591,6 +591,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
+            } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
+                Assertions.assertTrue(expected != null && actual != null, "Token name is null");
             } else {
                 Assertions.assertEquals(
                         expected,
@@ -740,7 +742,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
         requireNonNull(expectedName);
         requireNonNull(expectedType);
-        if ("contractCallResult".equals(expectedName) && ByteString.class.isAssignableFrom(expectedType)) {
+        if ("contractCallResult".equals(expectedName) /* && ByteString.class.isAssignableFrom(expectedType)*/) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
@@ -754,6 +756,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return matchModes.contains(NONDETERMINISTIC_NONCE);
         } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
             return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
+        } else if ("logInfo".equals(expectedName)) {
+            return matchModes.contains(NONDETERMINISTIC_LOG_DATA);
+        } else if ("ethereum_data".equals(expectedName) || "ethereum_hash".equals(expectedName)) {
+            return matchModes.contains(NONDETERMINISTIC_ETHEREUM_DATA);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }
@@ -772,5 +778,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             log.error("Could not write readable items to txt", e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    private Set<SnapshotMatchMode> computeMatchModesIncluding(@NonNull final SnapshotMatchMode... specialMatchModes) {
+        final Set<SnapshotMatchMode> modes = new HashSet<>(Arrays.asList(specialMatchModes));
+        if (System.getenv("CI") != null) {
+            // In CI the presence of end-of-staking-period records makes all
+            // nonces non-deterministic (as any transaction may or may not
+            // trigger an end-of-period record, which consumes a nonce)
+            modes.add(NONDETERMINISTIC_NONCE);
+        }
+        return modes.isEmpty() ? EnumSet.noneOf(SnapshotMatchMode.class) : EnumSet.copyOf(modes);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -127,6 +126,12 @@ class HederaWorldStateTest {
     @Mock
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
+    @Mock
+    private HederaWorldState hederaWorldState;
+
+    @Mock
+    private HederaWorldState.Updater hederaWorldStateUpdater;
+
     private CodeCache codeCache;
 
     final long balance = 1_234L;
@@ -190,14 +195,9 @@ class HederaWorldStateTest {
 
     @Test
     void skipsTokenAccountsInCommit() {
-        givenNonNullWorldLedgers();
-        given(worldLedgers.aliases()).willReturn(aliases);
-        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
-        doAnswer(invocationOnMock -> invocationOnMock.getArguments()[0])
-                .when(aliases)
-                .resolveForEvm(any());
+        given(hederaWorldState.updater()).willReturn(hederaWorldStateUpdater);
+        final var updater = hederaWorldState.updater();
 
-        final var updater = subject.updater();
         updater.createAccount(tokenNum.toEvmAddress(), TOKEN_PROXY_ACCOUNT_NONCE, Wei.ZERO);
 
         updater.commit();

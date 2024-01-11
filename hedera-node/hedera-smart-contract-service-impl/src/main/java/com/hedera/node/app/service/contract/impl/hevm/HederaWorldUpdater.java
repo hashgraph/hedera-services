@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,12 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @Nullable
     default HederaEvmAccount getHederaAccount(@NonNull Address address) {
-        return getHederaAccount(getHederaContractId(address));
+        requireNonNull(address);
+        final var maybeAccount = get(address);
+        if (maybeAccount instanceof HederaEvmAccount account) {
+            return account;
+        }
+        return null;
     }
 
     /**
@@ -254,9 +259,10 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * exist in Besu because there contracts are just normal accounts with code; but in Hedera, there
      * are a few other properties that need to be set to "convert" an account into a contract.
      *
-     * @param alias the hollow account to be finalized as a contract
+     * @param address the hollow account to be finalized as a contract
+     * @param parent the address of the "parent" account finalizing the hollow account
      */
-    void finalizeHollowAccount(@NonNull Address alias);
+    void finalizeHollowAccount(@NonNull Address address, @NonNull Address parent);
 
     /**
      * Returns all storage updates that would be committed by this updater, necessary for constructing
@@ -286,4 +292,13 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * Revert the last child record.
      */
     void revertChildRecords();
+
+    /**
+     * Sets the world updater to not check for the existence of the contractId
+     * in the ledger when the getHederaContractId() method is called
+     * This is to improve Ethereum equivalence.
+     */
+    void setContractNotRequired();
+
+    boolean contractMustBePresent();
 }

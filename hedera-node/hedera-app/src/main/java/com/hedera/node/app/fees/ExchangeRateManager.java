@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public final class ExchangeRateManager {
         requireNonNull(bytes, "bytes must not be null");
 
         // First we try to read midnightRates from state
-        midnightRates = state.createReadableStates(FeeService.NAME)
+        midnightRates = state.getReadableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY)
                 .get();
         if (midnightRates != ExchangeRateSet.DEFAULT) {
@@ -170,7 +170,7 @@ public final class ExchangeRateManager {
 
     public void updateMidnightRates(@NonNull final HederaState state) {
         midnightRates = currentExchangeRateInfo.exchangeRates();
-        final var singleton = state.createWritableStates(FeeService.NAME)
+        final var singleton = state.getWritableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY);
         singleton.put(midnightRates);
     }

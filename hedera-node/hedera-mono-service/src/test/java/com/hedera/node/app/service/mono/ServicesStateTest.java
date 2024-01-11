@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,22 +81,16 @@ import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.base.state.MutabilityException;
-import com.swirlds.base.time.Time;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -1059,23 +1053,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platformContext.getCryptography());
         return platform;
-    }
-
-    /**
-     * Because this method returns a {@code ReservedSignedState}, <b>make sure to close it when done!</b>
-     *
-     * @param path the path to the signed state file
-     * @throws IOException if the file cannot be read
-     */
-    private static ReservedSignedState loadSignedState(final String path) throws IOException {
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(),
-                new NoOpMetrics(),
-                CryptographyHolder.get(),
-                Time.getCurrent());
-        final var signedPair = SignedStateFileReader.readStateFile(platformContext, Paths.get(path));
-        // Because it's possible we are loading old data, we cannot check equivalence of the hash.
-        return signedPair.reservedSignedState();
     }
 
     private void mockAllMaps(final MerkleMap<?, ?> mockMm, final VirtualMap<?, ?> mockVm) {

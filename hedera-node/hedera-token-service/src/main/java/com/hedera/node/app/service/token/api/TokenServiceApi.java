@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,11 @@ public interface TokenServiceApi {
      */
     boolean checkForCustomFees(@NonNull CryptoTransferTransactionBody op);
 
+    enum FreeAliasOnDeletion {
+        YES,
+        NO
+    }
+
     /**
      * Deletes the account with the given id and transfers any remaining hbar balance to the given obtainer id.
      *
@@ -52,13 +57,15 @@ public interface TokenServiceApi {
      * @param obtainerId the id of the account to transfer the remaining hbar balance to
      * @param expiryValidator the expiry validator to use
      * @param recordBuilder the record builder to record the transfer in
+     * @param freeAliasOnDeletion whether to free the deleted account's alias (if any)
      * @throws HandleException if the account could not be deleted for some reason
      */
     void deleteAndTransfer(
             @NonNull AccountID deletedId,
             @NonNull AccountID obtainerId,
             @NonNull ExpiryValidator expiryValidator,
-            @NonNull DeleteCapableTransactionRecordBuilder recordBuilder);
+            @NonNull DeleteCapableTransactionRecordBuilder recordBuilder,
+            @NonNull FreeAliasOnDeletion freeAliasOnDeletion);
 
     /**
      * Validates the creation of a given staking election relative to the given account store, network info, and staking config.

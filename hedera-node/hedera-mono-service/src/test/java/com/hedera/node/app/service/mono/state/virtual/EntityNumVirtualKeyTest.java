@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ class EntityNumVirtualKeyTest {
 
         EntityNumVirtualKey key = new EntityNumVirtualKey();
 
-        key.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+        key.deserialize(buffer);
 
         assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
     }
@@ -127,7 +127,7 @@ class EntityNumVirtualKeyTest {
             subject.serialize(buffer);
             buffer.rewind();
             var copy = new EntityNumVirtualKey();
-            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 
@@ -161,7 +161,7 @@ class EntityNumVirtualKeyTest {
 
             final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
             var copy = new EntityNumVirtualKey();
-            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 

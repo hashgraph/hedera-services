@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
+import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
 import com.hedera.node.app.service.mono.context.properties.EntityType;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
@@ -43,6 +44,7 @@ import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.sources.PropertySourceBasedConfigSource;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.HashMap;
@@ -89,16 +91,16 @@ class PropertySourceBasedConfigTest {
     void testConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new CongestionMultipliersConverter())
-                .withConverter(new EntityScaleFactorsConverter())
-                .withConverter(new KnownBlockValuesConverter())
-                .withConverter(new LegacyContractIdActivationsConverter())
-                .withConverter(new PermissionedAccountsRangeConverter())
-                .withConverter(new ScaleFactorConverter())
-                .withConverter(new AccountIDConverter())
-                .withConverter(new ContractIDConverter())
-                .withConverter(new FileIDConverter())
-                .withConverter(new BytesConverter())
+                .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
+                .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())
+                .withConverter(KnownBlockValues.class, new KnownBlockValuesConverter())
+                .withConverter(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter())
+                .withConverter(PermissionedAccountsRange.class, new PermissionedAccountsRangeConverter())
+                .withConverter(ScaleFactor.class, new ScaleFactorConverter())
+                .withConverter(AccountID.class, new AccountIDConverter())
+                .withConverter(ContractID.class, new ContractIDConverter())
+                .withConverter(FileID.class, new FileIDConverter())
+                .withConverter(Bytes.class, new BytesConverter())
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .build();
 

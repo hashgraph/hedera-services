@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public BlockRecordInfo blockRecordInfo() {
         if (blockRecordInfo == null) {
-            final var states = state.createReadableStates(BlockRecordService.NAME);
+            final var states = state.getReadableStates(BlockRecordService.NAME);
             final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
                     .get();
             final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY)

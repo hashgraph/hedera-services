@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@ package com.hedera.services.bdd.junit;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isRecordFile;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isSidecarFile;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,41 +56,35 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
 
     @Override
     public void onFileCreate(final File file) {
-        final var newFilePath = file.getPath();
-
-        final var fileType = typeOf(file);
-        switch (fileType) {
-            case RECORD_STREAM_FILE -> {
-                var retryCount = 0;
-                while (true) {
-                    retryCount++;
-                    try {
-                        exposeItems(file);
-                        return;
-                    } catch (UncheckedIOException e) {
-                        log.warn(
-                                "Attempt #{} - an error occurred trying to parse" + " recordStream file {} - {}.",
-                                retryCount,
-                                newFilePath,
-                                e);
-
-                        if (retryCount < 8) {
-                            try {
-                                Thread.sleep(500);
-                            } catch (InterruptedException ignored) {
-                                Thread.currentThread().interrupt();
-                                return;
-                            }
-                        } else {
-                            log.fatal("Could not read recordStream file {} - {}, exiting now.", newFilePath, e);
-                            throw new IllegalStateException();
-                        }
-                    }
-                }
-            }
-            case SIDE_CAR_FILE -> exposeSidecars(file);
+        switch (typeOf(file)) {
+            case RECORD_STREAM_FILE -> retryExposingVia(this::exposeItems, "record stream", file);
+            case SIDE_CAR_FILE -> retryExposingVia(this::exposeSidecars, "sidecar", file);
             case OTHER -> {
                 // Nothing to expose
+            }
+        }
+    }
+
+    private void retryExposingVia(
+            @NonNull final Consumer<File> exposure, @NonNull final String fileType, @NonNull final File f) {
+        var retryCount = 0;
+        while (true) {
+            retryCount++;
+            try {
+                exposure.accept(f);
+                return;
+            } catch (UncheckedIOException e) {
+                if (retryCount < 8) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                } else {
+                    log.error("Could not expose contents of {} file {}", fileType, f.getAbsolutePath(), e);
+                    throw new IllegalStateException();
+                }
             }
         }
     }

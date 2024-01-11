@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.crypto.txns.CryptoDeleteResourceUsage;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.api.TokenServiceApi.FreeAliasOnDeletion;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -85,7 +86,8 @@ public class CryptoDeleteHandler implements TransactionHandler {
                         op.deleteAccountIDOrThrow(),
                         op.transferAccountIDOrThrow(),
                         context.expiryValidator(),
-                        context.recordBuilder(CryptoDeleteRecordBuilder.class));
+                        context.recordBuilder(CryptoDeleteRecordBuilder.class),
+                        FreeAliasOnDeletion.NO);
     }
 
     @NonNull

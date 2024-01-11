@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -107,6 +108,13 @@ class EvmAutoCreationLogicTest {
         final var alias2 = ByteStringUtils.wrapUnsafely(bytes2);
         final var entityNum2 = EntityIdUtils.accountIdFromEvmAddress(mirrorAddress);
         assertThrows(UnsupportedOperationException.class, () -> subject.trackAlias(alias2, entityNum2));
+    }
+
+    @Test
+    void tracksAliasThrowsWhenAliasIsMirror() {
+        final var alias = ByteStringUtils.wrapUnsafely(mirrorAddress.toArray());
+        final var entityNum = EntityIdUtils.accountIdFromEvmAddress(mirrorAddress);
+        assertThrows(InvalidTransactionException.class, () -> subject.trackAlias(alias, entityNum));
     }
 
     @Test

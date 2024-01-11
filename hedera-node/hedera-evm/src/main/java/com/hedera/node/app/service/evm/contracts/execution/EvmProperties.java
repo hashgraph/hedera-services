@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -38,8 +39,11 @@ public interface EvmProperties {
 
     boolean isLazyCreationEnabled();
 
-    /**
-     * Enables or disables Create2 operation.
-     */
     boolean isCreate2Enabled();
+
+    boolean allowCallsToNonContractAccounts();
+
+    Set<Address> grandfatherContracts();
+
+    boolean callsToNonExistingEntitiesEnabled(Address target);
 }

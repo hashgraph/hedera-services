@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_046;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
@@ -26,7 +26,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DAT
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -120,7 +120,7 @@ class EthereumTransactionHandlerTest {
 
     void setUpTransactionProcessing() {
         final var contractsConfig = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, transactionProcessor);
+        final var processors = Map.of(VERSION_046, transactionProcessor);
 
         final var contextTransactionProcessor = new ContextTransactionProcessor(
                 HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
@@ -156,12 +156,17 @@ class EthereumTransactionHandlerTest {
                 .willReturn(recordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
-                expectedResult, SUCCESS_RESULT.finalStatus(), CALLED_CONTRACT_ID, SUCCESS_RESULT.gasPrice());
+                expectedResult,
+                SUCCESS_RESULT.finalStatus(),
+                CALLED_CONTRACT_ID,
+                SUCCESS_RESULT.gasPrice(),
+                null,
+                null);
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCallResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.withTinybarGasFee(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
+        given(recordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }
@@ -175,14 +180,19 @@ class EthereumTransactionHandlerTest {
                 .willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
-        final var expectedOutcome =
-                new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus(), null, SUCCESS_RESULT.gasPrice());
+        final var expectedOutcome = new CallOutcome(
+                expectedResult,
+                SUCCESS_RESULT.finalStatus(),
+                CALLED_CONTRACT_ID,
+                SUCCESS_RESULT.gasPrice(),
+                null,
+                null);
 
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITHOUT_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
-        given(recordBuilder.withTinybarGasFee(expectedOutcome.tinybarGasCost())).willReturn(recordBuilder);
+        given(recordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
     }

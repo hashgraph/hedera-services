@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,7 +148,11 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        return explicitCodeFetch(bytecode.get(), accountIdFromEvmAddress(address));
+        try {
+            return explicitCodeFetch(bytecode.get(), accountIdFromEvmAddress(address));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Override

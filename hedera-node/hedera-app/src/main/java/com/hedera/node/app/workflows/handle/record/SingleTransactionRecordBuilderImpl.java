@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,9 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
@@ -126,7 +126,7 @@ public class SingleTransactionRecordBuilderImpl
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder,
-                GasFeeRecordBuilder,
+                ContractOperationRecordBuilder,
                 TokenAccountWipeRecordBuilder,
                 CryptoUpdateRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
@@ -805,6 +805,8 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl contractID(@Nullable final ContractID contractID) {
+        // Ensure we don't externalize as an account creation too
+        transactionReceiptBuilder.accountID((AccountID) null);
         transactionReceiptBuilder.contractID(contractID);
         return this;
     }
@@ -1117,6 +1119,11 @@ public class SingleTransactionRecordBuilderImpl
      */
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
+    }
+
+    @Override
+    public @NonNull TransactionBody transactionBody() {
+        return inProgressBody();
     }
 
     /**

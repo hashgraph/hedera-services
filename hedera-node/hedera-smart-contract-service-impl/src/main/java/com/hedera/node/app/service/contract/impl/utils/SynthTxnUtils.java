@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,6 @@ public class SynthTxnUtils {
             @NonNull final ContractID pendingId, @NonNull final Account parent) {
         requireNonNull(parent);
         requireNonNull(pendingId);
-        // TODO - for mono-service equivalence, need to set the initial balance here
         final var builder = ContractCreateTransactionBody.newBuilder()
                 .maxAutomaticTokenAssociations(parent.maxAutoAssociations())
                 .declineReward(parent.declineReward())
@@ -111,10 +110,11 @@ public class SynthTxnUtils {
             builder.stakedAccountId(parent.stakedAccountIdOrThrow());
         }
         final var parentAdminKey = parent.keyOrThrow();
-        if (!parentAdminKey.hasContractID()) {
-            builder.adminKey(parentAdminKey);
-        } else {
+        if (isSelfAdmin(parent)) {
+            // The new contract will manage itself as well, which we indicate via self-referential admin key
             builder.adminKey(Key.newBuilder().contractID(pendingId));
+        } else {
+            builder.adminKey(parentAdminKey);
         }
         return builder.build();
     }
@@ -155,5 +155,11 @@ public class SynthTxnUtils {
                 .autoRenewPeriod(Duration.newBuilder().seconds(autoRenewPeriod))
                 .initcode(Bytes.wrap(ethTxData.callData()))
                 .build();
+    }
+
+    private static boolean isSelfAdmin(@NonNull final Account parent) {
+        final long adminNum =
+                parent.keyOrThrow().contractIDOrElse(ContractID.DEFAULT).contractNumOrElse(0L);
+        return parent.accountIdOrThrow().accountNumOrThrow() == adminNum;
     }
 }

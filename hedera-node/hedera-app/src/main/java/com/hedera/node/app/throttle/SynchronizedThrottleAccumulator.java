@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,9 @@ public class SynchronizedThrottleAccumulator {
 
     private final ThrottleAccumulator frontendThrottle;
 
+    @NonNull
+    private Instant lastDecisionTime = Instant.EPOCH;
+
     @Inject
     public SynchronizedThrottleAccumulator(ThrottleAccumulator frontendThrottle) {
         this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
@@ -50,7 +53,8 @@ public class SynchronizedThrottleAccumulator {
      * @return whether the transaction should be throttled
      */
     public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
-        return frontendThrottle.shouldThrottle(txnInfo, Instant.now(), state);
+        setDecisionTime();
+        return frontendThrottle.shouldThrottle(txnInfo, lastDecisionTime, state);
     }
 
     /*
@@ -63,6 +67,12 @@ public class SynchronizedThrottleAccumulator {
      * @return whether the query should be throttled
      */
     public synchronized boolean shouldThrottle(HederaFunctionality queryFunction, Query query, AccountID queryPayerId) {
-        return frontendThrottle.shouldThrottle(queryFunction, Instant.now(), query, queryPayerId);
+        setDecisionTime();
+        return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
+    }
+
+    private void setDecisionTime() {
+        final var now = Instant.now();
+        lastDecisionTime = now.isBefore(lastDecisionTime) ? lastDecisionTime : now;
     }
 }
