@@ -32,7 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record LatestEventTipsetTrackerWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput) {
+        @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput,
+        @NonNull Runnable flushRunnable) {
 
     /**
      * Create a new instance of this wiring.
@@ -43,7 +44,8 @@ public record LatestEventTipsetTrackerWiring(
     public static LatestEventTipsetTrackerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
         return new LatestEventTipsetTrackerWiring(
                 taskScheduler.buildInputWire("linked events"),
-                taskScheduler.buildInputWire("non-ancient event window"));
+                taskScheduler.buildInputWire("non-ancient event window"),
+                taskScheduler::flush);
     }
 
     /**

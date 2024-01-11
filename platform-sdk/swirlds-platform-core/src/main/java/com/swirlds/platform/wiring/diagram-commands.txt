@@ -5,6 +5,8 @@ Groups high level grouping of components and component groups. Substitutes known
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
+    -l 'shadowgraph:stale event detection:linkedEventIntake' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:ẞ' \
     -s 'heartbeat:heartbeat:♡' \
@@ -12,7 +14,6 @@ pcli diagram \
     -s 'getNonExpiredEventWindow:non-expired event window:e' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient,getNonExpiredEventWindow' \
@@ -30,6 +31,8 @@ Same as 'Uncollapsed' but with low level things collapsed. Attempts to hide thin
 
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:linkedEventIntake' \
+    -l 'shadowgraph:stale event detection:linkedEventIntake' \
+    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -s 'getNonAncientEventWindow:non-ancient event window:ʘ' \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:ẞ' \
     -s 'heartbeat:heartbeat:♡' \
@@ -37,7 +40,6 @@ pcli diagram \
     -s 'getNonExpiredEventWindow:non-expired event window:e' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -s 'pcesReplayer:done streaming pces:@' \
-    -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient,getNonExpiredEventWindow' \

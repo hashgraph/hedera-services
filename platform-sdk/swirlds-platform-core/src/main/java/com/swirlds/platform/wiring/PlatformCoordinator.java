@@ -19,6 +19,8 @@ package com.swirlds.platform.wiring;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.LatestEventTipsetTrackerWiring;
+import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -33,6 +35,8 @@ public class PlatformCoordinator {
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
+    private final ShadowgraphWiring shadowgraphWiring;
+    private final LatestEventTipsetTrackerWiring latestEventTipsetTrackerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
@@ -47,6 +51,8 @@ public class PlatformCoordinator {
      * @param eventSignatureValidatorWiring          the event signature validator wiring
      * @param orphanBufferWiring                     the orphan buffer wiring
      * @param inOrderLinkerWiring                    the in order linker wiring
+     * @param shadowgraphWiring                      the shadowgraph wiring
+     * @param latestEventTipsetTrackerWiring         the latest event tipset tracker wiring
      * @param linkedEventIntakeWiring                the linked event intake wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
@@ -59,6 +65,8 @@ public class PlatformCoordinator {
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
+            @NonNull final ShadowgraphWiring shadowgraphWiring,
+            @NonNull final LatestEventTipsetTrackerWiring latestEventTipsetTrackerWiring,
             @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
@@ -70,6 +78,8 @@ public class PlatformCoordinator {
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
         this.orphanBufferWiring = Objects.requireNonNull(orphanBufferWiring);
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
+        this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
+        this.latestEventTipsetTrackerWiring = Objects.requireNonNull(latestEventTipsetTrackerWiring);
         this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
@@ -86,6 +96,8 @@ public class PlatformCoordinator {
         orphanBufferWiring.flushRunnable().run();
         eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
+        shadowgraphWiring.flushRunnable().run();
+        latestEventTipsetTrackerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
         applicationTransactionPrehandlerWiring.flushRunnable().run();
         stateSignatureCollectorWiring.flush();

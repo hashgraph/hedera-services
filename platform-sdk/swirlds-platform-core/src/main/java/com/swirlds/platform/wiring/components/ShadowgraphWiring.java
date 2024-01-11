@@ -31,7 +31,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record ShadowgraphWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<Long> nonExpiredEventWindowInput) { // TODO augment non-ancient event window maybe
+        @NonNull InputWire<Long> nonExpiredEventWindowInput,
+        @NonNull Runnable flushRunnable) {
 
     /**
      * Create a new instance of this wiring.
@@ -43,7 +44,8 @@ public record ShadowgraphWiring(
 
         return new ShadowgraphWiring(
                 taskScheduler.buildInputWire("linked events"),
-                taskScheduler.buildInputWire("non-expired event window"));
+                taskScheduler.buildInputWire("non-expired event window"),
+                taskScheduler::flush);
     }
 
     /**
