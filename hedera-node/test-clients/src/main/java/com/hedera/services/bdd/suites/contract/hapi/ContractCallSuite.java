@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -63,8 +62,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -87,22 +84,20 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Address;
@@ -239,12 +234,8 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientGas(),
                 insufficientFee(),
                 nonPayable(),
-                invalidContract(),
-                invalidContractIsAnAccount(),
-                invalidContractDoesNotExist(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
-                callingDestructedContractReturnsStatusDeleted(),
                 imapUserExercise(),
                 specialQueriesXTest(),
                 sendHbarsToAddressesMultipleTimes(),
@@ -276,15 +267,16 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("repeatedCreate2FailsWithInterpretableActionSidecars", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
                         contractCall(contract, "createUser", salt)
-                                .payingWith(GENESIS)
+                                .payingWith(ACCOUNT)
                                 .gas(4_000_000L)
                                 .via(firstCreation),
                         contractCall(contract, "createUser", salt)
-                                .payingWith(GENESIS)
+                                .payingWith(ACCOUNT)
                                 .gas(4_000_000L)
                                 .via(secondCreation)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
@@ -924,7 +916,7 @@ public class ContractCallSuite extends HapiSuite {
                             .getContractCallResult();
                     final var htsMetadata = decoder.decode(htsResult.toByteArray());
                     // The HTS method leaves non-UTF-8 bytes as-is
-                    Assertions.assertEquals(hexedNonUtf8Meta, CommonUtils.hex(htsMetadata.get(0)));
+                    assertEquals(hexedNonUtf8Meta, CommonUtils.hex(htsMetadata.get(0)));
 
                     final var ercResult = getErcResult
                             .getResponseRecord()
@@ -933,7 +925,7 @@ public class ContractCallSuite extends HapiSuite {
                     // But the ERC721 method returns the Unicode replacement
                     // character
                     final var ercMetadata = decoder.decode(ercResult.toByteArray());
-                    Assertions.assertEquals("efbfbd", CommonUtils.hex(ercMetadata.get(0)));
+                    assertEquals("efbfbd", CommonUtils.hex(ercMetadata.get(0)));
                 }));
     }
 
@@ -1198,13 +1190,13 @@ public class ContractCallSuite extends HapiSuite {
 
                     ctxLog.info("symbol: [{}]", symbol);
 
-                    Assertions.assertEquals("OCT", symbol, "TokenIssuer's symbol should be fixed value");
+                    assertEquals("OCT", symbol, "TokenIssuer's symbol should be fixed value");
                     final var funcDecimals = Function.fromJson(getABIFor(FUNCTION, DECIMALS, contract));
 
                     final Integer decimals = getValueFromRegistry(spec, DECIMALS, funcDecimals);
 
                     ctxLog.info("decimals {}", decimals);
-                    Assertions.assertEquals(3, decimals, "TokenIssuer's decimals should be fixed value");
+                    assertEquals(3, decimals, "TokenIssuer's decimals should be fixed value");
 
                     final long tokenMultiplier = (long) Math.pow(10, decimals);
 
@@ -1214,7 +1206,7 @@ public class ContractCallSuite extends HapiSuite {
                             ((BigInteger) getValueFromRegistry(spec, ISSUER_TOKEN_BALANCE, function)).longValue();
 
                     ctxLog.info("initial balance of Issuer {}", issuerBalance / tokenMultiplier);
-                    Assertions.assertEquals(
+                    assertEquals(
                             1_000_000,
                             issuerBalance / tokenMultiplier,
                             "TokenIssuer's initial token balance should be" + " 1_000_000");
@@ -1271,8 +1263,7 @@ public class ContractCallSuite extends HapiSuite {
                     ctxLog.info("bobBalance  {}", bobBalance / tokenMultiplier);
                     ctxLog.info("carolBalance  {}", carolBalance / tokenMultiplier);
 
-                    Assertions.assertEquals(
-                            1000, aliceBalance / tokenMultiplier, "Alice's token balance should be 1_000");
+                    assertEquals(1000, aliceBalance / tokenMultiplier, "Alice's token balance should be 1_000");
 
                     final var subop12 = contractCall(
                                     contract,
@@ -1329,13 +1320,13 @@ public class ContractCallSuite extends HapiSuite {
                     ctxLog.info("daveBalance at end {}", daveBalance / tokenMultiplier);
                     ctxLog.info("issuerBalance at end {}", issuerBalance / tokenMultiplier);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             997000, issuerBalance / tokenMultiplier, "TokenIssuer's final balance should be 997000");
 
-                    Assertions.assertEquals(900, aliceBalance / tokenMultiplier, "Alice's final balance should be 900");
-                    Assertions.assertEquals(1600, bobBalance / tokenMultiplier, "Bob's final balance should be 1600");
-                    Assertions.assertEquals(500, carolBalance / tokenMultiplier, "Carol's final balance should be 500");
-                    Assertions.assertEquals(0, daveBalance / tokenMultiplier, "Dave's final balance should be 0");
+                    assertEquals(900, aliceBalance / tokenMultiplier, "Alice's final balance should be 900");
+                    assertEquals(1600, bobBalance / tokenMultiplier, "Bob's final balance should be 1600");
+                    assertEquals(500, carolBalance / tokenMultiplier, "Carol's final balance should be 500");
+                    assertEquals(0, daveBalance / tokenMultiplier, "Dave's final balance should be 0");
                 }))
                 .then(
                         getContractRecords(contract).hasCostAnswerPrecheck(NOT_SUPPORTED),
@@ -1426,7 +1417,7 @@ public class ContractCallSuite extends HapiSuite {
                     }
 
                     ctxLog.info("Fake contract code size {}", codeSize);
-                    Assertions.assertEquals(0, codeSize, "Fake contract code size should be 0");
+                    assertEquals(0, codeSize, "Fake contract code size should be 0");
                 }));
     }
 
@@ -1527,36 +1518,6 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec callingDestructedContractReturnsStatusDeleted() {
-        final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "CallingDestructedContractReturnsStatusDeleted",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
-                        uploadInitCode(SIMPLE_UPDATE_CONTRACT))
-                .when(
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(300_000L),
-                        sourcing(() -> contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "del",
-                                        asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
-                                .gas(1_000_000L)))
-                .then(
-                        ifHapiTest(contractCall(
-                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
-                                .gas(350_000L)
-                                .hasKnownStatus(CONTRACT_DELETED)),
-                        ifNotHapiTest(contractCall(
-                                        SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
-                                .gas(350_000L)
-                                .hasPrecheck(CONTRACT_DELETED)));
-    }
-
-    @HapiTest
     HapiSpec insufficientGas() {
         return defaultHapiSpec("InsufficientGas", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -1596,66 +1557,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("callTxn")
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
-    }
-
-    @HapiTest
-    HapiSpec invalidContract() {
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("InvalidContract", FULLY_NONDETERMINISTIC)
-                .given(withOpContext(
-                        (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ifHapiTest(
-                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
-                        ifNotHapiTest(
-                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
-                .then();
-    }
-
-    @HapiTest
-    HapiSpec invalidContractDoesNotExist() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("invalidContractDoesNotExist", FULLY_NONDETERMINISTIC)
-                .given()
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ifHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
-                                .hasKnownStatus(INVALID_CONTRACT_ID)
-                                .via("contractDoesNotExist")),
-                        ifNotHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
-                                .hasPrecheck(INVALID_CONTRACT_ID)
-                                .via("contractDoesNotExist")))))
-                .then(ifNotHapiTest(getTxnRecord("contractDoesNotExist").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
-    }
-
-    @HapiTest
-    HapiSpec invalidContractIsAnAccount() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("invalidContractIsAnAccount", FULLY_NONDETERMINISTIC)
-                .given(cryptoCreate("invalid")
-                        .balance(ONE_MILLION_HBARS)
-                        .payingWith(GENESIS)
-                        .exposingCreatedIdTo(accountID::set))
-                .when(
-                        ifHapiTest(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCallWithFunctionAbi(
-                                                "0.0." + accountID.get().getAccountNum(), function)
-                                        .hasKnownStatus(SUCCESS)
-                                        .via("contractIsAccount")))),
-                        ifNotHapiTest(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCallWithFunctionAbi(
-                                                "0.0." + accountID.get().getAccountNum(), function)
-                                        .hasPrecheck(INVALID_CONTRACT_ID)
-                                        .via("contractIsAccount")))))
-                .then(ifNotHapiTest(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
     // This test disabled for modularization service
@@ -2341,7 +2242,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
                                     .getBalance();
 
-                            Assertions.assertEquals(accountBalanceAfterCall, accountBalanceBeforeCall - fee + 200L);
+                            assertEquals(accountBalanceAfterCall, accountBalanceBeforeCall - fee + 200L);
                         }),
                         sourcing(() -> getContractInfo(NESTED_TRANSFERRING_CONTRACT)
                                 .has(contractWith().balance(10_000L - 200L))),
@@ -2483,7 +2384,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .getContractInfo(CONTRACT_FROM)
                                     .getBalance();
 
-                            Assertions.assertEquals(contractBalanceAfterCall, 10_000L);
+                            assertEquals(contractBalanceAfterCall, 10_000L);
                         }),
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L));
     }

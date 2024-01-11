@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,6 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
@@ -155,6 +155,9 @@ class ContractCallTransitionLogicTest {
     @Mock
     HbarCentExchange hbarCentExchange;
 
+    @Mock
+    EntityNumbers entityNumbers;
+
     private TransactionBody contractCallTxn;
     private final Account senderAccount = new Account(new Id(0, 0, 1002));
     private final Account relayerAccount = new Account(new Id(0, 0, 1003));
@@ -179,7 +182,8 @@ class ContractCallTransitionLogicTest {
                 entityAccess,
                 sigsVerifier,
                 worldLedgers,
-                gasCalculator);
+                gasCalculator,
+                entityNumbers);
         // reset the gas value for each test.
         gas = 21_000;
     }
@@ -204,26 +208,20 @@ class ContractCallTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(ourAccount());
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-                .willReturn(contractAccount);
-        //        given(properties.isAutoCreationEnabled()).willReturn(true); // TODO: maybe new
-        // flag
+        given(entityAccess.isExtant(any())).willReturn(true);
         // and:
         var results = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
         given(evmTxProcessor.execute(
-                        senderAccount,
-                        contractAccount.getId().asEvmAddress(),
-                        gas,
-                        sent,
-                        Bytes.EMPTY,
-                        txnCtx.consensusTime()))
+                        senderAccount, asTypedEvmAddress(target), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
                 .willReturn(results);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
                 .willReturn(true);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
         // when:
         subject.doStateTransition();
 
@@ -245,18 +243,17 @@ class ContractCallTransitionLogicTest {
         // and:
         senderAccount.initBalance(1234L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-                .willReturn(contractAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
                 .willReturn(true);
+        given(entityAccess.isTokenAccount(any())).willReturn(true);
         // and:
         var results = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
         given(evmTxProcessor.executeEth(
                         senderAccount,
-                        contractAccount.getId().asEvmAddress(),
+                        asTypedEvmAddress(target),
                         gas,
                         sent,
                         Bytes.EMPTY,
@@ -267,6 +264,8 @@ class ContractCallTransitionLogicTest {
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
         // when:
         subject.doStateTransitionOperation(
                 accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice);
@@ -288,8 +287,6 @@ class ContractCallTransitionLogicTest {
         // and:
         senderAccount.initBalance(1234L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-                .willReturn(contractAccount);
 
         final var txn = accessor.getTxn();
         final var id = senderAccount.getId();
@@ -306,16 +303,16 @@ class ContractCallTransitionLogicTest {
         // and:
         senderAccount.initBalance(1234L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-                .willReturn(contractAccount);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
                 .willReturn(true);
+        given(entityAccess.isTokenAccount(any())).willReturn(true);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
         var results = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, Address.wrap(Bytes.wrap(alias.toByteArray())), Map.of(), List.of());
         given(evmTxProcessor.executeEth(
                         senderAccount,
-                        contractAccount.getId().asEvmAddress(),
+                        asTypedEvmAddress(target),
                         gas,
                         sent,
                         Bytes.EMPTY,
@@ -431,11 +428,91 @@ class ContractCallTransitionLogicTest {
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
-        given(properties.isAutoCreationEnabled()).willReturn(true);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
 
         // when:
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForEvm030() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_30);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForEvm034() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForEvm038() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForAllowCallsToNonContractAccountsDisabled() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(properties.allowCallsToNonContractAccounts()).willReturn(false);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
         assertFailsWith(
                 () -> subject.doStateTransitionOperation(
                         accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
@@ -456,7 +533,6 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
 
         final var txn = accessor.getTxn();
@@ -481,7 +557,6 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_30);
 
@@ -509,10 +584,8 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
-        given(properties.isAutoCreationEnabled()).willReturn(false);
 
         final var txn = accessor.getTxn();
         final var senderAccountId = senderAccount.getId();
@@ -538,11 +611,8 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
-        given(properties.isAutoCreationEnabled()).willReturn(true);
-        given(properties.isLazyCreationEnabled()).willReturn(false);
 
         final var txn = accessor.getTxn();
         final var senderAccountId = senderAccount.getId();
@@ -571,9 +641,6 @@ class ContractCallTransitionLogicTest {
         given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely("randomBytes".getBytes())))
                 .willReturn(EntityNum.MISSING_NUM)
                 .willReturn(EntityNum.fromLong(666L));
-        given(properties.isAutoCreationEnabled()).willReturn(true);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         // when:
         assertThrows(
                 InvalidTransactionException.class,
@@ -596,9 +663,9 @@ class ContractCallTransitionLogicTest {
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.accessor()).willReturn(accessor);
+        given(entityAccess.isTokenAccount(any())).willReturn(true);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         // and:
-        given(entityAccess.isTokenAccount(any())).willReturn(true);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
@@ -618,12 +685,11 @@ class ContractCallTransitionLogicTest {
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
         // when:
         subject.doStateTransition();
 
         // then:
-        verifyNoMoreInteractions(accountStore);
-
         verify(recordService).externaliseEvmCallTransaction(any());
         verify(worldState).getCreatedContractIds();
         verify(worldState).getContractNonces();
@@ -646,10 +712,9 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
+        given(entityAccess.isTokenAccount(any())).willReturn(true);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-                .willReturn(contractAccount);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
                 .willReturn(true);
@@ -658,7 +723,7 @@ class ContractCallTransitionLogicTest {
                 null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
         given(evmTxProcessor.execute(
                         senderAccount,
-                        contractAccount.getId().asEvmAddress(),
+                        asTypedEvmAddress(target),
                         gas,
                         sent,
                         Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
@@ -666,6 +731,8 @@ class ContractCallTransitionLogicTest {
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(INVALID_CONTRACT_ID);
+
         // when:
         subject.doStateTransition();
 
@@ -673,7 +740,7 @@ class ContractCallTransitionLogicTest {
         verify(evmTxProcessor)
                 .execute(
                         senderAccount,
-                        contractAccount.getId().asEvmAddress(),
+                        asTypedEvmAddress(target),
                         gas,
                         sent,
                         Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
@@ -719,6 +786,7 @@ class ContractCallTransitionLogicTest {
     void acceptsOkSyntax() {
         givenValidTxnCtx();
         given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         contractAccount.setSmartContract(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
@@ -727,8 +795,8 @@ class ContractCallTransitionLogicTest {
     @Test
     void acceptsOkSyntaxIfTokenAddress() {
         givenValidTxnCtx();
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
-        given(entityAccess.isTokenAccount(any())).willReturn(true);
         // expect:
         assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
     }
@@ -736,6 +804,7 @@ class ContractCallTransitionLogicTest {
     @Test
     void acceptsOkSyntaxIfPossibleLazyCreate() {
         givenMissingContractIDTxnCtx();
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
 
@@ -746,6 +815,7 @@ class ContractCallTransitionLogicTest {
     @Test
     void failsIfNotSmartContractSyntax() {
         givenValidTxnCtxWithNoAmount();
+        given(properties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);
@@ -792,13 +862,9 @@ class ContractCallTransitionLogicTest {
         // and:
         senderAccount.initBalance(1233L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-                .willReturn(contractAccount);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
                 .willReturn(true);
-        given(evmTxProcessor.executeEth(any(), any(), anyLong(), anyLong(), any(), any(), any(), any(), anyLong()))
-                .willThrow(InvalidTransactionException.class);
         // then:
         assertThrows(
                 InvalidTransactionException.class,
