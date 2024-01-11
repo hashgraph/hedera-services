@@ -69,8 +69,8 @@ public record LinkedEventIntakeWiring(
                         "getMinimumGenerationNonAncient",
                         "rounds",
                         consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient()),
-                consensusRoundOutput.buildTransformer(
-                        "getNonExpiredEventWindow", "rounds", consensusRound -> 0L), // TODO
+                consensusRoundOutput.buildTransformer("getNonExpiredEventWindow", "rounds", r -> r.getGenerations()
+                        .getMinRoundGeneration()),
                 taskScheduler::flush);
     }
 

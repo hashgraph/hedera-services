@@ -393,17 +393,8 @@ public class SwirldsPlatform implements Platform {
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        final LatestEventTipsetTracker latestEventTipsetTracker;
-        final boolean enableEventFiltering = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .filterLikelyDuplicates();
-        if (enableEventFiltering) {
-            latestEventTipsetTracker =
-                    new LatestEventTipsetTracker(time, currentAddressBook, selfId, eventConfig.getAncientMode());
-        } else {
-            latestEventTipsetTracker = null;
-        }
+        final LatestEventTipsetTracker latestEventTipsetTracker =
+                new LatestEventTipsetTracker(time, currentAddressBook, selfId, eventConfig.getAncientMode());
 
         this.keysAndCerts = keysAndCerts;
 

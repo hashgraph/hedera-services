@@ -89,7 +89,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
-    private final LatestEventTipsetTrackerWiring latestEventTipsetTrackerWiring; // TODO this needs to be optional!
+    private final LatestEventTipsetTrackerWiring latestEventTipsetTrackerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -122,6 +122,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring =
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
 
+        shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
+        latestEventTipsetTrackerWiring =
+                LatestEventTipsetTrackerWiring.create(schedulers.latestEventTipsetTrackerScheduler());
+
         platformCoordinator = new PlatformCoordinator(
                 eventHasherWiring,
                 internalEventValidatorWiring,
@@ -129,6 +133,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventSignatureValidatorWiring,
                 orphanBufferWiring,
                 inOrderLinkerWiring,
+                shadowgraphWiring,
+                latestEventTipsetTrackerWiring,
                 linkedEventIntakeWiring,
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
@@ -140,9 +146,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
-        shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
-        latestEventTipsetTrackerWiring =
-                LatestEventTipsetTrackerWiring.create(schedulers.latestEventTipsetTrackerScheduler());
 
         wire();
     }

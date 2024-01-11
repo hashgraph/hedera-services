@@ -187,14 +187,14 @@ public record PlatformSchedulers(
                         .withType(config.shadowgraphSchedulerType())
                         .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .withFlushingEnabled(true) // TODO make sure we flush this
+                        .withFlushingEnabled(true)
                         .build()
                         .cast(),
                 model.schedulerBuilder("latestEventTipsetTracker")
                         .withType(config.latestEventTipsetTrackerSchedulerType())
                         .withUnhandledTaskCapacity(config.latestEventTipsetTrackerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .withFlushingEnabled(true) // TODO make sure we flush this
+                        .withFlushingEnabled(true)
                         .build()
                         .cast());
     }

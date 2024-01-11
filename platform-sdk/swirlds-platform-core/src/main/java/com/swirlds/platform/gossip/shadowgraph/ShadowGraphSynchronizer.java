@@ -174,10 +174,7 @@ public class ShadowGraphSynchronizer {
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
-        this.latestEventTipsetTracker = latestEventTipsetTracker;
-        if (filterLikelyDuplicates) {
-            Objects.requireNonNull(latestEventTipsetTracker);
-        }
+        this.latestEventTipsetTracker = Objects.requireNonNull(latestEventTipsetTracker);
     }
 
     /**
