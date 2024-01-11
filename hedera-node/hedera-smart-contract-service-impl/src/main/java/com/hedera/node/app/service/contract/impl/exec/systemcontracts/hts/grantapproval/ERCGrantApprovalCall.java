@@ -23,6 +23,8 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.priorityAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedForProto;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,13 +35,16 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
@@ -57,7 +62,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
     @NonNull
     @Override
-    public PricedResult execute() {
+    public PricedResult execute(MessageFrame frame) {
         if (token == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
@@ -78,9 +83,24 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
             return result;
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
+                .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         final var status = recordBuilder.status();
+
+        // TODO: use GrantApprovalLoggingUtils.logSuccessfulApprove() when
+        // https://github.com/hashgraph/hedera-services/pull/10897 is merged
+        final var tokenAddress = asLongZeroAddress(token.tokenNum());
+        final var accountStore = readableAccountStore();
+        final var senderAddress = priorityAddressOf(accountStore.getAccountById(senderId));
+        final var receiverAddress = priorityAddressOf(accountStore.getAccountById(spender));
+        frame.addLog(LogBuilder.logBuilder()
+                .forLogger(tokenAddress)
+                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                .forIndexedArgument(senderAddress)
+                .forIndexedArgument(receiverAddress)
+                .forDataItem(amount)
+                .build());
+
         if (status != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
@@ -89,7 +109,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
                     : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
                             .getOutputs()
                             .encodeElements();
-            return gasOnly(successResult(encodedOutput, gasRequirement), status, false);
+            return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
     }
 }
