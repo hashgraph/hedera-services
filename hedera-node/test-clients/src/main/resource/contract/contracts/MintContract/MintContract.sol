@@ -17,6 +17,30 @@ contract MintContract is HederaTokenService {
         HederaTokenService.mintToken(tokenAddress, amount, new bytes[](0));
     }
 
+    function mintAndTransferFungibleToken(int64 amount, address receiver) external {
+        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, uint64(amount), new bytes[](0));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Fungible mint failed!");
+        }
+
+        responseCode = HederaTokenService.transferToken(tokenAddress, address(this), receiver, amount);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Fungible transfer failed!");
+        }
+    }
+
+    function mintAndTransferNonFungibleToken(bytes[] memory metadata, address receiver) external {
+        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("NonFungible mint failed!");
+        }
+
+        responseCode = HederaTokenService.transferNFT(tokenAddress, address(this), receiver, serialNumbers[0]);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("NonFungible transfer failed!");
+        }
+    }
+
     function mintNonFungibleToken(bytes[] memory metadata) external {
         HederaTokenService.mintToken(tokenAddress, 0, metadata);
     }
