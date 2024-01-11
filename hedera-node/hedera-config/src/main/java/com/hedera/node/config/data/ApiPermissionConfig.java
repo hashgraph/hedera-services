@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE_PARTITION;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DELETE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DELETE_PARTITION;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_FREEZE_ACCOUNT;
@@ -68,12 +70,15 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_LOCK_USER_ASSETS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_PAUSE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNLOCK_USER_ASSETS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_PARTITION;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
@@ -170,6 +175,11 @@ import java.util.function.Function;
  * @param systemUndelete             the permission for {@link HederaFunctionality#SYSTEM_UNDELETE} functionality
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
+ * @param partitionCreation          the permission for {@link HederaFunctionality#TOKEN_CREATE_PARTITION} functionality
+ * @param partitionUpdate            the permission for {@link HederaFunctionality#TOKEN_UPDATE_PARTITION} functionality
+ * @param partitionDeletion          the permission for {@link HederaFunctionality#TOKEN_DELETE_PARTITION} functionality
+ * @param tokenLock                  the permission for {@link HederaFunctionality#TOKEN_LOCK_USER_ASSETS} functionality
+ * @param tokenUnlock                the permission for {@link HederaFunctionality#TOKEN_UNLOCK_USER_ASSETS} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -234,6 +244,11 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-59") PermissionedAccountsRange systemDelete,
         @ConfigProperty(defaultValue = "2-60") PermissionedAccountsRange systemUndelete,
         @ConfigProperty(defaultValue = "2-58") PermissionedAccountsRange freeze,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange partitionCreation,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange partitionUpdate,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange partitionDeletion,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenLock,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUnlock,
         @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
@@ -280,6 +295,12 @@ public record ApiPermissionConfig(
         permissionKeys.put(SCHEDULE_CREATE, c -> c.scheduleCreate);
         permissionKeys.put(SCHEDULE_DELETE, c -> c.scheduleDelete);
         permissionKeys.put(SCHEDULE_SIGN, c -> c.scheduleSign);
+        permissionKeys.put(TOKEN_CREATE_PARTITION, c -> c.partitionCreation);
+        permissionKeys.put(TOKEN_DELETE_PARTITION, c -> c.partitionDeletion);
+        permissionKeys.put(TOKEN_UPDATE_PARTITION, c -> c.partitionUpdate);
+        permissionKeys.put(TOKEN_LOCK_USER_ASSETS, c -> c.tokenLock);
+        permissionKeys.put(TOKEN_UNLOCK_USER_ASSETS, c -> c.tokenUnlock);
+
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);

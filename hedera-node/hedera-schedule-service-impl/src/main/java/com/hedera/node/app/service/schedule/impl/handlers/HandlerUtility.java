@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.hedera.node.app.service.schedule.impl.handlers;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.*;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -150,11 +152,11 @@ public final class HandlerUtility {
             case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNSET -> HederaFunctionality.NONE;
-            case PARTITION_CREATION -> null;
-            case PARTITION_UPDATE -> null;
-            case PARTITION_DELETION -> null;
-            case TOKEN_LOCK -> null;
-            case TOKEN_UNLOCK -> null;
+            case PARTITION_CREATION -> HederaFunctionality.TOKEN_CREATE_PARTITION;
+            case PARTITION_UPDATE -> HederaFunctionality.TOKEN_UPDATE_PARTITION;
+            case PARTITION_DELETION -> HederaFunctionality.TOKEN_DELETE_PARTITION;
+            case TOKEN_LOCK -> HederaFunctionality.TOKEN_LOCK_USER_ASSETS;
+            case TOKEN_UNLOCK -> HederaFunctionality.TOKEN_UNLOCK_USER_ASSETS;
         };
     }
 

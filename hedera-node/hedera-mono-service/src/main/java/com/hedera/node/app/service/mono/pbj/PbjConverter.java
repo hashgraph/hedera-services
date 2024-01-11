@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -352,6 +352,11 @@ public final class PbjConverter {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
+            case TokenCreatePartition -> HederaFunctionality.TOKEN_CREATE_PARTITION;
+            case TokenDeletePartition -> HederaFunctionality.TOKEN_DELETE_PARTITION;
+            case TokenUpdatePartition -> HederaFunctionality.TOKEN_UPDATE_PARTITION;
+            case TokenLockUserAssets -> HederaFunctionality.TOKEN_LOCK_USER_ASSETS;
+            case TokenUnlockUserAssets -> HederaFunctionality.TOKEN_UNLOCK_USER_ASSETS;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -451,6 +456,12 @@ public final class PbjConverter {
                     .TransactionGetFastRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+            case TOKEN_CREATE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreatePartition;
+            case TOKEN_DELETE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDeletePartition;
+            case TOKEN_UPDATE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdatePartition;
+            case TOKEN_LOCK_USER_ASSETS -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenLockUserAssets;
+            case TOKEN_UNLOCK_USER_ASSETS -> com.hederahashgraph.api.proto.java.HederaFunctionality
+                    .TokenUnlockUserAssets;
         };
     }
 
