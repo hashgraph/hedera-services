@@ -27,7 +27,7 @@ public record StakingConfig(
                 int rewardHistoryNumStoredPeriods,
         // ConfigProperty(value = "startupHelper.recompute", defaultValue = "NODE_STAKES,PENDING_REWARDS")
         // Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
-        @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "0") @NetworkProperty
+        @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "10") @NetworkProperty
                 int feesNodeRewardPercentage,
         @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "10") @NetworkProperty
                 int feesStakingRewardPercentage,
