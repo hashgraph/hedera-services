@@ -515,9 +515,9 @@ public class TestHelpers {
             null);
 
     public static final StorageAccesses ONE_STORAGE_ACCESSES =
-            new StorageAccesses(123L, List.of(StorageAccess.newRead(UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+            new StorageAccesses(ContractID.newBuilder().contractNum(123L).build(), List.of(StorageAccess.newRead(UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
     public static final StorageAccesses TWO_STORAGE_ACCESSES = new StorageAccesses(
-            456L,
+            ContractID.newBuilder().contractNum(456L).build(),
             List.of(
                     StorageAccess.newRead(UInt256.MAX_VALUE, UInt256.MIN_VALUE),
                     StorageAccess.newWrite(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
@@ -575,7 +575,7 @@ public class TestHelpers {
             TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
 
     public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
-            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true, UseTopLevelSigs.NO);
+            new ActiveContractVerificationStrategy(ContractID.newBuilder().contractNum(1).build(), Bytes.EMPTY, true, UseTopLevelSigs.NO);
     public static final AccountID OWNER_ID =
             AccountID.newBuilder().accountNum(121212L).build();
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
