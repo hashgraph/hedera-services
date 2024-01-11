@@ -55,30 +55,27 @@ public class PcesMetrics {
 
     private static final RunningAverageMetric.Config PRECONSENSUS_EVENT_AVERAGE_FILE_SPAN_CONFIG =
             new RunningAverageMetric.Config(CATEGORY, "preconsensusEventAverageFileSpan")
-                    .withUnit("generations")
-                    .withDescription("The average generational span of preconsensus event files. Only reflects"
+                    .withDescription("The average span of preconsensus event files. Only reflects"
                             + "files written since the last restart.");
     private final RunningAverageMetric preconsensusEventAverageFileSpan;
 
     private static final RunningAverageMetric.Config PRECONSENSUS_EVENT_AVERAGE_UN_UTILIZED_FILE_SPAN_CONFIG =
             new RunningAverageMetric.Config(CATEGORY, "preconsensusEventAverageUnutilizedFileSpan")
-                    .withUnit("generations")
                     .withDescription(
-                            "The average unutilized generational span of preconsensus event files prior "
+                            "The average unutilized span of preconsensus event files prior "
                                     + "to span compaction. Only reflects files written since the last restart. Smaller is better.");
     private final RunningAverageMetric preconsensusEventAverageUnUtilizedFileSpan;
 
-    private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG = new LongGauge.Config(
-                    CATEGORY, "preconsensusEventFileOldestGeneration")
-            .withUnit("generation")
-            .withDescription("The oldest possible generation that is being " + "stored in preconsensus event files.");
-    private final LongGauge preconsensusEventFileOldestGeneration;
+    private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_IDENTIFIER_CONFIG = new LongGauge.Config(
+                    CATEGORY, "preconsensusEventFileOldestIdentifier")
+            .withDescription("The oldest possible ancient indicator that is being stored in preconsensus event files.");
+    private final LongGauge preconsensusEventFileOldestIdentifier;
 
-    private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_YOUNGEST_GENERATION_CONFIG = new LongGauge.Config(
-                    CATEGORY, "preconsensusEventFileYoungestGeneration")
-            .withUnit("generation")
-            .withDescription("The youngest possible generation that is being " + "stored in preconsensus event files.");
-    private final LongGauge preconsensusEventFileYoungestGeneration;
+    private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_YOUNGEST_IDENTIFIER_CONFIG = new LongGauge.Config(
+                    CATEGORY, "preconsensusEventFileYoungestIdentifier")
+            .withDescription(
+                    "The youngest possible ancient indicator that is being stored in preconsensus event files.");
+    private final LongGauge preconsensusEventFileYoungestIdentifier;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_SECONDS_CONFIG = new LongGauge.Config(
                     CATEGORY, "preconsensusEventFileOldestSeconds")
@@ -99,9 +96,9 @@ public class PcesMetrics {
         preconsensusEventAverageFileSpan = metrics.getOrCreate(PRECONSENSUS_EVENT_AVERAGE_FILE_SPAN_CONFIG);
         preconsensusEventAverageUnUtilizedFileSpan =
                 metrics.getOrCreate(PRECONSENSUS_EVENT_AVERAGE_UN_UTILIZED_FILE_SPAN_CONFIG);
-        preconsensusEventFileOldestGeneration = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG);
-        preconsensusEventFileYoungestGeneration =
-                metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_YOUNGEST_GENERATION_CONFIG);
+        preconsensusEventFileOldestIdentifier = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_OLDEST_IDENTIFIER_CONFIG);
+        preconsensusEventFileYoungestIdentifier =
+                metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_YOUNGEST_IDENTIFIER_CONFIG);
         preconsensusEventFileOldestSeconds = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_OLDEST_SECONDS_CONFIG);
     }
 
@@ -134,31 +131,31 @@ public class PcesMetrics {
     }
 
     /**
-     * Get the metric tracking the average generational file span.
+     * Get the metric tracking the average file span.
      */
     public RunningAverageMetric getPreconsensusEventAverageFileSpan() {
         return preconsensusEventAverageFileSpan;
     }
 
     /**
-     * Get the metric tracking the average un-utilized generational file span.
+     * Get the metric tracking the average un-utilized file span.
      */
     public RunningAverageMetric getPreconsensusEventAverageUnUtilizedFileSpan() {
         return preconsensusEventAverageUnUtilizedFileSpan;
     }
 
     /**
-     * Get the metric tracking the oldest possible generation that is being stored in preconsensus event files.
+     * Get the metric tracking the oldest possible ancient indicator that is being stored in preconsensus event files.
      */
-    public LongGauge getPreconsensusEventFileOldestGeneration() {
-        return preconsensusEventFileOldestGeneration;
+    public LongGauge getPreconsensusEventFileOldestIdentifier() {
+        return preconsensusEventFileOldestIdentifier;
     }
 
     /**
-     * Get the metric tracking the youngest possible generation that is being stored in preconsensus event files.
+     * Get the metric tracking the youngest possible ancient indicator that is being stored in preconsensus event files.
      */
-    public LongGauge getPreconsensusEventFileYoungestGeneration() {
-        return preconsensusEventFileYoungestGeneration;
+    public LongGauge getPreconsensusEventFileYoungestIdentifier() {
+        return preconsensusEventFileYoungestIdentifier;
     }
 
     /**

@@ -171,8 +171,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(latestEventTipsetTrackerWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
     }
 
     /**
@@ -197,19 +198,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preconsensusEventInput());
 
         solderNonAncientEventWindow();
-        linkedEventIntakeWiring
-                .minimumGenerationNonAncientOutput()
-                .solderTo(pcesWriterWiring.minimumGenerationNonAncientInput(), INJECT);
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
-
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
-                .solderTo(pcesWriterWiring.minimumGenerationToStoreInputWire());
+                .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
 
         linkedEventIntakeWiring.nonExpiredEventWindowOutput().solderTo(shadowgraphWiring.nonExpiredEventWindowInput());
     }
@@ -399,7 +396,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @return the input wire for the PCES writer minimum generation to store
      */
     public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
-        return pcesWriterWiring.minimumGenerationToStoreInputWire();
+        return pcesWriterWiring.minimumAncientIdentifierToStoreInputWire();
     }
 
     /**
@@ -425,15 +422,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         inOrderLinkerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
         eventCreationManagerWiring.nonAncientEventWindowInput().inject(nonAncientEventWindow);
-    }
-
-    /**
-     * Inject a new minimum generation non-ancient on all components that need it.
-     *
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
-     */
-    public void updateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        pcesWriterWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 
     /**
