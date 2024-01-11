@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -63,7 +64,7 @@ public class ContractGetInfoSuite extends HapiSuite {
     final HapiSpec getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";
-        return defaultHapiSpec("GetInfoWorks")
+        return defaultHapiSpec("GetInfoWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed("adminKey"),
                         uploadInitCode(contract),
