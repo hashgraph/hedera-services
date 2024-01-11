@@ -278,7 +278,7 @@ class PcesFileTests {
         final List<PcesFile> files = new ArrayList<>();
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
-            // We don't care about ancient identifiers for this test
+            // We don't care about ancient indicators for this test
             final PcesFile file = PcesFile.of(ancientMode, timestamp, index, 0, 0, 0, testDirectory);
 
             writeRandomBytes(random, file.getPath(), 100);
@@ -353,7 +353,7 @@ class PcesFileTests {
         final List<PcesFile> files = new ArrayList<>();
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
-            // We don't care about ancient identifiers for this test
+            // We don't care about ancient indicators for this test
             final PcesFile file = PcesFile.of(ancientMode, timestamp, index, 0, 0, 0, streamDirectory);
 
             writeRandomBytes(random, file.getPath(), 100);

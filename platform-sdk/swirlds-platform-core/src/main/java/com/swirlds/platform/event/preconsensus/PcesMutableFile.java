@@ -46,7 +46,7 @@ public class PcesMutableFile {
     private final CountingStreamExtension counter;
 
     /**
-     * The highest ancient identifier of all events written to the file.
+     * The highest ancient indicator of all events written to the file.
      */
     private long highestAncientIdentifierInFile;
 
@@ -80,7 +80,7 @@ public class PcesMutableFile {
     /**
      * Check if this file is eligible to contain an event based on bounds.
      *
-     * @param ancientIdentifier the ancient identifier of the event in question
+     * @param ancientIdentifier the ancient indicator of the event in question
      * @return true if this file is eligible to contain the event
      */
     public boolean canContain(final long ancientIdentifier) {
@@ -93,14 +93,14 @@ public class PcesMutableFile {
      * @param event the event to write
      */
     public void writeEvent(final GossipEvent event) throws IOException {
-        if (!descriptor.canContain(event.getAncientIdentifier(descriptor.getFileType()))) {
+        if (!descriptor.canContain(event.getAncientIndicator(descriptor.getFileType()))) {
             throw new IllegalStateException(
-                    "Cannot write event " + event.getHashedData().getHash() + " with ancient identifier "
-                            + event.getAncientIdentifier(descriptor.getFileType()) + " to file " + descriptor);
+                    "Cannot write event " + event.getHashedData().getHash() + " with ancient indicator "
+                            + event.getAncientIndicator(descriptor.getFileType()) + " to file " + descriptor);
         }
         out.writeSerializable(event, false);
         highestAncientIdentifierInFile =
-                Math.max(highestAncientIdentifierInFile, event.getAncientIdentifier(descriptor.getFileType()));
+                Math.max(highestAncientIdentifierInFile, event.getAncientIndicator(descriptor.getFileType()));
     }
 
     /**
@@ -153,7 +153,7 @@ public class PcesMutableFile {
     }
 
     /**
-     * Get the difference between the highest ancient identifier written to the file and the lowest legal ancient identifier for this
+     * Get the difference between the highest ancient indicator written to the file and the lowest legal ancient indicator for this
      * file. Higher values mean that the upper bound was chosen well.
      */
     public long getUtilizedSpan() {
@@ -169,7 +169,7 @@ public class PcesMutableFile {
     }
 
     /**
-     * Get the span of ancient identifiers that this file can legally contain.
+     * Get the span of ancient indicators that this file can legally contain.
      */
     public long getSpan() {
         return descriptor.getUpperBound() - descriptor.getLowerBound();

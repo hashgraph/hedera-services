@@ -85,7 +85,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
 
             try {
                 final GossipEvent candidate = stream.readSerializable(false, GossipEvent::new);
-                if (candidate.getAncientIdentifier(fileType) >= lowerBound) {
+                if (candidate.getAncientIndicator(fileType) >= lowerBound) {
                     next = candidate;
                 }
             } catch (final EOFException e) {

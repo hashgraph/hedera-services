@@ -121,7 +121,7 @@ class PcesWriterTests {
 
         long lastAncientIdentifier = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            lastAncientIdentifier = Math.max(lastAncientIdentifier, event.getAncientIdentifier(ancientMode));
+            lastAncientIdentifier = Math.max(lastAncientIdentifier, event.getAncientIndicator(ancientMode));
         }
 
         final PcesFileTracker pcesFiles = PcesFileReader.readFilesFromDisk(
@@ -146,7 +146,7 @@ class PcesWriterTests {
         final long startingLowerBound = lastAncientIdentifier / 2;
         final IOIterator<GossipEvent> eventsIterator2 = pcesFiles.getEventIterator(startingLowerBound, 0);
         for (final GossipEvent event : events) {
-            if (event.getAncientIdentifier(ancientMode) < startingLowerBound) {
+            if (event.getAncientIndicator(ancientMode) < startingLowerBound) {
                 continue;
             }
             assertTrue(eventsIterator2.hasNext());
@@ -154,7 +154,7 @@ class PcesWriterTests {
         }
         assertFalse(eventsIterator2.hasNext());
 
-        // Iterating from a high ancient identifier should yield no events
+        // Iterating from a high ancient indicator should yield no events
         final IOIterator<GossipEvent> eventsIterator3 = pcesFiles.getEventIterator(lastAncientIdentifier + 1, 0);
         assertFalse(eventsIterator3.hasNext());
 
@@ -185,8 +185,8 @@ class PcesWriterTests {
             final IOIterator<GossipEvent> fileEvents = file.iterator(0);
             while (fileEvents.hasNext()) {
                 final GossipEvent event = fileEvents.next();
-                assertTrue(event.getAncientIdentifier(ancientMode) >= file.getLowerBound());
-                assertTrue(event.getAncientIdentifier(ancientMode) <= file.getUpperBound());
+                assertTrue(event.getAncientIndicator(ancientMode) >= file.getLowerBound());
+                assertTrue(event.getAncientIndicator(ancientMode) <= file.getUpperBound());
             }
         }
     }
@@ -318,13 +318,13 @@ class PcesWriterTests {
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
-            lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
+            lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
                     writer.updateNonAncientEventBoundary(
-                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
+                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode)),
                     eventDurabilityNexus);
 
-            if (event.getAncientIdentifier(ancientMode) < lowerBound) {
+            if (event.getAncientIndicator(ancientMode) < lowerBound) {
                 // Although it's not common, it's possible that the generator will generate
                 // an event that is ancient (since it isn't aware of what we consider to be ancient)
                 rejectedEvents.add(event);
@@ -378,13 +378,13 @@ class PcesWriterTests {
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
-            lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
+            lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
                     writer.updateNonAncientEventBoundary(
-                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
+                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode)),
                     eventDurabilityNexus);
 
-            if (event.getAncientIdentifier(ancientMode) < lowerBound) {
+            if (event.getAncientIndicator(ancientMode) < lowerBound) {
                 // Although it's not common, it's actually possible that the generator will generate
                 // an event that is ancient (since it isn't aware of what we consider to be ancient)
                 rejectedEvents.add(event);
@@ -394,15 +394,15 @@ class PcesWriterTests {
 
         // Add the ancient event
         sequencer.assignStreamSequenceNumber(ancientEvent);
-        if (lowerBound > ancientEvent.getAncientIdentifier(ancientMode)) {
+        if (lowerBound > ancientEvent.getAncientIndicator(ancientMode)) {
             // This is probably not possible... but just in case make sure this event is ancient
             try {
                 passValueToDurabilityNexus(
                         writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
                                 1,
-                                ancientEvent.getAncientIdentifier(ancientMode) + 1,
-                                ancientEvent.getAncientIdentifier(ancientMode) + 1,
-                                ancientMode == BIRTH_ROUND_THRESHOLD)),
+                                ancientEvent.getAncientIndicator(ancientMode) + 1,
+                                ancientEvent.getAncientIndicator(ancientMode) + 1,
+                                ancientMode)),
                         eventDurabilityNexus);
             } catch (final IllegalArgumentException e) {
                 // ignore, more likely than not this event is way older than the actual ancient threshold
@@ -495,10 +495,10 @@ class PcesWriterTests {
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
-            lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
+            lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
                     writer.updateNonAncientEventBoundary(
-                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
+                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode)),
                     eventDurabilityNexus);
         }
 
@@ -554,13 +554,13 @@ class PcesWriterTests {
                 sequencer.assignStreamSequenceNumber(event);
                 passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
-                lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
+                lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
                 passValueToDurabilityNexus(
-                        writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                                1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
+                        writer.updateNonAncientEventBoundary(
+                                new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode)),
                         eventDurabilityNexus);
 
-                if (event.getAncientIdentifier(ancientMode) < lowerBound) {
+                if (event.getAncientIndicator(ancientMode) < lowerBound) {
                     // Although it's not common, it's actually possible that the generator will generate
                     // an event that is ancient (since it isn't aware of what we consider to be ancient)
                     rejectedEvents.add(event);
@@ -592,13 +592,13 @@ class PcesWriterTests {
                 sequencer.assignStreamSequenceNumber(event);
                 passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
-                lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
+                lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
                 passValueToDurabilityNexus(
-                        writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                                1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
+                        writer.updateNonAncientEventBoundary(
+                                new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode)),
                         eventDurabilityNexus);
 
-                if (event.getAncientIdentifier(ancientMode) < lowerBound) {
+                if (event.getAncientIndicator(ancientMode) < lowerBound) {
                     // Although it's not common, it's actually possible that the generator will generate
                     // an event that is ancient (since it isn't aware of what we consider to be ancient)
                     rejectedEvents.add(event);
@@ -657,15 +657,15 @@ class PcesWriterTests {
 
             time.tick(Duration.ofSeconds(1));
 
-            if (event.getAncientIdentifier(ancientMode) < lowerBound) {
+            if (event.getAncientIndicator(ancientMode) < lowerBound) {
                 // This event is ancient and will have been rejected.
                 rejectedEvents.add(event);
             }
 
-            lowerBound = Math.max(lowerBound, event.getAncientIdentifier(ancientMode) - stepsUntilAncient);
+            lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
                     writer.updateNonAncientEventBoundary(
-                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode == BIRTH_ROUND_THRESHOLD)),
+                            new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode)),
                     eventDurabilityNexus);
         }
 
@@ -680,7 +680,7 @@ class PcesWriterTests {
         time.tick(Duration.ofDays(1));
 
         // Prune old files.
-        final long lowerBoundToStore = events.get(events.size() - 1).getAncientIdentifier(ancientMode) / 2;
+        final long lowerBoundToStore = events.get(events.size() - 1).getAncientIndicator(ancientMode) / 2;
         writer.setMinimumAncientIdentifierToStore(lowerBoundToStore);
 
         // We shouldn't see any files that are incapable of storing events above the minimum

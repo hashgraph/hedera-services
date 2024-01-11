@@ -159,7 +159,7 @@ public class PcesFileTracker {
      * future task will be to enable event iteration after startup.
      *
      * @param lowerBound    the desired lower bound, iterator is guaranteed to return all available events with an
-     *                      ancient identifier (i.e. a generation or a birth round depending on the
+     *                      ancient indicator (i.e. a generation or a birth round depending on the
      *                      {@link AncientMode}) greater or equal to this value. No events with a smaller ancient
      *                      identifier will be returned. A value of {@link PcesFileManager#NO_LOWER_BOUND} will cause
      *                      the returned iterator to walk over all available events.
@@ -178,7 +178,7 @@ public class PcesFileTracker {
      * future task will be to enable event iteration after startup.
      *
      * @param lowerBound  the desired lower bound, iterator is guaranteed to walk over all files that may contain events
-     *                    with an ancient identifier (i.e. a generation or birth round depending on the
+     *                    with an ancient indicator (i.e. a generation or birth round depending on the
      *                    {@link AncientMode}) greater or equal to this value. A value of
      *                    {@link PcesFileManager#NO_LOWER_BOUND} will cause the returned iterator to walk over all
      *                    available event files.

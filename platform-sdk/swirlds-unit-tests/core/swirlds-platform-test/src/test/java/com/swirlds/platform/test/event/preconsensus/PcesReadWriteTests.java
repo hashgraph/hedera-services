@@ -111,7 +111,7 @@ class PcesReadWriteTests {
 
         long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            upperBound = Math.max(upperBound, event.getAncientIdentifier(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
         upperBound += random.nextInt(0, 10);
@@ -163,7 +163,7 @@ class PcesReadWriteTests {
 
         long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            upperBound = Math.max(upperBound, event.getAncientIdentifier(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
         final long middle = upperBound / 2;
@@ -190,11 +190,11 @@ class PcesReadWriteTests {
         final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
 
-        // We don't want any events with an ancient identifier less than the middle
+        // We don't want any events with an ancient indicator less than the middle
         final Iterator<GossipEvent> it = events.iterator();
         while (it.hasNext()) {
             final GossipEvent event = it.next();
-            if (event.getAncientIdentifier(ancientMode) < middle) {
+            if (event.getAncientIndicator(ancientMode) < middle) {
                 it.remove();
             }
         }
@@ -250,7 +250,7 @@ class PcesReadWriteTests {
 
             long upperBound = Long.MIN_VALUE;
             for (final GossipEvent event : events) {
-                upperBound = Math.max(upperBound, event.getAncientIdentifier(ancientMode));
+                upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
             }
 
             upperBound += random.nextInt(0, 10);
@@ -318,7 +318,7 @@ class PcesReadWriteTests {
 
         long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            upperBound = Math.max(upperBound, event.getAncientIdentifier(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
         upperBound += random.nextInt(0, 10);
@@ -382,8 +382,8 @@ class PcesReadWriteTests {
         long lowerBound = Long.MAX_VALUE;
         long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            lowerBound = Math.min(lowerBound, event.getAncientIdentifier(ancientMode));
-            upperBound = Math.max(upperBound, event.getAncientIdentifier(ancientMode));
+            lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
         // Intentionally choose minimum and maximum boundaries that do not permit all generated events
@@ -402,8 +402,8 @@ class PcesReadWriteTests {
 
         final List<GossipEvent> validEvents = new ArrayList<>();
         for (final GossipEvent event : events) {
-            if (event.getAncientIdentifier(ancientMode) >= restrictedLowerBound
-                    && event.getAncientIdentifier(ancientMode) <= restrictedUpperBound) {
+            if (event.getAncientIndicator(ancientMode) >= restrictedLowerBound
+                    && event.getAncientIndicator(ancientMode) <= restrictedUpperBound) {
                 mutableFile.writeEvent(event);
                 validEvents.add(event);
             } else {
@@ -444,8 +444,8 @@ class PcesReadWriteTests {
         long lowerBound = Long.MAX_VALUE;
         long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            lowerBound = Math.min(lowerBound, event.getAncientIdentifier(ancientMode));
-            upperBound = Math.max(upperBound, event.getAncientIdentifier(ancientMode));
+            lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
         upperBound += random.nextInt(1, 10);
@@ -509,8 +509,8 @@ class PcesReadWriteTests {
         long lowerBound = Long.MAX_VALUE;
         long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            lowerBound = Math.min(lowerBound, event.getAncientIdentifier(ancientMode));
-            upperBound = Math.max(upperBound, event.getAncientIdentifier(ancientMode));
+            lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
         final long maximumFileBoundary = upperBound + random.nextInt(10, 20);

@@ -68,7 +68,7 @@ public final class PcesUtilities {
 
             while (iterator.hasNext()) {
                 final GossipEvent next = iterator.next();
-                newUpperBound = Math.max(newUpperBound, next.getAncientIdentifier(fileType));
+                newUpperBound = Math.max(newUpperBound, next.getAncientIndicator(fileType));
             }
 
         } catch (final IOException e) {

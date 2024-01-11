@@ -55,7 +55,7 @@ public class PcesWriter {
     private PcesMutableFile currentMutableFile;
 
     /**
-     * The current minimum ancient identifier required to be considered non-ancient. Only read and written on the handle
+     * The current minimum ancient indicator required to be considered non-ancient. Only read and written on the handle
      * thread. Either a round or generation depending on the {@link AncientMode}.
      */
     private long nonAncientBoundary = 0;
@@ -74,18 +74,18 @@ public class PcesWriter {
     private final int minimumSpan;
 
     /**
-     * The minimum ancient identifier that we are required to keep around. Will be either a birth round or a generation,
+     * The minimum ancient indicator that we are required to keep around. Will be either a birth round or a generation,
      * depending on the {@link AncientMode}.
      */
     private long minimumAncientIdentifierToStore;
 
     /**
      * A running average of the span utilization in each file. Span utilization is defined as the difference between the
-     * highest ancient identifier of all events in the file and the minimum legal ancient identifier for that file.
+     * highest ancient indicator of all events in the file and the minimum legal ancient indicator for that file.
      * Higher utilization is always better, as it means that we have a lower un-utilized span. Un-utilized span is
-     * defined as the difference between the highest legal ancient identifier in a file and the highest actual ancient
+     * defined as the difference between the highest legal ancient indicator in a file and the highest actual ancient
      * identifier of all events in the file. The reason why we want to minimize un-utilized span is to reduce the
-     * overlap between files, which in turn makes it faster to search for events with particular ancient identifier. The
+     * overlap between files, which in turn makes it faster to search for events with particular ancient indicator. The
      * purpose of this running average is to intelligently choose upper bound for each new file to minimize un-utilized
      * span while still meeting file size requirements.
      */
@@ -105,13 +105,13 @@ public class PcesWriter {
 
     /**
      * During bootstrap mode, multiply this value by the running average when deciding the upper bound for a new file
-     * (i.e. the difference between the maximum and the minimum legal ancient identifier).
+     * (i.e. the difference between the maximum and the minimum legal ancient indicator).
      */
     private final double bootstrapSpanOverlapFactor;
 
     /**
      * When not in boostrap mode, multiply this value by the running average when deciding the span for a new file (i.e.
-     * the difference between the maximum and the minimum legal ancient identifier).
+     * the difference between the maximum and the minimum legal ancient indicator).
      */
     private final double spanOverlapFactor;
 
@@ -194,7 +194,7 @@ public class PcesWriter {
             return lastWrittenEvent;
         }
 
-        if (event.getAncientIdentifier(fileType) < nonAncientBoundary) {
+        if (event.getAncientIndicator(fileType) < nonAncientBoundary) {
             event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
             return null;
         }
@@ -256,12 +256,12 @@ public class PcesWriter {
      */
     @Nullable
     public Long updateNonAncientEventBoundary(@NonNull final NonAncientEventWindow nonAncientBoundary) {
-        if (nonAncientBoundary.getLowerBound() < this.nonAncientBoundary) {
+        if (nonAncientBoundary.getAncientThreshold() < this.nonAncientBoundary) {
             throw new IllegalArgumentException("Non-ancient boundary cannot be decreased. Current = "
                     + this.nonAncientBoundary + ", requested = " + nonAncientBoundary);
         }
 
-        this.nonAncientBoundary = nonAncientBoundary.getLowerBound();
+        this.nonAncientBoundary = nonAncientBoundary.getAncientThreshold();
 
         if (!streamingNewEvents || currentMutableFile == null) {
             return null;
@@ -276,9 +276,9 @@ public class PcesWriter {
     }
 
     /**
-     * Set the minimum ancient identifier needed to be kept on disk.
+     * Set the minimum ancient indicator needed to be kept on disk.
      *
-     * @param minimumAncientIdentifierToStore the minimum ancient identifier required to be stored on disk
+     * @param minimumAncientIdentifierToStore the minimum ancient indicator required to be stored on disk
      */
     public void setMinimumAncientIdentifierToStore(final long minimumAncientIdentifierToStore) {
         this.minimumAncientIdentifierToStore = minimumAncientIdentifierToStore;
@@ -331,7 +331,7 @@ public class PcesWriter {
      * Calculate the span for a new file that is about to be created.
      *
      * @param minimumLowerBound            the minimum lower bound that is legal to use for the new file
-     * @param nextAncientIdentifierToWrite the ancient identifier of the next event that will be written
+     * @param nextAncientIdentifierToWrite the ancient indicator of the next event that will be written
      */
     private long computeNewFileSpan(final long minimumLowerBound, final long nextAncientIdentifierToWrite) {
 
@@ -359,7 +359,7 @@ public class PcesWriter {
         Long latestDurableSequenceNumberUpdate = null;
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent =
-                    currentMutableFile.canContain(eventToWrite.getAncientIdentifier(fileType));
+                    currentMutableFile.canContain(eventToWrite.getAncientIndicator(fileType));
             final boolean fileIsFull =
                     UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES) >= preferredFileSizeMegabytes;
 
@@ -375,7 +375,7 @@ public class PcesWriter {
 
         if (currentMutableFile == null) {
             final long upperBound = nonAncientBoundary
-                    + computeNewFileSpan(nonAncientBoundary, eventToWrite.getAncientIdentifier(fileType));
+                    + computeNewFileSpan(nonAncientBoundary, eventToWrite.getAncientIndicator(fileType));
 
             currentMutableFile = fileManager
                     .getNextFileDescriptor(nonAncientBoundary, upperBound)

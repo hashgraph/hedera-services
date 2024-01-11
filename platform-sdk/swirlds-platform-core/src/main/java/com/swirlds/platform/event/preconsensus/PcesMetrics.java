@@ -68,14 +68,13 @@ public class PcesMetrics {
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_IDENTIFIER_CONFIG = new LongGauge.Config(
                     CATEGORY, "preconsensusEventFileOldestIdentifier")
-            .withDescription(
-                    "The oldest possible ancient identifier that is being stored in preconsensus event files.");
+            .withDescription("The oldest possible ancient indicator that is being stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileOldestIdentifier;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_YOUNGEST_IDENTIFIER_CONFIG = new LongGauge.Config(
                     CATEGORY, "preconsensusEventFileYoungestIdentifier")
             .withDescription(
-                    "The youngest possible ancient identifier that is being stored in preconsensus event files.");
+                    "The youngest possible ancient indicator that is being stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileYoungestIdentifier;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_SECONDS_CONFIG = new LongGauge.Config(
@@ -146,14 +145,14 @@ public class PcesMetrics {
     }
 
     /**
-     * Get the metric tracking the oldest possible ancient identifier that is being stored in preconsensus event files.
+     * Get the metric tracking the oldest possible ancient indicator that is being stored in preconsensus event files.
      */
     public LongGauge getPreconsensusEventFileOldestIdentifier() {
         return preconsensusEventFileOldestIdentifier;
     }
 
     /**
-     * Get the metric tracking the youngest possible ancient identifier that is being stored in preconsensus event files.
+     * Get the metric tracking the youngest possible ancient indicator that is being stored in preconsensus event files.
      */
     public LongGauge getPreconsensusEventFileYoungestIdentifier() {
         return preconsensusEventFileYoungestIdentifier;

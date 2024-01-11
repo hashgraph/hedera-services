@@ -220,19 +220,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
-     * Get the value used to determine if this event is ancient or not. Will be the event's generation prior to
-     * migration, and the event's birth round after migration.
-     *
-     * @return the value used to determine if this event is ancient or not
-     */
-    public long getAncientIdentifier(@NonNull final AncientMode fileType) {
-        return switch (fileType) {
-            case GENERATION_THRESHOLD -> getGeneration();
-            case BIRTH_ROUND_THRESHOLD -> getBirthRound();
-        };
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -325,5 +312,18 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public int hashCode() {
         return hashedData.getHash().hashCode();
+    }
+
+    /**
+     * Get the value used to determine if this event is ancient or not. Will be the event's generation prior to
+     * migration, and the event's birth round after migration.
+     *
+     * @return the value used to determine if this event is ancient or not
+     */
+    public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
+        return switch (ancientMode) {
+            case GENERATION_THRESHOLD -> getGeneration();
+            case BIRTH_ROUND_THRESHOLD -> hashedData.getBirthRound();
+        };
     }
 }

@@ -40,7 +40,7 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
     /**
      * Create an iterator that walks over events in a series of event files.
      *
-     * @param lowerBound   the minimum ancient identifier of events to return, events with lower ancient identifiers are
+     * @param lowerBound   the minimum ancient indicator of events to return, events with lower ancient indicators are
      *                     not returned
      * @param fileIterator an iterator that walks over event files
      * @param fileType     the type of file to read

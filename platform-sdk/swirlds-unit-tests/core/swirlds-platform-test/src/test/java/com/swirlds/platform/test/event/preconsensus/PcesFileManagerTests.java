@@ -308,9 +308,9 @@ class PcesFileManagerTests {
         // all files before the middle file have been deleted.
         final Instant endingTime =
                 middleFile.getTimestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
+
         while (time.now().isBefore(endingTime)) {
             manager.pruneOldFiles(middleFile.getUpperBound());
-
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(

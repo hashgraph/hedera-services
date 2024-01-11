@@ -181,7 +181,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 files.iterator(), fileTracker.getFileIterator(files.getFirst().getUpperBound(), 0));
 
-        // attempt to start a non-existent ancient identifier
+        // attempt to start a non-existent ancient indicator
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(nonExistentValue, 0));
     }
 
@@ -282,7 +282,7 @@ class PcesFileReaderTests {
                 buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
-        // with an ancient identifier greater than or equal to the target threshold. Choose an ancient identifier
+        // with an ancient indicator greater than or equal to the target threshold. Choose an ancient indicator
         // that falls roughly in the middle of the sequence of files.
         final long targetAncientIdentifier =
                 (files.getFirst().getUpperBound() + files.get(fileCount - 1).getUpperBound()) / 2;
@@ -302,7 +302,7 @@ class PcesFileReaderTests {
         assertTrue(files.get(indexOfFirstFile - 1).getUpperBound() < targetAncientIdentifier);
 
         // The first file returned from the iterator should
-        // have an upper bound greater than or equal to the target ancient identifier.
+        // have an upper bound greater than or equal to the target ancient indicator.
         assertTrue(iteratedFiles.getFirst().getUpperBound() >= targetAncientIdentifier);
 
         // Make sure that the iterator returns files in the correct order.
@@ -356,7 +356,7 @@ class PcesFileReaderTests {
                 buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
-        // with an ancient identifier greater than or equal to the target. Choose an ancient identifier that falls
+        // with an ancient indicator greater than or equal to the target. Choose an ancient indicator that falls
         // roughly in the middle of the sequence of files.
         final long targetAncientIdentifier =
                 (files.getFirst().getUpperBound() + files.get(fileCount - 1).getUpperBound()) / 2;
@@ -376,7 +376,7 @@ class PcesFileReaderTests {
         assertTrue(files.get(indexOfFirstFile - 1).getUpperBound() < targetAncientIdentifier);
 
         // The first file returned from the iterator should
-        // have an upper bound greater than or equal to the target ancient identifier.
+        // have an upper bound greater than or equal to the target ancient indicator.
         assertTrue(iteratedFiles.getFirst().getUpperBound() >= targetAncientIdentifier);
 
         // Make sure that the iterator returns files in the correct order.
@@ -389,7 +389,7 @@ class PcesFileReaderTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
-    @DisplayName("Read Files From High Ancient Identifier Test")
+    @DisplayName("Read Files From High ancient indicator Test")
     void readFilesFromHighAncientIdentifierTest(@NonNull final AncientMode ancientMode) throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -421,7 +421,7 @@ class PcesFileReaderTests {
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
                 buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
-        // Request an ancient identifier higher than all files in the data store
+        // Request an ancient indicator higher than all files in the data store
         final long targetAncientIdentifier = files.get(fileCount - 1).getUpperBound() + 1;
 
         final Iterator<PcesFile> iterator = fileTracker.getFileIterator(targetAncientIdentifier, 0);
@@ -768,7 +768,7 @@ class PcesFileReaderTests {
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
-        // There is no files with a compatible origin and events with ancient identifiers in the span we want.
+        // There is no files with a compatible origin and events with ancient indicators in the span we want.
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
 

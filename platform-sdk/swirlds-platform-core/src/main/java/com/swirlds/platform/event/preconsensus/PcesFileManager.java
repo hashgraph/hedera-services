@@ -273,12 +273,12 @@ public class PcesFileManager {
 
     /**
      * Prune old event files. Files are pruned if they are too old AND if they do not contain events with high enough
-     * ancient identifiers.
+     * ancient indicators.
      *
-     * @param lowerBoundToKeep the minimum ancient identifier that we need to keep in this store. It's possible that
+     * @param lowerBoundToKeep the minimum ancient indicator that we need to keep in this store. It's possible that
      *                         this operation won't delete all files with events older than this value, but this
      *                         operation is guaranteed not to delete any files that may contain events with a higher
-     *                         ancient identifier.
+     *                         ancient indicator.
      * @throws IOException if there is an error deleting files
      */
     public void pruneOldFiles(final long lowerBoundToKeep) throws IOException {
