@@ -24,11 +24,15 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static java.util.stream.Collectors.joining;
 
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongList;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -47,6 +51,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import sun.misc.Unsafe;
 
 /**
  * Common static content for data files. As much as possible is package protected but some is used
@@ -56,6 +61,22 @@ import org.apache.logging.log4j.Logger;
 public final class DataFileCommon {
 
     private static final Logger logger = LogManager.getLogger(DataFileCommon.class);
+
+    /**
+     * Access to sun.misc.Unsafe required to close mapped byte buffers explicitly rather than
+     * to rely on GC to collect them.
+     */
+    private static final Unsafe UNSAFE;
+
+    static {
+        try {
+            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            UNSAFE = (Unsafe) f.get(null);
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+            throw new InternalError(e);
+        }
+    }
 
     /** The inverse of the minimum decimal value to be reflected in rounding (that is, 0.01). */
     private static final int ROUNDING_SCALE_FACTOR = 100;
@@ -79,13 +100,13 @@ public final class DataFileCommon {
     /** Bit mask to remove file index from data location long */
     private static final long ITEM_OFFSET_MASK = MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES - 1;
 
-    /** The current file format version, ready for if the file format needs to change */
-    public static final int FILE_FORMAT_VERSION = 1;
     /** Date formatter for dates used in data file names */
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS").withZone(ZoneId.of("Z"));
-    /** Extension to use for Merkle DB data files :-) */
-    private static final String FILE_EXTENSION = ".jdb";
+    /** Extension to use for Merkle DB data files in protobuf format */
+    public static final String FILE_EXTENSION = ".pbj";
+    /** Extension to use for Merkle DB data files in legacy binary format */
+    public static final String FILE_EXTENSION_JDB = ".jdb";
     /**
      * System page size used in calculations, could be read from system but for linux we are pretty
      * safe assuming 4k
@@ -93,9 +114,40 @@ public final class DataFileCommon {
     public static final int PAGE_SIZE = 4096;
     /** Size of metadata footer written at end of file */
     public static final int FOOTER_SIZE = PAGE_SIZE;
-    /** Comparator for comparing DataFileReaders by file creation time */
+
+    private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR =
+            Comparator.comparing(o -> o.getMetadata().getCreationDate());
+
+    // Data file protobuf fields
+    static final FieldDefinition FIELD_DATAFILE_METADATA =
+            new FieldDefinition("metadata", FieldType.MESSAGE, false, false, false, 1);
+    static final FieldDefinition FIELD_DATAFILE_ITEMS =
+            new FieldDefinition("items", FieldType.MESSAGE, true, true, false, 11);
+
+    // Data file metadata protobuf fields
+    static final FieldDefinition FIELD_DATAFILEMETADATA_INDEX =
+            new FieldDefinition("index", FieldType.UINT32, false, true, false, 1);
+    static final FieldDefinition FIELD_DATAFILEMETADATA_CREATION_SECONDS =
+            new FieldDefinition("creationDateSeconds", FieldType.UINT64, false, false, false, 2);
+    static final FieldDefinition FIELD_DATAFILEMETADATA_CREATION_NANOS =
+            new FieldDefinition("creationDateNanos", FieldType.UINT32, false, false, false, 3);
+    static final FieldDefinition FIELD_DATAFILEMETADATA_ITEMS_COUNT =
+            new FieldDefinition("itemsCount", FieldType.FIXED64, false, false, false, 4);
+    static final FieldDefinition FIELD_DATAFILEMETADATA_ITEM_VERSION =
+            new FieldDefinition("itemsVersion", FieldType.UINT64, false, true, false, 5);
+    static final FieldDefinition FIELD_DATAFILEMETADATA_COMPACTION_LEVEL =
+            new FieldDefinition("compactionLevel", FieldType.UINT32, false, true, false, 6);
+
+    static final String ERROR_DATAITEM_TOO_LARGE =
+            "Data item is too large to write to a data file. Increase data file mapped byte buffer size";
+
     private DataFileCommon() {
         throw new IllegalStateException("Utility class; should not be instantiated.");
+    }
+
+    public static void closeMmapBuffer(final MappedByteBuffer buffer) {
+        assert buffer != null;
+        UNSAFE.invokeCleaner(buffer);
     }
 
     /**
@@ -109,13 +161,17 @@ public final class DataFileCommon {
      * @return path to file
      */
     static Path createDataFilePath(
-            final String filePrefix, final Path dataFileDir, final int index, final Instant creationInstant) {
+            final String filePrefix,
+            final Path dataFileDir,
+            final int index,
+            final Instant creationInstant,
+            final String extension) {
         return dataFileDir.resolve(filePrefix
                 + "_"
                 + DATE_FORMAT.format(creationInstant)
                 + "_"
                 + ALIGNED_RIGHT.pad(Integer.toString(index), '_', PRINTED_INDEX_FIELD_WIDTH, false)
-                + FILE_EXTENSION);
+                + extension);
     }
 
     /**
@@ -179,7 +235,9 @@ public final class DataFileCommon {
             return false;
         }
         final String fileName = path.getFileName().toString();
-        return fileName.startsWith(filePrefix) && fileName.endsWith(FILE_EXTENSION);
+        return fileName.startsWith(filePrefix)
+                && !fileName.contains("metadata")
+                && (fileName.endsWith(FILE_EXTENSION) || fileName.endsWith(FILE_EXTENSION_JDB));
     }
 
     /**

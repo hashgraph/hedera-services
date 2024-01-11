@@ -16,14 +16,18 @@
 
 package com.swirlds.demo.virtualmerkle.map.account;
 
-import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
  * This is the key serializer for the {@link AccountVirtualMapKey}.
  */
-public class AccountVirtualMapKeySerializer extends AbstractFixedSizeKeySerializer<AccountVirtualMapKey> {
+public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirtualMapKey> {
 
     private static final long CLASS_ID = 0x93efc6111338834eL;
 
@@ -31,16 +35,57 @@ public class AccountVirtualMapKeySerializer extends AbstractFixedSizeKeySerializ
         public static final int ORIGINAL = 1;
     }
 
-    public AccountVirtualMapKeySerializer() {
-        super(CLASS_ID, ClassVersion.ORIGINAL, AccountVirtualMapKey.getSizeInBytes(), 1, AccountVirtualMapKey::new);
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final AccountVirtualMapKey keyToCompare)
-            throws IOException {
+    public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public long getCurrentDataVersion() {
+        return 1;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return AccountVirtualMapKey.getSizeInBytes();
+    }
+
+    @Override
+    public void serialize(@NonNull final AccountVirtualMapKey key, @NonNull final WritableSequentialData out) {
+        key.serialize(out);
+    }
+
+    @Override
+    public void serialize(final AccountVirtualMapKey key, final ByteBuffer buffer) throws IOException {
+        key.serialize(buffer);
+    }
+
+    @Override
+    public AccountVirtualMapKey deserialize(@NonNull ReadableSequentialData in) {
+        final AccountVirtualMapKey key = new AccountVirtualMapKey();
+        key.deserialize(in);
+        return key;
+    }
+
+    @Override
+    public AccountVirtualMapKey deserialize(final ByteBuffer buffer, final long dataVersion) {
+        final AccountVirtualMapKey key = new AccountVirtualMapKey();
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public boolean equals(@NonNull BufferedData buffer, @NonNull AccountVirtualMapKey keyToCompare) {
+        return keyToCompare.equals(buffer);
+    }
+
+    @Override
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final AccountVirtualMapKey keyToCompare) {
         return keyToCompare.equals(buffer, dataVersion);
     }
 }

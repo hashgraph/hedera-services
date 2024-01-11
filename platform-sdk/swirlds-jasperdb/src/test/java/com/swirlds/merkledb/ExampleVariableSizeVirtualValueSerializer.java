@@ -16,9 +16,10 @@
 
 package com.swirlds.merkledb;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -58,17 +59,37 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public int serialize(final ExampleVariableSizeVirtualValue data, final ByteBuffer buffer) throws IOException {
+    public int getSerializedSize(ExampleVariableSizeVirtualValue data) {
+        return Integer.BYTES + Integer.BYTES + data.getData().length;
+    }
+
+    @Override
+    public void serialize(final ExampleVariableSizeVirtualValue data, final WritableSequentialData out) {
+        out.writeInt(data.getId());
+        final int dataLength = data.getDataLength();
+        out.writeInt(dataLength);
+        out.writeBytes(data.getData());
+    }
+
+    @Override
+    public void serialize(ExampleVariableSizeVirtualValue data, ByteBuffer buffer) {
         buffer.putInt(data.getId());
         final int dataLength = data.getDataLength();
         buffer.putInt(dataLength);
         buffer.put(data.getData());
-        return Integer.BYTES + Integer.BYTES + dataLength;
     }
 
     @Override
-    public ExampleVariableSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion)
-            throws IOException {
+    public ExampleVariableSizeVirtualValue deserialize(final ReadableSequentialData in) {
+        final int id = in.readInt();
+        final int dataLength = in.readInt();
+        final byte[] bytes = new byte[dataLength];
+        in.readBytes(bytes);
+        return new ExampleVariableSizeVirtualValue(id, bytes);
+    }
+
+    @Override
+    public ExampleVariableSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion) {
         assert dataVersion == getCurrentDataVersion();
         final int id = buffer.getInt();
         final int dataLength = buffer.getInt();

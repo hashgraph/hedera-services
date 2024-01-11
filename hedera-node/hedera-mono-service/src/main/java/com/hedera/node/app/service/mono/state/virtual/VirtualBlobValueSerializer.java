@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
-public class VirtualBlobMerkleDbValueSerializer implements ValueSerializer<VirtualBlobValue> {
+public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobValue> {
 
     // Serializer class ID
     static final long CLASS_ID = 0xd08565ba3cf6c5c0L;
@@ -55,7 +58,12 @@ public class VirtualBlobMerkleDbValueSerializer implements ValueSerializer<Virtu
         return VARIABLE_DATA_SIZE;
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    @Override
+    public int getSerializedSize(VirtualBlobValue data) {
+        return data.getSizeInBytes();
+    }
+
+    @Override
     public int getTypicalSerializedSize() {
         return VirtualBlobValue.getTypicalSerializedSize();
     }
@@ -63,15 +71,31 @@ public class VirtualBlobMerkleDbValueSerializer implements ValueSerializer<Virtu
     // Value serialization
 
     @Override
-    public int serialize(final VirtualBlobValue value, final ByteBuffer out) throws IOException {
+    public void serialize(@NonNull final VirtualBlobValue value, @NonNull final WritableSequentialData out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
         value.serialize(out);
-        return Integer.BYTES + value.getData().length; // data size (int) + data
+    }
+
+    @Override
+    @Deprecated
+    public void serialize(final VirtualBlobValue value, final ByteBuffer out) {
+        value.serialize(out);
     }
 
     // Value deserialization
 
     @Override
-    public VirtualBlobValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    public VirtualBlobValue deserialize(@NonNull final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final VirtualBlobValue value = new VirtualBlobValue();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public VirtualBlobValue deserialize(final ByteBuffer buffer, final long version) {
         final VirtualBlobValue value = new VirtualBlobValue();
         value.deserialize(buffer, (int) version);
         return value;
