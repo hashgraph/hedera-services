@@ -94,19 +94,6 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     }
 
     /**
-     * Generate an event, but don't build the descriptor.
-     *
-     * @return the generated event with unbuilt descriptor
-     */
-    public final IndexedEvent generateEventWithoutDescriptor() {
-        final IndexedEvent next = buildNextEvent(numEventsGenerated);
-        next.getBaseEvent().signalPrehandleCompletion();
-        numEventsGenerated++;
-        updateMaxGeneration(next);
-        return next;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
