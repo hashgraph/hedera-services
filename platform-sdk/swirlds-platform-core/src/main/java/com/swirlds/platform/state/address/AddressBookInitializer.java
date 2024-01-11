@@ -127,7 +127,21 @@ public class AddressBookInitializer {
         final AddressBookConfig addressBookConfig =
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
-        this.stateAddressBook = initialState.isGenesisState() ? null : initialState.getAddressBook();
+
+        // The state address book may be null in some genesis scenarios.  It will be updated to not be null
+        // before it is used in the rest of the platform.  Instead of making the rest of the platform adapt to a
+        // possibly null address book in the API of the state, the null pointer exception is caught here.
+        AddressBook stateAddressBook;
+        try {
+            stateAddressBook = initialState.getAddressBook();
+        } catch (final NullPointerException ex) {
+            if (!initialState.isGenesisState()) {
+                throw new IllegalStateException("Null state address books are only allowed at genesis.");
+            }
+            stateAddressBook = null;
+        }
+        this.stateAddressBook = stateAddressBook;
+
         this.pathToAddressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
         try {
             Files.createDirectories(pathToAddressBookDirectory);
