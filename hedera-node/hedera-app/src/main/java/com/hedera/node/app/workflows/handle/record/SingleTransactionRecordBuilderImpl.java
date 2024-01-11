@@ -1121,6 +1121,11 @@ public class SingleTransactionRecordBuilderImpl
         return contractFunctionResult;
     }
 
+    @Override
+    public @NonNull TransactionBody transactionBody() {
+        return inProgressBody();
+    }
+
     /**
      * Returns the in-progress {@link TransactionBody}.
      *
