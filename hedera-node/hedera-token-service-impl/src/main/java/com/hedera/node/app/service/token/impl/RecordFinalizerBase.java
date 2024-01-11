@@ -29,8 +29,10 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -206,10 +208,11 @@ public class RecordFinalizerBase {
         for (final var tokenId : writableTokenStore.modifiedTokens()) {
             final var originalToken = writableTokenStore.getOriginalValue(tokenId);
             final var modifiedToken = writableTokenStore.get(tokenId);
-            if (originalToken != null
-                    && !originalToken
-                            .treasuryAccountId()
-                            .equals(modifiedToken.treasuryAccountIdOrElse(AccountID.DEFAULT))) {
+            if (bothExistButTreasuryChanged(originalToken, modifiedToken)) {
+                // When the treasury account changes, all the treasury-owned NFTs are in a sense
+                // "transferred" to the new treasury; but we cannot list all these transfers in the record,
+                // so instead we put a sentinel NFT transfer with serial number -1 to trigger mirror
+                // nodes to update their owned NFT counts
                 updateNftChanges(
                         NftID.newBuilder().tokenId(tokenId).serialNumber(-1).build(),
                         originalToken.treasuryAccountId(),
@@ -218,6 +221,12 @@ public class RecordFinalizerBase {
             }
         }
         return nftChanges;
+    }
+
+    private static boolean bothExistButTreasuryChanged(
+            @Nullable final Token originalToken, @NonNull final Token modifiedToken) {
+        return originalToken != null
+                && !originalToken.treasuryAccountId().equals(modifiedToken.treasuryAccountIdOrElse(AccountID.DEFAULT));
     }
 
     private static void updateNftChanges(

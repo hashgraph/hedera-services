@@ -48,6 +48,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
@@ -101,6 +102,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private WritableAccountStore writableAccountStore;
     private ReadableNftStore readableNftStore;
     private WritableNftStore writableNftStore;
+    private WritableTokenStore writableTokenStore;
 
     @Mock
     private StakingRewardsHandlerImpl stakingRewardsHandler;
@@ -168,6 +170,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 ACCOUNT_1212.copyBuilder().memo("different memo field").build());
         // Intentionally empty token rel store
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels();
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
@@ -194,6 +197,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(); // Intentionally empty
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
         writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -235,6 +239,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(); // Intentionally empty
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
         writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -409,6 +414,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212);
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(existingTokenRel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(existingTokenRel);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         final var nft1 = givenNft(
                         NftID.newBuilder().tokenId(TOKEN_321).serialNumber(1).build())
                 .copyBuilder()
@@ -444,6 +450,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(); // Intentionally empty
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
         writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
         final var acct1212Change = 10;
         writableAccountStore.put(ACCOUNT_1212
                 .copyBuilder()
@@ -453,6 +460,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .copyBuilder()
                 .tinybarBalance(ACCOUNT_3434.tinybarBalance() + acct1212Change)
                 .build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
         // Account 5656 changes by getting a new memo, but its balance doesn't change
         writableAccountStore.put(
                 ACCOUNT_5656.copyBuilder().memo("different memo field").build());
@@ -485,6 +493,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(tokenRel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRel);
         writableTokenRelStore.put(tokenRel.copyBuilder().balance(-1).build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -503,6 +512,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRel);
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
         writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens();
         // The token relation's 'frozen' property is changed, but its balance doesn't change
         writableTokenRelStore.put(tokenRel.copyBuilder().frozen(true).build());
         context = mockContext();
@@ -701,6 +711,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -738,6 +749,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         writableNftStore.put(newNft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
@@ -808,6 +820,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft222.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         writableNftStore.put(nft223.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE, token264);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE, token264);
         context = mockContext();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("staking.isEnabled", String.valueOf(false))
@@ -953,6 +966,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
         given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
         given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         return context;
     }
