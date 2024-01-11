@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
+import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -54,8 +57,7 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
      */
     @Override
     public void consensusRound(final ConsensusRound consensusRound) {
-        // TODO remove this method
-        //        shadowGraph.updateNonExpiredEventWindow(consensusRound.getGenerations().getMinRoundGeneration());
+        shadowGraph.updateNonExpiredEventWindow(consensusRound.getGenerations().getMinRoundGeneration());
     }
 
     /**
@@ -65,17 +67,15 @@ public class ShadowGraphEventObserver implements EventAddedObserver, ConsensusRo
      */
     @Override
     public void eventAdded(final EventImpl event) {
-        //        try {
-        //            shadowGraph.addEvent(event);
-        //        } catch (final ShadowGraphInsertionException e) {
-        //            logger.error(
-        //                    EXCEPTION.getMarker(),
-        //                    "failed to add event {} to shadow graph",
-        //                    EventStrings.toMediumString(event),
-        //                    e);
-        //        }
-
-        // TODO move this into wiring too
+        try {
+            shadowGraph.addEvent(event);
+        } catch (final ShadowGraphInsertionException e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "failed to add event {} to shadow graph",
+                    EventStrings.toMediumString(event),
+                    e);
+        }
         if (latestEventTipsetTracker != null) {
             latestEventTipsetTracker.addEvent(event);
         }

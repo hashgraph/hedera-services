@@ -19,19 +19,20 @@ package com.swirlds.platform.wiring.components;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for the {@link com.swirlds.platform.gossip.shadowgraph.ShadowGraph}.
+ * Wiring for the {@link com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker}.
  *
- * @param eventInput                 the input wire for events to be added to the shadow graph
- * @param nonExpiredEventWindowInput the input wire for the non-expired event window
+ * @param eventInput                 the input wire for events
+ * @param nonAncientEventWindowInput the input wire for the non-ancient event window
  */
-public record ShadowgraphWiring(
+public record LatestEventTipsetTrackerWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<Long> nonExpiredEventWindowInput) { // TODO augment non-ancient event window maybe
+        @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput) {
 
     /**
      * Create a new instance of this wiring.
@@ -39,20 +40,20 @@ public record ShadowgraphWiring(
      * @param taskScheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
-    public static ShadowgraphWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
-
-        return new ShadowgraphWiring(
+    public static LatestEventTipsetTrackerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
+        return new LatestEventTipsetTrackerWiring(
                 taskScheduler.buildInputWire("linked events"),
-                taskScheduler.buildInputWire("non-expired event window"));
+                taskScheduler.buildInputWire("non-ancient event window"));
     }
 
     /**
-     * Bind a shadowgraph to this wiring.
+     * Bind a latest event tipset tracker to this wiring.
      *
-     * @param shadowgraph the shadow graph to bind
+     * @param latestEventTipsetTracker the latest event tipset tracker to bind
      */
-    public void bind(@NonNull final ShadowGraph shadowgraph) {
-        ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
-        ((BindableInputWire<Long, Void>) nonExpiredEventWindowInput).bind(shadowgraph::updateNonExpiredEventWindow);
+    public void bind(@NonNull final LatestEventTipsetTracker latestEventTipsetTracker) {
+        ((BindableInputWire<EventImpl, Void>) eventInput).bind(latestEventTipsetTracker::addEvent);
+        ((BindableInputWire<NonAncientEventWindow, Void>) nonAncientEventWindowInput)
+                .bind(latestEventTipsetTracker::setNonAncientEventWindow);
     }
 }

@@ -46,6 +46,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -57,6 +58,7 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.LatestEventTipsetTrackerWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
@@ -87,8 +89,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
+    private final LatestEventTipsetTrackerWiring latestEventTipsetTrackerWiring; // TODO this needs to be optional!
 
     private final PlatformCoordinator platformCoordinator;
+
     /**
      * Constructor.
      *
@@ -137,6 +141,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
         shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
+        latestEventTipsetTrackerWiring =
+                LatestEventTipsetTrackerWiring.create(schedulers.latestEventTipsetTrackerScheduler());
 
         wire();
     }
@@ -163,6 +169,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(latestEventTipsetTrackerWiring.nonAncientEventWindowInput(), INJECT);
     }
 
     /**
@@ -178,6 +185,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesSequencerWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
         inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
+        inOrderLinkerWiring.eventOutput().solderTo(latestEventTipsetTrackerWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
         eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
         orphanBufferWiring
@@ -271,13 +279,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Bind components to the wiring.
      *
-     * @param eventHasher            the event hasher to bind
-     * @param signedStateFileManager the signed state file manager to bind
-     * @param stateSigner            the state signer to bind
-     * @param pcesReplayer           the PCES replayer to bind
-     * @param pcesWriter             the PCES writer to bind
-     * @param eventDurabilityNexus   the event durability nexus to bind
-     * @param shadowgraph            the shadowgraph to bind
+     * @param eventHasher              the event hasher to bind
+     * @param signedStateFileManager   the signed state file manager to bind
+     * @param stateSigner              the state signer to bind
+     * @param pcesReplayer             the PCES replayer to bind
+     * @param pcesWriter               the PCES writer to bind
+     * @param eventDurabilityNexus     the event durability nexus to bind
+     * @param shadowgraph              the shadowgraph to bind
+     * @param latestEventTipsetTracker the latest event tipset tracker to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -286,7 +295,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final PcesWriter pcesWriter,
             @NonNull final EventDurabilityNexus eventDurabilityNexus,
-            @NonNull final ShadowGraph shadowgraph) {
+            @NonNull final ShadowGraph shadowgraph,
+            @NonNull final LatestEventTipsetTracker latestEventTipsetTracker) {
 
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
@@ -295,8 +305,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesWriterWiring.bind(pcesWriter);
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
         shadowgraphWiring.bind(shadowgraph);
-
-        // FUTURE WORK: bind all the things!
+        latestEventTipsetTrackerWiring.bind(latestEventTipsetTracker);
     }
 
     /**

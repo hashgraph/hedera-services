@@ -19,7 +19,6 @@ package com.swirlds.platform.components;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -147,14 +146,6 @@ public class LinkedEventIntake {
                 // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
                 // with no consensus events, so we check the diff in generations to look for stale events
                 handleStale(minimumGenerationNonAncientBeforeAdding);
-                if (latestEventTipsetTracker != null) {
-                    // FUTURE WORK: When this class is refactored, it should not be constructing the
-                    // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
-                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
-                            consensusSupplier.get().getLastRoundDecided(),
-                            minimumGenerationNonAncient,
-                            platformContext));
-                }
             }
 
             return Objects.requireNonNullElseGet(consensusRounds, List::of);

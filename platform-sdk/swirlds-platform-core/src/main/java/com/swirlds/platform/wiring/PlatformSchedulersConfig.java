@@ -70,6 +70,9 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          collector
  * @param shadowgraphSchedulerType                          the shadowgraph scheduler type
  * @param shadowgraphUnhandledCapacity                      number of unhandled tasks allowed for the shadowgraph
+ * @param latestEventTipsetTrackerSchedulerType             the latest event tipset tracker scheduler type
+ * @param latestEventTipsetTrackerUnhandledCapacity         number of unhandled tasks allowed for the latest event
+ *                                                          tipset tracker
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -104,4 +107,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,
         @ConfigProperty(defaultValue = "500") int stateSignatureCollectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType shadowgraphSchedulerType,
-        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType latestEventTipsetTrackerSchedulerType,
+        @ConfigProperty(defaultValue = "500") int latestEventTipsetTrackerUnhandledCapacity) {}

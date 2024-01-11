@@ -48,6 +48,7 @@ import java.util.List;
  * @param applicationTransactionPrehandlerScheduler the scheduler for the application transaction prehandler
  * @param stateSignatureCollectorScheduler          the scheduler for the state signature collector
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
+ * @param latestEventTipsetTrackerScheduler         the scheduler for the latest event tipset tracker
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -66,7 +67,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> eventDurabilityNexusScheduler,
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<Void> stateSignatureCollectorScheduler,
-        @NonNull TaskScheduler<Void> shadowgraphScheduler) {
+        @NonNull TaskScheduler<Void> shadowgraphScheduler,
+        @NonNull TaskScheduler<Void> latestEventTipsetTrackerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -184,6 +186,13 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("shadowgraph")
                         .withType(config.shadowgraphSchedulerType())
                         .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withFlushingEnabled(true) // TODO make sure we flush this
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("latestEventTipsetTracker")
+                        .withType(config.latestEventTipsetTrackerSchedulerType())
+                        .withUnhandledTaskCapacity(config.latestEventTipsetTrackerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true) // TODO make sure we flush this
                         .build()
