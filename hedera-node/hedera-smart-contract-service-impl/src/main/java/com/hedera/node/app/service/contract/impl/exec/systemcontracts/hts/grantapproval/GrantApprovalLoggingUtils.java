@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.priorityAddressOf;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants;
@@ -25,14 +29,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.priorityAddressOf;
-import static java.util.Objects.requireNonNull;
-
 public class GrantApprovalLoggingUtils {
-    //todo add some docs here!
+    // todo add some docs here!
     public static void logSuccessfulApprove(
-            @NonNull final TokenID tokenId ,
+            @NonNull final TokenID tokenId,
             @NonNull final AccountID sender,
             @NonNull final AccountID spender,
             final long amount,
@@ -58,7 +58,9 @@ public class GrantApprovalLoggingUtils {
         final var senderAddress = priorityAddressOf(requireNonNull(accountStore.getAccountById(senderId)));
 
         final var spenderAccount = accountStore.getAccountById(spenderId);
-        final var spenderAddress = spenderAccount != null ? priorityAddressOf(spenderAccount) : Address.EMPTY; //todo - check how to handle nulls here... what if null?
+        final var spenderAddress = spenderAccount != null
+                ? priorityAddressOf(spenderAccount)
+                : Address.EMPTY; // todo - check how to handle nulls here... what if null?
         return LogBuilder.logBuilder()
                 .forLogger(tokenAddress)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)

@@ -112,7 +112,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     }
 
     private TransactionBody syntheticTransfer(@NonNull final AccountID spenderId) {
-        //To get isApproval we need the actual owner, which can be different from 'from'
+        // To get isApproval we need the actual owner, which can be different from 'from'
         final var ownerId = getOwner();
         final var fromId = addressIdConverter.convert(from);
         final var receiverId = addressIdConverter.convertCredit(to);

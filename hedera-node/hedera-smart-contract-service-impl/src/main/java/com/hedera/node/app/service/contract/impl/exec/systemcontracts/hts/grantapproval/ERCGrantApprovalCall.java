@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedForProto;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -84,20 +83,22 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         final var status = recordBuilder.status();
 
-        //log approve
-        GrantApprovalLoggingUtils.logSuccessfulApprove(token, senderId, spender, amount.longValue(),readableAccountStore(), frame);
+        // log approve
+        GrantApprovalLoggingUtils.logSuccessfulApprove(
+                token, senderId, spender, amount.longValue(), readableAccountStore(), frame);
 
         if (status != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
-//            final var encodedOutput = tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)
-//                    ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
-//                    : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
-//                            .getOutputs()
-//                            .encodeElements();
+            //            final var encodedOutput = tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)
+            //                    ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
+            //                    : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
+            //                            .getOutputs()
+            //                            .encodeElements();
 
-            //todo check why in mono nft approve call has output!
-            final var encodedOutput = GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true);
+            // todo check why in mono nft approve call has output!
+            final var encodedOutput =
+                    GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true);
 
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }

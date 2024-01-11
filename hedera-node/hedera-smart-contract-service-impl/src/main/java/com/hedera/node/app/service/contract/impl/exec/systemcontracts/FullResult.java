@@ -80,7 +80,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        //todo check if all failed result should return this
+                        // todo check if all failed result should return this
                         Bytes.wrap(UInt256.valueOf(recordBuilder.status().protoOrdinal()))),
                 gasRequirement,
                 recordBuilder);

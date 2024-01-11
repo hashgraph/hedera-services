@@ -109,18 +109,20 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
 
                 if (responseCode == SUCCESS) {
                     final var output = pricedResult.fullResult().result().getOutput();
-                    //todo some of Precompile errors need to be externalized and some should not!
-                    if(pricedResult.fullResult().result().getState().equals(MessageFrame.State.REVERT) ||
-                            pricedResult.fullResult().result().getState().equals(MessageFrame.State.EXCEPTIONAL_HALT)){
-                       return pricedResult.fullResult();
+                    // todo some of Precompile errors need to be externalized and some should not!
+                    if (pricedResult.fullResult().result().getState().equals(MessageFrame.State.REVERT)
+                            || pricedResult
+                                    .fullResult()
+                                    .result()
+                                    .getState()
+                                    .equals(MessageFrame.State.EXCEPTIONAL_HALT)) {
+                        return pricedResult.fullResult();
                     }
                     enhancement
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(),
-                                            output,
-                                            attempt.senderId()),
+                                            pricedResult.fullResult().gasRequirement(), output, attempt.senderId()),
                                     responseCode,
                                     enhancement
                                             .systemOperations()
