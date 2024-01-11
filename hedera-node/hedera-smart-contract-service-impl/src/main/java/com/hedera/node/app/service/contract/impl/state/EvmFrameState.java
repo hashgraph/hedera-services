@@ -212,26 +212,26 @@ public interface EvmFrameState {
     /**
      * Returns the number of treasury titles for the account with the given number.
      *
-     * @param number the account number
+     * @param contractID the contract ID
      * @return the number of treasury titles
      */
-    int getNumTreasuryTitles(long number);
+    int getNumTreasuryTitles(ContractID contractID);
 
     /**
      * Returns the number of positive token balances.
      *
-     * @param number the account number
+     * @param contractID the contract ID
      * @return the number of positive token balances
      */
-    int getNumPositiveTokenBalances(long number);
+    int getNumPositiveTokenBalances(ContractID contractID);
 
     /**
      * Returns whether the account with the given number is a contract.
      *
-     * @param number the account number
+     * @param contractID the contract id number
      * @return whether the account is a contract
      */
-    boolean isContract(long number);
+    boolean isContract(ContractID contractID);
 
     /**
      * Sets the nonce for the account with the given number.
@@ -291,16 +291,15 @@ public interface EvmFrameState {
      */
     long getKvStateSize();
 
-//    /**
-//     * Returns the rent factors for the account with the given number.
-//     *
-//     * @param number the account number
-//     * @return the rent factors
-//     */
-//    @NonNull
-//    RentFactors getRentFactorsFor(long number);
+    //    /**
+    //     * Returns the rent factors for the account with the given number.
+    //     *
+    //     * @param number the account number
+    //     * @return the rent factors
+    //     */
+    //    @NonNull
+    //    RentFactors getRentFactorsFor(long number);
 
     @NonNull
     RentFactors getRentFactorsFor(ContractID contractID);
 }
-

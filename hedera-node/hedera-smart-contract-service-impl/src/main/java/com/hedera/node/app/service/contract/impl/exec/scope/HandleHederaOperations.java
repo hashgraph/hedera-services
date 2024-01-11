@@ -249,7 +249,8 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public void chargeStorageRent(final long contractNumber, final long amount, final boolean itemizeStoragePayments) {
+    public void chargeStorageRent(
+            final ContractID contractID, final long amount, final boolean itemizeStoragePayments) {
         // (FUTURE) Needed before enabling contract expiry
     }
 
@@ -258,11 +259,10 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void updateStorageMetadata(
-            final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+            final ContractID contractID, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         requireNonNull(firstKey);
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final var accountId = AccountID.newBuilder().accountNum(contractNumber).build();
-        tokenServiceApi.updateStorageMetadata(accountId, firstKey, netChangeInSlotsUsed);
+        tokenServiceApi.updateStorageMetadata(contractID, firstKey, netChangeInSlotsUsed);
     }
 
     /**
@@ -340,10 +340,9 @@ public class HandleHederaOperations implements HederaOperations {
     }
 
     @Override
-    public long getOriginalSlotsUsed(final long contractNumber) {
+    public long getOriginalSlotsUsed(final ContractID contractID) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        return tokenServiceApi.originalKvUsageFor(
-                AccountID.newBuilder().accountNum(contractNumber).build());
+        return tokenServiceApi.originalKvUsageFor(contractID);
     }
 
     @Override

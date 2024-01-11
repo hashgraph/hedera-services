@@ -59,6 +59,9 @@ public class VerificationStrategies {
             throw new IllegalArgumentException("Cannot verify against missing contract " + sender);
         }
         return new ActiveContractVerificationStrategy(
-                ContractID.newBuilder().contractNum(contractNum).build(), tuweniToPbjBytes(sender), requiresDelegatePermission, UseTopLevelSigs.NO);
+                ContractID.newBuilder().contractNum(contractNum).build(),
+                tuweniToPbjBytes(sender),
+                requiresDelegatePermission,
+                UseTopLevelSigs.NO);
     }
 }

@@ -82,7 +82,9 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
     }
 
     private Decision decisionFor(@NonNull final ContractID authorizedId) {
-        if (authorizedId.hasContractNum() && activeContractID.hasContractNum() && authorizedId.contractNumOrThrow().equals(activeContractID.contractNumOrThrow())) {
+        if (authorizedId.hasContractNum()
+                && activeContractID.hasContractNum()
+                && authorizedId.contractNumOrThrow().equals(activeContractID.contractNumOrThrow())) {
             return Decision.VALID;
         } else if (authorizedId.hasEvmAddress() && activeAddress.equals(authorizedId.evmAddress())) {
             return Decision.VALID;

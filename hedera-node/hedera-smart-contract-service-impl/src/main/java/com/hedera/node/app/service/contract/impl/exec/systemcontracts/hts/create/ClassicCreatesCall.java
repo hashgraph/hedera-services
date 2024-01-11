@@ -197,7 +197,9 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 ? new EitherOrVerificationStrategy(
                         verificationStrategy,
                         new ActiveContractVerificationStrategy(
-                                ContractID.newBuilder().contractNum(legacyActivation.contractNum()).build(),
+                                ContractID.newBuilder()
+                                        .contractNum(legacyActivation.contractNum())
+                                        .build(),
                                 legacyActivation.pbjAddress(),
                                 false,
                                 UseTopLevelSigs.NO))

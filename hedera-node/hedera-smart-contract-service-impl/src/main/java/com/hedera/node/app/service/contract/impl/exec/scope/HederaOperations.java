@@ -157,7 +157,7 @@ public interface HederaOperations {
      * preference to its auto-renew account (if any); falling back to charging the contract itself
      * if the auto-renew account does not exist or does not have sufficient balance.
      *
-     * @param contractNumber         the number of the contract to charge
+     * @param contractID         the number of the contract to charge
      * @param amount                 the amount to charge
      * @param itemizeStoragePayments whether to itemize storage payments in the record
      */
@@ -166,7 +166,7 @@ public interface HederaOperations {
     /**
      * Updates the storage metadata for the given contract.
      *
-     * @param contractNumber the number of the contract
+     * @param contractID the number of the contract
      * @param firstKey       the first key in the storage linked list, or {@link Bytes#EMPTY} if the list is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */

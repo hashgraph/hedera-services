@@ -229,24 +229,24 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public int getNumTreasuryTitles(final long number) {
-        return validatedAccount(number).numberTreasuryTitles();
+    public int getNumTreasuryTitles(final ContractID contractID) {
+        return validatedAccount(contractID).numberTreasuryTitles();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean isContract(final long number) {
-        return validatedAccount(number).smartContract();
+    public boolean isContract(final ContractID contractID) {
+        return validatedAccount(contractID).smartContract();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int getNumPositiveTokenBalances(final long number) {
-        return validatedAccount(number).numberPositiveBalances();
+    public int getNumPositiveTokenBalances(final ContractID contractID) {
+        return validatedAccount(contractID).numberPositiveBalances();
     }
 
     /**
@@ -325,7 +325,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
 
         final var evmAddress = extractEvmAddress(account.alias());
-        return evmAddress == null ? asLongZeroAddress(account.accountIdOrThrow().accountNum()) : pbjToBesuAddress(evmAddress);
+        return evmAddress == null
+                ? asLongZeroAddress(account.accountIdOrThrow().accountNum())
+                : pbjToBesuAddress(evmAddress);
     }
 
     @Override
@@ -379,7 +381,10 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                 from.hederaId(),
                 ((ProxyEvmAccount) to).hederaId(),
                 new ActiveContractVerificationStrategy(
-                        from.hederaContractId(), tuweniToPbjBytes(from.getAddress()), delegateCall, UseTopLevelSigs.YES));
+                        from.hederaContractId(),
+                        tuweniToPbjBytes(from.getAddress()),
+                        delegateCall,
+                        UseTopLevelSigs.YES));
         if (status != OK) {
             if (status == INVALID_SIGNATURE) {
                 return Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE);
@@ -504,6 +509,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
         return account;
     }
+
     private com.hedera.hapi.node.state.token.Account validatedAccount(final AccountID accountID) {
         final var account = nativeOperations.getAccount(accountID);
         if (account == null) {

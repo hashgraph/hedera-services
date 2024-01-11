@@ -232,17 +232,8 @@ public interface HederaNativeOperations {
      * @param beneficiaryNumber the number of the beneficiary
      * @param frame the frame in which to track the self-destruct
      */
-    void trackSelfDestructBeneficiary(long deletedNumber, long beneficiaryNumber, @NonNull MessageFrame frame);
-
-    /**
-     * Tracks the self-destruction of a contract and the beneficiary that should receive any staking awards otherwise
-     * earned by the deleted contract.
-     *
-     * @param deletedNumber the number of the deleted contract
-     * @param beneficiaryNumber the number of the beneficiary
-     * @param frame the frame in which to track the self-destruct
-     */
-    void trackSelfDestructBeneficiary(AccountID deletedNumber, AccountID beneficiaryNumber, @NonNull MessageFrame frame);
+    void trackSelfDestructBeneficiary(
+            AccountID deletedNumber, AccountID beneficiaryNumber, @NonNull MessageFrame frame);
 
     /**
      * Checks if the given transfer operation uses custom fees.

@@ -130,7 +130,9 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
 
     @Override
     public @NonNull ContractID hederaContractId() {
-        return ContractID.newBuilder().contractNum(accountID.accountNumOrThrow()).build();
+        return ContractID.newBuilder()
+                .contractNum(accountID.accountNumOrThrow())
+                .build();
     }
 
     @Override
@@ -144,7 +146,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
      * @return the number of treasury titles held by this account
      */
     public int numTreasuryTitles() {
-        return state.getNumTreasuryTitles(accountID);
+        return state.getNumTreasuryTitles(hederaContractId());
     }
 
     /**
@@ -153,7 +155,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
      * @return the number of positive token balances held by this account
      */
     public int numPositiveTokenBalances() {
-        return state.getNumPositiveTokenBalances(accountID);
+        return state.getNumPositiveTokenBalances(hederaContractId());
     }
 
     /**
@@ -162,7 +164,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
      * @return if the account is a contract
      */
     public boolean isContract() {
-        return state.isContract(accountID);
+        return state.isContract(hederaContractId());
     }
 
     /**

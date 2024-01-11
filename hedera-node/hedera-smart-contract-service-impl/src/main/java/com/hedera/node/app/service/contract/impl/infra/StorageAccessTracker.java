@@ -44,7 +44,8 @@ public class StorageAccessTracker {
      * @param key the key of the slot read
      * @param value the value read
      */
-    public void trackIfFirstRead(final ContractID contractID, @NonNull final UInt256 key, @NonNull final UInt256 value) {
+    public void trackIfFirstRead(
+            final ContractID contractID, @NonNull final UInt256 key, @NonNull final UInt256 value) {
         accessesByContract.computeIfAbsent(contractID, MAP_FACTORY).putIfAbsent(key, StorageAccess.newRead(key, value));
     }
 

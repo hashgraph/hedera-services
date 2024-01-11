@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
@@ -132,6 +133,24 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     }
 
     /**
+     * Refuses to transfer value.
+     *
+     * @param amount           the amount to transfer
+     * @param fromEntityNumber the number of the account to transfer from
+     * @param toEntityNumber   the number of the account to transfer to
+     * @param strategy         the {@link VerificationStrategy} to use
+     * @throws UnsupportedOperationException always
+     */
+    @Override
+    public ResponseCodeEnum transferWithReceiverSigCheck(
+            final long amount,
+            final AccountID fromEntityNumber,
+            final AccountID toEntityNumber,
+            @NonNull final VerificationStrategy strategy) {
+        throw new UnsupportedOperationException("Cannot transfer value in query context");
+    }
+
+    /**
      * Refuses to track a deletion.
      *
      * @param deletedNumber the number of the deleted contract
@@ -140,7 +159,7 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void trackSelfDestructBeneficiary(
-            final long deletedNumber, final long beneficiaryNumber, @NonNull final MessageFrame frame) {
+            final AccountID deletedNumber, final AccountID beneficiaryNumber, @NonNull final MessageFrame frame) {
         throw new UnsupportedOperationException("Cannot track deletion in query context");
     }
 }

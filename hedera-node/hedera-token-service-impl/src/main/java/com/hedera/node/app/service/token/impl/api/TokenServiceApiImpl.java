@@ -295,12 +295,12 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public void updateStorageMetadata(
-            @NonNull final AccountID accountId, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+            @NonNull final ContractID contractID, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         requireNonNull(firstKey);
-        requireNonNull(accountId);
-        final var target = requireNonNull(accountStore.get(accountId));
+        requireNonNull(contractID);
+        final var target = requireNonNull(accountStore.getContractById(contractID));
         if (!target.smartContract()) {
-            throw new IllegalArgumentException("Cannot update storage metadata for non-contract " + accountId);
+            throw new IllegalArgumentException("Cannot update storage metadata for non-contract " + contractID);
         }
         final var newNumKvPairs = target.contractKvPairsNumber() + netChangeInSlotsUsed;
         if (newNumKvPairs < 0) {
@@ -309,7 +309,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                     + ") by "
                     + netChangeInSlotsUsed
                     + " for contract "
-                    + accountId);
+                    + contractID);
         }
         accountStore.put(target.copyBuilder()
                 .firstContractStorageKey(firstKey)
@@ -382,8 +382,14 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public long originalKvUsageFor(@NonNull final AccountID id) {
-        final var oldAccount = accountStore.getOriginalValue(id);
+    public void refundFees(@NonNull ContractID receiver, @NonNull Fees fees, @NonNull FeeRecordBuilder recordBuilder) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public long originalKvUsageFor(@NonNull final ContractID id) {
+        Account account = accountStore.getContractById(id);
+        final var oldAccount = accountStore.getOriginalValue(account.accountId());
         return oldAccount == null ? 0 : oldAccount.contractKvPairsNumber();
     }
 

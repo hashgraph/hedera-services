@@ -178,7 +178,8 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public void chargeStorageRent(final ContractID contractID, final long amount, final boolean itemizeStoragePayments) {
+    public void chargeStorageRent(
+            final ContractID contractID, final long amount, final boolean itemizeStoragePayments) {
         throw new UnsupportedOperationException("Queries cannot charge storage rent");
     }
 

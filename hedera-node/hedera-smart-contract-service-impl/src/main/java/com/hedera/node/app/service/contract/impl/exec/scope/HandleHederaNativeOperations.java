@@ -26,7 +26,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -180,10 +179,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
             return INVALID_SIGNATURE;
         }
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.transferFromTo(
-                fromEntityNumber,
-                toEntityNumber,
-                amount);
+        tokenServiceApi.transferFromTo(fromEntityNumber, toEntityNumber, amount);
         return OK;
     }
 
@@ -192,12 +188,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void trackSelfDestructBeneficiary(
-            final long deletedNumber, final long beneficiaryNumber, @NonNull final MessageFrame frame) {
+            final AccountID deletedNumber, final AccountID beneficiaryNumber, @NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        selfDestructBeneficiariesFor(frame)
-                .addBeneficiaryForDeletedAccount(
-                        AccountID.newBuilder().accountNum(deletedNumber).build(),
-                        AccountID.newBuilder().accountNum(beneficiaryNumber).build());
+        selfDestructBeneficiariesFor(frame).addBeneficiaryForDeletedAccount(deletedNumber, beneficiaryNumber);
     }
 
     @Override
