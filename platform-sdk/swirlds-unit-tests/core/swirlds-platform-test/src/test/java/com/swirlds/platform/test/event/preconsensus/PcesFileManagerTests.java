@@ -296,7 +296,10 @@ class PcesFileManagerTests {
         // all files before the middle file have been deleted.
         final Instant endingTime =
                 middleFile.getTimestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
-        while (time.now().isBefore(endingTime)) {
+
+        Duration nextTimeIncrease = Duration.ofSeconds(random.nextInt(1, 20));
+        while (time.now().plus(nextTimeIncrease).isBefore(endingTime)) {
+            time.tick(nextTimeIncrease);
             manager.pruneOldFiles(lastFile.getMaximumGeneration() + 1);
 
             // Parse files afresh to make sure we aren't "cheating" by just
@@ -336,11 +339,11 @@ class PcesFileManagerTests {
             assertIteratorEquality(
                     expectedFiles.iterator(), freshFileTracker.getFileIterator(NO_MINIMUM_GENERATION, 0));
 
-            time.tick(Duration.ofSeconds(random.nextInt(1, 20)));
+            nextTimeIncrease = Duration.ofSeconds(random.nextInt(1, 20));
         }
 
-        // Now, increase the generation by a little and try again.
-        // The middle file should now be garbage collection eligible.
+        // tick time to 1 millisecond after the time of the middle file, so that it's now eligible for deletion
+        time.tick(Duration.between(time.now(), endingTime).plus(Duration.ofMillis(1)));
         manager.pruneOldFiles(lastFile.getMaximumGeneration() + 1);
 
         // Parse files afresh to make sure we aren't "cheating" by just
