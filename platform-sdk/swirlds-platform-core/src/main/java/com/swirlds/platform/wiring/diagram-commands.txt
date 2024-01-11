@@ -15,7 +15,7 @@ pcli diagram \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
-    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
+    -g 'State Signature Collection:reservedStateSplitter,allStatesReserver,filterOnlyCompleteStates,completeStatesReserver,gossipEventTransformer' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
     -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
