@@ -80,7 +80,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
     @Override
     public long getClassId() {
-        return CLASS_ID;
+        return md == null ? CLASS_ID : md.queueNodeClassId();
     }
 
     @Override

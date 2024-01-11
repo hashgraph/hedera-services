@@ -62,6 +62,24 @@ public class SyncPermitProvider {
     }
 
     /**
+     * The result of attempting to acquire a permit.
+     */
+    public enum PermitRequestResult {
+        /**
+         * A permit was successfully acquired.
+         */
+        PERMIT_ACQUIRED,
+        /**
+         * A permit was not acquired because there are unprocessed events from the peer.
+         */
+        UNPROCESSED_EVENTS,
+        /**
+         * A permit was not acquired because there are no permits available.
+         */
+        NO_PERMIT_AVAILABLE
+    }
+
+    /**
      * Attempts to acquire a sync permit. This method returns immediately and never blocks, even if no permit is
      * available.
      * <p>
@@ -69,8 +87,12 @@ public class SyncPermitProvider {
      *
      * @return true if a permit was successfully acquired, otherwise false.
      */
-    public boolean tryAcquire(@NonNull final NodeId peerId) {
-        return !intakeEventCounter.hasUnprocessedEvents(peerId) && syncPermits.tryAcquire();
+    @NonNull
+    public PermitRequestResult tryAcquire(@NonNull final NodeId peerId) {
+        if (intakeEventCounter.hasUnprocessedEvents(peerId)) {
+            return PermitRequestResult.UNPROCESSED_EVENTS;
+        }
+        return syncPermits.tryAcquire() ? PermitRequestResult.PERMIT_ACQUIRED : PermitRequestResult.NO_PERMIT_AVAILABLE;
     }
 
     /**

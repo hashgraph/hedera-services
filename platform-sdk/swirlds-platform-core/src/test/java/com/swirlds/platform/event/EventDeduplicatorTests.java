@@ -94,6 +94,11 @@ class EventDeduplicatorTests {
         when(event.getDescriptor()).thenReturn(descriptor);
         when(event.getGeneration()).thenReturn(generation);
         when(event.getUnhashedData()).thenReturn(unhashedData);
+        // FUTURE WORK: Add birthRound to arguments and replace the first round constant below.
+        when(event.getAncientIndicator(any()))
+                .thenAnswer(args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD
+                        ? ConsensusConstants.ROUND_FIRST
+                        : generation);
 
         return event;
     }
@@ -188,7 +193,7 @@ class EventDeduplicatorTests {
                         ConsensusConstants.ROUND_FIRST,
                         ConsensusConstants.ROUND_FIRST,
                         minimumGenerationNonAncient,
-                        false));
+                        AncientMode.GENERATION_THRESHOLD));
             }
         }
 

@@ -26,6 +26,7 @@ import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.SyncPermitProvider;
+import com.swirlds.platform.gossip.SyncPermitProvider.PermitRequestResult;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
@@ -60,11 +62,6 @@ public class SyncProtocol implements Protocol {
     private final FallenBehindManager fallenBehindManager;
 
     /**
-     * Peer agnostic checks which are performed to determine whether this node should sync or not
-     */
-    private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
-
-    /**
      * Metrics tracking syncing
      */
     private final SyncMetrics syncMetrics;
@@ -73,6 +70,16 @@ public class SyncProtocol implements Protocol {
      * The provider for sync permits
      */
     private final SyncPermitProvider permitProvider;
+
+    /**
+     * Returns true if gossip is halted, false otherwise
+     */
+    private final BooleanSupplier gossipHalted;
+
+    /**
+     * Returns true if the intake queue is too full, false otherwise
+     */
+    private final BooleanSupplier intakeIsTooFull;
 
     /**
      * The last time this protocol executed
@@ -99,7 +106,6 @@ public class SyncProtocol implements Protocol {
      * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
      * @param fallenBehindManager    manager to determine whether this node has fallen behind
      * @param permitProvider         provides permits to sync
-     * @param peerAgnosticSyncChecks peer agnostic checks to determine whether this node should sync
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
      * @param time                   a source of time
@@ -110,7 +116,8 @@ public class SyncProtocol implements Protocol {
             @NonNull final ShadowGraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final SyncPermitProvider permitProvider,
-            @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
+            @NonNull final BooleanSupplier gossipHalted,
+            @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Time time) {
@@ -120,7 +127,8 @@ public class SyncProtocol implements Protocol {
         this.synchronizer = Objects.requireNonNull(synchronizer);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.permitProvider = Objects.requireNonNull(permitProvider);
-        this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
+        this.gossipHalted = Objects.requireNonNull(gossipHalted);
+        this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         this.time = Objects.requireNonNull(time);
@@ -136,25 +144,63 @@ public class SyncProtocol implements Protocol {
     }
 
     /**
+     * Is now the right time to sync?
+     *
+     * @return true if the node should sync, false otherwise
+     */
+    private boolean shouldSync() {
+
+        if (!syncCooldownComplete()) {
+            syncMetrics.doNotSyncCooldown();
+            return false;
+        }
+
+        if (gossipHalted.getAsBoolean()) {
+            syncMetrics.doNotSyncHalted();
+            return false;
+        }
+
+        if (intakeIsTooFull.getAsBoolean()) {
+            syncMetrics.doNotSyncIntakeQueue();
+            return false;
+        }
+
+        if (fallenBehindManager.hasFallenBehind()) {
+            syncMetrics.doNotSyncFallenBehind();
+            return false;
+        }
+
+        final PermitRequestResult permitRequestResult = permitProvider.tryAcquire(peerId);
+
+        return switch (permitRequestResult) {
+            case PERMIT_ACQUIRED -> {
+                syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+                yield true;
+            }
+            case UNPROCESSED_EVENTS -> {
+                syncMetrics.doNotSyncIntakeCounter();
+                yield false;
+            }
+            case NO_PERMIT_AVAILABLE -> {
+                syncMetrics.doNotSyncNoPermits();
+                yield false;
+            }
+        };
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public boolean shouldInitiate() {
         syncMetrics.opportunityToInitiateSync();
+        final boolean shouldSync = shouldSync();
 
-        // are there any reasons not to initiate?
-        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
-            return false;
-        }
-
-        final boolean isLockAcquired = permitProvider.tryAcquire(peerId);
-
-        if (isLockAcquired) {
-            syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+        if (shouldSync) {
             syncMetrics.outgoingSyncRequestSent();
         }
 
-        return isLockAcquired;
+        return shouldSync;
     }
 
     /**
@@ -163,20 +209,13 @@ public class SyncProtocol implements Protocol {
     @Override
     public boolean shouldAccept() {
         syncMetrics.incomingSyncRequestReceived();
+        final boolean shouldSync = shouldSync();
 
-        // are there any reasons not to accept?
-        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
-            return false;
-        }
-
-        final boolean isLockAcquired = permitProvider.tryAcquire(peerId);
-
-        if (isLockAcquired) {
-            syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+        if (shouldSync) {
             syncMetrics.acceptedSyncRequest();
         }
 
-        return isLockAcquired;
+        return shouldSync;
     }
 
     /**

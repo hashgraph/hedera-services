@@ -25,7 +25,9 @@ import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.wiring.ClearTrigger;
@@ -56,7 +58,7 @@ public class OrphanBuffer {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * The number of orphans currently in the buffer.
@@ -72,15 +74,13 @@ public class OrphanBuffer {
      * A set containing descriptors of all non-ancient events that have found their parents (or whose parents have
      * become ancient).
      */
-    private final SequenceSet<EventDescriptor> eventsWithParents =
-            new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+    private final SequenceSet<EventDescriptor> eventsWithParents;
 
     /**
      * A map where the key is the descriptor of a missing parent, and the value is a list of orphans that are missing
      * that parent.
      */
-    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap =
-            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap;
 
     /**
      * Constructor
@@ -100,13 +100,26 @@ public class OrphanBuffer {
                                 PLATFORM_CATEGORY, "orphanBufferSize", Integer.class, this::getCurrentOrphanCount)
                         .withDescription("number of orphaned events currently in the orphan buffer")
                         .withUnit("events"));
+
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+        } else {
+            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+        }
     }
 
     /**
      * Add a new event to the buffer if it is an orphan.
      * <p>
-     * Events that are ancient are ignored, and events that don't have any missing parents are
-     * immediately passed along down the pipeline.
+     * Events that are ancient are ignored, and events that don't have any missing parents are immediately passed along
+     * down the pipeline.
      *
      * @param event the event to handle
      * @return the list of events that are no longer orphans as a result of this event being handled
@@ -144,14 +157,14 @@ public class OrphanBuffer {
     public List<GossipEvent> setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
-        eventsWithParents.shiftWindow(nonAncientEventWindow.getLowerBound());
+        eventsWithParents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
 
         // As the map is cleared out, we need to gather the ancient parents and their orphans. We can't
         // modify the data structure as the window is being shifted, so we collect that data and act on
         // it once the window has finished shifting.
         final List<ParentAndOrphans> ancientParents = new ArrayList<>();
         missingParentMap.shiftWindow(
-                nonAncientEventWindow.getLowerBound(),
+                nonAncientEventWindow.getAncientThreshold(),
                 (parent, orphans) -> ancientParents.add(new ParentAndOrphans(parent, orphans)));
 
         final List<GossipEvent> unorphanedEvents = new ArrayList<>();
