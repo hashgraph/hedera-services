@@ -31,21 +31,18 @@ import java.util.List;
 /**
  * Wiring for the {@link LinkedEventIntake}.
  *
- * @param eventInput                        the input wire for events to be added to the hashgraph
- * @param pauseInput                        the input wire for pausing the linked event intake
- * @param consensusRoundOutput              the output wire for consensus rounds
- * @param nonAncientEventWindowOutput       the output wire for the {@link NonAncientEventWindow}. This output is
- *                                          transformed from the consensus round output
- * @param minimumGenerationNonAncientOutput the output wire for the minimum generation non-ancient. This output is
- *                                          transformed from the consensus round output
- * @param flushRunnable                     the runnable to flush the intake
+ * @param eventInput                  the input wire for events to be added to the hashgraph
+ * @param pauseInput                  the input wire for pausing the linked event intake
+ * @param consensusRoundOutput        the output wire for consensus rounds
+ * @param nonAncientEventWindowOutput the output wire for the {@link NonAncientEventWindow}. This output is transformed
+ *                                    from the consensus round output
+ * @param flushRunnable               the runnable to flush the intake
  */
 public record LinkedEventIntakeWiring(
         @NonNull InputWire<EventImpl> eventInput,
         @NonNull InputWire<Boolean> pauseInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
         @NonNull OutputWire<NonAncientEventWindow> nonAncientEventWindowOutput,
-        @NonNull OutputWire<Long> minimumGenerationNonAncientOutput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -66,10 +63,6 @@ public record LinkedEventIntakeWiring(
                         "getNonAncientEventWindow",
                         "rounds",
                         consensusRound -> consensusRound.getNonAncientEventWindow()),
-                consensusRoundOutput.buildTransformer(
-                        "getMinimumGenerationNonAncient",
-                        "rounds",
-                        consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient()),
                 taskScheduler::flush);
     }
 
