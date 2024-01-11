@@ -77,8 +77,8 @@ public class StateSignatureCollectorWiring {
         final WireTransformer<GossipEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 preConsensusTransformer = new WireTransformer<>(
                         model,
-                        "preConsensusTransformer",
-                        "pre-consensus events",
+                        "preconsensusTransformer",
+                        "preconsensus events",
                         new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleEvent);
         preConsensusEventInput = preConsensusTransformer.getInputWire();
         preConsSigInput = taskScheduler.buildInputWire("pre-consensus state signature transactions");

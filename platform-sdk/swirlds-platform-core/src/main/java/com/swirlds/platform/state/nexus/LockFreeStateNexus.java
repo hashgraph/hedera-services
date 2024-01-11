@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A thread-safe container that also manages reservations for a single signed state.
+ * A lock-free implementation of {@link SignedStateNexus}. This implementation is the most efficient, but it makes it
+ * more complicated to add additional functionality to the nexus.
  */
 public class LockFreeStateNexus implements SignedStateNexus {
     private final AtomicReference<ReservedSignedState> currentState = new AtomicReference<>();

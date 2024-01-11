@@ -134,6 +134,7 @@ public class StateSignatureCollector {
      */
     public @Nullable List<ReservedSignedState> handlePreconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+        Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePreconsensusSignature)
                 .filter(Objects::nonNull)
@@ -142,7 +143,6 @@ public class StateSignatureCollector {
 
     private @Nullable ReservedSignedState handlePreconsensusSignature(
             @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
-        Objects.requireNonNull(scopedTransaction);
 
         final long round = scopedTransaction.transaction().getRound();
         final Signature signature = scopedTransaction.transaction().getStateSignature();
@@ -171,6 +171,7 @@ public class StateSignatureCollector {
      */
     public @Nullable List<ReservedSignedState> handlePostconsensusSignatures(
             @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+        Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePostconsensusSignature)
                 .filter(Objects::nonNull)
@@ -179,8 +180,6 @@ public class StateSignatureCollector {
 
     private @Nullable ReservedSignedState handlePostconsensusSignature(
             @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
-        Objects.requireNonNull(scopedTransaction);
-
         final long round = scopedTransaction.transaction().getRound();
 
         final ReservedSignedState reservedState = incompleteStates.get(round);
@@ -209,9 +208,6 @@ public class StateSignatureCollector {
             @NonNull final ReservedSignedState reservedSignedState,
             @NonNull final NodeId nodeId,
             @NonNull final Signature signature) {
-        Objects.requireNonNull(reservedSignedState, "signedState must not be null");
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(signature, "signature must not be null");
         final SignedState signedState = reservedSignedState.get();
 
         if (signedState.addSignature(nodeId, signature)) {
