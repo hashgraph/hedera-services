@@ -46,6 +46,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -59,6 +60,7 @@ import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesSequencerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
+import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -84,6 +86,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
+    private final ShadowgraphWiring shadowgraphWiring;
 
     private final PlatformCoordinator platformCoordinator;
     /**
@@ -133,6 +136,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
+        shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
 
         wire();
     }
@@ -173,6 +177,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesSequencerWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
         pcesSequencerWiring.eventOutput().solderTo(pcesWriterWiring.eventInputWire());
         inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
         eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
         orphanBufferWiring
@@ -194,6 +199,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
                 .solderTo(pcesWriterWiring.minimumGenerationToStoreInputWire());
+
+        linkedEventIntakeWiring.nonExpiredEventWindowOutput().solderTo(shadowgraphWiring.nonExpiredEventWindowInput());
     }
 
     /**
@@ -270,6 +277,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param pcesReplayer           the PCES replayer to bind
      * @param pcesWriter             the PCES writer to bind
      * @param eventDurabilityNexus   the event durability nexus to bind
+     * @param shadowgraph            the shadowgraph to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -277,7 +285,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final PcesWriter pcesWriter,
-            @NonNull final EventDurabilityNexus eventDurabilityNexus) {
+            @NonNull final EventDurabilityNexus eventDurabilityNexus,
+            @NonNull final ShadowGraph shadowgraph) {
 
         eventHasherWiring.bind(eventHasher);
         signedStateFileManagerWiring.bind(signedStateFileManager);
@@ -285,6 +294,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
+        shadowgraphWiring.bind(shadowgraph);
 
         // FUTURE WORK: bind all the things!
     }

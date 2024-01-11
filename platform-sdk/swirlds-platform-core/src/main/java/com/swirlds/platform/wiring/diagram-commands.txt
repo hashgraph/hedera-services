@@ -9,11 +9,12 @@ pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:ẞ' \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
+    -s 'getNonExpiredEventWindow:non-expired event window:e' \
     -s 'applicationTransactionPrehandler:futures:★' \
     -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
+    -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient,getNonExpiredEventWindow' \
     -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
     -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \

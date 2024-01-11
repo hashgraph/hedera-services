@@ -549,7 +549,13 @@ public class SwirldsPlatform implements Platform {
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
         platformWiring.bind(
-                eventHasher, signedStateFileManager, stateSigner, pcesReplayer, pcesWriter, eventDurabilityNexus);
+                eventHasher,
+                signedStateFileManager,
+                stateSigner,
+                pcesReplayer,
+                pcesWriter,
+                eventDurabilityNexus,
+                shadowGraph);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =

@@ -160,7 +160,7 @@ class ShadowGraphTest {
 
         long expireBelowGen = random.nextInt(10) + 1;
 
-        shadowGraph.expireBelow(expireBelowGen);
+        shadowGraph.updateNonExpiredEventWindow(expireBelowGen);
 
         Set<ShadowEvent> allEvents = shadowGraph.findAncestors(shadowGraph.getTips(), (e) -> true);
         for (ShadowEvent event : allEvents) {
@@ -300,7 +300,7 @@ class ShadowGraphTest {
         long expireBelowGen = FIRST_GENERATION + 1;
 
         GenerationReservation r1 = shadowGraph.reserve();
-        shadowGraph.expireBelow(expireBelowGen);
+        shadowGraph.updateNonExpiredEventWindow(expireBelowGen);
 
         GenerationReservation r2 = shadowGraph.reserve();
         assertNotEquals(
@@ -361,7 +361,7 @@ class ShadowGraphTest {
         initShadowGraph(random, numEvents, numNodes);
 
         long expireBelowGen = random.nextInt((int) maxGen) + 2;
-        shadowGraph.expireBelow(expireBelowGen);
+        shadowGraph.updateNonExpiredEventWindow(expireBelowGen);
 
         assertEventsBelowGenAreExpired(expireBelowGen);
     }
@@ -401,9 +401,9 @@ class ShadowGraphTest {
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
         GenerationReservation r0 = shadowGraph.reserve();
-        shadowGraph.expireBelow(FIRST_GENERATION + 1);
+        shadowGraph.updateNonExpiredEventWindow(FIRST_GENERATION + 1);
         GenerationReservation r1 = shadowGraph.reserve();
-        shadowGraph.expireBelow(FIRST_GENERATION + 2);
+        shadowGraph.updateNonExpiredEventWindow(FIRST_GENERATION + 2);
         GenerationReservation r2 = shadowGraph.reserve();
 
         // release the middle reservation to ensure that generations
@@ -415,13 +415,13 @@ class ShadowGraphTest {
         r2.close();
 
         // Attempt to expire everything up to
-        shadowGraph.expireBelow(FIRST_GENERATION + 2);
+        shadowGraph.updateNonExpiredEventWindow(FIRST_GENERATION + 2);
 
         // No event should have been expired because the first generation is reserved
         assertEventsBelowGenAreExpired(0);
 
         r0.close();
-        shadowGraph.expireBelow(FIRST_GENERATION + 2);
+        shadowGraph.updateNonExpiredEventWindow(FIRST_GENERATION + 2);
 
         // Now that the reservation is closed, ensure that the events in the below generation 2 are expired
         assertEventsBelowGenAreExpired(FIRST_GENERATION + 2);
@@ -529,7 +529,7 @@ class ShadowGraphTest {
     void testAddEventWithExpiredGeneration() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        shadowGraph.expireBelow(FIRST_GENERATION + 1);
+        shadowGraph.updateNonExpiredEventWindow(FIRST_GENERATION + 1);
         genToShadows
                 .get(FIRST_GENERATION)
                 .forEach(shadow -> assertThrows(
@@ -565,7 +565,7 @@ class ShadowGraphTest {
 
         IndexedEvent newEvent = emitter.emitEvent();
 
-        shadowGraph.expireBelow(newEvent.getGeneration());
+        shadowGraph.updateNonExpiredEventWindow(newEvent.getGeneration());
 
         assertDoesNotThrow(() -> shadowGraph.addEvent(newEvent), "Events with expired parents should be added.");
     }
@@ -682,7 +682,7 @@ class ShadowGraphTest {
         int numTipsBeforeExpiry = shadowGraph.getTips().size();
         assertTrue(numTipsBeforeExpiry > 0, "Shadow graph should have tips after events are added.");
 
-        shadowGraph.expireBelow(oldestTipGen + 1);
+        shadowGraph.updateNonExpiredEventWindow(oldestTipGen + 1);
 
         assertEquals(
                 numTipsBeforeExpiry - tipsToExpire.size(),

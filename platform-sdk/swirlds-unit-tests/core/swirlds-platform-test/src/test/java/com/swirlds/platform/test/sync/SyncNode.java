@@ -256,7 +256,7 @@ public class SyncNode {
     }
 
     /**
-     * <p>Calls the {@link ShadowGraph#expireBelow(long)} method and saves the {@code expireBelow} value for use in
+     * <p>Calls the {@link ShadowGraph#updateNonExpiredEventWindow(long)} method and saves the {@code expireBelow} value for use in
      * validation. For the purposes of these tests, the {@code expireBelow} value becomes the oldest non-expired
      * generation in the shadow graph returned by {@link SyncNode#getOldestGeneration()} . In order words, these tests
      * assume there are no generation reservations prior to the sync that occurs in the test.</p>
@@ -266,7 +266,7 @@ public class SyncNode {
      */
     public void expireBelow(final long expireBelow) {
         this.oldestGeneration = expireBelow;
-        shadowGraph.expireBelow(expireBelow);
+        shadowGraph.updateNonExpiredEventWindow(expireBelow);
     }
 
     public NodeId getNodeId() {

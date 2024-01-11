@@ -46,6 +46,7 @@ public record LinkedEventIntakeWiring(
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
         @NonNull OutputWire<NonAncientEventWindow> nonAncientEventWindowOutput,
         @NonNull OutputWire<Long> minimumGenerationNonAncientOutput,
+        @NonNull OutputWire<Long> nonExpiredEventWindowOutput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -63,13 +64,13 @@ public record LinkedEventIntakeWiring(
                 taskScheduler.buildInputWire("pause"),
                 consensusRoundOutput,
                 consensusRoundOutput.buildTransformer(
-                        "getNonAncientEventWindow",
-                        "rounds",
-                        consensusRound -> consensusRound.getNonAncientEventWindow()),
+                        "getNonAncientEventWindow", "rounds", ConsensusRound::getNonAncientEventWindow),
                 consensusRoundOutput.buildTransformer(
                         "getMinimumGenerationNonAncient",
                         "rounds",
                         consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient()),
+                consensusRoundOutput.buildTransformer(
+                        "getNonExpiredEventWindow", "rounds", consensusRound -> 0L), // TODO
                 taskScheduler::flush);
     }
 

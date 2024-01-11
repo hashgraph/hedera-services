@@ -370,7 +370,7 @@ public class ShadowGraph implements Clearable {
      * @param generation The generation below which all generations should be expired. For example, if
      *                   {@code generation} is 100, events in generation 99 and below should be expired.
      */
-    public synchronized void expireBelow(final long generation) {
+    public synchronized void updateNonExpiredEventWindow(final long generation) {
         if (generation < expireBelow) {
             logger.error(
                     EXCEPTION.getMarker(),

@@ -34,6 +34,7 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -70,7 +71,8 @@ class PlatformWiringTests {
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
-                mock(EventDurabilityNexus.class));
+                mock(EventDurabilityNexus.class),
+                mock(ShadowGraph.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

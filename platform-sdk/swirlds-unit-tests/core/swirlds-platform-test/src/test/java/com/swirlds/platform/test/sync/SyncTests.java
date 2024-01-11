@@ -589,10 +589,10 @@ public class SyncTests {
         executor.setCustomPreSyncConfiguration((c, l) -> {
             when(c.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinGen);
             when(c.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
-            c.getShadowGraph().expireBelow(callerMinGen);
+            c.getShadowGraph().updateNonExpiredEventWindow(callerMinGen);
             when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinGen);
             when(l.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
-            l.getShadowGraph().expireBelow(listenerMinGen);
+            l.getShadowGraph().updateNonExpiredEventWindow(listenerMinGen);
         });
 
         executor.execute();
@@ -666,7 +666,7 @@ public class SyncTests {
                     allCallerEvents.forEach(e -> e.getEvent().clear());
 
                     // Expire the events from the shadow graph
-                    executor.getCaller().getShadowGraph().expireBelow(genToExpire.get() + 1);
+                    executor.getCaller().getShadowGraph().updateNonExpiredEventWindow(genToExpire.get() + 1);
                 },
                 false));
 
@@ -716,11 +716,11 @@ public class SyncTests {
 
         // before the sync, expire the tip on the listener
         executor.setCustomPreSyncConfiguration((c, l) -> {
-            l.getShadowGraph().expireBelow(maxGen.get() + 1);
+            l.getShadowGraph().updateNonExpiredEventWindow(maxGen.get() + 1);
             when(l.getConsensus().getMinGenerationNonAncient()).thenReturn(maxGen.get() + 2);
             when(l.getConsensus().getMaxRoundGeneration()).thenReturn(maxGen.get() + 3);
 
-            c.getShadowGraph().expireBelow(maxGen.get() - 1);
+            c.getShadowGraph().updateNonExpiredEventWindow(maxGen.get() - 1);
             when(c.getConsensus().getMinGenerationNonAncient()).thenReturn(maxGen.get() + 2);
             when(c.getConsensus().getMaxRoundGeneration()).thenReturn(maxGen.get() + 3);
         });
@@ -728,7 +728,7 @@ public class SyncTests {
         // after phase 1, expire the tip on the caller
         final SyncPhaseParallelExecutor parallelExecutor = new SyncPhaseParallelExecutor(
                 getStaticThreadManager(),
-                () -> executor.getCaller().getShadowGraph().expireBelow(maxGen.get() + 1),
+                () -> executor.getCaller().getShadowGraph().updateNonExpiredEventWindow(maxGen.get() + 1),
                 null,
                 true);
         executor.setExecutorSupplier(() -> parallelExecutor);
@@ -835,7 +835,7 @@ public class SyncTests {
 
         // Expire events from the listener's graph after the supplied phase
         final Runnable expireEvents =
-                () -> executor.getListener().getShadowGraph().expireBelow(genToExpire.get());
+                () -> executor.getListener().getShadowGraph().updateNonExpiredEventWindow(genToExpire.get());
         final SyncPhaseParallelExecutor parallelExecutor = new SyncPhaseParallelExecutor(
                 getStaticThreadManager(),
                 expireAfterPhase == 1 ? expireEvents : null,
