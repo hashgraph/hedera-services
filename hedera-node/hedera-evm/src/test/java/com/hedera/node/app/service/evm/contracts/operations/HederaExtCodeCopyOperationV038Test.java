@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeCopyOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
     private WorldUpdater worldUpdater;
@@ -53,6 +55,9 @@ class HederaExtCodeCopyOperationV038Test {
 
     @Mock
     private EVM evm;
+
+    @Mock
+    private EvmProperties evmProperties;
 
     @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
@@ -70,7 +75,7 @@ class HederaExtCodeCopyOperationV038Test {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
     }
 
     @Test
@@ -83,6 +88,7 @@ class HederaExtCodeCopyOperationV038Test {
                 .willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         var opResult = subject.execute(mf, evm);
@@ -118,6 +124,7 @@ class HederaExtCodeCopyOperationV038Test {
                 .willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         var opResult = subject.execute(mf, evm);
@@ -130,7 +137,7 @@ class HederaExtCodeCopyOperationV038Test {
     @Test
     void successfulExecutionPrecompileAddress() {
         // given:
-        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.getStackItem(0)).willReturn(ETH_ADDRESS_INSTANCE);
         given(mf.getStackItem(1)).willReturn(MEM_OFFSET);
         given(mf.getStackItem(2)).willReturn(MEM_OFFSET);

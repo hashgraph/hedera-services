@@ -69,8 +69,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_GRANDFATHER_CONTRACTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
@@ -238,7 +240,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_GET;
@@ -367,17 +369,19 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
             entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
-            entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_38),
+            entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_46),
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
             entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
             entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
             entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 16_384_000),
             entry(CONTRACTS_CHAIN_ID, 295),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
+            entry(CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, true),
             entry(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, EnumSet.of(CustomFeeType.FIXED_FEE)),
             entry(
                     CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                     Set.of(Address.fromHexString("0x164e64"), Address.fromHexString("0x103783"))),
+            entry(CONTRACTS_GRANDFATHER_CONTRACTS, Set.of()),
             entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, LegacyContractIdActivations.from("1058134by[1062784]")),
             entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
             entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
