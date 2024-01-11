@@ -187,7 +187,7 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec vanillaSuccess() {
-        return defaultHapiSpec("vanillaSuccess")
+        return defaultHapiSpec("vanillaSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(
@@ -201,7 +201,7 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec impureCallFails() {
-        return defaultHapiSpec("impureCallFails")
+        return defaultHapiSpec("impureCallFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when()
                 .then(
@@ -213,7 +213,7 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec invalidDeletedContract() {
-        return defaultHapiSpec("invalidDeletedContract")
+        return defaultHapiSpec("invalidDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
@@ -225,7 +225,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     final HapiSpec invalidContractID() {
         final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
         final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
-        return defaultHapiSpec("InvalidContractID")
+        return defaultHapiSpec("InvalidContractID", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
                 .then(
@@ -241,7 +241,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     final HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
-        return defaultHapiSpec("insufficientFeeFails")
+        return defaultHapiSpec("insufficientFeeFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(
@@ -282,7 +282,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                 + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
                 + "\"type\": \"function\"}";
 
-        return defaultHapiSpec("erc20Query")
+        return defaultHapiSpec("erc20Query", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract())
                 .when()
                 .then(contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
@@ -292,7 +292,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/pull/5485
     @HapiTest
     final HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
-        return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer")
+        return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(withOpContext((spec, opLog) -> IntStream.range(0, 2000).forEach(i -> {
