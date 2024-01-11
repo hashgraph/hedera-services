@@ -45,7 +45,6 @@ import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -211,9 +210,6 @@ public class SyncGossip extends AbstractGossip {
             thingsToStart.add(0, reconnectController::start);
         }
 
-        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
-                () -> !gossipHalted.get(), () -> intakeQueue.size() < eventConfig.eventIntakeQueueThrottleSize()));
-
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -269,7 +265,8 @@ public class SyncGossip extends AbstractGossip {
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,
                                             syncPermitProvider,
-                                            peerAgnosticSyncChecks,
+                                            gossipHalted::get,
+                                            () -> intakeQueue.size() >= eventConfig.eventIntakeQueueThrottleSize(),
                                             Duration.ZERO,
                                             syncMetrics,
                                             time)))))
