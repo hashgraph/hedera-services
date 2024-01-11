@@ -360,7 +360,7 @@ public class ContractCallSuite extends HapiSuite {
         final var failedResult = Bytes32.repeat((byte) 0);
         final ContractCallResult unsuccessfulResult = () -> failedResult;
         final ContractCallResult successfulResult = () -> failedResult.or(Bytes.of(1));
-        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls")
+        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
@@ -551,7 +551,7 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec depositMoreThanBalanceFailsGracefully() {
-        return defaultHapiSpec("depositMoreThanBalanceFailsGracefully")
+        return defaultHapiSpec("depositMoreThanBalanceFailsGracefully", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         cryptoCreate(ACCOUNT).balance(ONE_HBAR - 1))
@@ -873,7 +873,8 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec(
                         "erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(contractAlternatives),
                         contractCreate(contractAlternatives),
@@ -2146,7 +2147,10 @@ public class ContractCallSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec sendHbarsToCallerFromDifferentAddresses() {
-        return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses", NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS)
+        return defaultHapiSpec(
+                        "sendHbarsToCallerFromDifferentAddresses",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(withOpContext((spec, log) -> {
                     final var keyCreation = newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE);
                     if (!spec.isUsingEthCalls()) {
