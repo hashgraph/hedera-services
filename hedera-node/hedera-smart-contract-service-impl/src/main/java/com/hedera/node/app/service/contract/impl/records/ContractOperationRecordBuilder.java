@@ -27,13 +27,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface ContractOperationRecordBuilder extends DeleteCapableTransactionRecordBuilder {
     /**
-     * Returns the current transaction fee.
-     *
-     * @return the current transaction fee
-     */
-    long transactionFee();
-
-    /**
      * Sets the transaction fee.
      *
      * @param transactionFee the new transaction fee

@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
@@ -33,6 +34,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 class ContractOperationRecordBuilderTest {
@@ -46,6 +48,12 @@ class ContractOperationRecordBuilderTest {
             @Override
             public long transactionFee() {
                 return totalFee;
+            }
+
+            @NotNull
+            @Override
+            public TransactionBody transactionBody() {
+                return TransactionBody.DEFAULT;
             }
 
             @Override
