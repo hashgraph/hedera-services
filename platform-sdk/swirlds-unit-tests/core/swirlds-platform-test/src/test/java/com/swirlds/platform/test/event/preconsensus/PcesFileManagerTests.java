@@ -279,8 +279,8 @@ class PcesFileManagerTests {
                     PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
             lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = Math.max(upperBound + 1, random.nextLong(lowerBound, lowerBound + maxDelta));
-            timestamp = timestamp.plusSeconds(random.nextInt(1, 100));
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
             createDummyFile(file);
@@ -292,10 +292,10 @@ class PcesFileManagerTests {
 
         final PcesFile firstFile = files.getFirst();
         final PcesFile middleFile = files.get(middleFileIndex);
+        final PcesFile lastFile = files.getLast();
 
         // Set the clock before the first file is not garbage collection eligible
         final FakeTime time = new FakeTime(firstFile.getTimestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
-
         final PlatformContext platformContext = buildContext(ancientMode, time);
 
         final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
@@ -309,8 +309,11 @@ class PcesFileManagerTests {
         final Instant endingTime =
                 middleFile.getTimestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
 
-        while (time.now().isBefore(endingTime)) {
-            manager.pruneOldFiles(middleFile.getUpperBound());
+        Duration nextTimeIncrease = Duration.ofSeconds(random.nextInt(1, 20));
+        while (time.now().plus(nextTimeIncrease).isBefore(endingTime)) {
+            time.tick(nextTimeIncrease);
+            manager.pruneOldFiles(lastFile.getUpperBound() + 1);
+
             // Parse files afresh to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final PcesFileTracker freshFileTracker = PcesFileReader.readFilesFromDisk(
@@ -347,12 +350,12 @@ class PcesFileManagerTests {
             }
             assertIteratorEquality(expectedFiles.iterator(), freshFileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
-            time.tick(Duration.ofSeconds(random.nextInt(1, 100)));
+            nextTimeIncrease = Duration.ofSeconds(random.nextInt(1, 20));
         }
 
-        // Now, increase the ancient threshold by a little and try again.
-        // The middle file should now be garbage collection eligible.
-        manager.pruneOldFiles(middleFile.getUpperBound() + 1);
+        // tick time to 1 millisecond after the time of the middle file, so that it's now eligible for deletion
+        time.tick(Duration.between(time.now(), endingTime).plus(Duration.ofMillis(1)));
+        manager.pruneOldFiles(lastFile.getUpperBound() + 1);
 
         // Parse files afresh to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk

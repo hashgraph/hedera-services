@@ -211,15 +211,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
-     * Get the birth round of the event.
-     *
-     * @return the birth round of the event
-     */
-    public long getBirthRound() {
-        return hashedData.getBirthRound();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

@@ -174,7 +174,7 @@ public final class BestEffortPcesFileCopy {
         if (filesToCopy.isEmpty()) {
             logger.warn(
                     STATE_TO_DISK.getMarker(),
-                    "No preconsensus event files meeting specified criteria found to copy. " + "Lower bound: {}",
+                    "No preconsensus event files meeting specified criteria found to copy. Lower bound: {}",
                     lowerBound);
         } else if (filesToCopy.size() == 1) {
             logger.info(

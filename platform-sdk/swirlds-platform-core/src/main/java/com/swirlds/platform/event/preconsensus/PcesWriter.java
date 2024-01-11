@@ -37,8 +37,6 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This object is responsible for writing events to the database.
- * <p>
- * Future work: This class will be deleted once the PCES migration to the new framework is complete.
  */
 public class PcesWriter {
 
@@ -148,7 +146,7 @@ public class PcesWriter {
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
-        averageSpanUtilization = new LongRunningAverage(config.spanUtilizationSpanRunningAverageLength());
+        averageSpanUtilization = new LongRunningAverage(config.spanUtilizationRunningAverageLength());
         previousSpan = config.bootstrapSpan();
         bootstrapSpanOverlapFactor = config.bootstrapSpanOverlapFactor();
         spanOverlapFactor = config.spanOverlapFactor();

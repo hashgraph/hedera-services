@@ -262,14 +262,14 @@ public class RandomEventUtils {
                         selfParent.getBaseHash(),
                         selfParent.getCreatorId(),
                         selfParent.getGeneration(),
-                        selfParent.getBaseEvent().getBirthRound());
+                        selfParent.getBaseEvent().getHashedData().getBirthRound());
         final EventDescriptor otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
                 : new EventDescriptor(
                         otherParent.getBaseHash(),
                         otherParent.getCreatorId(),
                         otherParent.getGeneration(),
-                        otherParent.getBaseEvent().getBirthRound());
+                        otherParent.getBaseEvent().getHashedData().getBirthRound());
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),

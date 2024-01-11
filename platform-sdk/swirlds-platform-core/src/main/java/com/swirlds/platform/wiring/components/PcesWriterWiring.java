@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param doneStreamingPcesInputWire        the input wire for the trigger to indicate that PCES streaming is complete
  * @param eventInputWire                    the input wire for events to be written
  * @param discontinuityInputWire            the input wire for PCES discontinuities
- * @param nonAncientEventWindowInput  the input wire for the minimum generation of non-ancient events
+ * @param nonAncientEventWindowInput        the input wire for non ancient event windows
  * @param minimumGenerationToStoreInputWire the input wire for the minimum generation of events to store
  * @param latestDurableSequenceNumberOutput the output wire for the latest durable sequence number
  */

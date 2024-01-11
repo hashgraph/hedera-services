@@ -452,8 +452,8 @@ public final class PcesFile implements Comparable<PcesFile> {
     }
 
     /**
-     * Get an iterator that walks over the events in this file. The iterator will only return events that have a
-     * are not sequentially preceding the lower bound.
+     * Get an iterator that walks over the events in this file. The iterator will only return events that have an
+     * ancient indicator that is greater than or equal to the lower bound.
      *
      * @param lowerBound lower bound of the events to return, will be either a generation or a birth round depending on
      *                   the {@link AncientMode}.

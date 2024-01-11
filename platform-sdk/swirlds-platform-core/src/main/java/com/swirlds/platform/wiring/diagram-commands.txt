@@ -44,8 +44,3 @@ pcli diagram \
     -c 'State File Management' \
     -c 'State Signature Collection' \
     -c 'Preconsensus Event Stream'
-
-
-
-
-        -s 'pcesReplayer:done streaming pces:✓' \
