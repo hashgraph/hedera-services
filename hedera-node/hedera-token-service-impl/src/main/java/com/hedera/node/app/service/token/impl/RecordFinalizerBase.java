@@ -177,7 +177,7 @@ public class RecordFinalizerBase {
             final var persistedNft = writableNftStore.getOriginalValue(nftId);
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
-            AccountID senderAccountId = null;
+            AccountID senderAccountId;
             final var token = requireNonNull(writableTokenStore.get(nftId.tokenIdOrThrow()));
             if (persistedNft != null) {
                 // If the NFT did not have an owner before set it to the treasury account
@@ -223,12 +223,26 @@ public class RecordFinalizerBase {
         return nftChanges;
     }
 
+    /**
+     * Checks if both the original token and modified token exist and the treasury account ID has changed.
+     * @param originalToken the {@link Token} representing the original token
+     * @param modifiedToken the {@link Token} representing the modified token
+     * @return true if both the original token and modified token exist and the treasury account ID has changed
+     */
     private static boolean bothExistButTreasuryChanged(
             @Nullable final Token originalToken, @NonNull final Token modifiedToken) {
         return originalToken != null
                 && !originalToken.treasuryAccountId().equals(modifiedToken.treasuryAccountIdOrElse(AccountID.DEFAULT));
     }
 
+    /**
+     * Updates the given {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
+     * ownership changes.
+     * @param nftId the {@link NftID} representing the nft
+     * @param senderAccountId the {@link AccountID} representing the sender account ID
+     * @param receiverAccountId the {@link AccountID} representing the receiver account ID
+     * @param nftChanges the {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
+     */
     private static void updateNftChanges(
             final NftID nftId,
             final AccountID senderAccountId,
