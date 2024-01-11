@@ -16,8 +16,22 @@
 
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
-import java.io.IOException;
+/**
+ * A functional interface that represents an action that accepts a single argument and
+ * returns no result. It is similar to {@link java.util.function.Consumer}, but may
+ * throw a checked exception.
+ *
+ * @param <T> input type
+ * @param <E> checked exception type
+ */
+@FunctionalInterface
+public interface ThrowingConsumer<T, E extends Exception> {
 
-public interface CheckedConsumer<T> {
-    void accept(T t) throws IOException;
+    /**
+     * Performs an action on the given argument.
+     *
+     * @param t the input argument
+     * @throws E if an error occurred
+     */
+    void accept(T t) throws E;
 }

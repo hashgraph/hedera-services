@@ -16,18 +16,27 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
+
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,7 +51,8 @@ class DataFileReaderCloseTest {
     @BeforeAll
     static void setup() throws IOException {
         final Path dir = TemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
-        collection = new DataFileCollection<>(dir, "store", serializer, null);
+        collection = new DataFileCollection<>(
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class), dir, "store", serializer, null);
     }
 
     @AfterAll
@@ -97,10 +107,51 @@ class DataFileReaderCloseTest {
         }
     }
 
+    @Test
+    void readWhileFinishWritingTest() throws IOException {
+        final Path tmpDir = TemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest");
+        for (int i = 0; i < 100; i++) {
+            Path filePath = null;
+            try {
+                final DataFileWriterPbj<long[]> writer =
+                        new DataFileWriterPbj<>("test", tmpDir, i, serializer, Instant.now(), INITIAL_COMPACTION_LEVEL);
+                filePath = writer.getPath();
+                final DataFileMetadata metadata = writer.getMetadata();
+                final LongList index = new LongListOffHeap();
+                index.put(0, writer.storeDataItem(new long[] {i, i * 2 + 1}));
+                final DataFileReaderPbj<long[]> reader = new DataFileReaderPbj<>(filePath, serializer, metadata);
+                final int fi = i;
+                // Check the item in parallel to finish writing
+                IntStream.of(0, 1).parallel().forEach(t -> {
+                    try {
+                        if (t == 1) {
+                            writer.finishWriting();
+                        } else {
+                            final long[] item = reader.readDataItem(index.get(0));
+                            Assertions.assertEquals(fi, item[0]);
+                            Assertions.assertEquals(fi * 2 + 1, item[1]);
+                        }
+                    } catch (final IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } finally {
+                if (filePath != null) {
+                    Files.delete(filePath);
+                }
+            }
+        }
+    }
+
     private static class TwoLongSerializer implements DataItemSerializer<long[]> {
         @Override
         public long getCurrentDataVersion() {
             return 0;
+        }
+
+        @Override
+        public int getSerializedSize() {
+            return Long.BYTES * 2;
         }
 
         @Override
@@ -114,16 +165,22 @@ class DataFileReaderCloseTest {
         }
 
         @Override
-        public int getSerializedSize() {
-            return Long.BYTES * 3;
+        public void serialize(long[] data, WritableSequentialData out) {
+            assert data.length == 2;
+            out.writeLong(data[0]);
+            out.writeLong(data[1]);
         }
 
         @Override
-        public int serialize(long[] data, ByteBuffer buffer) throws IOException {
+        public void serialize(long[] data, ByteBuffer buffer) throws IOException {
             assert data.length == 2;
             buffer.putLong(data[0]);
             buffer.putLong(data[1]);
-            return getSerializedSize();
+        }
+
+        @Override
+        public long[] deserialize(ReadableSequentialData in) {
+            return new long[] {in.readLong(), in.readLong()};
         }
 
         @Override

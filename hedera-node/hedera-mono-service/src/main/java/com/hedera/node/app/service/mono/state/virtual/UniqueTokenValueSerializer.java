@@ -16,17 +16,22 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class IterableContractMerkleDbValueSerializer implements ValueSerializer<IterableContractValue> {
+public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenValue> {
 
-    static final long CLASS_ID = 0x2137d0dcac9ab2b3L;
+    // Serializer class ID
+    static final long CLASS_ID = 0xc4d512c6695451d5L;
 
+    // Serializer version
     static final int CURRENT_VERSION = 1;
 
+    // Value data version
     static final long DATA_VERSION = 1;
 
     // Serializer info
@@ -53,27 +58,48 @@ public class IterableContractMerkleDbValueSerializer implements ValueSerializer<
         return VARIABLE_DATA_SIZE;
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    @Override
+    public int getSerializedSize(UniqueTokenValue value) {
+        return value.getSerializedSize();
+    }
+
+    @Override
     public int getTypicalSerializedSize() {
-        return IterableContractValue.getTypicalSerializedSize();
+        return UniqueTokenValue.getTypicalSerializedSize();
     }
 
     // Value serialization
 
     @Override
-    public int serialize(final IterableContractValue value, final ByteBuffer out) throws IOException {
+    public void serialize(@NonNull final UniqueTokenValue value, @NonNull final WritableSequentialData out) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
-        return value.getSerializedSize();
+    }
+
+    @Override
+    @Deprecated
+    public void serialize(final UniqueTokenValue value, final ByteBuffer out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
+        value.serialize(out);
     }
 
     // Value deserialization
 
     @Override
-    public IterableContractValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    public UniqueTokenValue deserialize(@NonNull final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final UniqueTokenValue value = new UniqueTokenValue();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public UniqueTokenValue deserialize(final ByteBuffer buffer, final long version) {
         Objects.requireNonNull(buffer);
-        final IterableContractValue value = new IterableContractValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         value.deserialize(buffer, (int) version);
         return value;
     }

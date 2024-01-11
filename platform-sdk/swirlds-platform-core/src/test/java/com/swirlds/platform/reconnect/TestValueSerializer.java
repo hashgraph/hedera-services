@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.reconnect;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class TestValueSerializer implements ValueSerializer<TestValue> {
@@ -29,12 +28,6 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     public long getClassId() {
         return 53543454;
     }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {}
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
     @Override
     public int getVersion() {
@@ -57,19 +50,32 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public int serialize(final TestValue data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final TestValue data, final WritableSequentialData out) {
+        final String s = data.getValue();
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
+        out.writeInt(bytes.length);
+        out.writeBytes(bytes);
+    }
+
+    @Override
+    public void serialize(TestValue data, ByteBuffer buffer) {
         final String s = data.getValue();
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
         buffer.putInt(bytes.length);
         buffer.put(bytes);
-        return Integer.BYTES + bytes.length;
     }
 
     @Override
-    public TestValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        if (dataVersion != getCurrentDataVersion()) {
-            throw new IllegalStateException("Data version mismatch");
-        }
+    public TestValue deserialize(final ReadableSequentialData in) {
+        final int length = in.readInt();
+        final byte[] bytes = new byte[length];
+        in.readBytes(bytes);
+        final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
+        return new TestValue(s);
+    }
+
+    @Override
+    public TestValue deserialize(ByteBuffer buffer, long dataVersion) {
         final int length = buffer.getInt();
         final byte[] bytes = new byte[length];
         buffer.get(bytes);

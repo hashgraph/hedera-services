@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.files.DataFileCommon.FILE_EXTENSION_JDB;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -48,7 +49,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 @SuppressWarnings("SameParameterValue")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class DataFileLowLevelTest {
+class DataFileJdbLowLevelTest {
 
     /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
@@ -57,7 +58,7 @@ class DataFileLowLevelTest {
 
     protected static final Random RANDOM = new Random(123456);
     protected static final Instant TEST_START = Instant.now();
-    protected static final Map<FilesTestType, DataFileMetadata> dataFileMetadataMap = new HashMap<>();
+    protected static final Map<FilesTestType, DataFileMetadataJdb> dataFileMetadataMap = new HashMap<>();
     protected static final Map<FilesTestType, Path> dataFileMap = new HashMap<>();
     protected static final Map<FilesTestType, LongArrayList> listOfDataItemLocationsMap = new HashMap<>();
     private static final int DATA_FILE_INDEX = 123;
@@ -109,7 +110,7 @@ class DataFileLowLevelTest {
     @EnumSource(FilesTestType.class)
     void createFile(FilesTestType testType) throws IOException {
         // open file and write data
-        DataFileWriter<long[]> writer = new DataFileWriter<>(
+        DataFileWriterJdb<long[]> writer = new DataFileWriterJdb<>(
                 "test_" + testType.name(),
                 tempFileDir,
                 DATA_FILE_INDEX,
@@ -136,11 +137,10 @@ class DataFileLowLevelTest {
         // tests
         assertTrue(Files.exists(writer.getPath()), "expected file does not exist");
         assertEquals(
+                createDataFilePath(
+                        "test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START, FILE_EXTENSION_JDB),
                 writer.getPath(),
-                createDataFilePath("test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START),
                 "unexpected path for writer");
-        long expectedFileSizeEstimate = testType.getDataFileLowLevelTestFileSize();
-        assertEquals(expectedFileSizeEstimate, writer.getFileSizeEstimate(), "unexpected fileSizeEstimate");
         // store for later tests
         dataFileMap.put(testType, writer.getPath());
         dataFileMetadataMap.put(testType, dataFileMetadata);
@@ -165,26 +165,14 @@ class DataFileLowLevelTest {
         // check metadata
         assertEquals(1000, dataFileMetadata.getDataItemCount(), "unexpected DataItemCount");
         assertEquals(TEST_START, dataFileMetadata.getCreationDate(), "unexpected creation date");
-        assertEquals(
-                testType.dataItemSerializer.getSerializedSize(),
-                dataFileMetadata.getDataItemValueSize(),
-                "unexpected DataItemValueSize");
-        assertEquals(
-                testType == FilesTestType.variable || testType == FilesTestType.variableComplexKey,
-                dataFileMetadata.hasVariableSizeData(),
-                "unexpected testType");
         assertEquals(DATA_FILE_INDEX, dataFileMetadata.getIndex(), "unexpected Index");
         assertEquals(
                 testType.dataItemSerializer.getCurrentDataVersion(),
                 dataFileMetadata.getSerializationVersion(),
                 "unexpected Data Version");
-        assertEquals(
-                DataFileCommon.FILE_FORMAT_VERSION,
-                dataFileMetadata.getFileFormatVersion(),
-                "unexpected FileFormatVersion");
         if (testType == FilesTestType.fixed) {
-            String expectedToString = "DataFileMetadata[fileFormatVersion=1,dataItemValueSize=16,"
-                    + "dataItemCount=1000,index=123,creationDate="
+            String expectedToString = "DataFileMetadataJdb["
+                    + "itemsCount=1000,index=123,creationDate="
                     + TEST_START
                     + ","
                     + "serializationVersion=1]";
@@ -196,23 +184,15 @@ class DataFileLowLevelTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void checkMetadataOfWrittenFileReadBack(FilesTestType testType) throws IOException {
-        final var dataFileMetadata = new DataFileMetadata(dataFileMap.get(testType));
+        final var dataFileMetadata = new DataFileMetadataJdb(dataFileMap.get(testType));
         // check metadata
         assertEquals(1000, dataFileMetadata.getDataItemCount(), "unexpected data item count");
         assertEquals(TEST_START, dataFileMetadata.getCreationDate(), "unexpected creation date");
-        assertEquals(
-                testType.dataItemSerializer.getSerializedSize(),
-                dataFileMetadata.getDataItemValueSize(),
-                "unexpected data item value size");
         assertEquals(DATA_FILE_INDEX, dataFileMetadata.getIndex(), "unexpected Index value");
         assertEquals(
                 testType.dataItemSerializer.getCurrentDataVersion(),
                 dataFileMetadata.getSerializationVersion(),
                 "unexpected data version");
-        assertEquals(
-                DataFileCommon.FILE_FORMAT_VERSION,
-                dataFileMetadata.getFileFormatVersion(),
-                "unexpected file format version");
     }
 
     @Order(200)
@@ -254,8 +234,8 @@ class DataFileLowLevelTest {
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         final var listOfDataItemLocations = listOfDataItemLocationsMap.get(testType);
-        DataFileReader<long[]> dataFileReader =
-                new DataFileReader<>(dataFile, testType.dataItemSerializer, dataFileMetadata);
+        DataFileReaderJdb<long[]> dataFileReader =
+                new DataFileReaderJdb<>(dataFile, testType.dataItemSerializer, dataFileMetadata);
         // check by locations returned by write
         for (int i = 0; i < 1000; i++) {
             long[] dataItem = dataFileReader.readDataItem(listOfDataItemLocations.get(i));
@@ -290,18 +270,14 @@ class DataFileLowLevelTest {
             }
         });
         // some additional asserts to increase DataFileReader's coverage.
-        DataFileReader<long[]> secondReader = new DataFileReader<>(dataFile, testType.dataItemSerializer);
-        DataFileIterator firstIterator = dataFileReader.createIterator();
-        DataFileIterator secondIterator = secondReader.createIterator();
+        DataFileReader<long[]> secondReader = new DataFileReaderJdb<>(dataFile, testType.dataItemSerializer);
+        DataFileIterator<long[]> firstIterator = dataFileReader.createIterator();
+        DataFileIterator<long[]> secondIterator = secondReader.createIterator();
         assertEquals(firstIterator.getMetadata(), secondIterator.getMetadata(), "unexpected metadata");
         assertEquals(
                 firstIterator.getMetadata().hashCode(),
                 secondIterator.getMetadata().hashCode(),
                 "unexpected hashcode");
-        assertEquals(
-                firstIterator.getDataFileCreationDate(),
-                secondIterator.getDataFileCreationDate(),
-                "unexpected creation date");
         assertEquals(firstIterator.toString(), secondIterator.toString(), "unexpected toString() value #1");
         assertEquals(firstIterator.hashCode(), secondIterator.hashCode(), "unexpected hashCode() value #1");
         assertEquals(firstIterator, secondIterator, "unexpected iterator value");
@@ -326,16 +302,16 @@ class DataFileLowLevelTest {
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         final var listOfDataItemLocations = listOfDataItemLocationsMap.get(testType);
-        DataFileIterator fileIterator = new DataFileIterator(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorJdb<long[]> fileIterator =
+                new DataFileIteratorJdb<>(dataFile, dataFileMetadata, testType.dataItemSerializer);
         int i = 0;
         while (fileIterator.next()) {
             assertEquals(
                     listOfDataItemLocations.get(i),
-                    fileIterator.getDataItemsDataLocation(),
+                    fileIterator.getDataItemDataLocation(),
                     "unexpected data items data location");
-            assertEquals(i, fileIterator.getDataItemsKey(), "unexpected data items key");
-            ByteBuffer data = fileIterator.getDataItemData();
-            long[] dataItem = testType.dataItemSerializer.deserialize(data, dataFileMetadata.getSerializationVersion());
+            long[] dataItem = fileIterator.getDataItemData();
+            assertEquals(i, dataItem[0], "unexpected data items key");
             checkItem(testType, i, dataItem);
             i++;
         }
@@ -345,7 +321,7 @@ class DataFileLowLevelTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void copyFile(FilesTestType testType) throws IOException {
-        DataFileWriter<long[]> newDataFileWriter = new DataFileWriter<>(
+        DataFileWriterJdb<long[]> newDataFileWriter = new DataFileWriterJdb<>(
                 "test_" + testType.name(),
                 tempFileDir,
                 DATA_FILE_INDEX + 1,
@@ -355,18 +331,18 @@ class DataFileLowLevelTest {
 
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
-        DataFileIterator fileIterator = new DataFileIterator(dataFile, dataFileMetadata, testType.dataItemSerializer);
+        DataFileIteratorJdb<long[]> fileIterator =
+                new DataFileIteratorJdb<>(dataFile, dataFileMetadata, testType.dataItemSerializer);
         final LongArrayList newDataLocations = new LongArrayList(1000);
         while (fileIterator.next()) {
-            final ByteBuffer itemData = fileIterator.getDataItemData();
-            newDataLocations.add(
-                    newDataFileWriter.writeCopiedDataItem(dataFileMetadata.getSerializationVersion(), itemData));
+            final long[] itemData = fileIterator.getDataItemData();
+            newDataLocations.add(newDataFileWriter.storeDataItem(itemData));
         }
         newDataFileWriter.finishWriting();
         final var newDataFileMetadata = newDataFileWriter.getMetadata();
         // now read back and check
         DataFileReader<long[]> dataFileReader =
-                new DataFileReader<>(newDataFileWriter.getPath(), testType.dataItemSerializer, newDataFileMetadata);
+                new DataFileReaderJdb<>(newDataFileWriter.getPath(), testType.dataItemSerializer, newDataFileMetadata);
         // check by locations returned by write
         for (int i = 0; i < 1000; i++) {
             long[] dataItem = dataFileReader.readDataItem(newDataLocations.get(i));

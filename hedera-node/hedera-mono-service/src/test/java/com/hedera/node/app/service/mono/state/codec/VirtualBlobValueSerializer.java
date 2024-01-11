@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.state.virtual;
+package com.hedera.node.app.service.mono.state.codec;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
-public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<UniqueTokenValue> {
+public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobValue> {
 
-    // Serializer class ID
-    static final long CLASS_ID = 0xc4d512c6695451d5L;
+    static final long CLASS_ID = 0x7459da78c643abd7L;
 
-    // Serializer version
     static final int CURRENT_VERSION = 1;
 
-    // Value data version
     static final long DATA_VERSION = 1;
 
     // Serializer info
@@ -51,32 +50,35 @@ public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<Uniqu
         return DATA_VERSION;
     }
 
+    // Value serialization
+
     @Override
     public int getSerializedSize() {
         return VARIABLE_DATA_SIZE;
     }
 
-    // FUTURE WORK: mark it as @Override after migration to platform 0.39
-    public int getTypicalSerializedSize() {
-        return UniqueTokenValue.getTypicalSerializedSize();
+    @Override
+    public void serialize(@NonNull final VirtualBlobValue value, @NonNull final WritableSequentialData out) {
+        value.serialize(out);
     }
 
-    // Value serialization
-
     @Override
-    public int serialize(final UniqueTokenValue value, final ByteBuffer out) throws IOException {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(out);
-        value.serialize(out);
-        return value.getSerializedSize();
+    public void serialize(final VirtualBlobValue value, final ByteBuffer buffer) {
+        value.serialize(buffer);
     }
 
     // Value deserialization
 
     @Override
-    public UniqueTokenValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
-        Objects.requireNonNull(buffer);
-        final UniqueTokenValue value = new UniqueTokenValue();
+    public VirtualBlobValue deserialize(@NonNull final ReadableSequentialData in) {
+        final var value = new VirtualBlobValue();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    public VirtualBlobValue deserialize(ByteBuffer buffer, long version) throws IOException {
+        final var value = new VirtualBlobValue();
         value.deserialize(buffer, (int) version);
         return value;
     }
