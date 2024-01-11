@@ -29,19 +29,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link PcesWriter}.
  *
- * @param doneStreamingPcesInputWire        the input wire for the trigger to indicate that PCES streaming is complete
- * @param eventInputWire                    the input wire for events to be written
- * @param discontinuityInputWire            the input wire for PCES discontinuities
- * @param nonAncientEventWindowInput        the input wire for non ancient event windows
- * @param minimumGenerationToStoreInputWire the input wire for the minimum generation of events to store
- * @param latestDurableSequenceNumberOutput the output wire for the latest durable sequence number
+ * @param doneStreamingPcesInputWire               the input wire for the trigger to indicate that PCES streaming is
+ *                                                 complete
+ * @param eventInputWire                           the input wire for events to be written
+ * @param discontinuityInputWire                   the input wire for PCES discontinuities
+ * @param nonAncientEventWindowInput               the input wire for non ancient event windows
+ * @param minimumAncientIdentifierToStoreInputWire the input wire for the minimum ancient identifier of events to store
+ * @param latestDurableSequenceNumberOutput        the output wire for the latest durable sequence number
  */
 public record PcesWriterWiring(
         @NonNull InputWire<DoneStreamingPcesTrigger> doneStreamingPcesInputWire,
         @NonNull InputWire<GossipEvent> eventInputWire,
         @NonNull InputWire<Long> discontinuityInputWire,
         @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput,
-        @NonNull InputWire<Long> minimumGenerationToStoreInputWire,
+        @NonNull InputWire<Long> minimumAncientIdentifierToStoreInputWire,
         @NonNull OutputWire<Long> latestDurableSequenceNumberOutput) {
 
     /**
@@ -56,8 +57,8 @@ public record PcesWriterWiring(
                 taskScheduler.buildInputWire("done streaming pces"),
                 taskScheduler.buildInputWire("events to write"),
                 taskScheduler.buildInputWire("discontinuity"),
-                taskScheduler.buildInputWire("minimum generation non ancient"),
-                taskScheduler.buildInputWire("minimum generation to store"),
+                taskScheduler.buildInputWire("non-ancient event window"),
+                taskScheduler.buildInputWire("minimum identifier to store"),
                 taskScheduler.getOutputWire());
     }
 
@@ -73,7 +74,7 @@ public record PcesWriterWiring(
         ((BindableInputWire<Long, Long>) discontinuityInputWire).bind(pcesWriter::registerDiscontinuity);
         ((BindableInputWire<NonAncientEventWindow, Long>) nonAncientEventWindowInput)
                 .bind(pcesWriter::updateNonAncientEventBoundary);
-        ((BindableInputWire<Long, Long>) minimumGenerationToStoreInputWire)
+        ((BindableInputWire<Long, Long>) minimumAncientIdentifierToStoreInputWire)
                 .bind(pcesWriter::setMinimumAncientIdentifierToStore);
     }
 }

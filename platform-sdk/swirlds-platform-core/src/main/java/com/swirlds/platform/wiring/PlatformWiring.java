@@ -191,7 +191,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
-                .solderTo(pcesWriterWiring.minimumGenerationToStoreInputWire());
+                .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
     }
 
     /**
@@ -375,7 +375,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @return the input wire for the PCES writer minimum generation to store
      */
     public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
-        return pcesWriterWiring.minimumGenerationToStoreInputWire();
+        return pcesWriterWiring.minimumAncientIdentifierToStoreInputWire();
     }
 
     /**
