@@ -768,7 +768,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec erc20Allowance() {
-        return defaultHapiSpec("erc20Allowance", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("erc20Allowance", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -1578,7 +1578,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         .build()))),
                         // --- Negative cases for approve ---
                         // * Can't approve a non-existent serial number
-                        logIt("##################################################################################"),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         DO_SPECIFIC_APPROVAL,
