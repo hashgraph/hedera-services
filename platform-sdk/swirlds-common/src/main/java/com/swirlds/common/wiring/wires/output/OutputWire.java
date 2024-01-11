@@ -64,6 +64,16 @@ public abstract class OutputWire<OUT> {
     }
 
     /**
+     * Get the wiring model that contains this output wire.
+     *
+     * @return the wiring model
+     */
+    @NonNull
+    protected StandardWiringModel getModel() {
+        return model;
+    }
+
+    /**
      * Specify an input wire where output data should be passed. This forwarding operation respects back pressure.
      * Equivalent to calling {@link #solderTo(InputWire, SolderType)} with {@link SolderType#PUT}.
      *
@@ -205,22 +215,25 @@ public abstract class OutputWire<OUT> {
      * the transformer is returned by this method. Similar to {@link #buildTransformer(String, String, Function)}, but
      * instead of the transformer method being called once per data item, it is called once per output per data item.
      *
-     * @param name      the name of the transformer
-     * @param transform the function that transforms the output of this wire into the output of the transformer, called
-     *                  once per output per data item. Null data returned by this method his not forwarded.
-     * @param cleanup   an optional method that is called after the data is forwarded to all destinations. The original
-     *                  data is passed to this method. Ignored if null.
-     * @param <NEW_OUT> the output type of the transformer
+     * @param name          the name of the transformer
+     * @param transform     the function that transforms the output of this wire into the output of the transformer,
+     *                      called once per output per data item. Null data returned by this method his not forwarded.
+     * @param inputCleanup  an optional method that is called on data entering the output wire after the data is
+     *                      forwarded to all destinations. The original data is passed to this method. Ignored if null.
+     * @param outputCleanup an optional method that is called on output data if it is rejected by a destination. This is
+     *                      possible if offer soldering is used and the destination declines to take the data.
+     * @param <NEW_OUT>     the output type of the transformer
      * @return the output wire of the transformer
      */
     @NonNull
     public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
             @NonNull final String name,
             @NonNull final Function<OUT, NEW_OUT> transform,
-            @Nullable final Consumer<OUT> cleanup) {
+            @Nullable final Consumer<OUT> inputCleanup,
+            @Nullable final Consumer<NEW_OUT> outputCleanup) {
 
-        final AdvancedWireTransformer<OUT, NEW_OUT> wireTransformer =
-                new AdvancedWireTransformer<>(model, Objects.requireNonNull(name), transform, cleanup);
+        final AdvancedWireTransformer<OUT, NEW_OUT> wireTransformer = new AdvancedWireTransformer<>(
+                model, Objects.requireNonNull(name), transform, inputCleanup, outputCleanup);
 
         solderTo(name, wireTransformer);
 
@@ -234,8 +247,8 @@ public abstract class OutputWire<OUT> {
      * instead of the transformer method being called once per data item, it is called once per output per data item.
      *
      * <p>
-     * This method is very similar to {@link #buildAdvancedTransformer(String, Function, Consumer)}, but with a
-     * different way of describing the transformation.
+     * This method is very similar to {@link #buildAdvancedTransformer(String, Function, Consumer, Consumer)}, but with
+     * a different way of describing the transformation.
      *
      * @param transformer an object that manages the transformation
      * @param <NEW_OUT>   the output type of the transformer
@@ -244,7 +257,8 @@ public abstract class OutputWire<OUT> {
     @NonNull
     public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
             @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
-        return buildAdvancedTransformer(transformer.getName(), transformer::transform, transformer::cleanup);
+        return buildAdvancedTransformer(
+                transformer.getName(), transformer::transform, transformer::inputCleanup, transformer::outputCleanup);
     }
 
     /**

@@ -279,11 +279,11 @@ class TaskSchedulerTransformersTests {
         taskSchedulerA.getOutputWire().solderTo(inB);
         taskSchedulerA
                 .getOutputWire()
-                .buildAdvancedTransformer("getValue", TestData::value, null)
+                .buildAdvancedTransformer("getValue", TestData::value, null, null)
                 .solderTo(inC);
         taskSchedulerA
                 .getOutputWire()
-                .buildAdvancedTransformer("getInvert", TestData::invert, null)
+                .buildAdvancedTransformer("getInvert", TestData::invert, null, null)
                 .solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);
@@ -396,7 +396,7 @@ class TaskSchedulerTransformersTests {
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved =
-                outA.buildAdvancedTransformer("reserve FooBar", FooBar::copyAndReserve, FooBar::release);
+                outA.buildAdvancedTransformer("reserve FooBar", FooBar::copyAndReserve, FooBar::release, null);
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
@@ -485,8 +485,13 @@ class TaskSchedulerTransformersTests {
         }
 
         @Override
-        public void cleanup(@NonNull final FooBar fooBar) {
+        public void inputCleanup(@NonNull final FooBar fooBar) {
             fooBar.release();
+        }
+
+        @Override
+        public void outputCleanup(@NonNull final FooBar fooBar) {
+            // TODO unit test
         }
 
         @NonNull
