@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -46,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaBalanceOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
     private GasCalculator gasCalculator;
@@ -55,6 +57,9 @@ class HederaBalanceOperationV038Test {
 
     @Mock
     private EVM evm;
+
+    @Mock
+    private EvmProperties evmProperties;
 
     @Mock
     private WorldUpdater worldUpdater;
@@ -79,6 +84,7 @@ class HederaBalanceOperationV038Test {
         initializeSubject();
         given(frame.popStackItem()).willThrow(new UnderflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
     }
@@ -88,6 +94,7 @@ class HederaBalanceOperationV038Test {
         initializeSubject();
         given(frame.popStackItem()).willThrow(new OverflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(TOO_MANY_STACK_ITEMS);
     }
@@ -96,6 +103,7 @@ class HederaBalanceOperationV038Test {
     void haltsWithInvalidSolidityAddressOperationResult() {
         initializeSubject();
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(INVALID_SOLIDITY_ADDRESS);
     }
@@ -107,6 +115,7 @@ class HederaBalanceOperationV038Test {
         given(frame.warmUpAddress(any())).willReturn(true);
         given(frame.getRemainingGas()).willReturn(0L);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         thenOperationWillFailWithReason(INSUFFICIENT_GAS);
     }
@@ -120,6 +129,7 @@ class HederaBalanceOperationV038Test {
         given(frame.warmUpAddress(any())).willReturn(true);
         given(frame.getRemainingGas()).willReturn(10_000L);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         final var result = subject.execute(frame, evm);
 
@@ -130,7 +140,7 @@ class HederaBalanceOperationV038Test {
     void executesPrecompileBalanceAsExpected() {
         // given
         initializeSubject();
-        subject = new HederaBalanceOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaBalanceOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         // when
         final var result = subject.execute(frame, evm);
         // then
@@ -141,13 +151,13 @@ class HederaBalanceOperationV038Test {
 
     @Test
     void addressValidatorSetterWorks() {
-        subject = new HederaBalanceOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaBalanceOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
         subject.setAddressValidator(addressValidator);
         assertEquals(addressValidator, subject.getAddressValidator());
     }
 
     private void initializeSubject() {
-        subject = new HederaBalanceOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaBalanceOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
         givenAddress();
         given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
         given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);

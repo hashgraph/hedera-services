@@ -16,6 +16,9 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -85,27 +88,26 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         out.writeLong(contractId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    public void serialize(final WritableSequentialData out) {
+        out.writeLong(contractId);
+    }
+
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
+        buffer.putLong(contractId);
+    }
+
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         contractId = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.putLong(contractId);
+    void deserialize(final ReadableSequentialData in) {
+        contractId = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         contractId = buffer.getLong();
     }
 
@@ -124,19 +126,21 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         return contractId == that.contractId;
     }
 
+    @Deprecated
+    boolean equals(final ByteBuffer buffer) {
+        return buffer.getLong() == this.contractId;
+    }
+
     /**
      * Verifies if the content from {@code buffer} is equal to the content of this instance.
      *
      * @param buffer
      * 		The buffer with data to be compared with this class.
-     * @param version
-     * 		The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *        {@code false}, otherwise.
-     * @throws IOException
      */
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
-        return buffer.getLong() == this.contractId;
+    boolean equals(final BufferedData buffer) {
+        return buffer.readLong() == this.contractId;
     }
 
     /**

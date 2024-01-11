@@ -16,6 +16,8 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -73,20 +75,6 @@ public class BenchmarkValue implements VirtualValue {
         return new BenchmarkValue(this);
     }
 
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        buffer.putInt(valueBytes.length);
-        buffer.put(valueBytes);
-    }
-
-    @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
-        int n = buffer.getInt();
-        valueBytes = new byte[n];
-        buffer.get(valueBytes);
-    }
-
     public static int getSerializedSize() {
         return Integer.BYTES + valueSize;
     }
@@ -97,6 +85,23 @@ public class BenchmarkValue implements VirtualValue {
         outputStream.write(valueBytes);
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeInt(valueBytes.length);
+        out.writeBytes(valueBytes);
+    }
+
+    @Deprecated
+    void serialize(ByteBuffer buffer) {
+        buffer.putInt(valueBytes.length);
+        buffer.put(valueBytes);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        int n = in.readInt();
+        valueBytes = new byte[n];
+        in.readBytes(valueBytes);
+    }
+
     @Override
     public void deserialize(SerializableDataInputStream inputStream, int dataVersion) throws IOException {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
@@ -105,6 +110,14 @@ public class BenchmarkValue implements VirtualValue {
         while (n > 0) {
             n -= inputStream.read(valueBytes, valueBytes.length - n, n);
         }
+    }
+
+    @Deprecated
+    void deserialize(ByteBuffer buffer, int dataVersion) {
+        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        int n = buffer.getInt();
+        valueBytes = new byte[n];
+        buffer.get(valueBytes);
     }
 
     @Override
