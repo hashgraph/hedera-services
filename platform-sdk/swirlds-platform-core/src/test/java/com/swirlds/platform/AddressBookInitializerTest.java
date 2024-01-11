@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -337,7 +338,11 @@ class AddressBookInitializerTest {
         final SignedState signedState = mock(SignedState.class);
         final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
         final SwirldState swirldState = getMockSwirldStateSupplier(weightValue).get();
-        when(signedState.getAddressBook()).thenReturn(stateAddressBook);
+        if (fromGenesis) {
+            when(signedState.getAddressBook()).thenReturn(null);
+        } else {
+            when(signedState.getAddressBook()).thenReturn(stateAddressBook);
+        }
         when(signedState.getSwirldState()).thenReturn(swirldState);
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
@@ -469,7 +474,10 @@ class AddressBookInitializerTest {
                 "The configAddressBook content is not:\n" + configText + "\n\n debugFileContent:\n" + debugFileContent);
 
         // check stateAddressBook content
-        final String stateText = STATE_ADDRESS_BOOK_HEADER + "\n" + stateAddressBook.toConfigText();
+        final String stateAddressBookText =
+                (stateAddressBook == null ? STATE_ADDRESS_BOOK_NULL : stateAddressBook.toConfigText());
+        final String stateText = STATE_ADDRESS_BOOK_HEADER + "\n" + stateAddressBookText;
+
         assertTrue(
                 debugFileContent.contains(stateText),
                 "The stateAddressBook content is not:\n" + stateText + "\n\n debugFileContent:\n" + debugFileContent);

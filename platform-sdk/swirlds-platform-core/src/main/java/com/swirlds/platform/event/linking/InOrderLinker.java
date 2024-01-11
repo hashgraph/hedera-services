@@ -29,6 +29,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -97,7 +98,7 @@ public class InOrderLinker {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -137,6 +138,11 @@ public class InOrderLinker {
                         new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
                                 .withDescription(
                                         "Parent child relationships where child time created wasn't strictly after parent time created"));
+
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode());
     }
 
     /**
@@ -250,7 +256,7 @@ public class InOrderLinker {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
         parentDescriptorMap.shiftWindow(
-                nonAncientEventWindow.getLowerBound(),
+                nonAncientEventWindow.getAncientThreshold(),
                 (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
     }
 

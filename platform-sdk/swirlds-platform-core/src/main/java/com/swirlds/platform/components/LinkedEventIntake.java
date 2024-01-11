@@ -129,8 +129,6 @@ public class LinkedEventIntake {
                 return List.of();
             }
 
-            dispatcher.preConsensusEvent(event);
-
             final long minimumGenerationNonAncientBeforeAdding =
                     consensusSupplier.get().getMinGenerationNonAncient();
 

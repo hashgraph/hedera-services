@@ -83,6 +83,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         while (!stack.isEmpty()) {
             stack.pop().commit();
         }
+        setupSavepoint(root);
     }
 
     /**
@@ -120,18 +121,34 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      */
     @NonNull
     public ReadableStates rootStates(@NonNull final String serviceName) {
-        return root.createReadableStates(serviceName);
+        return root.getReadableStates(serviceName);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * The {@link ReadableStates} instances returned from this method are based on the {@link WritableStates} instances
+     * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
+     * in the {@link ReadableStates} instances returned from this method.
+     * <p>
+     * Unlike other {@link HederaState} implementations, the returned {@link ReadableStates} of this implementation
+     * must only be used in the handle workflow.
+     */
     @Override
     @NonNull
-    public ReadableStates createReadableStates(@NonNull final String serviceName) {
-        return new ReadonlyStatesWrapper(createWritableStates(serviceName));
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return new ReadonlyStatesWrapper(getWritableStates(serviceName));
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * This method guarantees that the same {@link WritableStates} instance is returned for the same {@code serviceName}
+     * to ensure all modifications to a {@link WritableStates} are kept together.
+     */
     @Override
     @NonNull
-    public WritableStates createWritableStates(@NonNull final String serviceName) {
+    public WritableStates getWritableStates(@NonNull final String serviceName) {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }

@@ -272,6 +272,11 @@ public final class PlatformBuilder {
                                                 .copy());
             }
 
+            // At this point the initial state must have the current address book set.  If not, something is wrong.
+            if (initialState.get().getState().getPlatformState().getAddressBook() == null) {
+                throw new IllegalStateException("The current address book of the initial state is null.");
+            }
+
             final SwirldsPlatform platform = new SwirldsPlatform(
                     platformContext,
                     keysAndCerts.get(selfId),

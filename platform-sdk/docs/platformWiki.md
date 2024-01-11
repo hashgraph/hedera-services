@@ -32,6 +32,7 @@ This code is maintained by the "Platform Hashgraph" team.
 - [Platform Status](./core/platform-status.md)
 - [Threads](./core/core-platform-threads.drawio.svg)
 - Components
+    - [Framework](components/componentFramework.md)
     - [Networking](core/network/network.md)
     - [Gossip](./core/gossip/gossip.md)
         - [Sync gossip algorithm](core/gossip/syncing/sync-protocol.md)
