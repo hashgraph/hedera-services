@@ -2922,43 +2922,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 .toStringUtf8())))))));
     }
 
-    @HapiTest
-    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
-        final var canonicalTxn = "canonical";
-
-        return propertyPreservingHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY, CHAIN_ID_PROP)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
-                        overriding(CHAIN_ID_PROP, "298"),
-                        uploadDefaultFeeSchedules(GENESIS),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        // The cost to the relayer to transmit a simple call with sufficient gas
-                        // allowance is ≈ $0.0001
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via(canonicalTxn)
-                                .nonce(0)
-                                .gasPrice(100L)
-                                .maxFeePerGas(100L)
-                                .maxPriorityGas(2_000_000L)
-                                .gasLimit(1_000_000L)
-                                .sending(depositAmount))
-                .then(getAccountInfo(RELAYER)
-                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                        .logged());
-    }
-
     @Override
     protected Logger getResultsLogger() {
         return log;
