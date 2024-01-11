@@ -37,6 +37,7 @@ import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -82,6 +83,9 @@ class EthereumTransactionHandlerTest {
     private HandleContext handleContext;
 
     @Mock
+    private CustomGasCharging customGasCharging;
+
+    @Mock
     private PreHandleContext preHandleContext;
 
     @Mock
@@ -125,6 +129,7 @@ class EthereumTransactionHandlerTest {
         final var contextTransactionProcessor = new ContextTransactionProcessor(
                 HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
                 handleContext,
+                customGasCharging,
                 contractsConfig,
                 DEFAULT_CONFIG,
                 hederaEvmContext,

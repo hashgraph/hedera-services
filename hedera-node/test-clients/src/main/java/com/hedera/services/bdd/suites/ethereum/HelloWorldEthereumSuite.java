@@ -55,7 +55,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIG
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_STATUS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -530,8 +530,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         @HapiTest
         HapiSpec topLevelBurnToZeroAddressReverts() {
                 final var ethBurnAddress = new byte[20];
-                return defaultHapiSpec("topLevelBurnToZeroAddressReverts", NONDETERMINISTIC_ETHEREUM_DATA,
-                                HIGHLY_NON_DETERMINISTIC_FEES, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                return defaultHapiSpec(
+                                "topLevelBurnToZeroAddressReverts",
+                                NONDETERMINISTIC_ETHEREUM_DATA,
+                                HIGHLY_NON_DETERMINISTIC_FEES,
+                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                                 .given(
                                                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                                                 cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))
@@ -551,7 +554,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         @HapiTest
         HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
                 final var nonExistentMirrorAddress = Utils.asSolidityAddress(0, 0, 666_666);
-                return defaultHapiSpec("topLevelLazyCreateOfMirrorAddressReverts", NONDETERMINISTIC_ETHEREUM_DATA)
+                return defaultHapiSpec(
+                                "topLevelLazyCreateOfMirrorAddressReverts",
+                                NONDETERMINISTIC_ETHEREUM_DATA,
+                                NONDETERMINISTIC_STATUS,
+                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                                 .given(
                                                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                                                 cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))

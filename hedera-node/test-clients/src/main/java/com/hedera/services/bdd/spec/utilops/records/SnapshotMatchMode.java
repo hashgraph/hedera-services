@@ -17,7 +17,8 @@
 package com.hedera.services.bdd.spec.utilops.records;
 
 /**
- * Enumerates non-default matching modes in which {@link SnapshotModeOp} fuzzy-matching can be run.
+ * Enumerates non-default matching modes in which {@link SnapshotModeOp}
+ * fuzzy-matching can be run.
  */
 public enum SnapshotMatchMode {
     /**
@@ -41,34 +42,46 @@ public enum SnapshotMatchMode {
      */
     NONDETERMINISTIC_TRANSACTION_FEES,
     /**
-     * Allows for non-deterministic nonce. This can happen when there is a NodeStakeUpdate transaction in the
+     * Allows for non-deterministic nonce. This can happen when there is a
+     * NodeStakeUpdate transaction in the
      * mix.
      */
     NONDETERMINISTIC_NONCE,
     /**
      * Lets a spec advertise itself as being non-deterministic.
      *
-     * <p>We need this to let such specs to opt out of auto record snapshots, since fuzzy-matching would never pass.
+     * <p>
+     * We need this to let such specs to opt out of auto record snapshots, since
+     * fuzzy-matching would never pass.
      */
     FULLY_NONDETERMINISTIC,
     /**
-     * Some of the ingest checks in mono-service are moved into pureChecks or handle in modular service. So any
-     * response code added in spec.streamlinedIngestChecks will not produce a record in mono-service, as it is rejected in ingest.
-     * But in modular service we produce a record. This will not cause any issue for differential testing, because we test
-     * transactions that have reached consensus. Use this snapshot mode to still fuzzy-match against records whose
+     * Some of the ingest checks in mono-service are moved into pureChecks or handle
+     * in modular service. So any
+     * response code added in spec.streamlinedIngestChecks will not produce a record
+     * in mono-service, as it is rejected in ingest.
+     * But in modular service we produce a record. This will not cause any issue for
+     * differential testing, because we test
+     * transactions that have reached consensus. Use this snapshot mode to still
+     * fuzzy-match against records whose
      * receipt's status would be rejected in pre-check by mono-service.
      */
     EXPECT_STREAMLINED_INGEST_RECORDS,
     /**
-     * When a transaction involving custom fees transfer fails, the fee charged for a transaction is not deterministic, because
-     * of the way mono-service charges fees.This mode allows for fuzzy-matching of records that have different fees.
+     * When a transaction involving custom fees transfer fails, the fee charged for
+     * a transaction is not deterministic, because
+     * of the way mono-service charges fees.This mode allows for fuzzy-matching of
+     * records that have different fees.
      */
     HIGHLY_NON_DETERMINISTIC_FEES,
     /**
-     * In mono-service when a CryptoTransfer with auto-creation fails, we are re-claiming pendingAliases but not reclaiming ids.
-     * So when we compare the snapshot records, we will have different ids in the transaction receipt. This mode allows for
-     * fuzzy-matching of records that have different ids. Also, when auto-creation fails the charged fee to payer is not re-claimed
-     * in mono-service. So the  transaction fee differs a lot.
+     * In mono-service when a CryptoTransfer with auto-creation fails, we are
+     * re-claiming pendingAliases but not reclaiming ids.
+     * So when we compare the snapshot records, we will have different ids in the
+     * transaction receipt. This mode allows for
+     * fuzzy-matching of records that have different ids. Also, when auto-creation
+     * fails the charged fee to payer is not re-claimed
+     * in mono-service. So the transaction fee differs a lot.
      */
     ALLOW_SKIPPED_ENTITY_IDS,
     /**
@@ -82,5 +95,9 @@ public enum SnapshotMatchMode {
     /**
      * Allows for non-deterministic token names.
      */
-    NONDETERMINISTIC_TOKEN_NAMES
+    NONDETERMINISTIC_TOKEN_NAMES,
+    /**
+     * Allows for non-deterministic status. Some tests have range of known statuses.
+     */
+    NONDETERMINISTIC_STATUS
 }

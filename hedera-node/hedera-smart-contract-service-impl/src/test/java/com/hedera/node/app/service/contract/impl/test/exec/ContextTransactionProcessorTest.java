@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -57,6 +58,9 @@ class ContextTransactionProcessorTest {
 
     @Mock
     private HandleContext context;
+
+    @Mock
+    private CustomGasCharging customGasCharging;
 
     @Mock
     private HederaEvmContext hederaEvmContext;
@@ -83,6 +87,7 @@ class ContextTransactionProcessorTest {
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
                 context,
+                customGasCharging,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
@@ -112,6 +117,7 @@ class ContextTransactionProcessorTest {
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
+                customGasCharging,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
@@ -141,6 +147,7 @@ class ContextTransactionProcessorTest {
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
+                customGasCharging,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
@@ -169,6 +176,7 @@ class ContextTransactionProcessorTest {
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION),
                 context,
+                customGasCharging,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,

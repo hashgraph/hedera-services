@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
@@ -116,8 +117,13 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
-            // The Ethereum transaction was a top-level MESSAGE_CALL
-            recordBuilder.contractCallResult(outcome.result());
+            if (outcome.status() == CONTRACT_EXECUTION_EXCEPTION) {
+                // If transaction reverts we don't include the contractId
+                recordBuilder.contractCallResult(outcome.result());
+            } else {
+                // The Ethereum transaction was a top-level MESSAGE_CALL
+                recordBuilder.contractID(outcome.recipientId()).contractCallResult(outcome.result());
+            }
         } else {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());

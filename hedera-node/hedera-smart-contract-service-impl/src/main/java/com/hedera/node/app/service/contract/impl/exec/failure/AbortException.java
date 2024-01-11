@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An exception thrown when a transaction is aborted before entering the EVM.
@@ -31,9 +32,27 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class AbortException extends HandleException {
     private final AccountID senderId;
 
+    @Nullable
+    private final AccountID relayerId;
+    // Whether gas can still be charged for the transaction
+    private final boolean isChargable;
+
     public AbortException(@NonNull final ResponseCodeEnum status, @NonNull final AccountID senderId) {
         super(status);
         this.senderId = requireNonNull(senderId);
+        this.relayerId = null;
+        this.isChargable = false;
+    }
+
+    public AbortException(
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final AccountID senderId,
+            @Nullable final AccountID relayerId,
+            final boolean isChargable) {
+        super(status);
+        this.senderId = requireNonNull(senderId);
+        this.relayerId = relayerId;
+        this.isChargable = isChargable;
     }
 
     /**
@@ -46,6 +65,24 @@ public class AbortException extends HandleException {
     }
 
     /**
+     * Returns true or false whether this transaction is chargable
+     *
+     * @return true or false whether this transaction is chargable
+     */
+    public boolean isChargable() {
+        return isChargable;
+    }
+
+    /**
+     * Returns the effective Hedera id of the relayer.
+     *
+     * @return the effective Hedera id of the relayer
+     */
+    @Nullable
+    public AccountID relayerId() {
+        return relayerId;
+    }
+    /**
      * Throws an {@code AbortException} if the given flag is {@code false}.
      *
      * @param flag the flag to check
@@ -56,6 +93,26 @@ public class AbortException extends HandleException {
             final boolean flag, @NonNull final ResponseCodeEnum status, @NonNull final AccountID senderId) {
         if (!flag) {
             throw new AbortException(status, senderId);
+        }
+    }
+
+    /**
+     * Throws an {@code AbortException} if the given flag is {@code false}.
+     *
+     * @param flag the flag to check
+     * @param status the status to use if the flag is {@code false}
+     * @param senderId the effective Hedera id of the sender
+     * @param relayerId the effective Hedera id of the relayer
+     * @param isChargable whether this transaction should be charged
+     */
+    public static void validateTrueOrAbort(
+            final boolean flag,
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final AccountID senderId,
+            @Nullable final AccountID relayerId,
+            final boolean isChargable) {
+        if (!flag) {
+            throw new AbortException(status, senderId, relayerId, isChargable);
         }
     }
 }
