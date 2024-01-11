@@ -44,7 +44,8 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static @Nullable SnapshotOp from(@NonNull final HapiSpec spec) {
         final var setup = spec.setup();
-        if (setup.autoSnapshotManagement()) {
+        // Don't enable fuzzy-match anything in CI for now
+        if (setup.autoSnapshotManagement() && System.getenv("CI") == null) {
             return new AutoSnapshotModeOp(
                     setup.autoSnapshotTarget(), setup.autoMatchTarget(), spec.getSnapshotMatchModes());
         } else {

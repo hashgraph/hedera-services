@@ -2034,7 +2034,10 @@ public class ContractCallSuite extends HapiSuite {
         final var PAYER_KEY = "pkey";
         final var OTHER_KEY = "okey";
         final var KEY_LIST = "klist";
-        return defaultHapiSpec("hscsEvm010MultiSignatureAccounts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "hscsEvm010MultiSignatureAccounts",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(PAYER_KEY),
                         newKeyNamed(OTHER_KEY),
