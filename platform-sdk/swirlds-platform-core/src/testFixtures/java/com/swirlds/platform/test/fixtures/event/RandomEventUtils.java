@@ -159,13 +159,14 @@ public class RandomEventUtils {
             final Random random,
             final NodeId creatorId,
             final Instant timestamp,
+            final long birthRound,
             final ConsensusTransactionImpl[] transactions,
             final EventImpl selfParent,
             final EventImpl otherParent,
             final boolean fakeHash) {
 
         final BaseEventHashedData hashedData = randomEventHashedDataWithTimestamp(
-                random, creatorId, timestamp, transactions, selfParent, otherParent, fakeHash);
+                random, creatorId, timestamp, birthRound, transactions, selfParent, otherParent, fakeHash);
 
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
@@ -249,6 +250,7 @@ public class RandomEventUtils {
             @NonNull final Random random,
             @NonNull final NodeId creatorId,
             @NonNull final Instant timestamp,
+            final long birthRound,
             @Nullable final ConsensusTransactionImpl[] transactions,
             @Nullable final EventImpl selfParent,
             @Nullable final EventImpl otherParent,
@@ -260,21 +262,21 @@ public class RandomEventUtils {
                         selfParent.getBaseHash(),
                         selfParent.getCreatorId(),
                         selfParent.getGeneration(),
-                        EventConstants.BIRTH_ROUND_UNDEFINED);
+                        selfParent.getBaseEvent().getHashedData().getBirthRound());
         final EventDescriptor otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
                 : new EventDescriptor(
                         otherParent.getBaseHash(),
                         otherParent.getCreatorId(),
                         otherParent.getGeneration(),
-                        EventConstants.BIRTH_ROUND_UNDEFINED);
+                        otherParent.getBaseEvent().getHashedData().getBirthRound());
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
                 otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
-                EventConstants.BIRTH_ROUND_UNDEFINED,
+                birthRound,
                 timestamp,
                 transactions);
 

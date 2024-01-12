@@ -71,7 +71,7 @@ public class PlatformStateUpdateFacility {
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
                 logger.info("Transaction freeze of type {} detected", freezeType);
                 // copy freeze state to platform state
-                final ReadableStates states = state.createReadableStates(FreezeService.NAME);
+                final ReadableStates states = state.getReadableStates(FreezeService.NAME);
                 final ReadableSingletonState<Timestamp> freezeTime =
                         states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
                 requireNonNull(freezeTime.get());

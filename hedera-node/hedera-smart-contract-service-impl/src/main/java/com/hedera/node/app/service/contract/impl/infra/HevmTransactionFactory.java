@@ -252,7 +252,7 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
 
         final var contract = accountStore.getContractById(body.contractIDOrThrow());
-        if (contract != null) {
+        if (contract != null && !contractsConfig.evmAllowCallsToNonContractAccounts()) {
             validateFalse(contract.deleted(), CONTRACT_DELETED);
         }
     }

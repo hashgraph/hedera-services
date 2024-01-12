@@ -287,7 +287,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setUp() {
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -358,8 +358,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var payer = ALICE.accountID();
             final var payerKey = ALICE.account().keyOrThrow();
             when(writableStates.<EntityNumber>getSingleton(anyString())).thenReturn(entityNumberState);
-            when(stack.createWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -448,7 +448,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     final class TransactionDataTest {
         @BeforeEach
         void setUp() {
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -475,7 +475,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setUp() {
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -497,7 +497,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testCreateReadableStore(@Mock final ReadableStates readableStates) {
             // given
-            when(stack.createReadableStates(TokenService.NAME)).thenReturn(readableStates);
+            when(stack.getReadableStates(TokenService.NAME)).thenReturn(readableStates);
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -510,7 +510,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testCreateWritableStore(@Mock final WritableStates writableStates) {
             // given
-            when(stack.createWritableStates(TokenService.NAME)).thenReturn(writableStates);
+            when(stack.getWritableStates(TokenService.NAME)).thenReturn(writableStates);
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -539,7 +539,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     final class VerificationDataTest {
         @BeforeEach
         void setUp() {
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -592,8 +592,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setup() {
-            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -669,8 +669,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setup() {
-            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -694,8 +694,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setup() {
-            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -740,8 +740,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setup() {
-            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -763,7 +763,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setup() {
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())
@@ -855,11 +855,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, new HashMap<>(BASE_DATA));
             final var writableStates =
                     MapWritableStates.builder().state(baseKVState).build();
-            when(baseState.createReadableStates(FOOD_SERVICE)).thenReturn(writableStates);
-            when(baseState.createWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
+            when(baseState.getReadableStates(FOOD_SERVICE)).thenReturn(writableStates);
+            when(baseState.getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
             final var accountsState = new MapWritableKVState<AccountID, Account>("ACCOUNTS");
             accountsState.put(ALICE.accountID(), ALICE.account());
-            when(baseState.createWritableStates(TokenService.NAME))
+            when(baseState.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder().state(accountsState).build());
 
             doAnswer(invocation -> {
@@ -867,7 +867,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         final var childStack = (SavepointStackImpl) childContext.savepointStack();
                         childStack
                                 .peek()
-                                .createWritableStates(FOOD_SERVICE)
+                                .getWritableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .put(A_KEY, ACAI);
                         return null;
@@ -1015,7 +1015,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             verify(dispatcher).dispatchPureChecks(txBody);
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(ACAI);
@@ -1042,7 +1042,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             // then
             verify(childRecordBuilder).status(ResponseCodeEnum.INVALID_TOPIC_ID);
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
@@ -1071,7 +1071,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             verify(childRecordBuilder).status(ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
@@ -1100,7 +1100,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         .isInstanceOf(IllegalArgumentException.class);
                 verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
                 verify(dispatcher, never()).dispatchHandle(any());
-                assertThat(stack.createReadableStates(FOOD_SERVICE)
+                assertThat(stack.getReadableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .get(A_KEY))
                         .isEqualTo(APPLE);
@@ -1130,7 +1130,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             AccountID.DEFAULT));
             verify(recordListBuilder, never()).addRemovablePreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
@@ -1140,7 +1140,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testDispatchPrecedingWithChangedDataDoesntFail() throws PreCheckException {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
-            stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
+            stack.peek().getWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
@@ -1160,7 +1160,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             ALICE.accountID())));
             verify(recordListBuilder, times(2)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, times(2)).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(ACAI);
@@ -1181,7 +1181,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
@@ -1202,7 +1202,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
@@ -1213,7 +1213,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             doAnswer(answer -> {
-                        stack.createWritableStates(FOOD_SERVICE)
+                        stack.getWritableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .put(A_KEY, ACAI);
                         return null;
@@ -1234,7 +1234,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
             // then
             assertThat(stack.depth()).isEqualTo(1);
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
+            assertThat(stack.getReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(ACAI);
@@ -1253,7 +1253,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setup() {
-            when(stack.createWritableStates(TokenService.NAME))
+            when(stack.getWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
                             .state(MapWritableKVState.builder("ALIASES").build())

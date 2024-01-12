@@ -57,18 +57,18 @@ public final class BestEffortPcesFileCopy {
      * fail as a result. This method retries several times if a failure is encountered. Success is not guaranteed, but
      * success or failure is atomic and will not throw an exception.
      *
-     * @param platformContext             the platform context
-     * @param selfId                      the id of this node
-     * @param destinationDirectory        the directory where the state is being written
-     * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
-     *                                    state that is being written
-     * @param round                       the round of the state that is being written
+     * @param platformContext      the platform context
+     * @param selfId               the id of this node
+     * @param destinationDirectory the directory where the state is being written
+     * @param lowerBound           the lower bound of events that are not ancient, with respect to the state that is
+     *                             being written
+     * @param round                the round of the state that is being written
      */
     public static void copyPcesFilesRetryOnFailure(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Path destinationDirectory,
-            final long minimumGenerationNonAncient,
+            final long lowerBound,
             final long round) {
 
         final boolean copyPreconsensusStream = platformContext
@@ -89,8 +89,7 @@ public final class BestEffortPcesFileCopy {
             try {
                 executeAndRename(
                         pcesDestination,
-                        temporaryDirectory -> copyPcesFiles(
-                                platformContext, selfId, temporaryDirectory, minimumGenerationNonAncient));
+                        temporaryDirectory -> copyPcesFiles(platformContext, selfId, temporaryDirectory, lowerBound));
 
                 return;
             } catch (final IOException | UncheckedIOException e) {
@@ -122,17 +121,17 @@ public final class BestEffortPcesFileCopy {
      * real production states and streams, in the short term. In the longer term we should consider alternate and
      * cleaner strategies.
      *
-     * @param platformContext             the platform context
-     * @param selfId                      the id of this node
-     * @param destinationDirectory        the directory where the PCES files should be written
-     * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
-     *                                    state that is being written
+     * @param platformContext      the platform context
+     * @param selfId               the id of this node
+     * @param destinationDirectory the directory where the PCES files should be written
+     * @param lowerBound           the lower bound of events that are not ancient, with respect to the state that is
+     *                             being written
      */
     private static void copyPcesFiles(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Path destinationDirectory,
-            final long minimumGenerationNonAncient)
+            final long lowerBound)
             throws IOException {
 
         final List<PcesFile> allFiles = gatherPcesFilesOnDisk(selfId, platformContext);
@@ -144,7 +143,7 @@ public final class BestEffortPcesFileCopy {
         Collections.sort(allFiles);
 
         // Discard all files that either have an incorrect origin or that do not contain non-ancient events.
-        final List<PcesFile> filesToCopy = getRequiredPcesFiles(allFiles, minimumGenerationNonAncient);
+        final List<PcesFile> filesToCopy = getRequiredPcesFiles(allFiles, lowerBound);
         if (filesToCopy.isEmpty()) {
             return;
         }
@@ -156,20 +155,18 @@ public final class BestEffortPcesFileCopy {
      * Get the preconsensus files that we need to copy to a state. We need any file that has a matching origin and that
      * contains non-ancient events (w.r.t. the state).
      *
-     * @param allFiles                    all PCES files on disk
-     * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
-     *                                    state that is being written
+     * @param allFiles   all PCES files on disk
+     * @param lowerBound the lower bound of events that are not ancient, with respect to the state that is being
+     *                   written
      * @return the list of files to copy
      */
     @NonNull
-    private static List<PcesFile> getRequiredPcesFiles(
-            @NonNull final List<PcesFile> allFiles, final long minimumGenerationNonAncient) {
+    private static List<PcesFile> getRequiredPcesFiles(@NonNull final List<PcesFile> allFiles, final long lowerBound) {
 
         final List<PcesFile> filesToCopy = new ArrayList<>();
         final PcesFile lastFile = allFiles.get(allFiles.size() - 1);
         for (final PcesFile file : allFiles) {
-            if (file.getOrigin() == lastFile.getOrigin()
-                    && file.getMaximumGeneration() >= minimumGenerationNonAncient) {
+            if (file.getOrigin() == lastFile.getOrigin() && file.getUpperBound() >= lowerBound) {
                 filesToCopy.add(file);
             }
         }
@@ -177,30 +174,29 @@ public final class BestEffortPcesFileCopy {
         if (filesToCopy.isEmpty()) {
             logger.warn(
                     STATE_TO_DISK.getMarker(),
-                    "No preconsensus event files meeting specified criteria found to copy. "
-                            + "Minimum generation non-ancient: {}",
-                    minimumGenerationNonAncient);
+                    "No preconsensus event files meeting specified criteria found to copy. Lower bound: {}",
+                    lowerBound);
         } else if (filesToCopy.size() == 1) {
             logger.info(
                     STATE_TO_DISK.getMarker(),
                     """
                             Found 1 preconsensus event file meeting specified criteria to copy.
-                                Minimum generation non-ancient: {}
+                                Lower bound: {}
                                 File: {}
                             """,
-                    minimumGenerationNonAncient,
+                    lowerBound,
                     filesToCopy.get(0).getPath());
         } else {
             logger.info(
                     STATE_TO_DISK.getMarker(),
                     """
                             Found {} preconsensus event files meeting specified criteria to copy.
-                                Minimum generation non-ancient: {}
+                                Lower bound: {}
                                 First file to copy: {}
                                 Last file to copy: {}
                             """,
                     filesToCopy.size(),
-                    minimumGenerationNonAncient,
+                    lowerBound,
                     filesToCopy.get(0).getPath(),
                     filesToCopy.get(filesToCopy.size() - 1).getPath());
         }

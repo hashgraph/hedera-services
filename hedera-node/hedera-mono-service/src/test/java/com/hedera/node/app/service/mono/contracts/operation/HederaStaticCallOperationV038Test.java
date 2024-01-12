@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -43,6 +44,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStaticCallOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
+
     @Mock
     private GasCalculator calc;
 
@@ -64,12 +67,16 @@ class HederaStaticCallOperationV038Test {
     @Mock
     private Predicate<Address> systemAccountDetector;
 
+    @Mock
+    private GlobalDynamicProperties globalDynamicProperties;
+
     private final long cost = 100L;
     private HederaStaticCallOperationV038 subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaStaticCallOperationV038(calc, addressValidator, systemAccountDetector);
+        subject = new HederaStaticCallOperationV038(
+                calc, addressValidator, systemAccountDetector, globalDynamicProperties);
     }
 
     @Test
@@ -86,6 +93,7 @@ class HederaStaticCallOperationV038Test {
         given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -112,6 +120,7 @@ class HederaStaticCallOperationV038Test {
         given(addressValidator.test(any(), any())).willReturn(true);
 
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());

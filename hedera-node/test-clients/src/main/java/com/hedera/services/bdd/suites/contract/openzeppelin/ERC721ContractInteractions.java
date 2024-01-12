@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -73,7 +74,7 @@ public class ERC721ContractInteractions extends HapiSuite {
         final var APPROVE_TX = "approve";
         final var TRANSFER_FROM_TX = "transferFrom";
 
-        return defaultHapiSpec("CallsERC721ContractInteractions")
+        return defaultHapiSpec("CallsERC721ContractInteractions", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(), uploadInitCode(CONTRACT))
                 .when(
                         QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
