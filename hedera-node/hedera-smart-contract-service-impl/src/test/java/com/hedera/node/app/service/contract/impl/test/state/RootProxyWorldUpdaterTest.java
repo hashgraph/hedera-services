@@ -56,8 +56,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RootProxyWorldUpdaterTest {
-    private static final ContractID A_CONTRAC_ID = ContractID.newBuilder().contractNum(123L).build();
-    private static final ContractID B_CONTRAC_ID = ContractID.newBuilder().contractNum(234L).build();
+    private static final ContractID A_CONTRAC_ID =
+            ContractID.newBuilder().contractNum(123L).build();
+    private static final ContractID B_CONTRAC_ID =
+            ContractID.newBuilder().contractNum(234L).build();
     private static final UInt256 A_KEY_BEING_ADDED = UInt256.fromHexString("0x1234");
     private static final UInt256 A_KEY_BEING_CHANGED = UInt256.fromHexString("0x2345");
     private static final UInt256 A_KEY_BEING_REMOVED = UInt256.fromHexString("0x3456");
@@ -118,7 +120,8 @@ class RootProxyWorldUpdaterTest {
         final var sizeExcludingPendingRemovals = sizeIncludingPendingRemovals - 3;
         given(evmFrameState.getKvStateSize()).willReturn(sizeIncludingPendingRemovals);
         given(evmFrameState.getStorageChanges()).willReturn(pendingChanges());
-        given(evmFrameState.getRentFactorsFor(A_CONTRAC_ID)).willReturn(new RentFactors(aSlotsUsedBeforeCommit, aExpiry));
+        given(evmFrameState.getRentFactorsFor(A_CONTRAC_ID))
+                .willReturn(new RentFactors(aSlotsUsedBeforeCommit, aExpiry));
 
         final var rentInTinycents = 666_666L;
         final var rentInTinybars = 111_111L;

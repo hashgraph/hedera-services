@@ -45,8 +45,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IterableStorageManagerTest {
-    private final ContractID CONTRACT_1 = ContractID.newBuilder().contractNum(1L).build();
-    private final ContractID CONTRACT_2 = ContractID.newBuilder().contractNum(2L).build();
+    private final ContractID CONTRACT_1 =
+            ContractID.newBuilder().contractNum(1L).build();
+    private final ContractID CONTRACT_2 =
+            ContractID.newBuilder().contractNum(2L).build();
     private final Bytes BYTES_1 = ConversionUtils.tuweniToPbjBytes(UInt256.ONE);
     private final Bytes BYTES_2 = ConversionUtils.tuweniToPbjBytes(UInt256.valueOf(2L));
     private final Bytes BYTES_3 = ConversionUtils.tuweniToPbjBytes(UInt256.valueOf(3L));
@@ -97,7 +99,8 @@ class IterableStorageManagerTest {
                                 StorageAccess.newRead(UInt256.ONE, UInt256.MAX_VALUE),
                                 StorageAccess.newWrite(UInt256.ONE, UInt256.MAX_VALUE, UInt256.ZERO))));
 
-        final var sizeChanges = List.of(new StorageSizeChange(CONTRACT_1, 0, 0), new StorageSizeChange(CONTRACT_2, 1, 0));
+        final var sizeChanges =
+                List.of(new StorageSizeChange(CONTRACT_1, 0, 0), new StorageSizeChange(CONTRACT_2, 1, 0));
 
         given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
         given(hederaNativeOperations.getAccount(anyLong())).willReturn(account);

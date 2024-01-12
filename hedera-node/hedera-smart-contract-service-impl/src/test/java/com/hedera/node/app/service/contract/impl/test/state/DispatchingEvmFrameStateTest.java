@@ -47,7 +47,6 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -107,13 +106,25 @@ class DispatchingEvmFrameStateTest {
     private static final Bytes B_STORAGE_KEY = Bytes.wrap(Bytes32.random().toArrayUnsafe());
     private static final Bytes C_STORAGE_KEY = Bytes.wrap(Bytes32.random().toArrayUnsafe());
     private static final Bytes A_STORAGE_VALUE = Bytes.wrap(Bytes32.random().toArrayUnsafe());
-    private static final SlotKey A_SLOT_KEY =
-            SlotKey.newBuilder().contractNumber(ACCOUNT_NUM).key(A_STORAGE_KEY).build();
+    private static final SlotKey A_SLOT_KEY = SlotKey.newBuilder()
+            .contractID(ContractID.newBuilder().contractNum(ACCOUNT_NUM).build())
+            .key(A_STORAGE_KEY)
+            .build();
     private static final SlotValue A_SLOT_VALUE = SlotValue.newBuilder()
             .previousKey(B_STORAGE_KEY)
             .value(A_STORAGE_VALUE)
             .nextKey(C_STORAGE_KEY)
             .build();
+    private static final ContractID A_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(ACCOUNT_NUM).build();
+    private static final ContractID B_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(1L).build();
+    private static final ContractID C_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(2L).build();
+    private static final AccountID A_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(ACCOUNT_NUM).build();
+    private static final AccountID B_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(BENEFICIARY_NUM).build();
 
     @Mock
     private HederaNativeOperations nativeOperations;
@@ -156,9 +167,9 @@ class DispatchingEvmFrameStateTest {
     void extFrameScopeesToSetCode() {
         final var expectedCode = Bytecode.newBuilder().code(SOME_PRETEND_CODE).build();
 
-        subject.setCode(ACCOUNT_NUM, pbjToTuweniBytes(SOME_PRETEND_CODE));
+        subject.setCode(A_CONTRACT_ID, pbjToTuweniBytes(SOME_PRETEND_CODE));
 
-        verify(contractStateStore).putBytecode(new EntityNumber(ACCOUNT_NUM), expectedCode);
+        verify(contractStateStore).putBytecode(A_CONTRACT_ID, expectedCode);
     }
 
     @Test
@@ -166,7 +177,7 @@ class DispatchingEvmFrameStateTest {
         given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
 
         final var expectedWord = pbjToTuweniUInt256(A_STORAGE_VALUE);
-        final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
+        final var actualWord = subject.getStorageValue(A_CONTRACT_ID, pbjToTuweniUInt256(A_STORAGE_KEY));
 
         assertEquals(expectedWord, actualWord);
     }
@@ -176,7 +187,7 @@ class DispatchingEvmFrameStateTest {
         given(contractStateStore.getOriginalSlotValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
 
         final var expectedWord = pbjToTuweniUInt256(A_STORAGE_VALUE);
-        final var actualWord = subject.getOriginalStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
+        final var actualWord = subject.getOriginalStorageValue(A_CONTRACT_ID, pbjToTuweniUInt256(A_STORAGE_KEY));
 
         assertEquals(expectedWord, actualWord);
     }
@@ -185,21 +196,21 @@ class DispatchingEvmFrameStateTest {
     void summarizesModificationsAsExpected() {
         final List<StorageAccesses> expected = List.of(
                 new StorageAccesses(
-                        1L,
+                        B_CONTRACT_ID,
                         List.of(
                                 StorageAccess.newWrite(UInt256.ONE, UInt256.ONE, UInt256.MAX_VALUE),
                                 StorageAccess.newWrite(UInt256.MAX_VALUE, UInt256.MIN_VALUE, UInt256.ONE))),
                 new StorageAccesses(
-                        2L,
+                        C_CONTRACT_ID,
                         List.of(
                                 StorageAccess.newWrite(UInt256.MAX_VALUE, UInt256.MIN_VALUE, UInt256.ONE),
                                 StorageAccess.newWrite(UInt256.ONE, UInt256.ONE, UInt256.MAX_VALUE))));
 
         final var modifiedKeys = List.of(
-                new SlotKey(1L, tuweniToPbjBytes(UInt256.ONE)),
-                new SlotKey(1L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
-                new SlotKey(2L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
-                new SlotKey(2L, tuweniToPbjBytes(UInt256.ONE)));
+                new SlotKey(B_CONTRACT_ID, tuweniToPbjBytes(UInt256.ONE)),
+                new SlotKey(B_CONTRACT_ID, tuweniToPbjBytes(UInt256.MAX_VALUE)),
+                new SlotKey(C_CONTRACT_ID, tuweniToPbjBytes(UInt256.MAX_VALUE)),
+                new SlotKey(C_CONTRACT_ID, tuweniToPbjBytes(UInt256.ONE)));
         given(contractStateStore.getModifiedSlotKeys()).willReturn(new LinkedHashSet<>(modifiedKeys));
         final var iter = modifiedKeys.iterator();
         givenOrigAndNewValues(iter.next(), UInt256.ONE, UInt256.MAX_VALUE);
@@ -231,7 +242,7 @@ class DispatchingEvmFrameStateTest {
                 .nextKey(Bytes.EMPTY)
                 .build();
 
-        subject.setStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
+        subject.setStorageValue(A_CONTRACT_ID, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
 
         verify(contractStateStore).putSlot(A_SLOT_KEY, newSlotValue);
     }
@@ -250,14 +261,14 @@ class DispatchingEvmFrameStateTest {
                 .build();
 
         given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(oldSlotValue);
-        subject.setStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
+        subject.setStorageValue(A_CONTRACT_ID, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
 
         verify(contractStateStore).putSlot(A_SLOT_KEY, newSlotValue);
     }
 
     @Test
     void getsZeroWordForMissingSlotKey() {
-        final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
+        final var actualWord = subject.getStorageValue(A_CONTRACT_ID, pbjToTuweniUInt256(A_STORAGE_KEY));
 
         assertSame(UInt256.ZERO, actualWord);
     }
@@ -266,7 +277,7 @@ class DispatchingEvmFrameStateTest {
     void getsZeroWordForEmptySlotValue() {
         given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(SlotValue.DEFAULT);
 
-        final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
+        final var actualWord = subject.getStorageValue(A_CONTRACT_ID, pbjToTuweniUInt256(A_STORAGE_KEY));
 
         assertSame(UInt256.ZERO, actualWord);
     }
@@ -275,7 +286,7 @@ class DispatchingEvmFrameStateTest {
     void getsExtantCode() {
         givenWellKnownBytecode();
 
-        final var actualCode = subject.getCode(ACCOUNT_NUM);
+        final var actualCode = subject.getCode(A_CONTRACT_ID);
 
         assertEquals(pbjToTuweniBytes(SOME_PRETEND_CODE), actualCode);
     }
@@ -302,16 +313,16 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void getsEmptyCodeForMissing() {
-        final var actualCode = subject.getCode(ACCOUNT_NUM);
+        final var actualCode = subject.getCode(A_CONTRACT_ID);
 
         assertSame(org.apache.tuweni.bytes.Bytes.EMPTY, actualCode);
     }
 
     @Test
     void getsEmptyCodeForNull() {
-        given(contractStateStore.getBytecode(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null));
+        given(contractStateStore.getBytecode(A_CONTRACT_ID)).willReturn(new Bytecode(null));
 
-        final var actualCode = subject.getCode(ACCOUNT_NUM);
+        final var actualCode = subject.getCode(A_CONTRACT_ID);
 
         assertSame(org.apache.tuweni.bytes.Bytes.EMPTY, actualCode);
     }
@@ -320,14 +331,14 @@ class DispatchingEvmFrameStateTest {
     void getsExtantCodeHash() {
         givenWellKnownBytecode();
 
-        final var actualCodeHash = subject.getCodeHash(ACCOUNT_NUM);
+        final var actualCodeHash = subject.getCodeHash(A_CONTRACT_ID);
 
         assertEquals(SOME_PRETEND_CODE_HASH, actualCodeHash);
     }
 
     @Test
     void getsEmptyCodeHashForMissing() {
-        final var actualCodeHash = subject.getCodeHash(ACCOUNT_NUM);
+        final var actualCodeHash = subject.getCodeHash(A_CONTRACT_ID);
 
         assertSame(Hash.EMPTY, actualCodeHash);
     }
@@ -354,7 +365,7 @@ class DispatchingEvmFrameStateTest {
     void returnsExpectedRentFactors() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
         final var expected = new RentFactors(NUM_KV_SLOTS, EXPIRY);
-        assertEquals(expected, subject.getRentFactorsFor(ACCOUNT_NUM));
+        assertEquals(expected, subject.getRentFactorsFor(A_CONTRACT_ID));
     }
 
     @Test
@@ -383,32 +394,32 @@ class DispatchingEvmFrameStateTest {
     @Test
     void returnsNonceIfPresent() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).ethereumNonce(1234));
-        assertEquals(1234, subject.getNonce(ACCOUNT_NUM));
+        assertEquals(1234, subject.getNonce(A_ACCOUNT_ID));
     }
 
     @Test
     void returnsNumTreasuryTitlesIfPresent() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberTreasuryTitles(1234));
-        assertEquals(1234, subject.getNumTreasuryTitles(ACCOUNT_NUM));
+        assertEquals(1234, subject.getNumTreasuryTitles(A_CONTRACT_ID));
     }
 
     @Test
     void returnsNumNonZeroBalancesIfPresent() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberPositiveBalances(1234));
-        assertEquals(1234, subject.getNumPositiveTokenBalances(ACCOUNT_NUM));
+        assertEquals(1234, subject.getNumPositiveTokenBalances(A_CONTRACT_ID));
     }
 
     @Test
     void returnsWhetherAnAccountIsContract() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
-        assertTrue(subject.isContract(ACCOUNT_NUM));
+        assertTrue(subject.isContract(A_CONTRACT_ID));
     }
 
     @Test
     void returnsBalanceIfPresent() {
         final var value = Wei.of(1234);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).tinybarBalance(1234));
-        assertEquals(value, subject.getBalance(ACCOUNT_NUM));
+        assertEquals(value, subject.getBalance(A_ACCOUNT_ID));
     }
 
     @Test
@@ -579,7 +590,7 @@ class DispatchingEvmFrameStateTest {
                 subject.tryTrackingSelfDestructBeneficiary(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isEmpty());
-        verify(nativeOperations).trackSelfDestructBeneficiary(ACCOUNT_NUM, BENEFICIARY_NUM, frame);
+        verify(nativeOperations).trackSelfDestructBeneficiary(A_ACCOUNT_ID, B_ACCOUNT_ID, frame);
     }
 
     @Test
@@ -684,7 +695,7 @@ class DispatchingEvmFrameStateTest {
     }
 
     private void givenWellKnownBytecode() {
-        given(contractStateStore.getBytecode(new EntityNumber(ACCOUNT_NUM))).willReturn(SOME_PRETEND_BYTECODE);
+        given(contractStateStore.getBytecode(A_CONTRACT_ID)).willReturn(SOME_PRETEND_BYTECODE);
     }
 
     private void givenWellKnownAccount(final Account.Builder builder) {

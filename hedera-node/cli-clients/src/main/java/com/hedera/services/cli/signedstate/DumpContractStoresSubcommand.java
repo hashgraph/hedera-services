@@ -236,7 +236,7 @@ public class DumpContractStoresSubcommand {
         contractStorageStore.keys().forEachRemaining(key -> {
             // (Not sure how many temporary _copies_ of a byte arrays are made here ... best not to ask ...)
             final var contractKeyLocal = ContractKeyLocal.from(
-                    new ContractKey(key.contractNumber(), key.key().toByteArray()));
+                    new ContractKey(key.contractID().contractNum(), key.key().toByteArray()));
             final var slotValue = contractStorageStore.get(key);
             assert (slotValue != null);
             final var value = uint256FromByteArray(slotValue.value().toByteArray());

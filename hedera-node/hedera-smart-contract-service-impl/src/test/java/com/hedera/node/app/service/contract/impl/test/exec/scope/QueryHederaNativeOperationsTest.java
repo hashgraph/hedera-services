@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
@@ -71,9 +72,15 @@ class QueryHederaNativeOperationsTest {
 
     private QueryHederaNativeOperations subject;
 
+    private AccountID deletedAccount;
+
+    private AccountID beneficiaryAccount;
+
     @BeforeEach
     void setUp() {
         subject = new QueryHederaNativeOperations(context);
+        deletedAccount = AccountID.newBuilder().accountNum(1L).build();
+        beneficiaryAccount = AccountID.newBuilder().accountNum(2L).build();
     }
 
     @Test
@@ -88,7 +95,9 @@ class QueryHederaNativeOperationsTest {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.transferWithReceiverSigCheck(1L, 2L, 3L, MOCK_VERIFICATION_STRATEGY));
-        assertThrows(UnsupportedOperationException.class, () -> subject.trackSelfDestructBeneficiary(1L, 2L, frame));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.trackSelfDestructBeneficiary(deletedAccount, beneficiaryAccount, frame));
     }
 
     @Test

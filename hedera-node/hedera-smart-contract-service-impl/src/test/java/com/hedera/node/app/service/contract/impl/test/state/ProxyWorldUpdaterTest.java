@@ -241,7 +241,8 @@ class ProxyWorldUpdaterTest {
     @Test
     void providesAccessToPendingStorageChanges() {
         final var someChanges = new StorageAccesses(
-                123L, List.of(new StorageAccess(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+                ContractID.newBuilder().contractNum(123L).build(),
+                List.of(new StorageAccess(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
         final var expected = List.of(someChanges);
 
         given(evmFrameState.getStorageChanges()).willReturn(expected);

@@ -283,16 +283,17 @@ class HandleHederaOperationsTest {
 
     @Test
     void chargeStorageRentIsNoop() {
-        assertDoesNotThrow(() -> subject.chargeStorageRent(1L, 2L, true));
+        assertDoesNotThrow(() -> subject.chargeStorageRent(
+                ContractID.newBuilder().contractNum(1L).build(), 2L, true));
     }
 
     @Test
     void updateStorageMetadataUsesApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
-        subject.updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), Bytes.EMPTY, 2);
+        subject.updateStorageMetadata(NON_SYSTEM_CONTRACT_ID, Bytes.EMPTY, 2);
 
-        verify(tokenServiceApi).updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID, Bytes.EMPTY, 2);
+        verify(tokenServiceApi).updateStorageMetadata(NON_SYSTEM_CONTRACT_ID, Bytes.EMPTY, 2);
     }
 
     @Test
@@ -568,8 +569,8 @@ class HandleHederaOperationsTest {
     @Test
     void getOriginalSlotsUsedDelegatesToApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(tokenServiceApi.originalKvUsageFor(A_NEW_ACCOUNT_ID)).willReturn(123L);
-        assertEquals(123L, subject.getOriginalSlotsUsed(A_NEW_ACCOUNT_ID.accountNumOrThrow()));
+        given(tokenServiceApi.originalKvUsageFor(A_NEW_CONTRACT_ID)).willReturn(123L);
+        assertEquals(123L, subject.getOriginalSlotsUsed(A_NEW_CONTRACT_ID));
     }
 
     @Test

@@ -171,8 +171,7 @@ class TokenServiceApiImplTest {
                 .build());
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -4));
+                IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -4));
     }
 
     @Test
@@ -183,8 +182,7 @@ class TokenServiceApiImplTest {
                 .build());
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -3));
+                IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ID, SOME_STORE_KEY, -3));
     }
 
     @Test

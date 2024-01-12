@@ -42,8 +42,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProxyEvmAccountTest {
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
-    private static final AccountID ACCOUNT_ID = AccountID.newBuilder().accountNum(ACCOUNT_NUM).build();
-    private static final ContractID CONTRACT_ID = ContractID.newBuilder().contractNum(ACCOUNT_NUM).build();
+    private static final AccountID ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(ACCOUNT_NUM).build();
+    private static final ContractID CONTRACT_ID =
+            ContractID.newBuilder().contractNum(ACCOUNT_NUM).build();
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
     private static final Bytes SOME_PRETEND_CODE_HASH = Bytes.wrap("<NOT-REALLY-BYTECODE-HASH-12345>");

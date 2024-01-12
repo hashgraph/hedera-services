@@ -114,9 +114,15 @@ class HandleHederaNativeOperationsTest {
 
     private HandleHederaNativeOperations subject;
 
+    private AccountID deletedAccount;
+
+    private AccountID beneficiaryAccount;
+
     @BeforeEach
     void setUp() {
         subject = new HandleHederaNativeOperations(context);
+        deletedAccount = AccountID.newBuilder().accountNum(1L).build();
+        beneficiaryAccount = AccountID.newBuilder().accountNum(2L).build();
     }
 
     @Test
@@ -297,7 +303,7 @@ class HandleHederaNativeOperationsTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         stack.push(frame);
         given(frame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE)).willReturn(beneficiaries);
-        subject.trackSelfDestructBeneficiary(1L, 2L, frame);
+        subject.trackSelfDestructBeneficiary(deletedAccount, beneficiaryAccount, frame);
         verify(beneficiaries)
                 .addBeneficiaryForDeletedAccount(
                         AccountID.newBuilder().accountNum(1L).build(),

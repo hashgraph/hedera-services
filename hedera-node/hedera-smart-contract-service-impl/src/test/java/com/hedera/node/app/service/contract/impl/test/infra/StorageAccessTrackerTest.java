@@ -29,8 +29,10 @@ import org.junit.jupiter.api.Test;
 
 class StorageAccessTrackerTest {
     private final StorageAccessTracker subject = new StorageAccessTracker();
-    private final ContractID CONTRACT_ID = ContractID.newBuilder().contractNum(123L).build();
-    private final ContractID ANOTHER_CONTRACT_ID = ContractID.newBuilder().contractNum(456L).build();
+    private final ContractID CONTRACT_ID =
+            ContractID.newBuilder().contractNum(123L).build();
+    private final ContractID ANOTHER_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(456L).build();
 
     @Test
     void onlyFirstReadIsTracked() {

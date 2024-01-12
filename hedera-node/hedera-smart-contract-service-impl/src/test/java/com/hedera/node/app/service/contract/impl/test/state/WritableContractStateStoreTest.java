@@ -20,10 +20,12 @@ import static com.hedera.node.app.service.contract.impl.state.InitialModServiceC
 import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.STORAGE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BYTECODE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
@@ -41,7 +43,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WritableContractStateStoreTest {
-    private static final SlotKey SLOT_KEY = new SlotKey(1L, Bytes.EMPTY);
+    private static final ContractID CONTRACT_ID =
+            ContractID.newBuilder().contractNum(1L).build();
+    private static final SlotKey SLOT_KEY = new SlotKey(CONTRACT_ID, Bytes.EMPTY);
     private static final SlotValue SLOT_VALUE = new SlotValue(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
 
     @Mock
@@ -67,12 +71,12 @@ class WritableContractStateStoreTest {
     void getsBytecodeAsExpected() {
         given(bytecode.get(CALLED_CONTRACT_ENTITY_NUMBER)).willReturn(BYTECODE);
 
-        assertSame(BYTECODE, subject.getBytecode(CALLED_CONTRACT_ENTITY_NUMBER));
+        assertSame(BYTECODE, subject.getBytecode(CALLED_CONTRACT_ID));
     }
 
     @Test
     void putsBytecodeAsExpected() {
-        subject.putBytecode(CALLED_CONTRACT_ENTITY_NUMBER, BYTECODE);
+        subject.putBytecode(CALLED_CONTRACT_ID, BYTECODE);
 
         verify(bytecode).put(CALLED_CONTRACT_ENTITY_NUMBER, BYTECODE);
     }
