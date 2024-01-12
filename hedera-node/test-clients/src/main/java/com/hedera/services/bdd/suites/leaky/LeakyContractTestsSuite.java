@@ -373,7 +373,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 getErc20TokenNameExceedingLimits(),
                 relayerFeeAsExpectedIfSenderCoversGas(),
                 canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
-                getErc20TokenNameExceedingLimits(),
                 invalidContract());
     }
 
