@@ -389,7 +389,8 @@ public class HandleWorkflow {
                     consensusNow,
                     authorizer,
                     solvencyPreCheck,
-                    childRecordFinalizer);
+                    childRecordFinalizer,
+                    networkUtilizationManager);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);

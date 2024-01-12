@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -177,7 +178,17 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = txn.cryptoTransferOrThrow();
 
         // ensure all aliases exist, if not create then if receivers
-        ensureExistenceOfAliasesOrCreate(op, transferContext);
+        try {
+            ensureExistenceOfAliasesOrCreate(op, transferContext);
+        } catch (HandleException e) {
+            final int autoCreationsNumber = transferContext.numOfAutoCreations() + transferContext.numOfLazyCreations();
+            context.reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
+            // we only want to reclaim the previously reserved throttle for `CRYPTO_CREATE` transaction
+            // if there is a failed auto-creation triggered from CryptoTransfer
+            // this is why we re-throw the HandleException, so that it will be still tackled the same in HandleWorkflow
+            throw e;
+        }
+
         if (transferContext.numOfLazyCreations() > 0) {
             final var config = context.configuration().getConfigData(LazyCreationConfig.class);
             validateTrue(config.enabled(), NOT_SUPPORTED);
