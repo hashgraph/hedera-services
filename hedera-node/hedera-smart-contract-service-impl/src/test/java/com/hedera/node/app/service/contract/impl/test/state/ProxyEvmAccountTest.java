@@ -91,7 +91,7 @@ class ProxyEvmAccountTest {
 
     @Test
     void returnsLongZeroAddressWithoutAnAlias() {
-        given(hederaState.getAddress(ACCOUNT_NUM)).willReturn(EVM_ADDRESS);
+        given(hederaState.getAddress(ACCOUNT_ID)).willReturn(EVM_ADDRESS);
         assertEquals(EVM_ADDRESS, subject.getAddress());
     }
 
@@ -172,7 +172,7 @@ class ProxyEvmAccountTest {
 
     @Test
     void delegatesCheckingContract() {
-        given(hederaState.isContract(CONTRACT_ID)).willReturn(true);
+        given(hederaState.isContract(ACCOUNT_ID)).willReturn(true);
         assertTrue(subject.isContract());
     }
 }

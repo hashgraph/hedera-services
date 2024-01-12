@@ -52,7 +52,7 @@ class WritableContractStateStoreTest {
     private WritableKVState<SlotKey, SlotValue> storage;
 
     @Mock
-    private WritableKVState<EntityNumber, Bytecode> bytecode;
+    private WritableKVState<ContractID, Bytecode> bytecode;
 
     @Mock
     private WritableStates states;
@@ -62,14 +62,14 @@ class WritableContractStateStoreTest {
     @BeforeEach
     void setUp() {
         given(states.<SlotKey, SlotValue>get(STORAGE_KEY)).willReturn(storage);
-        given(states.<EntityNumber, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
+        given(states.<ContractID, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
 
         subject = new WritableContractStateStore(states);
     }
 
     @Test
     void getsBytecodeAsExpected() {
-        given(bytecode.get(CALLED_CONTRACT_ENTITY_NUMBER)).willReturn(BYTECODE);
+        given(bytecode.get(CALLED_CONTRACT_ID)).willReturn(BYTECODE);
 
         assertSame(BYTECODE, subject.getBytecode(CALLED_CONTRACT_ID));
     }
@@ -78,7 +78,7 @@ class WritableContractStateStoreTest {
     void putsBytecodeAsExpected() {
         subject.putBytecode(CALLED_CONTRACT_ID, BYTECODE);
 
-        verify(bytecode).put(CALLED_CONTRACT_ENTITY_NUMBER, BYTECODE);
+        verify(bytecode).put(CALLED_CONTRACT_ID, BYTECODE);
     }
 
     @Test

@@ -212,26 +212,26 @@ public interface EvmFrameState {
     /**
      * Returns the number of treasury titles for the account with the given number.
      *
-     * @param contractID the contract ID
+     * @param accountID the account ID
      * @return the number of treasury titles
      */
-    int getNumTreasuryTitles(ContractID contractID);
+    int getNumTreasuryTitles(AccountID accountID);
 
     /**
      * Returns the number of positive token balances.
      *
-     * @param contractID the contract ID
+     * @param accountID the contract ID
      * @return the number of positive token balances
      */
-    int getNumPositiveTokenBalances(ContractID contractID);
+    int getNumPositiveTokenBalances(AccountID accountID);
 
     /**
      * Returns whether the account with the given number is a contract.
      *
-     * @param contractID the contract id number
+     * @param accountID the account id number
      * @return whether the account is a contract
      */
-    boolean isContract(ContractID contractID);
+    boolean isContract(AccountID accountID);
 
     /**
      * Sets the nonce for the account with the given number.

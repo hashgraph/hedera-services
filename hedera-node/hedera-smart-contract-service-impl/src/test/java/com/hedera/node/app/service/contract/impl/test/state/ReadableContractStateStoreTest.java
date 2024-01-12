@@ -52,7 +52,7 @@ class ReadableContractStateStoreTest {
     private ReadableKVState<SlotKey, SlotValue> storage;
 
     @Mock
-    private ReadableKVState<EntityNumber, Bytecode> bytecode;
+    private ReadableKVState<ContractID, Bytecode> bytecode;
 
     @Mock
     private ReadableStates states;
@@ -62,7 +62,7 @@ class ReadableContractStateStoreTest {
     @BeforeEach
     void setUp() {
         given(states.<SlotKey, SlotValue>get(STORAGE_KEY)).willReturn(storage);
-        given(states.<EntityNumber, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
+        given(states.<ContractID, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
 
         subject = new ReadableContractStateStore(states);
     }
@@ -76,7 +76,7 @@ class ReadableContractStateStoreTest {
 
     @Test
     void getsBytecodeAsExpected() {
-        given(bytecode.get(CALLED_CONTRACT_ENTITY_NUMBER)).willReturn(BYTECODE);
+        given(bytecode.get(CALLED_CONTRACT_ID)).willReturn(BYTECODE);
 
         assertSame(BYTECODE, subject.getBytecode(CALLED_CONTRACT_ID));
     }

@@ -230,24 +230,24 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public int getNumTreasuryTitles(final ContractID contractID) {
-        return validatedAccount(contractID).numberTreasuryTitles();
+    public int getNumTreasuryTitles(final AccountID accountID) {
+        return validatedAccount(accountID).numberTreasuryTitles();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean isContract(final ContractID contractID) {
-        return validatedAccount(contractID).smartContract();
+    public boolean isContract(final AccountID accountID) {
+        return validatedAccount(accountID).smartContract();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int getNumPositiveTokenBalances(final ContractID contractID) {
-        return validatedAccount(contractID).numberPositiveBalances();
+    public int getNumPositiveTokenBalances(final AccountID accountID) {
+        return validatedAccount(accountID).numberPositiveBalances();
     }
 
     /**
@@ -291,7 +291,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @Nullable Address getAddress(final long number) {
-        final var account = nativeOperations.getAccount(number);
+        final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+        final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
             final var token = nativeOperations.getToken(number);
             if (token != null) {
@@ -337,7 +338,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (number == MISSING_ENTITY_NUMBER) {
             return false;
         }
-        final var account = nativeOperations.getAccount(number);
+        final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+        final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
             return false;
         }
@@ -409,7 +411,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
         final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number != MISSING_ENTITY_NUMBER) {
-            final var account = nativeOperations.getAccount(number);
+            AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+            final var account = nativeOperations.getAccount(accountID);
             if (account != null) {
                 if (account.expiredAndPendingRemoval()) {
                     return Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
@@ -474,7 +477,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (number == MISSING_ENTITY_NUMBER) {
             return null;
         }
-        final var account = nativeOperations.getAccount(number);
+        final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+        final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
             final var token = nativeOperations.getToken(number);
             if (token != null) {
