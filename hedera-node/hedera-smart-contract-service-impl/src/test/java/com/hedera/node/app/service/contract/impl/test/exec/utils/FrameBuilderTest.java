@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,7 @@ class FrameBuilderTest {
     @Test
     void constructsExpectedFrameForCallToExtantContractIncludingOptionalContextVaraiables() {
         final var transaction = wellKnownHapiCall();
+        givenContractExists();
         final var recordBuilder = mock(DeleteCapableTransactionRecordBuilder.class);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
