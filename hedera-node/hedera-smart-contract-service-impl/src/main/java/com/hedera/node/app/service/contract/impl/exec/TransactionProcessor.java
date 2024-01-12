@@ -138,8 +138,8 @@ public class TransactionProcessor {
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config,
             @NonNull final InvolvedParties parties) {
-        final var gasCharges = gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater,
-                transaction);
+        final var gasCharges =
+                gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         final var initialFrame = frameBuilder.buildInitialFrameWith(
                 transaction,
                 updater,
@@ -272,8 +272,8 @@ public class TransactionProcessor {
     }
 
     private boolean contractNotRequired(@Nullable final HederaEvmAccount to, @NonNull final Configuration config) {
-        final var maybeGrandfatheredNumber = (to == null) ? null
-                : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
+        final var maybeGrandfatheredNumber =
+                (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
 
         return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, maybeGrandfatheredNumber);
     }
@@ -332,8 +332,8 @@ public class TransactionProcessor {
                 updater.setupTopLevelLazyCreate(requireNonNull(parties.receiverAddress));
             } else {
                 updater.setContractNotRequired();
-                parties = new InvolvedParties(sender, relayer,
-                        contractIDToBesuAddress(transaction.contractIdOrThrow()));
+                parties =
+                        new InvolvedParties(sender, relayer, contractIDToBesuAddress(transaction.contractIdOrThrow()));
             }
         } else {
             // In order to be EVM equivalent, we need to gracefully handle calls to
