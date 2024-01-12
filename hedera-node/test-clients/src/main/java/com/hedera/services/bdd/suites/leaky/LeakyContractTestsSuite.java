@@ -3008,6 +3008,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 spec.registry().getAccountID(A_CIVILIAN)))))))));
     }
 
+    @HapiTest
     HapiSpec callToNonExistingContractFailsGracefully() {
 
         return propertyPreservingHapiSpec("callToNonExistingContractFailsGracefully")
