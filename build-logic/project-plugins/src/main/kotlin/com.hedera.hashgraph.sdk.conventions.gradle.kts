@@ -39,8 +39,7 @@ val allPlatformSdkProjects =
                 listOf(
                     "swirlds",
                     "swirlds-benchmarks",
-                    "swirlds-platform",
-                    "swirlds-sign-tool"
+                    "swirlds-platform"
                 ) // these are application/benchmark projects
         }
         .sorted()

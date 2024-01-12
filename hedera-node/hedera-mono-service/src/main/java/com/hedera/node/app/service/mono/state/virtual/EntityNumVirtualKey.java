@@ -19,6 +19,9 @@ package com.hedera.node.app.service.mono.state.virtual;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -33,6 +36,7 @@ import java.nio.ByteBuffer;
  * should be moved back to VirtualMap in 0.28.
  */
 public final class EntityNumVirtualKey implements VirtualLongKey {
+
     static final long CLASS_ID = 0xec76f9ebae262595L;
     static final int BYTES_IN_SERIALIZED_FORM = 8;
 
@@ -104,29 +108,34 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
         return CURRENT_VERSION;
     }
 
-    /** {@inheritDoc} */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(value);
     }
 
-    /** {@inheritDoc} */
+    void serialize(final WritableSequentialData out) {
+        out.writeLong(value);
+    }
+
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
+        buffer.putLong(value);
+    }
+
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.putLong(value);
+    void deserialize(final ReadableSequentialData in) {
+        value = in.readLong();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         value = buffer.getLong();
     }
+
     /** {@inheritDoc} */
     @Override
     public boolean equals(final Object o) {
@@ -147,12 +156,15 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
      * Verifies if the content from {@code buffer} is equal to the content of this instance.
      *
      * @param buffer The buffer with data to be compared with this class.
-     * @param version The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *     {@code false}, otherwise.
-     * @throws IOException If an I/O error occurred
      */
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
+    boolean equalsTo(final BufferedData buffer) {
+        return buffer.readLong() == this.value;
+    }
+
+    @Deprecated
+    boolean equalsTo(final ByteBuffer buffer, final int version) {
         return buffer.getLong() == this.value;
     }
 

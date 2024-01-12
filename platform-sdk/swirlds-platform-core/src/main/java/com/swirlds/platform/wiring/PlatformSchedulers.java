@@ -79,10 +79,7 @@ public record PlatformSchedulers(
 
         return new PlatformSchedulers(
                 model.schedulerBuilder("eventHasher")
-                        .withType(config.eventHasherSchedulerType())
-                        .withUnhandledTaskCapacity(config.eventHasherUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withType(TaskSchedulerType.DIRECT)
                         .build()
                         .cast(),
                 model.schedulerBuilder("internalEventValidator")
