@@ -202,6 +202,9 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         this.descriptor = hashedData.createEventDescriptor();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getGeneration() {
         return hashedData.getGeneration();

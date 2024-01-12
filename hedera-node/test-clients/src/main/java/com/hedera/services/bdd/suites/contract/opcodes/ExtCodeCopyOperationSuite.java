@@ -29,9 +29,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -73,15 +73,14 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
         final var codeCopyOf = "codeCopyOf";
         final var account = "account";
 
-        return defaultHapiSpec(
-                        "VerifiesExistence", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("VerifiesExistence", FULLY_NONDETERMINISTIC)
                 .given(cryptoCreate(account), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, codeCopyOf, asHeadlongAddress(invalidAddress))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, codeCopyOf, asHeadlongAddress(invalidAddress))
-                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
+                                .hasAnswerOnlyPrecheck(OK),
                         withOpContext((spec, opLog) -> {
                             final var accountID = spec.registry().getAccountID(account);
                             final var contractID = spec.registry().getContractId(contract);

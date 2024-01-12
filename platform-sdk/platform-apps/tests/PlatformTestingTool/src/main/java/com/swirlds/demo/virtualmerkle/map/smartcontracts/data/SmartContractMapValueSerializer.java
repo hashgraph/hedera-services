@@ -16,8 +16,10 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 
 /** This class is the serializer of {@link SmartContractMapValue}. */
@@ -55,16 +57,28 @@ public final class SmartContractMapValueSerializer implements ValueSerializer<Sm
     }
 
     @Override
-    public int serialize(final SmartContractMapValue data, final ByteBuffer buffer) throws IOException {
-        final byte[] value = data.getValue();
-        buffer.put(value);
-        return SmartContractMapValue.getSizeInBytes();
+    public void serialize(@NonNull final SmartContractMapValue value, @NonNull final WritableSequentialData out) {
+        value.serialize(out);
     }
 
     @Override
-    public SmartContractMapValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        final byte[] value = new byte[SmartContractMapValue.getSizeInBytes()];
-        buffer.get(value);
-        return new SmartContractMapValue(value);
+    @Deprecated
+    public void serialize(SmartContractMapValue value, ByteBuffer buffer) {
+        value.serialize(buffer);
+    }
+
+    @Override
+    public SmartContractMapValue deserialize(@NonNull final ReadableSequentialData in) {
+        final SmartContractMapValue value = new SmartContractMapValue();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public SmartContractMapValue deserialize(ByteBuffer buffer, long dataVersion) {
+        final SmartContractMapValue value = new SmartContractMapValue();
+        value.deserialize(buffer, (int) dataVersion);
+        return value;
     }
 }

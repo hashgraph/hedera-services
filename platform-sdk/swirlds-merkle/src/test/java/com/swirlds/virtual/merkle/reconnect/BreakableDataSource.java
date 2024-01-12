@@ -19,9 +19,11 @@ package com.swirlds.virtual.merkle.reconnect;
 import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestKeySerializer;
@@ -115,7 +117,12 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
     @Override
     public VirtualKeySet<TestKey> buildKeySet() {
         return new HalfDiskVirtualKeySet<>(
-                new TestKeySerializer(), 10, 2L * MEBIBYTES_TO_BYTES * BYTES_TO_BITS, 1_000_000, 10_000);
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                new TestKeySerializer(),
+                10,
+                2L * MEBIBYTES_TO_BYTES * BYTES_TO_BITS,
+                1_000_000,
+                10_000);
     }
 
     @Override

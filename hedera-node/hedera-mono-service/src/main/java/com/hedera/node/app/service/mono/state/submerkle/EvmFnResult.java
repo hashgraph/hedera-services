@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.submerkle;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableString;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
@@ -434,7 +435,7 @@ public class EvmFnResult implements SelfSerializable {
             final List<ContractNonceInfo> contractNonces,
             final byte[] evmAddress) {
         return new EvmFnResult(
-                EntityId.fromAddress(recipient),
+                isMirror(recipient.toArray()) ? EntityId.fromAddress(recipient) : null,
                 output.toArrayUnsafe(),
                 null,
                 bloomFor(logs),
