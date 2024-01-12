@@ -42,6 +42,7 @@ import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -83,6 +84,7 @@ public class TurboSyncRunner {
     private final Supplier<GraphGenerations> generationsSupplier;
     private final LatestEventTipsetTracker latestEventTipsetTracker;
     private final InterruptableConsumer<GossipEvent> gossipEventConsumer;
+    private final SyncMetrics syncMetrics;
 
     /**
      * For events that are neither self events nor ancestors of self events, we must have had this event for at least
@@ -142,7 +144,8 @@ public class TurboSyncRunner {
             @NonNull final ShadowGraph shadowgraph,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
             @NonNull final LatestEventTipsetTracker latestEventTipsetTracker,
-            @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer) {
+            @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer,
+            @NonNull final SyncMetrics syncMetrics) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
@@ -166,6 +169,7 @@ public class TurboSyncRunner {
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
         this.hashOnSyncThread = syncConfig.hashOnGossipThreads();
         this.maximumPermissibleEventsInIntake = syncConfig.maximumPermissibleEventsInIntake();
+        this.syncMetrics = Objects.requireNonNull(syncMetrics);
     }
 
     /**
@@ -254,6 +258,7 @@ public class TurboSyncRunner {
      */
     private void runProtocolIteration() throws ParallelExecutionException {
         executor.doParallel(this::receiveData, this::sendData, NO_OP);
+        syncMetrics.syncComplete();
     }
 
     /**
@@ -453,6 +458,8 @@ public class TurboSyncRunner {
             dataOutputStream.writeEventData(event);
         }
 
+        syncMetrics.registerNumberOfEventsSent(eventsToSend.size());
+
         return SyncUtils.computeSentTips(
                 dataSentB.tipsOfEventsSent(),
                 eventsToSend,
@@ -470,6 +477,8 @@ public class TurboSyncRunner {
         }
 
         final int eventCount = dataInputStream.readInt();
+        syncMetrics.registerNumberOfEventsReceived(eventCount);
+
         for (int i = 0; i < eventCount; i++) {
             final GossipEvent event = dataInputStream.readEventData();
 

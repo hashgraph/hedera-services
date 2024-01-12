@@ -115,7 +115,14 @@ public class TurboSyncProtocol implements Protocol {
      */
     @Override
     public boolean shouldInitiate() {
-        return shouldSync();
+        syncMetrics.opportunityToInitiateSync();
+        final boolean shouldSync = shouldSync();
+
+        if (shouldSync) {
+            syncMetrics.outgoingSyncRequestSent();
+        }
+
+        return shouldSync;
     }
 
     /**
@@ -123,7 +130,14 @@ public class TurboSyncProtocol implements Protocol {
      */
     @Override
     public boolean shouldAccept() {
-        return shouldSync();
+        syncMetrics.incomingSyncRequestReceived();
+        final boolean shouldSync = shouldSync();
+
+        if (shouldSync) {
+            syncMetrics.acceptedSyncRequest();
+        }
+
+        return shouldSync;
     }
 
     /**
@@ -160,8 +174,6 @@ public class TurboSyncProtocol implements Protocol {
             return false;
         }
 
-        // TODO other metrics
-
         return true;
     }
 
@@ -187,7 +199,8 @@ public class TurboSyncProtocol implements Protocol {
                             shadowgraph,
                             generationsSupplier,
                             latestEventTipsetTracker,
-                            gossipEventConsumer)
+                            gossipEventConsumer,
+                            syncMetrics)
                     .run();
         } catch (final ParallelExecutionException e) {
             if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
