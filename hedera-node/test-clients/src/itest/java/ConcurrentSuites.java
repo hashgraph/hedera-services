@@ -21,6 +21,7 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
+import com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
@@ -29,18 +30,10 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
@@ -86,7 +79,6 @@ import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
-import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
@@ -132,7 +124,6 @@ public class ConcurrentSuites {
             SubmitMessageSuite::new,
             ChunkingSuite::new,
             CryptoTransferSuite::new,
-            CannotDeleteSystemEntitiesSuite::new,
             CryptoUpdateSuite::new,
             SelfDestructSuite::new,
             // contract.hapi
@@ -145,17 +136,9 @@ public class ConcurrentSuites {
             ContractMusicalChairsSuite::new,
             ContractUpdateSuite::new,
             // contract.opcode
-            BalanceOperationSuite::new,
-            CallCodeOperationSuite::new,
-            CallOperationSuite::new,
             CreateOperationSuite::new,
-            DelegateCallOperationSuite::new,
-            ExtCodeCopyOperationSuite::new,
-            ExtCodeHashOperationSuite::new,
-            ExtCodeSizeOperationSuite::new,
             GlobalPropertiesSuite::new,
             SStoreSuite::new,
-            StaticCallOperationSuite::new,
             // contract.openzeppelin
             ERC20ContractInteractions::new,
             ERC721ContractInteractions::new,
@@ -193,6 +176,7 @@ public class ConcurrentSuites {
             HelloWorldEthereumSuite::new,
             // network info
             VersionInfoSpec::new,
+            Evm46ValidationSuite::new
         };
     }
 
@@ -245,18 +229,10 @@ public class ConcurrentSuites {
             TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
             // contract opcodes
-            BalanceOperationSuite::new,
-            CallCodeOperationSuite::new,
-            CallOperationSuite::new,
             CreateOperationSuite::new,
-            DelegateCallOperationSuite::new,
-            ExtCodeCopyOperationSuite::new,
-            ExtCodeHashOperationSuite::new,
-            ExtCodeSizeOperationSuite::new,
             GlobalPropertiesSuite::new,
             SelfDestructSuite::new,
             SStoreSuite::new,
-            StaticCallOperationSuite::new,
             // contract.hapi
             ContractCallLocalSuite::new,
             ContractCallSuite::new,
@@ -273,6 +249,7 @@ public class ConcurrentSuites {
             //  contract.records
             RecordsSuite::new,
             LogsSuite::new,
+            Evm46ValidationSuite::new
         };
     }
 }

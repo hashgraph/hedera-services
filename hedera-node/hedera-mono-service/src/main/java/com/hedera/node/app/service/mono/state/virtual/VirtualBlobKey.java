@@ -21,6 +21,9 @@ import static java.lang.Long.parseLong;
 
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -68,15 +71,20 @@ public class VirtualBlobKey implements VirtualKey {
     }
 
     @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.put((byte) type.ordinal());
-        buffer.putInt(entityNumCode);
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeByte(type.ordinal());
+        out.writeInt(entityNumCode);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
-        type = BLOB_TYPES[0xff & buffer.get()];
-        entityNumCode = buffer.getInt();
+    void serialize(final WritableSequentialData out) {
+        out.writeByte((byte) type.ordinal());
+        out.writeInt(entityNumCode);
+    }
+
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
+        buffer.put((byte) type.ordinal());
+        buffer.putInt(entityNumCode);
     }
 
     @Override
@@ -85,15 +93,20 @@ public class VirtualBlobKey implements VirtualKey {
         entityNumCode = in.readInt();
     }
 
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
+    void deserialize(final ReadableSequentialData in) {
+        type = BLOB_TYPES[0xff & in.readByte()];
+        entityNumCode = in.readInt();
+    }
+
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
+        type = BLOB_TYPES[0xff & buffer.get()];
+        entityNumCode = buffer.getInt();
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeByte(type.ordinal());
-        out.writeInt(entityNumCode);
+    public long getClassId() {
+        return CLASS_ID;
     }
 
     @Override
@@ -141,11 +154,14 @@ public class VirtualBlobKey implements VirtualKey {
      * Verifies if the content from the buffer is equal to this virtual blob key.
      *
      * @param buffer The buffer with data to be compared with this key
-     * @param version The version of the data inside the buffer
      * @return If the content from the buffer has the same data as this instance
-     * @throws IOException If an I/O error occurred
      */
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
+    boolean equalsTo(final BufferedData buffer) {
+        return (type.ordinal() == (0xff & buffer.readByte())) && (entityNumCode == buffer.readInt());
+    }
+
+    @Deprecated
+    boolean equalsTo(final ByteBuffer buffer, final int version) {
         return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
     }
 }

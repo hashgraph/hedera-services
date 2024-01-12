@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -33,8 +32,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -45,7 +42,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -90,7 +86,6 @@ public class CreateOperationSuite extends HapiSuite {
                 resetOnFactoryFailureAfterDeploymentWorks(),
                 resetOnStackedFactoryFailureWorks(),
                 inheritanceOfNestedCreatedContracts(),
-                factoryAndSelfDestructInConstructorContract(),
                 factoryQuickSelfDestructContract(),
                 contractCreateWithNewOpInConstructorAbandoningParent(),
                 childContractStorageWorks());
@@ -99,30 +94,6 @@ public class CreateOperationSuite extends HapiSuite {
     @Override
     public boolean canRunConcurrent() {
         return true;
-    }
-
-    @HapiTest
-    final HapiSpec factoryAndSelfDestructInConstructorContract() {
-        final var contract = "FactorySelfDestructConstructor";
-
-        final var sender = "sender";
-        return defaultHapiSpec(
-                        "FactoryAndSelfDestructInConstructorContract",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_LOG_DATA)
-                .given(
-                        uploadInitCode(contract),
-                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
-                        contractCreate(contract).balance(10).payingWith(sender))
-                .when(
-                        // Currently only mono service has a precheck for deleted contracts
-                        ifHapiTest(contractCall(contract)
-                                .hasKnownStatus(CONTRACT_DELETED)
-                                .payingWith(sender)),
-                        ifNotHapiTest(contractCall(contract)
-                                .hasPrecheck(CONTRACT_DELETED)
-                                .payingWith(sender)))
-                .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
     @HapiTest

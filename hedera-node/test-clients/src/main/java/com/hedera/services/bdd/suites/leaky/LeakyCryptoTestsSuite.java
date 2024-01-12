@@ -18,11 +18,13 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -64,6 +66,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
@@ -78,6 +81,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.FALSE;
@@ -214,7 +218,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 autoAssociationPropertiesWorkAsExpected(),
                 autoAssociationWorksForContracts(),
                 // Interactions between HIP-18 and HIP-542
-                customFeesHaveExpectedAutoCreateInteractions());
+                customFeesHaveExpectedAutoCreateInteractions(),
+                callToExpiredContractResultsInSuccess());
     }
 
     @HapiTest
@@ -1264,6 +1269,36 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                 .between(CIVILIAN, finalReceiverKey))
                                 .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
                                 .via(finalTxn));
+    }
+
+    private HapiSpec callToExpiredContractResultsInSuccess() {
+        AtomicReference<AccountID> receiverId = new AtomicReference<>();
+        final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
+        final String RECEIVER = "receiver";
+        final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
+        final String INNER_TXN = "innerTx";
+
+        return propertyPreservingHapiSpec("callToExpiredContractResultsInSuccess")
+                .preserving(minAutoRenewPeriodPropertyName)
+                .given(
+                        overriding(minAutoRenewPeriodPropertyName, "1"),
+                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).autoRenewSecs(1L))
+                .when(
+                        sleepFor(2_000L),
+                        withOpContext((spec, op) -> allRunFor(
+                                spec,
+                                balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
+                                contractCall(
+                                                INTERNAL_CALLER_CONTRACT,
+                                                "callWithValueTo",
+                                                mirrorAddrWith(receiverId.get().getAccountNum()))
+                                        .gas(100_000L)
+                                        .via(INNER_TXN))))
+                .then(
+                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     private long tinybarCostOfGas(final HapiSpec spec, final HederaFunctionality function, final long gasAmount) {
