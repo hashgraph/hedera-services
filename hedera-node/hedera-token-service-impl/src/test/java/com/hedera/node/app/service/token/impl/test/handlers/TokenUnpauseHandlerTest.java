@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
@@ -38,6 +39,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
+import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -64,6 +66,9 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
+    @Mock(strictness = LENIENT)
+    private TokenBaseRecordBuilder recordBuilder;
+
     @BeforeEach
     void setUp() throws PreCheckException {
         given(accountStore.getAccountById(payerId)).willReturn(account);
@@ -73,6 +78,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         refreshStoresWithCurrentTokenInWritable();
         preHandleContext = new FakePreHandleContext(accountStore, tokenUnpauseTxn);
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
     }
 
     @Test
