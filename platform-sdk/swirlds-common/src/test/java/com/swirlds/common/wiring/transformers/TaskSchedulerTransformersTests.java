@@ -395,12 +395,8 @@ class TaskSchedulerTransformersTests {
                 .cast();
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
-        final OutputWire<FooBar> outAReserved =
-                outA.buildAdvancedTransformer(
-                        "reserve FooBar",
-                        FooBar::copyAndReserve,
-                        FooBar::release,
-                        FooBar::release);
+        final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(
+                "reserve FooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release);
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
@@ -477,7 +473,9 @@ class TaskSchedulerTransformersTests {
         assertEventuallyEquals(100, countB::get, Duration.ofSeconds(1), "B did not receive all data");
         assertEventuallyEquals(100, countC::get, Duration.ofSeconds(1), "C did not receive all data");
         assertEventuallyEquals(100, countD::get, Duration.ofSeconds(1), "D did not receive all data");
-        assertEventuallyTrue( () -> countE.get() >= 1 && countE.get()<=100, Duration.ofSeconds(1),
+        assertEventuallyTrue(
+                () -> countE.get() >= 1 && countE.get() <= 100,
+                Duration.ofSeconds(1),
                 "E did not receive data or received too much data");
 
         assertEventuallyTrue(
@@ -527,8 +525,8 @@ class TaskSchedulerTransformersTests {
      */
     @Test
     void advancedWireTransformerInterfaceVariationTest() {
-        //TODO either remove this test or merge it with the other
-        
+        // TODO either remove this test or merge it with the other
+
         // Component A passes data to components B, C, and D.
         final WiringModel model = TestWiringModelBuilder.create();
 
