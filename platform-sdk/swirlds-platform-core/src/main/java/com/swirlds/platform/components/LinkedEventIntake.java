@@ -91,8 +91,7 @@ public class LinkedEventIntake {
      * @param latestEventTipsetTracker          tracks the tipset of the latest self event, null if feature is
      *                                          not enabled
      * @param intakeEventCounter                tracks the number of events from each peer that are currently in
-     *                                          the intake
-     *                                          pipeline
+     *                                          the intake pipeline
      * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
@@ -150,6 +149,10 @@ public class LinkedEventIntake {
 
             if (consensusRounds != null) {
                 consensusRounds.forEach(round -> {
+                    // it is important that a flush request for the keystone event is submitted before starting
+                    // to handle the transactions in the round. Otherwise, the system could arrive at a place
+                    // where the transaction handler is waiting for a given event to become durable, but the
+                    // PCES writer hasn't been notified yet that the event should be flushed.
                     keystoneEventSequenceNumberOutput.forward(
                             round.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber());
                     handleConsensus(round);
