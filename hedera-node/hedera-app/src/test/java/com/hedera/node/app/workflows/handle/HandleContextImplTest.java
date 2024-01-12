@@ -264,7 +264,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             DEFAULT_CONSENSUS_NOW,
             authorizer,
             solvencyPreCheck,
-            childRecordFinalizer
+            childRecordFinalizer,
+            networkUtilizationManager
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
