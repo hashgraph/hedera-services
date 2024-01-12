@@ -330,11 +330,13 @@ class PcesWriterTests {
 
             // request a flush sometimes
             if (random.nextInt(10) == 0) {
-                passValueToDurabilityNexus(writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                passValueToDurabilityNexus(
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
             }
         }
 
-        passValueToDurabilityNexus(writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+        passValueToDurabilityNexus(
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
 
         events.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
         rejectedEvents.forEach(event -> assertFalse(eventDurabilityNexus.isEventDurable(event)));
@@ -395,11 +397,13 @@ class PcesWriterTests {
 
             // request a flush sometimes
             if (random.nextInt(10) == 0) {
-                passValueToDurabilityNexus(writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                passValueToDurabilityNexus(
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
             }
         }
 
-        passValueToDurabilityNexus(writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+        passValueToDurabilityNexus(
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
 
         // Add the ancient event
         sequencer.assignStreamSequenceNumber(ancientEvent);
@@ -459,7 +463,8 @@ class PcesWriterTests {
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
         }
 
-        passValueToDurabilityNexus(writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+        passValueToDurabilityNexus(
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
 
         writer.closeCurrentMutableFile();
 
@@ -571,11 +576,15 @@ class PcesWriterTests {
 
                 // request a flush sometimes
                 if (random.nextInt(10) == 0) {
-                    passValueToDurabilityNexus(writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                    passValueToDurabilityNexus(
+                            writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
                 }
             }
 
-            passValueToDurabilityNexus(writer.submitFlushRequest(eventsBeforeDiscontinuity.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+            passValueToDurabilityNexus(
+                    writer.submitFlushRequest(
+                            eventsBeforeDiscontinuity.getLast().getStreamSequenceNumber()),
+                    eventDurabilityNexus);
 
             eventsBeforeDiscontinuity.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
 
@@ -613,11 +622,14 @@ class PcesWriterTests {
 
                 // request a flush sometimes
                 if (random.nextInt(10) == 0) {
-                    passValueToDurabilityNexus(writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                    passValueToDurabilityNexus(
+                            writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
                 }
             }
 
-            passValueToDurabilityNexus(writer.submitFlushRequest(eventsAfterDiscontinuity.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+            passValueToDurabilityNexus(
+                    writer.submitFlushRequest(eventsAfterDiscontinuity.getLast().getStreamSequenceNumber()),
+                    eventDurabilityNexus);
 
             assertTrue(eventDurabilityNexus.isEventDurable(
                     eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1)));
@@ -680,11 +692,13 @@ class PcesWriterTests {
 
             // request a flush sometimes
             if (random.nextInt(10) == 0) {
-                passValueToDurabilityNexus(writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
+                passValueToDurabilityNexus(
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), eventDurabilityNexus);
             }
         }
 
-        passValueToDurabilityNexus(writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
+        passValueToDurabilityNexus(
+                writer.submitFlushRequest(events.getLast().getStreamSequenceNumber()), eventDurabilityNexus);
 
         // Remove the rejected events from the list
         events.removeIf(rejectedEvents::contains);
