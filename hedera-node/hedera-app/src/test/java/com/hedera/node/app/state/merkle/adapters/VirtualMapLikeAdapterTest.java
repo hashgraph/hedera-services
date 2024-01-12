@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValueSerializer;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -161,8 +162,8 @@ class VirtualMapLikeAdapterTest {
     private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
         final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
+        final var valueSerdes = MonoMapCodecAdapter.codecForVirtualValue(
+                UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new, new UniqueTokenValueSerializer());
         return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, 1_024);
     }
 }

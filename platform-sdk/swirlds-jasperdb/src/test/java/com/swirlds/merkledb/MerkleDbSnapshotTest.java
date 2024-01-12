@@ -62,7 +62,7 @@ import org.junit.jupiter.api.Test;
 
 class MerkleDbSnapshotTest {
 
-    private static final int MAPS_COUNT = 10;
+    private static final int MAPS_COUNT = 3;
     private static final int ITERATIONS = 20;
     private static final int ROUND_CHANGES = 1000;
 

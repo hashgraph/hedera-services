@@ -51,7 +51,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
@@ -155,9 +155,9 @@ class EntityUtilizationMultiplierTest {
                 .addService(
                         ContractService.NAME,
                         Map.of(
-                                ContractSchema.STORAGE_KEY,
+                                InitialModServiceContractSchema.STORAGE_KEY,
                                 new HashMap<>(),
-                                ContractSchema.BYTECODE_KEY,
+                                InitialModServiceContractSchema.BYTECODE_KEY,
                                 Map.of(
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
@@ -183,9 +183,9 @@ class EntityUtilizationMultiplierTest {
                 .addService(
                         ContractService.NAME,
                         Map.of(
-                                ContractSchema.STORAGE_KEY,
+                                InitialModServiceContractSchema.STORAGE_KEY,
                                 new HashMap<>(),
-                                ContractSchema.BYTECODE_KEY,
+                                InitialModServiceContractSchema.BYTECODE_KEY,
                                 Map.of(
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));

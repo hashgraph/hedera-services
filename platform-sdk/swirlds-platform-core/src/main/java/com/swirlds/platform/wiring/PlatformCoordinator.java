@@ -80,7 +80,6 @@ public class PlatformCoordinator {
      * Flushes the intake pipeline
      */
     public void flushIntakePipeline() {
-        eventHasherWiring.flushRunnable().run();
         internalEventValidatorWiring.flushRunnable().run();
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();

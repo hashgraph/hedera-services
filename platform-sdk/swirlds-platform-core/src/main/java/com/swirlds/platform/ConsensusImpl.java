@@ -36,6 +36,7 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -668,7 +669,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
                 // production.
                 NonAncientEventWindow.createUsingRoundsNonAncient(
-                        decidedRoundNumber, getMinGenerationNonAncient(), config.roundsNonAncient(), false),
+                        decidedRoundNumber,
+                        getMinGenerationNonAncient(),
+                        config.roundsNonAncient(),
+                        AncientMode.GENERATION_THRESHOLD),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),

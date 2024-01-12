@@ -16,10 +16,9 @@
 
 package com.swirlds.merkledb;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerializer<ExampleFixedSizeVirtualValue> {
@@ -44,16 +43,6 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
         return ClassVersion.ORIGINAL;
     }
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        // no-op
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // no-op
-    }
-
     // ValueSerializer
 
     @Override
@@ -67,16 +56,27 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
     }
 
     @Override
-    public int serialize(final ExampleFixedSizeVirtualValue data, final ByteBuffer buffer) throws IOException {
-        buffer.putInt(data.getId());
-        buffer.put(data.getData());
-        return getSerializedSize();
+    public void serialize(final ExampleFixedSizeVirtualValue data, final WritableSequentialData out) {
+        out.writeInt(data.getId());
+        out.writeBytes(data.getData());
     }
 
     @Override
-    public ExampleFixedSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion)
-            throws IOException {
-        assert dataVersion == getCurrentDataVersion();
+    public void serialize(ExampleFixedSizeVirtualValue data, ByteBuffer buffer) {
+        buffer.putInt(data.getId());
+        buffer.put(data.getData());
+    }
+
+    @Override
+    public ExampleFixedSizeVirtualValue deserialize(final ReadableSequentialData in) {
+        final int id = in.readInt();
+        final byte[] bytes = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
+        in.readBytes(bytes);
+        return new ExampleFixedSizeVirtualValue(id, bytes);
+    }
+
+    @Override
+    public ExampleFixedSizeVirtualValue deserialize(ByteBuffer buffer, long dataVersion) {
         final int id = buffer.getInt();
         final byte[] bytes = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
         buffer.get(bytes);
