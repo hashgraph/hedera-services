@@ -458,6 +458,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         final IndexedEvent next = source.generateEvent(
                 getRandom(), eventIndex, otherParentSource, getNextTimestamp(source, otherParentSource.getNodeId()));
         next.setGeneratorIndex(eventIndex);
+        next.getBaseEvent().setStreamSequenceNumber(eventIndex);
 
         return next;
     }
