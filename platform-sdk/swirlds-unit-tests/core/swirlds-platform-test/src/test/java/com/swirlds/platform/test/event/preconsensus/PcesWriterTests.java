@@ -303,7 +303,7 @@ class PcesWriterTests {
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().getBaseEvent());
+            events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
@@ -365,11 +365,11 @@ class PcesWriterTests {
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
         // We will add this event at the very end, it should be ancient by then
-        final GossipEvent ancientEvent = generator.generateEvent().getBaseEvent();
+        final GossipEvent ancientEvent = generator.generateEventWithoutIndex().getBaseEvent();
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().getBaseEvent());
+            events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
@@ -453,7 +453,7 @@ class PcesWriterTests {
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().getBaseEvent());
+            events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
@@ -497,7 +497,7 @@ class PcesWriterTests {
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().getBaseEvent());
+            events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         // We intentionally do not call writer.beginStreamingNewEvents(). This should cause all events
@@ -544,7 +544,7 @@ class PcesWriterTests {
             final List<GossipEvent> eventsBeforeDiscontinuity = new LinkedList<>();
             final List<GossipEvent> eventsAfterDiscontinuity = new LinkedList<>();
             for (int i = 0; i < numEvents; i++) {
-                final GossipEvent event = generator.generateEvent().getBaseEvent();
+                final GossipEvent event = generator.generateEventWithoutIndex().getBaseEvent();
                 if (i < numEvents / 2) {
                     eventsBeforeDiscontinuity.add(event);
                 } else {
@@ -666,7 +666,7 @@ class PcesWriterTests {
 
         final List<GossipEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().getBaseEvent());
+            events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
