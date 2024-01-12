@@ -318,6 +318,8 @@ class OrphanBufferTests {
                     latestConsensusRound,
                     Math.max(0, latestConsensusRound - 26 + 1),
                     minimumGenerationNonAncient,
+                    -1 /* ignored in this context */,
+                    -1 /* ignored in this context */,
                     useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
             unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
 

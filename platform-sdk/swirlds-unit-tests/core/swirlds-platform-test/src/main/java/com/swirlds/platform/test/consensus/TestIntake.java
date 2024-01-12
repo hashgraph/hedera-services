@@ -188,7 +188,9 @@ public class TestIntake implements LoadableFromSignedState {
                 .put(NonAncientEventWindow.createUsingRoundsNonAncient(
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
+                        consensus.getMinRoundGeneration(),
                         consensusConfig.roundsNonAncient(),
+                        consensusConfig.roundsExpired(),
                         AncientMode.GENERATION_THRESHOLD));
 
         shadowGraph.clear();

@@ -153,6 +153,7 @@ public class LinkedEventIntake {
                     latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
                             consensusSupplier.get().getLastRoundDecided(),
                             minimumGenerationNonAncient,
+                            consensusSupplier.get().getMinRoundGeneration(),
                             platformContext));
                 }
             }

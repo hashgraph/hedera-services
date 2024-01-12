@@ -671,7 +671,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 NonAncientEventWindow.createUsingRoundsNonAncient(
                         decidedRoundNumber,
                         getMinGenerationNonAncient(),
+                        getMinRoundGeneration(),
                         config.roundsNonAncient(),
+                        config.roundsExpired(),
                         AncientMode.GENERATION_THRESHOLD),
                 new ConsensusSnapshot(
                         decidedRoundNumber,

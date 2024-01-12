@@ -260,6 +260,8 @@ class EventSignatureValidatorTests {
                 ConsensusConstants.ROUND_FIRST,
                 ConsensusConstants.ROUND_FIRST,
                 100L,
+                -1 /* ignored in this context */,
+                -1 /* ignored in this context */,
                 AncientMode.GENERATION_THRESHOLD));
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));

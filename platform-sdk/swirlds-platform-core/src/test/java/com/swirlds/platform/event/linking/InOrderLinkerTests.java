@@ -174,6 +174,8 @@ class InOrderLinkerTests {
                 ConsensusConstants.ROUND_FIRST,
                 ConsensusConstants.ROUND_NEGATIVE_INFINITY,
                 1,
+                -1 /* ignored in this context */,
+                -1 /* ignored in this context */,
                 AncientMode.GENERATION_THRESHOLD));
 
         final Hash child2Hash = randomHash(random);
@@ -199,6 +201,8 @@ class InOrderLinkerTests {
                 ConsensusConstants.ROUND_FIRST,
                 ConsensusConstants.ROUND_NEGATIVE_INFINITY,
                 2,
+                -1 /* ignored in this context */,
+                -1 /* ignored in this context */,
                 AncientMode.GENERATION_THRESHOLD));
 
         final Hash child3Hash = randomHash(random);
@@ -218,6 +222,8 @@ class InOrderLinkerTests {
                 ConsensusConstants.ROUND_FIRST,
                 ConsensusConstants.ROUND_NEGATIVE_INFINITY,
                 4,
+                -1 /* ignored in this context */,
+                -1 /* ignored in this context */,
                 AncientMode.GENERATION_THRESHOLD));
 
         final Hash child4Hash = randomHash(random);
@@ -280,6 +286,8 @@ class InOrderLinkerTests {
                 ConsensusConstants.ROUND_FIRST,
                 ConsensusConstants.ROUND_NEGATIVE_INFINITY,
                 3,
+                -1 /* ignored in this context */,
+                -1 /* ignored in this context */,
                 AncientMode.GENERATION_THRESHOLD));
 
         final GossipEvent child1 = generateMockEvent(
