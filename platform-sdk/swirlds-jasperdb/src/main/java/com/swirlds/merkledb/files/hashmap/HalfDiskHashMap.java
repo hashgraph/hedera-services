@@ -58,15 +58,16 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * It maps a VirtualKey to a long value. This allows very large maps with minimal RAM usage and the
  * best performance profile as by using an in memory index we avoid the need for random disk writes.
  * Random disk writes are horrible performance wise in our testing.
- * <p>
- * This implementation depends on good hashCode() implementation on the keys, if there are too
+ *
+ * <p>This implementation depends on good hashCode() implementation on the keys, if there are too
  * many hash collisions the performance can get bad.
- * <p>
- * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
+ *
+ * <p><b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
 public class HalfDiskHashMap<K extends VirtualKey>
         implements AutoCloseable, Snapshotable, FileStatisticAware, OffHeapUser {
+
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -77,24 +78,17 @@ public class HalfDiskHashMap<K extends VirtualKey>
     private static final String BUCKET_INDEX_FILENAME_SUFFIX = "_bucket_index.ll";
     /** Nominal value for value to say please delete from map. */
     protected static final long SPECIAL_DELETE_ME_VALUE = Long.MIN_VALUE;
-    /** The amount of data used for storing key hash code */
-    protected static final int KEY_HASHCODE_SIZE = Integer.BYTES;
-    /**
-     * The amount of data used for storing value in bucket, our values are longs as this is a key to
-     * long map
-     */
-    protected static final int VALUE_SIZE = Long.BYTES;
+
     /**
      * This is the average number of entries per bucket we aim for when filled to mapSize. It is a
-     * heuristic used alongside LOADING_FACTOR in calculation for how many buckets to create. The
-     * larger this number the slower lookups will be but the more even distribution of entries
-     * across buckets will be. So it is a matter of balance.
+     * heuristic used in calculation for how many buckets to create. The larger this number the
+     * slower lookups will be but the more even distribution of entries across buckets will be. So
+     * it is a matter of balance.
      */
-    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 20;
-    /** how full should all available bins be if we are at the specified map size */
-    public static final double LOADING_FACTOR = 0.6;
+    private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 32;
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 64;
+
     /**
      * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
      * bucket
@@ -146,6 +140,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
     /**
      * Construct a new HalfDiskHashMap
      *
+     * @param config                         MerkleDb config
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
      * @param keySerializer                  Serializer for converting raw data to/from keys
@@ -162,6 +157,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
+            final MerkleDbConfig config,
             final long mapSize,
             final KeySerializer<K> keySerializer,
             final Path storeDir,
@@ -173,9 +169,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
         this.storeName = storeName;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
-        this.bucketSerializer = new BucketSerializer<>(keySerializer);
+        this.bucketSerializer = new BucketSerializer<>(config, keySerializer);
         // load or create new
-        LoadedDataCallback loadedDataCallback;
+        LoadedDataCallback<Bucket<K>> loadedDataCallback;
         if (Files.exists(storeDir)) {
             // load metadata
             Path metaDataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX);
@@ -220,8 +216,8 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 // create new index and setup call back to rebuild
                 bucketIndexToBucketLocation =
                         preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
-                loadedDataCallback =
-                        (key, dataLocation, dataValue) -> bucketIndexToBucketLocation.put(key, dataLocation);
+                loadedDataCallback = (dataLocation, bucket) ->
+                        bucketIndexToBucketLocation.put(bucket.getBucketIndex(), dataLocation);
             }
         } else {
             // create store dir
@@ -229,9 +225,8 @@ public class HalfDiskHashMap<K extends VirtualKey>
             // create new index
             bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
-            minimumBuckets = (int) Math.ceil((mapSize / LOADING_FACTOR) / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
-            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of
-            // 4096
+            minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
+            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 4096
             numOfBuckets = Integer.highestOneBit(minimumBuckets) * 2;
             // we are new so no need for a loadedDataCallback
             loadedDataCallback = null;
@@ -243,8 +238,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     numOfBuckets);
         }
         // create file collection
-        fileCollection =
-                new DataFileCollection<>(storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
+        fileCollection = new DataFileCollection<>(
+                // Need: propagate MerkleDb config from the database
+                config, storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
     }
 
     /**
@@ -392,29 +388,26 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     ++inFlight;
                 }
 
-                final ReadBucketResult<K> res = queue.poll();
-                if (res == null) {
-                    Thread.onSpinWait();
-                    continue;
-                }
-                --inFlight;
-
-                if (res.error != null) {
-                    throw new RuntimeException(res.error);
-                }
-                try (final Bucket<K> bucket = res.bucket) {
-                    final int bucketIndex = bucket.getBucketIndex();
-                    if (bucket.getBucketEntryCount() == 0) {
-                        // bucket is missing or empty, remove it from the index
-                        bucketIndexToBucketLocation.remove(bucketIndex);
-                    } else {
-                        // save bucket
-                        final long bucketLocation = fileCollection.storeDataItem(bucket);
-                        // update bucketIndexToBucketLocation
-                        bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                ReadBucketResult<K> res;
+                while ((res = queue.poll()) != null) {
+                    --inFlight;
+                    if (res.error != null) {
+                        throw new RuntimeException(res.error);
                     }
-                } finally {
-                    ++processed;
+                    try (final Bucket<K> bucket = res.bucket) {
+                        final int bucketIndex = bucket.getBucketIndex();
+                        if (bucket.isEmpty()) {
+                            // bucket is missing or empty, remove it from the index
+                            bucketIndexToBucketLocation.remove(bucketIndex);
+                        } else {
+                            // save bucket
+                            final long bucketLocation = fileCollection.storeDataItem(bucket);
+                            // update bucketIndexToBucketLocation
+                            bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                        }
+                    } finally {
+                        ++processed;
+                    }
                 }
             }
             // close files session

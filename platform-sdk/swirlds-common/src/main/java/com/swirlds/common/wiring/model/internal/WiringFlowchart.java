@@ -170,7 +170,7 @@ public class WiringFlowchart {
             for (final ModelEdge edge : vertex.getOutgoingEdges()) {
                 if (!substitution.edge().equals(edge.getLabel())) {
                     // Only replace destinations for edges with the given label.
-                    vertex.getOutgoingEdges().add(edge);
+                    uniqueEdges.add(edge);
                     continue;
                 }
 

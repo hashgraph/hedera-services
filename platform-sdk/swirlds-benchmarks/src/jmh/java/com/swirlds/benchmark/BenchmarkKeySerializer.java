@@ -16,8 +16,10 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
@@ -56,25 +58,39 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
     }
 
     @Override
-    public int serialize(final BenchmarkKey data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final BenchmarkKey data, final WritableSequentialData out) {
+        data.serialize(out);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public void serialize(final BenchmarkKey data, final ByteBuffer buffer) {
         data.serialize(buffer);
-        return getSerializedSize();
     }
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return getSerializedSize();
-    }
-
-    @Override
-    public BenchmarkKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public BenchmarkKey deserialize(final ReadableSequentialData in) {
         BenchmarkKey key = new BenchmarkKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(in);
         return key;
     }
 
     @Override
+    @Deprecated(forRemoval = true)
+    public BenchmarkKey deserialize(final ByteBuffer buffer, final long dataVersion) {
+        BenchmarkKey key = new BenchmarkKey();
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public boolean equals(final BufferedData buffer, final BenchmarkKey keyToCompare) {
+        return keyToCompare.equals(buffer);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final BenchmarkKey keyToCompare) {
-        return keyToCompare.equals(buffer, dataVersion);
+        return keyToCompare.equals(buffer);
     }
 }

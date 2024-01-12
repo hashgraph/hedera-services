@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -65,10 +67,15 @@ public class CustomCallOperation extends CallOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var toAddress = to(frame);
+            if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
+                return new OperationResult(cost(frame), INVALID_ALIAS_KEY);
+            }
             final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-            return isMissing
-                    ? new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS)
-                    : super.execute(frame, evm);
+            if (isMissing) {
+                return new OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
+            }
+
+            return super.execute(frame, evm);
         } catch (final UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
@@ -79,13 +86,23 @@ public class CustomCallOperation extends CallOperation {
         if (impliesLazyCreation(frame, toAddress) && featureFlags.isImplicitCreationEnabled(frame)) {
             return false;
         }
-        // Let system accounts through so the message call processor can fail in a more legible way
-        return !addressChecks.isSystemAccount(toAddress);
+        // Let system accounts calls or if configured to allow calls to non-existing contract address calls
+        // go through so the message call processor can fail in a more legible way
+        return !addressChecks.isSystemAccount(toAddress)
+                && proxyUpdaterFor(frame).contractMustBePresent();
     }
 
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
         return !isLongZero(toAddress)
                 && value(frame).greaterThan(Wei.ZERO)
+                && !addressChecks.isPresent(toAddress, frame);
+    }
+
+    private boolean isLazyCreateButInvalidateAlias(
+            @NonNull final MessageFrame frame, @NonNull final Address toAddress) {
+        return isLongZero(toAddress)
+                && value(frame).greaterThan(Wei.ZERO)
+                && !addressChecks.isSystemAccount(toAddress)
                 && !addressChecks.isPresent(toAddress, frame);
     }
 }
