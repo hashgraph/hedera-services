@@ -17,8 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
@@ -66,7 +69,10 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     private final byte[] selector;
     private final AccountID spenderId;
     private final ResponseCodeEnum preemptingFailureStatus;
+
+    @Nullable
     private final TransactionBody syntheticTransfer;
+
     private final Configuration configuration;
 
     @Nullable
@@ -85,7 +91,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final byte[] selector,
             @NonNull final AccountID spenderId,
             @Nullable final ResponseCodeEnum preemptingFailureStatus,
-            @NonNull final TransactionBody syntheticTransfer,
+            @Nullable final TransactionBody syntheticTransfer,
             @NonNull final Configuration configuration,
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
             @NonNull final CallStatusStandardizer callStatusStandardizer,
@@ -95,7 +101,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         this.selector = requireNonNull(selector);
         this.spenderId = requireNonNull(spenderId);
         this.preemptingFailureStatus = preemptingFailureStatus;
-        this.syntheticTransfer = requireNonNull(syntheticTransfer);
+        this.syntheticTransfer = syntheticTransfer;
         this.configuration = requireNonNull(configuration);
         this.approvalSwitchHelper = approvalSwitchHelper;
         this.callStatusStandardizer = requireNonNull(callStatusStandardizer);
@@ -108,6 +114,13 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
+        if (syntheticTransfer == null) {
+            return gasOnly(
+                    haltResult(
+                            configuration.getConfigData(ContractsConfig.class).precompileHtsDefaultGasCost()),
+                    INVALID_TRANSACTION_BODY,
+                    false);
+        }
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
         if (preemptingFailureStatus != null) {
             return reversionWith(preemptingFailureStatus, gasRequirement);

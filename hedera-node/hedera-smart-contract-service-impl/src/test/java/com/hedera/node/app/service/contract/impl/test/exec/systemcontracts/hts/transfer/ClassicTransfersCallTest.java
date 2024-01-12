@@ -106,6 +106,15 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     }
 
     @Test
+    void haltsWithMissingTransactionBody() {
+        givenHaltingSubject();
+
+        final var result = subject.execute(frame).fullResult().result();
+
+        assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
+    }
+
+    @Test
     void retryingTransferHappyPathCompletesWithSuccessResponseCode() {
         givenRetryingSubject();
         given(systemContractOperations.dispatch(
@@ -219,6 +228,21 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 A_NEW_ACCOUNT_ID,
                 null,
                 PRETEND_TRANSFER,
+                DEFAULT_CONFIG,
+                approvalSwitchHelper,
+                callStatusStandardizer,
+                verificationStrategy,
+                systemAccountCreditScreen);
+    }
+
+    private void givenHaltingSubject() {
+        subject = new ClassicTransfersCall(
+                systemContractGasCalculator,
+                mockEnhancement(),
+                ClassicTransfersTranslator.CRYPTO_TRANSFER.selector(),
+                A_NEW_ACCOUNT_ID,
+                null,
+                null,
                 DEFAULT_CONFIG,
                 approvalSwitchHelper,
                 callStatusStandardizer,
