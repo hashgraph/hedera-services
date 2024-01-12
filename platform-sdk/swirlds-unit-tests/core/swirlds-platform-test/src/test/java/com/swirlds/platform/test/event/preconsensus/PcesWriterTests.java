@@ -24,7 +24,10 @@ import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.config.TransactionConfig_;
@@ -581,14 +584,8 @@ class PcesWriterTests {
                 }
             }
 
-            passValueToDurabilityNexus(
-                    writer.submitFlushRequest(
-                            eventsBeforeDiscontinuity.getLast().getStreamSequenceNumber()),
-                    eventDurabilityNexus);
-
-            eventsBeforeDiscontinuity.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
-
             passValueToDurabilityNexus(writer.registerDiscontinuity(100), eventDurabilityNexus);
+            eventsBeforeDiscontinuity.forEach(event -> assertTrue(eventDurabilityNexus.isEventDurable(event)));
 
             if (truncateLastFile) {
                 // Remove a single byte from the last file. This will corrupt the last event that was written.
@@ -740,5 +737,55 @@ class PcesWriterTests {
             }
         }
         assertTrue(foundNonZeroBoundary);
+    }
+
+    @ParameterizedTest
+    @MethodSource("buildArguments")
+    @DisplayName("Flush request test")
+    void flushRequestTest(@NonNull final AncientMode ancientMode) throws IOException {
+        final PlatformContext platformContext = buildContext(ancientMode);
+        final PcesFileManager fileManager =
+                new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), selfId, 0);
+        final PcesWriter writer = new PcesWriter(platformContext, fileManager);
+
+        writer.beginStreamingNewEvents(new DoneStreamingPcesTrigger());
+
+        final List<GossipEvent> events = new ArrayList<>();
+        for (long i = 0; i < 9; i++) {
+            final GossipEvent event = mock(GossipEvent.class);
+            when(event.getStreamSequenceNumber()).thenReturn(i);
+            events.add(event);
+        }
+
+        assertNull(writer.submitFlushRequest(1), "No event has been written to flush");
+        assertEquals(
+                1,
+                writer.writeEvent(events.get(1)),
+                "Writing an event with a sequence number already requested to flush should flush immediately");
+        assertNull(
+                writer.writeEvent(events.get(2)),
+                "Writing an event with sequence number not requested to flush should not flush");
+        assertEquals(
+                2,
+                writer.submitFlushRequest(2),
+                "Requesting a flush for a sequence number already written should flush immediately");
+        assertNull(writer.submitFlushRequest(4), "No event has been written to flush");
+        assertNull(
+                writer.writeEvent(events.get(3)),
+                "Pending flush request for a later sequence number shouldn't cause a flush");
+        assertNull(
+                writer.submitFlushRequest(5), "New flush request for a later sequence number shouldn't cause a flush");
+        assertEquals(
+                5,
+                writer.writeEvent(events.get(5)),
+                "Intermediate flushes of a lower sequence number shouldn't hinder a later flush request");
+        assertNull(writer.submitFlushRequest(6), "No event has been written to flush");
+        assertNull(writer.submitFlushRequest(8), "No event has been written to flush");
+        assertEquals(
+                7,
+                writer.writeEvent(events.get(7)),
+                "Pending flush request for an earlier sequence number should cause a flush");
+        assertEquals(
+                8, writer.writeEvent(events.get(8)), "Flush requests for later sequences numbers should be maintained");
     }
 }
