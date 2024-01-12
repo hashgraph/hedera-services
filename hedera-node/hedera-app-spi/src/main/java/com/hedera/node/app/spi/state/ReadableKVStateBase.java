@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.state;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A base class for implementations of {@link ReadableKVState} and {@link WritableKVState}.
@@ -38,7 +39,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * changed before we got to handle transaction. If the value is "null", this means it was NOT
      * FOUND when we looked it up.
      */
-    private final Map<K, V> readCache = new HashMap<>();
+    private final Map<K, V> readCache = new ConcurrentHashMap<>();
 
     private final Set<K> unmodifiableReadKeys = Collections.unmodifiableSet(readCache.keySet());
 
