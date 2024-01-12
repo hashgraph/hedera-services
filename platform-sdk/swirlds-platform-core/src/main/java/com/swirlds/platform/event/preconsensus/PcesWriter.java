@@ -208,7 +208,13 @@ public class PcesWriter {
                 logger.error(EXCEPTION.getMarker(), "Flush required, but no file is open. This should never happen");
             }
 
-            closeFile();
+            try {
+                currentMutableFile.flush();
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            lastFlushedEvent = lastWrittenEvent;
         }
 
         return flushRequired;
