@@ -1244,6 +1244,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return propertyPreservingHapiSpec(
                         "createTokenWithInvalidRoyaltyFee",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -1624,7 +1625,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     @Order(10)
     final HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck", NONDETERMINISTIC_NONCE)
+        return defaultHapiSpec(
+                        "GasLimitOverMaxGasLimitFailsPrecheck",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT),
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -2540,7 +2544,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
 
-        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath", NONDETERMINISTIC_NONCE)
+        return propertyPreservingHapiSpec(
+                        "ContractCreateNoncesExternalizationHappyPath",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
@@ -3011,7 +3018,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     @HapiTest
     HapiSpec callToNonExistingContractFailsGracefully() {
 
-        return propertyPreservingHapiSpec("callToNonExistingContractFailsGracefully")
+        return propertyPreservingHapiSpec("callToNonExistingContractFailsGracefully", NONDETERMINISTIC_ETHEREUM_DATA)
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
