@@ -205,10 +205,6 @@ public interface BaseScaffoldingModule {
     @Binds
     @Singleton
     ChildRecordFinalizer provideChildRecordFinalizer(@NonNull FinalizeChildRecordHandler childRecordFinalizer);
-    /*
-    @Binds
-    @Singleton
-    NetworkUtilizationManager provideNetworkUtilizationManager(@NonNull NetworkUtilizationManager networkUtilizationManager);*/
 
     @Provides
     @Singleton
