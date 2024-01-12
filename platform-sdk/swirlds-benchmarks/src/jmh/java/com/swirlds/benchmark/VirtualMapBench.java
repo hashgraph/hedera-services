@@ -207,7 +207,7 @@ public abstract class VirtualMapBench extends BaseBench {
         final AtomicInteger countBad = new AtomicInteger(0);
         final AtomicInteger countMissing = new AtomicInteger(0);
 
-        IntStream.range(0, ForkJoinPool.getCommonPoolParallelism()).parallel().forEach(thread -> {
+        IntStream.range(0, 64).parallel().forEach(thread -> {
             int idx;
             while ((idx = index.getAndIncrement()) < map.length) {
                 BenchmarkValue dataItem = virtualMap.get(new BenchmarkKey(idx));

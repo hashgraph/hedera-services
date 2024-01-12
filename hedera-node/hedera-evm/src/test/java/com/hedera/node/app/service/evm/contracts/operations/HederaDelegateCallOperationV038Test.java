@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaDelegateCallOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
     private GasCalculator calc;
@@ -50,6 +52,9 @@ class HederaDelegateCallOperationV038Test {
 
     @Mock
     private EVM evm;
+
+    @Mock
+    private EvmProperties evmProperties;
 
     @Mock
     private WorldUpdater worldUpdater;
@@ -66,7 +71,7 @@ class HederaDelegateCallOperationV038Test {
 
     @BeforeEach
     void setup() {
-        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> false);
+        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> false, evmProperties);
         given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(acc);
     }
@@ -84,6 +89,7 @@ class HederaDelegateCallOperationV038Test {
         given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -106,6 +112,7 @@ class HederaDelegateCallOperationV038Test {
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());
@@ -114,7 +121,7 @@ class HederaDelegateCallOperationV038Test {
 
     @Test
     void executesPrecompileAsExpected() {
-        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> true);
+        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> true, evmProperties);
         given(calc.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);

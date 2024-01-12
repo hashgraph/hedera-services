@@ -42,6 +42,8 @@ import com.swirlds.config.extensions.validators.DefaultConfigViolation;
  * @param minNumberOfFilesInCompaction
  * 		The minimum number of files before we do a compaction. If there are less than this number then it is
  * 		acceptable to not do a compaction.
+ * @param iteratorInputBufferBytes
+ *      Size of buffer used by data file iterators, in bytes.
  * @param reconnectKeyLeakMitigationEnabled
  * 		There currently exists a bug when a virtual map is reconnected that can
  * 		cause some deleted keys to leak into the datasource. If this method returns true then a mitigation strategy is
@@ -82,6 +84,8 @@ import com.swirlds.config.extensions.validators.DefaultConfigViolation;
  * @param leafRecordCacheSize
  *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from MerkleDb config.
  *      If the value is zero, leaf records cache isn't used.
+ * @param usePbj
+ *      If true, use PBJ format for new (flushed) and compacted data files, otherwise use JDB.
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
@@ -91,6 +95,7 @@ public record MerkleDbConfig(
         @ConstraintMethod("minNumberOfFilesInCompactionValidation") @ConfigProperty(defaultValue = "8")
                 int minNumberOfFilesInCompaction,
         @Min(3) @ConfigProperty(defaultValue = "5") int maxCompactionLevel,
+        /* FUTURE WORK - https://github.com/hashgraph/hedera-services/issues/5178 */
         @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,
@@ -101,7 +106,8 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
-        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize,
+        @ConfigProperty(defaultValue = "true") boolean usePbj) {
 
     static double UNIT_FRACTION_PERCENT = 100.0;
 

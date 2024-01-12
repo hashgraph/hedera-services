@@ -21,9 +21,11 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
-import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingConsumer;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingSupplier;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -32,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
+
     public static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc18c86c499e60727L;
 
@@ -95,14 +98,22 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
         return copy;
     }
 
-    @Override
-    public void serialize(final ByteBuffer to) throws IOException {
+    @Deprecated
+    public void serialize(final ByteBuffer to) {
         serializeTo(to::put, to::putLong);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer from, final int version) throws IOException {
+    public void serialize(final WritableSequentialData out) {
+        serializeTo(out::writeByte, out::writeLong);
+    }
+
+    @Deprecated
+    public void deserialize(final ByteBuffer from, final int version) {
         deserializeFrom(from::get, from::getLong);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readByte, in::readLong);
     }
 
     @Override
@@ -227,8 +238,8 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
         this.next = next;
     }
 
-    private void serializeTo(final CheckedConsumer<Byte> writeByteFn, final CheckedConsumer<Long> writeLongFn)
-            throws IOException {
+    private <E extends Exception> void serializeTo(
+            final ThrowingConsumer<Byte, E> writeByteFn, final ThrowingConsumer<Long, E> writeLongFn) throws E {
         writeByteFn.accept(flags);
         writeLongFn.accept(prev);
         writeLongFn.accept(next);
@@ -236,8 +247,8 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
         writeLongFn.accept(numbers);
     }
 
-    private void deserializeFrom(final CheckedSupplier<Byte> readByteFn, final CheckedSupplier<Long> readLongFn)
-            throws IOException {
+    private <E extends Exception> void deserializeFrom(
+            final ThrowingSupplier<Byte, E> readByteFn, final ThrowingSupplier<Long, E> readLongFn) throws E {
         throwIfImmutable();
         flags = readByteFn.get();
         prev = readLongFn.get();

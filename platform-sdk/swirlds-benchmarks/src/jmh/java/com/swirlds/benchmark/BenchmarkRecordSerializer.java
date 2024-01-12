@@ -16,6 +16,8 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
@@ -34,29 +36,34 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     }
 
     @Override
-    public BenchmarkRecord deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        int size = buffer.getInt();
-        BenchmarkRecord data = new BenchmarkRecord();
-        data.deserialize(buffer, (int) dataVersion);
-        return data;
-    }
-
-    @Override
-    public int serialize(BenchmarkRecord data, ByteBuffer buffer) throws IOException {
-        buffer.putInt(getSerializedSize());
-        data.serialize(buffer);
-        return getSerializedSize();
-    }
-
-    @Override
     public int getHeaderSize() {
-        return Integer.BYTES + Long.BYTES;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        int size = buffer.getInt();
-        long key = buffer.getLong();
-        return new DataItemHeader(size, key);
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void serialize(final BenchmarkRecord data, final WritableSequentialData out) {
+        data.serialize(out);
+    }
+
+    @Override
+    public void serialize(BenchmarkRecord data, ByteBuffer buffer) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public BenchmarkRecord deserialize(final ReadableSequentialData in) {
+        BenchmarkRecord data = new BenchmarkRecord();
+        data.deserialize(in);
+        return data;
+    }
+
+    @Override
+    public BenchmarkRecord deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        throw new UnsupportedOperationException("Not implemented");
     }
 }

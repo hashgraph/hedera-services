@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 
 /** Represents a key for a unique token (NFT). */
 public class UniqueTokenKey implements VirtualKey {
+
     private static final long CLASS_ID = 0x17f77b311f6L;
 
     /** Current version of the encoding scheme. */
@@ -89,6 +90,12 @@ public class UniqueTokenKey implements VirtualKey {
         this.hashCode = Long.hashCode(entityNum * LARGE_PRIME + tokenSerial);
     }
 
+    int getSerializedSizeInBytes() {
+        final int entityLen = computeNonZeroBytes(entityNum);
+        final int tokenSerialLen = computeNonZeroBytes(tokenSerial);
+        return entityLen + tokenSerialLen + 1;
+    }
+
     private static int computeNonZeroBytes(final long value) {
         // The value returned from this will range in [0, 8].
         if (value == 0) {
@@ -101,8 +108,8 @@ public class UniqueTokenKey implements VirtualKey {
         return (nonZeroBits / 8) + Math.min(1, nonZeroBits % 8);
     }
 
-    /* package */ interface ByteConsumer {
-        void accept(byte b) throws IOException;
+    /* package */ interface ByteConsumer<E extends Exception> {
+        void accept(byte b) throws E;
     }
 
     private static byte packLengths(final int upper, final int lower) {
@@ -117,36 +124,20 @@ public class UniqueTokenKey implements VirtualKey {
         return packed & 0x0F;
     }
 
-    private static void writePartial(final long value, final int numBytes, final ByteConsumer output)
-            throws IOException {
+    private static <E extends Exception> void writePartial(
+            final long value, final int numBytes, final ByteConsumer<E> output) throws E {
         for (int b = numBytes - 1; b >= 0; b--) {
             output.accept((byte) (value >> (b * 8)));
         }
     }
 
     /**
-     * Fetch the key size (including the stored byte length) from a ByteBuffer containing the
-     * serialized bytes.
-     *
-     * <p>Note: This method will update the position of the provided byteBuffer.
-     *
-     * @param byteBuffer the ByteBuffer to fetch data from.
-     * @return the number of bytes the key occupies (including the byte for the length field).
-     */
-    /* package */
-    static int deserializeKeySize(final ByteBuffer byteBuffer) {
-        final byte packedLength = byteBuffer.get();
-        return 1 + unpackLowerLength(packedLength) + unpackUpperLength(packedLength);
-    }
-
-    /**
      * Serializes the instance into a stream of bytes and write to the provided output.
      *
      * @param output provides a function that is called to write an output byte.
-     * @return the number of bytes written out.
-     * @throws IOException if an error is encountered while trying to write to output.
+     * @throws E if an error is encountered while trying to write to output.
      */
-    /* package */ int serializeTo(final ByteConsumer output) throws IOException {
+    /* package */ <E extends Exception> void serializeTo(final ByteConsumer<E> output) throws E {
         final int entityLen = computeNonZeroBytes(entityNum);
         final int tokenSerialLen = computeNonZeroBytes(tokenSerial);
 
@@ -158,13 +149,6 @@ public class UniqueTokenKey implements VirtualKey {
         output.accept(packedLengths);
         writePartial(entityNum, entityLen, output);
         writePartial(tokenSerial, tokenSerialLen, output);
-
-        return entityLen + tokenSerialLen + 1;
-    }
-
-    @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
-        serializeTo(byteBuffer::put);
     }
 
     @Override
@@ -172,11 +156,17 @@ public class UniqueTokenKey implements VirtualKey {
         serializeTo(outputStream::write);
     }
 
-    private interface ByteSupplier {
-        byte get() throws IOException;
+    @Deprecated
+    void serialize(final ByteBuffer byteBuffer) {
+        serializeTo(byteBuffer::put);
     }
 
-    private static long decodeVariableField(final ByteSupplier input, final int numBytes) throws IOException {
+    /* package */ interface ByteSupplier<E extends Exception> {
+        byte get() throws E;
+    }
+
+    private static <E extends Exception> long decodeVariableField(final ByteSupplier<E> input, final int numBytes)
+            throws E {
         long value = 0;
         for (int n = Math.min(8, numBytes), shift = 8 * (n - 1); n > 0; n--, shift -= 8) {
             value |= ((long) input.get() & 0xFF) << shift;
@@ -184,7 +174,7 @@ public class UniqueTokenKey implements VirtualKey {
         return value;
     }
 
-    private void deserializeFrom(final ByteSupplier input) throws IOException {
+    /* package */ <E extends Exception> void deserializeFrom(final ByteSupplier<E> input) throws E {
         final byte packedLengths = input.get();
         final int numEntityBytes = unpackUpperLength(packedLengths);
         final int numSerialBytes = unpackLowerLength(packedLengths);
@@ -194,13 +184,13 @@ public class UniqueTokenKey implements VirtualKey {
     }
 
     @Override
-    public void deserialize(final ByteBuffer byteBuffer, final int dataVersion) throws IOException {
-        deserializeFrom(byteBuffer::get);
-    }
-
-    @Override
     public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
         deserializeFrom(inputStream::readByte);
+    }
+
+    @Deprecated
+    void deserialize(final ByteBuffer byteBuffer) {
+        deserializeFrom(byteBuffer::get);
     }
 
     @Override
@@ -226,13 +216,13 @@ public class UniqueTokenKey implements VirtualKey {
         return false;
     }
 
-    public boolean equalsTo(final ByteBuffer byteBuffer) throws IOException {
-        final byte packedLengths = byteBuffer.get();
+    <E extends Exception> boolean equalsTo(final ByteSupplier<E> buf) throws E {
+        final byte packedLengths = buf.get();
         final int numEntityBytes = unpackUpperLength(packedLengths);
         final int numSerialBytes = unpackLowerLength(packedLengths);
-        final long num = decodeVariableField(byteBuffer::get, numEntityBytes);
+        final long num = decodeVariableField(buf, numEntityBytes);
         if (num != this.entityNum) return false;
-        final long serial = decodeVariableField(byteBuffer::get, numSerialBytes);
+        final long serial = decodeVariableField(buf, numSerialBytes);
         return serial == this.tokenSerial;
     }
 

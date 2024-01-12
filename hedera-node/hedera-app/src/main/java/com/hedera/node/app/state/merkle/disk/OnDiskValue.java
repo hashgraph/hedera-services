@@ -20,15 +20,12 @@ import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
 import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -42,23 +39,24 @@ import java.util.Objects;
  * @param <V> The type of the value (business object) held in this merkel data structure
  */
 public class OnDiskValue<V> implements VirtualValue {
+
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x8837746626372L;
 
-    private final Codec<V> codec;
+    static final int VERSION = 1;
+
     private final StateMetadata<?, V> md;
     private V value;
     private boolean immutable = false;
 
     // Default constructor is for deserialization
     public OnDiskValue() {
-        this.codec = null;
         this.md = null;
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md) {
-        this.md = md;
-        this.codec = md.stateDefinition().valueCodec();
+        this.md = Objects.requireNonNull(md);
+        Objects.requireNonNull(md.stateDefinition().valueCodec());
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md, @NonNull final V value) {
@@ -94,44 +92,20 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        serializeReturningWrittenBytes(byteBuffer);
-    }
-
-    public int serializeReturningWrittenBytes(@NonNull ByteBuffer byteBuffer) throws IOException {
-        final var output = BufferedData.wrap(byteBuffer);
-        final var initPos = output.position();
-        output.skip(Integer.BYTES);
-        codec.write(value, output);
-        final var pos = output.position();
-        output.position(initPos);
-        output.writeInt((int) (pos - initPos - Integer.BYTES));
-        output.position(pos);
-        return (int) (pos - initPos);
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        writeToStream(out, codec, value);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var buff = BufferedData.wrap(byteBuffer);
-        final var len = buff.readInt();
-        final var pos = buff.position();
-        final var oldLimit = buff.limit();
-        buff.limit(pos + len);
-        value = codec.parse(buff);
-        buff.limit(oldLimit);
+        if (md == null) {
+            throw new IllegalStateException("Cannot serialize on-disk value, null metadata / codec");
+        }
+        writeToStream(out, md.stateDefinition().valueCodec(), value);
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
-        value = readFromStream(in, codec);
+        if (md == null) {
+            throw new IllegalStateException("Cannot deserialize on-disk value, null metadata / codec");
+        }
+        value = readFromStream(in, md.stateDefinition().valueCodec());
     }
 
     /** {@inheritDoc} */

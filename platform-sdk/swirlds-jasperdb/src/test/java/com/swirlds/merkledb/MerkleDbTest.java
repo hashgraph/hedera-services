@@ -22,7 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,6 +37,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class MerkleDbTest {
 
@@ -67,7 +73,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Set custom default storage path")
-    public void testChangeDefaultPath() throws IOException {
+    void testChangeDefaultPath() throws IOException {
         final MerkleDb instance1 = MerkleDb.getDefaultInstance();
         Assertions.assertNotNull(instance1);
         final Path tempDir = TemporaryFileBuilder.buildTemporaryFile();
@@ -80,7 +86,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("MerkleDb paths")
-    public void testMerkleDbDirs() throws IOException {
+    void testMerkleDbDirs() throws IOException {
         final Path tempDir = TemporaryFileBuilder.buildTemporaryFile();
         MerkleDb.setDefaultPath(tempDir);
         final MerkleDb instance = MerkleDb.getDefaultInstance();
@@ -91,12 +97,50 @@ public class MerkleDbTest {
         // same here
         Assertions.assertEquals(tempDir.resolve("tables"), instance.getTablesDir());
         // and here
-        Assertions.assertTrue(Files.exists(tempDir.resolve("metadata.mdb")));
+        Assertions.assertTrue(Files.exists(
+                tempDir.resolve(instance.getConfig().usePbj() ? "database_metadata.pbj" : "metadata.mdb")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void testLoadMetadata(final boolean sourceUsePbj) throws IOException {
+        final MerkleDbConfig sourceConfig = ConfigurationBuilder.create()
+                .withSources(new SimpleConfigSource("merkleDb.usePbj", sourceUsePbj))
+                .withConfigDataType(MerkleDbConfig.class)
+                .build()
+                .getConfigData(MerkleDbConfig.class);
+        final Path dbDir = TemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadata");
+        final MerkleDb sourceDb = MerkleDb.getInstance(dbDir, sourceConfig);
+
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> sourceDs =
+                sourceDb.createDataSource("table" + sourceUsePbj, tableConfig, false);
+
+        for (final boolean snapshotUsePbj : new boolean[] {true, false}) {
+            final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadataSnapshot");
+            Files.delete(snapshotDir);
+            // Don't call sourceDb.snapshot() as it would create and initialize an instance for snapshotDir
+            FileUtils.hardLinkTree(dbDir, snapshotDir.resolve("db"));
+
+            final MerkleDbConfig snapshotConfig = ConfigurationBuilder.create()
+                    .withSources(new SimpleConfigSource("merkleDb.usePbj", snapshotUsePbj))
+                    .withConfigDataType(MerkleDbConfig.class)
+                    .build()
+                    .getConfigData(MerkleDbConfig.class);
+
+            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDir.resolve("db"), snapshotConfig);
+            final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> snapshotDs =
+                    snapshotDb.getDataSource("table" + sourceUsePbj, false);
+            Assertions.assertNotNull(snapshotDs);
+            snapshotDs.close();
+        }
+
+        sourceDs.close();
     }
 
     @Test
     @DisplayName("MerkleDb data source paths")
-    public void testDataSourcePaths() throws IOException {
+    void testDataSourcePaths() throws IOException {
         final Path tempDir = TemporaryFileBuilder.buildTemporaryFile();
         final MerkleDb instance = MerkleDb.getInstance(tempDir);
         final Path dbDir = instance.getStorageDir();
@@ -105,7 +149,8 @@ public class MerkleDbTest {
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
-        Assertions.assertTrue(Files.exists(dbDir.resolve("metadata.mdb")));
+        Assertions.assertTrue(
+                Files.exists(dbDir.resolve(instance.getConfig().usePbj() ? "database_metadata.pbj" : "metadata.mdb")));
         final int tableId = dataSource.getTableId();
         Assertions.assertEquals(dbDir.resolve("tables/" + tableName + "-" + tableId), dataSource.getStorageDir());
         Assertions.assertEquals(
@@ -115,7 +160,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Call MerkleDb.createDataSource() twice")
-    public void testDoubleCreateDataSource() throws IOException {
+    void testDoubleCreateDataSource() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablez";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -193,7 +238,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Get table config with wrong ID")
-    public void testWrongTableConfig() {
+    void testWrongTableConfig() {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         Assertions.assertNull(instance.getTableConfig(-1));
         // Needs to be updated, if we support more than 256 tables
@@ -202,7 +247,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Get and create data source")
-    public void testGetDataSource() throws IOException {
+    void testGetDataSource() throws IOException {
         final Path dbDir = TemporaryFileBuilder.buildTemporaryFile();
         MerkleDb.setDefaultPath(dbDir);
         final MerkleDb instance = MerkleDb.getDefaultInstance();
@@ -212,7 +257,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Get data source after close")
-    public void testGetDataSourceAfterClose() throws IOException {
+    void testGetDataSourceAfterClose() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablec";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -225,7 +270,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Get data source after reload")
-    public void testGetDataSourceAfterReload() throws IOException {
+    void testGetDataSourceAfterReload() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablec";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -248,7 +293,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Test MerkleDb snapshot all tables")
-    public void testSnapshot() throws IOException {
+    void testSnapshot() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final String tableName1 = "tabled1";
@@ -285,7 +330,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Test MerkleDb snapshot some tables")
-    public void testSnapshotSelectedTables() throws IOException {
+    void testSnapshotSelectedTables() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final String tableName1 = "tablee1";
@@ -364,7 +409,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Restore from snapshot")
-    public void testRestore() throws IOException {
+    void testRestore() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tableg";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -388,7 +433,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Restore with no shared dir")
-    public void testRestoreNoSharedDir() throws IOException {
+    void testRestoreNoSharedDir() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tableh";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -411,7 +456,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Double snapshots")
-    public void testDoubleSnapshot() throws IOException {
+    void testDoubleSnapshot() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablei";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -466,7 +511,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Compactions after data source copy")
-    public void checkBackgroundCompactionsOnCopy() throws IOException {
+    void checkBackgroundCompactionsOnCopy() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablek";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -485,7 +530,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Compactions after data source import")
-    public void checkBackgroundCompactionsOnImport() throws IOException {
+    void checkBackgroundCompactionsOnImport() throws IOException {
         final MerkleDb instance1 = MerkleDb.getDefaultInstance();
         final String tableName = "tablel";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();

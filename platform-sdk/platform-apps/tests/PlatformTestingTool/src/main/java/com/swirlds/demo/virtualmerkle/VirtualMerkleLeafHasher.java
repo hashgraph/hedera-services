@@ -26,6 +26,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKey;
@@ -39,12 +40,11 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -101,22 +101,24 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
      * @param leaf
      * 		value to be serialized and hashed with the previous hash
      * @return rolling hash of [prevHash,leaf.key.serialize,leaf.value.serialize]
-     * @throws IOException
+     * @throws IOException if an I/O error occurs
      */
     public Hash computeNextHash(final Hash prevHash, final VirtualLeafNode<K, V> leaf) throws IOException {
-        final ByteBuffer bb = ByteBuffer.allocate(10000);
+        try (final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
 
-        if (prevHash != null) {
-            // add Previous Hash
-            bb.put(prevHash.getValue());
+            if (prevHash != null) {
+                // add Previous Hash
+                out.write(prevHash.getValue());
+            }
+            // add leaf key
+            leaf.getKey().serialize(out);
+            // add leaf value
+            leaf.getValue().serialize(out);
+
+            out.flush();
+            return hashOf(bout.toByteArray());
         }
-        // add leaf key
-        leaf.getKey().serialize(bb);
-
-        // add leaf value
-        leaf.getValue().serialize(bb);
-
-        return hashOf(Arrays.copyOf(bb.array(), bb.position()));
     }
 
     /**
