@@ -117,7 +117,7 @@ public class LatestEventTipsetTracker {
      * @return the childless events, this list is safe to modify
      */
     @NonNull
-    public List<EventDescriptor> getTips() {
+    public synchronized List<EventDescriptor> getTips() {
         return childlessEventTracker.getChildlessEvents();
     }
 
