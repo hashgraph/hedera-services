@@ -3057,7 +3057,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
     HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
-        return propertyPreservingHapiSpec("relayerFeeAsExpectedIfSenderCoversGas",
+        return propertyPreservingHapiSpec(
+                        "relayerFeeAsExpectedIfSenderCoversGas",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_NONCE)
