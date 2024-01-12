@@ -42,6 +42,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,6 +111,50 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
      */
     public abstract ContractCustomizer customizerForPendingCreation();
 
+    public abstract boolean hasPendingCreationCustomizer();
+
+    @Override
+    public MutableAccount getOrCreate(final Address address) {
+        final MutableAccount account = getAccount(address);
+        // if the account exists, return it
+        if (account != null) {
+            return account;
+        }
+        // if the customizer is set, that means we're creating a contract
+        if (hasPendingCreationCustomizer()) {
+            return createAccount(address);
+        }
+        // if the customizer is not set, that means we're creating a ghost account that will not be persisted
+        return createGhostAccount(address);
+    }
+
+    /**
+     * Only should be called for temporary accounts (i.e. calling non-existing addresses)
+     * that will not be persisted to the ledger. Differences with the standard flow are:
+     * - hedera entity num will not be allocated for that account
+     * - customizer will not be attached for that account
+     *
+     * @param Address addressOrAlias
+     * @return MutableAccount
+     */
+    private MutableAccount createGhostAccount(final Address addressOrAlias) {
+        final var curAliases = aliases();
+        final var address = curAliases.resolveForEvm(addressOrAlias);
+
+        final var curAccounts = trackingAccounts();
+        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdateAccountTrackerImpl(curAccounts));
+
+        if (trackingLedgers.areMutable()) {
+            final var newAccountId = accountIdFromEvmAddress(newMutable.getAddress());
+
+            if (curAliases.isInUse(addressOrAlias)) {
+                curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
+            }
+        }
+
+        return newMutable;
+    }
+
     @Override
     public MutableAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
         final var curAliases = aliases();
@@ -117,19 +162,32 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
         final var curAccounts = trackingAccounts();
         final var newMutable = new UpdateTrackingAccount<A>(address, new UpdateAccountTrackerImpl(curAccounts));
+        final var isTemporaryAccount = balance.getAsBigInteger().equals(BigInteger.ZERO)
+                && this.customizerForPendingCreation()
+                        .accountCustomizer()
+                        .getChanges()
+                        .get(AccountProperty.IS_SMART_CONTRACT)
+                        .equals(Boolean.FALSE);
         if (trackingLedgers.areMutable()) {
             final var newAccountId = accountIdFromEvmAddress(newMutable.getAddress());
-            curAccounts.create(newAccountId);
+            if (!isTemporaryAccount) {
+                curAccounts.create(newAccountId);
+            }
             if (curAliases.isInUse(addressOrAlias)) {
                 curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
             }
-            customizerForPendingCreation().customize(newAccountId, curAccounts);
+            if (!isTemporaryAccount) {
+                customizerForPendingCreation().customize(newAccountId, curAccounts);
+            }
         }
 
-        newMutable.setNonce(nonce);
-        newMutable.setBalance(balance);
+        if (!isTemporaryAccount) {
+            newMutable.setNonce(nonce);
+            newMutable.setBalance(balance);
+            return track(newMutable);
+        }
 
-        return track(newMutable);
+        return newMutable;
     }
 
     @Override

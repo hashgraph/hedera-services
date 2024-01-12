@@ -39,19 +39,26 @@ import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class is used to "finalize" hbar and token transfers for the parent transaction record.
  */
 @Singleton
 public class FinalizeParentRecordHandler extends RecordFinalizerBase implements ParentRecordFinalizer {
+    private static final Logger logger = LogManager.getLogger(FinalizeParentRecordHandler.class);
+
     private final StakingRewardsHandler stakingRewardsHandler;
 
     @Inject
@@ -85,7 +92,18 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         }
 
         // Hbar changes from transaction including staking rewards
-        final var hbarChanges = hbarChangesFrom(writableAccountStore);
+        final Map<AccountID, Long> hbarChanges;
+        try {
+            hbarChanges = hbarChangesFrom(writableAccountStore);
+        } catch (HandleException e) {
+            if (e.getStatus() == FAIL_INVALID) {
+                logHbarFinalizationFailInvalid(
+                        payer,
+                        context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class),
+                        writableAccountStore);
+            }
+            throw e;
+        }
         final var tokenChanges = tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.FUNGIBLE_COMMON);
         final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
 
@@ -117,6 +135,29 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
+    }
+
+    // invoke logger parameters conditionally
+    @SuppressWarnings("java:S2629")
+    private void logHbarFinalizationFailInvalid(
+            @NonNull final AccountID payerId,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final WritableAccountStore accountStore) {
+        logger.error(
+                """
+                        Non-zero net hbar change when handling body
+                        {}
+                        with payer {} and fee {}; original/modified accounts claimed to be:
+                        {}
+                        """,
+                recordBuilder.transactionBody(),
+                payerId,
+                recordBuilder.transactionFee(),
+                accountStore.modifiedAccountsInState().stream()
+                        .map(accountId -> String.format(
+                                "\tOriginal : %s%n\tModified : %s",
+                                accountStore.getOriginalValue(accountId), accountStore.get(accountId)))
+                        .collect(Collectors.joining("%n")));
     }
 
     private void deductChangesFromChildRecords(

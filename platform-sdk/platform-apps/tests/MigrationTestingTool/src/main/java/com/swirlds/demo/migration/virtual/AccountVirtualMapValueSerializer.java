@@ -16,8 +16,9 @@
 
 package com.swirlds.demo.migration.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -47,24 +48,43 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
         return ClassVersion.ORIGINAL;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getCurrentDataVersion() {
         return 1;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getSerializedSize() {
         return AccountVirtualMapValue.getSizeInBytes();
     }
 
     @Override
-    public int serialize(AccountVirtualMapValue value, ByteBuffer buffer) throws IOException {
-        value.serialize(buffer);
-        return getSerializedSize();
+    public void serialize(final AccountVirtualMapValue value, final WritableSequentialData out) {
+        value.serialize(out);
     }
 
     @Override
-    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long version) throws IOException {
+    @Deprecated
+    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) {
+        value.serialize(buffer);
+    }
+
+    @Override
+    public AccountVirtualMapValue deserialize(final ReadableSequentialData in) {
+        final AccountVirtualMapValue value = new AccountVirtualMapValue();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long version) {
         final AccountVirtualMapValue value = new AccountVirtualMapValue();
         value.deserialize(buffer, (int) version);
         return value;
