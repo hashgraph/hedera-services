@@ -161,7 +161,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRU
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
-import static com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite.depositAmount;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
@@ -353,7 +352,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 someErc721BalanceOfScenariosPass(),
                 callToNonExistingContractFailsGracefully(),
                 getErc20TokenNameExceedingLimits(),
-                relayerFeeAsExpectedIfSenderCoversGas());
+                relayerFeeAsExpectedIfSenderCoversGas(),
+                invalidContract());
     }
 
     @SuppressWarnings("java:S5960")
@@ -2920,6 +2920,25 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 .aliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                 .getAlias()
                                                                 .toStringUtf8())))))));
+    }
+
+    @HapiTest
+    HapiSpec invalidContract() {
+        final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
+
+        return propertyPreservingHapiSpec("InvalidContract")
+                .preserving(EVM_VERSION_PROPERTY)
+                .given(
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        withOpContext((spec, ctxLog) ->
+                                spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ifHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID)),
+                        ifNotHapiTest(
+                                contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
+                .then();
     }
 
     @Override

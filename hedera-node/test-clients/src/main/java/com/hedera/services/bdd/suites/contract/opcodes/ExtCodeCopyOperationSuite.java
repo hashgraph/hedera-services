@@ -28,12 +28,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -46,7 +44,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class ExtCodeCopyOperationSuite extends HapiSuite {
 
@@ -75,18 +73,15 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
         final var codeCopyOf = "codeCopyOf";
         final var account = "account";
 
-        return defaultHapiSpec("VerifiesExistence")
-                .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_FUNCTION_PARAMETERS),
-                        cryptoCreate(account),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+        return defaultHapiSpec(
+                        "VerifiesExistence", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .given(cryptoCreate(account), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, codeCopyOf, asHeadlongAddress(invalidAddress))
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         contractCallLocal(contract, codeCopyOf, asHeadlongAddress(invalidAddress))
-                                .hasAnswerOnlyPrecheck(OK),
+                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext((spec, opLog) -> {
                             final var accountID = spec.registry().getAccountID(account);
                             final var contractID = spec.registry().getContractId(contract);
