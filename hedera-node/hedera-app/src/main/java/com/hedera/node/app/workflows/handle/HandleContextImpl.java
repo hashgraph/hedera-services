@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
@@ -699,6 +700,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         try {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
+            childRecordBuilder.contractCallResult(
+                    ContractFunctionResult.newBuilder().build());
         } catch (final HandleException e) {
             if (e.shouldRollbackStack()) {
                 childStack.rollbackFullStack();
