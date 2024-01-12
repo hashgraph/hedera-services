@@ -19,6 +19,10 @@ package com.hedera.node.app.service.mono.state.virtual.schedule;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingConsumer;
+import com.hedera.node.app.service.mono.state.virtual.utils.ThrowingSupplier;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -103,79 +107,76 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         return helper.toString();
     }
 
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        int s = in.readInt();
-        ids.clear();
-        for (int x = 0; x < s; ++x) {
-            int n = in.readInt();
-            LongArrayList l = new LongArrayList(n);
-            for (int y = 0; y < n; ++y) {
-                l.add(in.readLong());
-            }
-            if (l.size() > 0) {
-                ids.put(RichInstant.from(in), l.toImmutable());
-            }
+    int serializedSizeInBytes() {
+        int size = 0;
+        size += Integer.BYTES; // ids size
+        for (var e : ids.entrySet()) {
+            size += Integer.BYTES; // value size
+            size += Long.BYTES * e.getValue().size(); // value
+            size += Long.BYTES; // key seconds
+            size += Integer.BYTES; // key nanos
         }
-        number = in.readLong();
+        size += Integer.BYTES; // number
+        return size;
     }
 
-    @Override
-    public void deserialize(ByteBuffer in, int version) throws IOException {
-        int s = in.getInt();
-        ids.clear();
-        for (int x = 0; x < s; ++x) {
-            int n = in.getInt();
-            LongArrayList l = new LongArrayList(n);
-            for (int y = 0; y < n; ++y) {
-                l.add(in.getLong());
+    private <E extends Exception> void serializeTo(
+            final ThrowingConsumer<Integer, E> writeIntFn, final ThrowingConsumer<Long, E> writeLongFn) throws E {
+        writeIntFn.accept(ids.size());
+        for (var e : ids.entrySet()) {
+            writeIntFn.accept(e.getValue().size());
+            for (int x = 0; x < e.getValue().size(); ++x) {
+                writeLongFn.accept(e.getValue().get(x));
             }
-            if (l.size() > 0) {
-                ids.put(new RichInstant(in.getLong(), in.getInt()), l.toImmutable());
-            }
+            writeLongFn.accept(e.getKey().getSeconds());
+            writeIntFn.accept(e.getKey().getNanos());
         }
-        number = in.getLong();
+        writeLongFn.accept(number);
     }
 
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeInt(ids.size());
-        for (var e : ids.entrySet()) {
-            out.writeInt(e.getValue().size());
-            for (int x = 0; x < e.getValue().size(); ++x) {
-                out.writeLong(e.getValue().get(x));
+        serializeTo(out::writeInt, out::writeLong);
+    }
+
+    void serialize(final WritableSequentialData out) {
+        serializeTo(out::writeInt, out::writeLong);
+    }
+
+    @Deprecated
+    void serialize(ByteBuffer buffer) {
+        serializeTo(buffer::putInt, buffer::putLong);
+    }
+
+    private <E extends Exception> void deserializeFrom(
+            final ThrowingSupplier<Integer, E> readIntFn, final ThrowingSupplier<Long, E> readLongFn) throws E {
+        int s = readIntFn.get();
+        ids.clear();
+        for (int x = 0; x < s; ++x) {
+            int n = readIntFn.get();
+            LongArrayList l = new LongArrayList(n);
+            for (int y = 0; y < n; ++y) {
+                l.add(readLongFn.get());
             }
-            e.getKey().serialize(out);
+            if (l.size() > 0) {
+                ids.put(new RichInstant(readLongFn.get(), readIntFn.get()), l.toImmutable());
+            }
         }
-        out.writeLong(number);
+        number = readLongFn.get();
     }
 
     @Override
-    public void serialize(ByteBuffer out) throws IOException {
-        serializeReturningBytesWritten(out);
+    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+        deserializeFrom(in::readInt, in::readLong);
     }
 
-    public int serializeReturningBytesWritten(ByteBuffer out) {
-        int bytesWritten = 0;
+    void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readInt, in::readLong);
+    }
 
-        out.putInt(ids.size());
-        bytesWritten += Integer.BYTES;
-
-        for (var e : ids.entrySet()) {
-            out.putInt(e.getValue().size());
-            bytesWritten += Integer.BYTES;
-            for (int x = 0; x < e.getValue().size(); ++x) {
-                out.putLong(e.getValue().get(x));
-                bytesWritten += Long.BYTES;
-            }
-            out.putLong(e.getKey().getSeconds());
-            out.putInt(e.getKey().getNanos());
-            bytesWritten += Long.BYTES + Integer.BYTES;
-        }
-        out.putLong(number);
-        bytesWritten += Long.BYTES;
-
-        return bytesWritten;
+    @Deprecated
+    void deserialize(ByteBuffer buffer, int version) {
+        deserializeFrom(buffer::getInt, buffer::getLong);
     }
 
     @Override

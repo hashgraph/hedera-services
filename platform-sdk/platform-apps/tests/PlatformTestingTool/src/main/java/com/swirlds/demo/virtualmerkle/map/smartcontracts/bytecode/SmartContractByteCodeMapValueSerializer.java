@@ -16,8 +16,10 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 
 /** This class is the serializer of {@link SmartContractByteCodeMapValue}. */
@@ -60,22 +62,29 @@ public final class SmartContractByteCodeMapValueSerializer implements ValueSeria
     }
 
     @Override
-    public int serialize(final SmartContractByteCodeMapValue data, final ByteBuffer buffer) throws IOException {
-        final int size = data.getSize();
-        buffer.putInt(size);
-        buffer.put(data.getByteCode());
-        return Integer.BYTES + size;
+    public void serialize(
+            @NonNull final SmartContractByteCodeMapValue value, @NonNull final WritableSequentialData out) {
+        value.serialize(out);
     }
 
     @Override
-    public SmartContractByteCodeMapValue deserialize(final ByteBuffer buffer, final long dataVersion)
-            throws IOException {
-        if (dataVersion != getCurrentDataVersion()) {
-            throw new IllegalStateException("Data version mismatch");
-        }
-        final int size = buffer.getInt();
-        final byte[] byteCode = new byte[size];
-        buffer.get(byteCode);
-        return new SmartContractByteCodeMapValue(byteCode);
+    @Deprecated
+    public void serialize(SmartContractByteCodeMapValue value, ByteBuffer buffer) {
+        value.serialize(buffer);
+    }
+
+    @Override
+    public SmartContractByteCodeMapValue deserialize(@NonNull final ReadableSequentialData in) {
+        final SmartContractByteCodeMapValue value = new SmartContractByteCodeMapValue();
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public SmartContractByteCodeMapValue deserialize(ByteBuffer buffer, long dataVersion) {
+        final SmartContractByteCodeMapValue value = new SmartContractByteCodeMapValue();
+        value.deserialize(buffer, (int) dataVersion);
+        return value;
     }
 }

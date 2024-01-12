@@ -169,7 +169,10 @@ public class ContractUpdateSuite extends HapiSuite {
         final AtomicReference<String> childMirror = new AtomicReference<>();
         final AtomicReference<String> childEip1014 = new AtomicReference<>();
 
-        return defaultHapiSpec("Eip1014AddressAlwaysHasPriority", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return defaultHapiSpec(
+                        "Eip1014AddressAlwaysHasPriority",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract).via(creationTxn))
                 .when(captureChildCreate2MetaFor(2, 0, "setup", creationTxn, childMirror, childEip1014))
                 .then(
@@ -221,7 +224,7 @@ public class ContractUpdateSuite extends HapiSuite {
         final var secondMemo = "Second";
         final var thirdMemo = "Third";
 
-        return defaultHapiSpec("UpdateWithBothMemoSettersWorks")
+        return defaultHapiSpec("UpdateWithBothMemoSettersWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
@@ -238,7 +241,7 @@ public class ContractUpdateSuite extends HapiSuite {
     @HapiTest
     final HapiSpec updatingExpiryWorks() {
         final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
-        return defaultHapiSpec("UpdatingExpiryWorks")
+        return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractUpdate(CONTRACT).newExpirySecs(newExpiry))
                 .then(getContractInfo(CONTRACT).has(contractWith().expiry(newExpiry)));
@@ -249,7 +252,7 @@ public class ContractUpdateSuite extends HapiSuite {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
 
-        return defaultHapiSpec("RejectsExpiryTooFarInTheFuture")
+        return defaultHapiSpec("RejectsExpiryTooFarInTheFuture", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
                 .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
@@ -257,7 +260,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec updateAutoRenewWorks() {
-        return defaultHapiSpec("UpdateAutoRenewWorks")
+        return defaultHapiSpec("UpdateAutoRenewWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
@@ -311,7 +314,7 @@ public class ContractUpdateSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/3037
     @HapiTest
     final HapiSpec immutableContractKeyFormIsStandard() {
-        return defaultHapiSpec("ImmutableContractKeyFormIsStandard")
+        return defaultHapiSpec("ImmutableContractKeyFormIsStandard", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).immutable())
                 .when()
                 .then(getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
@@ -319,7 +322,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec canMakeContractImmutableWithEmptyKeyList() {
-        return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
+        return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(NEW_ADMIN_KEY),
@@ -334,7 +337,7 @@ public class ContractUpdateSuite extends HapiSuite {
     @HapiTest
     final HapiSpec givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
-        return defaultHapiSpec("GivenAdminKeyMustBeValid")
+        return defaultHapiSpec("GivenAdminKeyMustBeValid", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(getContractInfo(contract).logged())
                 .then(contractUpdate(contract)

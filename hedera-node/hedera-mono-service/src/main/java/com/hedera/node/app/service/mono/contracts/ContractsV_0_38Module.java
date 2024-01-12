@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.contracts;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
@@ -146,9 +147,10 @@ public interface ContractsV_0_38Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_38 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallCodeOperationV038(
-                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector);
+                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -172,8 +174,10 @@ public interface ContractsV_0_38Module {
     static Operation bindDelegateCallOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaDelegateCallOperationV038(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaDelegateCallOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -183,8 +187,10 @@ public interface ContractsV_0_38Module {
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
             @V_0_38 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaStaticCallOperationV038(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
+        return new HederaStaticCallOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -194,8 +200,10 @@ public interface ContractsV_0_38Module {
     static Operation bindBalanceOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaBalanceOperationV038(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaBalanceOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -205,8 +213,10 @@ public interface ContractsV_0_38Module {
     static Operation bindExtCodeCopyOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeCopyOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -216,8 +226,10 @@ public interface ContractsV_0_38Module {
     static Operation bindExtCodeHashOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeHashOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -227,8 +239,10 @@ public interface ContractsV_0_38Module {
     static Operation bindExtCodeSizeOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeSizeOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides

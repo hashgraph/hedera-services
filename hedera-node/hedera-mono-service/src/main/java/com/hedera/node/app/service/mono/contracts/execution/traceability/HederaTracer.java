@@ -377,7 +377,12 @@ public class HederaTracer implements HederaOperationTracer {
     private EntityId getEntityIdOrNullByAddressAndMessageFrame(
             Address address, MessageFrame frame, SolidityAction action) {
         try {
-            return EntityId.fromAddress(asMirrorAddress(address, frame));
+            final var newEntity = EntityId.fromAddress(asMirrorAddress(address, frame));
+            if (newEntity.num() >= 0) {
+                return newEntity;
+            }
+            action.setTargetedAddress(address.toArray());
+            return null;
         } catch (IllegalArgumentException e) {
             action.setTargetedAddress(address.toArray());
             return null;

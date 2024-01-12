@@ -47,12 +47,19 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class SerializationTest extends MerkleTestBase {
     private Path dir;
     private Configuration config;
     private NetworkInfo networkInfo;
     private HandleThrottleParser handleThrottling;
+
+    @Mock
+    private HederaLifecycles lifecycles;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -123,11 +130,7 @@ class SerializationTest extends MerkleTestBase {
     void simpleReadAndWrite() throws IOException, ConstructableRegistryException {
         // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
-        final var originalTree = new MerkleHederaState(
-                (tree, state) -> {},
-                (evt, meta, provider) -> {},
-                (state, platform, dual, trigger, version) -> {},
-                (state, addressBook, platformContext) -> {});
+        final var originalTree = new MerkleHederaState(lifecycles);
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         final var schemaV1 = createV1Schema();
@@ -144,18 +147,7 @@ class SerializationTest extends MerkleTestBase {
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
-        final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
-                (tree, state) -> newRegistry.migrate(
-                        (MerkleHederaState) state,
-                        v1,
-                        v1,
-                        config,
-                        networkInfo,
-                        handleThrottling,
-                        mock(WritableEntityIdStore.class)),
-                (event, meta, provider) -> {},
-                (state, platform, dualState, trigger, version) -> {},
-                (state, addressBook, platformContext) -> {});
+        final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(lifecycles);
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 
