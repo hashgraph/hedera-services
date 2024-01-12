@@ -55,19 +55,15 @@ public final class SystemContractUtils {
      * Create a successful contract function result.
      * @param gasUsed       Report the gas used.
      * @param result        The result of the contract call.
-     * @param gas           The remaining gas.
-     * @param inputData     The input data.
      * @param senderId      The sender id.
      * @return              The created contract function result for a successful call.
      */
     @NonNull
     public static ContractFunctionResult contractFunctionResultSuccessFor(
-            final long gasUsed, final Bytes result, long gas, Bytes inputData, AccountID senderId) {
+            final long gasUsed, final Bytes result, AccountID senderId) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
-                .gas(gas)
                 .contractCallResult(tuweniToPbjBytes(result))
-                .functionParameters(tuweniToPbjBytes(inputData))
                 .senderId(senderId)
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .build();

@@ -135,27 +135,28 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void finalStatusFromWrongNonceAbortTranslated() {
-        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), WRONG_NONCE);
+        final var subject = HederaEvmTransactionResult.fromAborted(100, SENDER_ID, wellKnownHapiCall(), WRONG_NONCE);
         assertEquals(WRONG_NONCE, subject.finalStatus());
     }
 
     @Test
     void finalStatusFromInvalidAccountIdAbortTranslated() {
-        final var subject = HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), INVALID_ACCOUNT_ID);
+        final var subject =
+                HederaEvmTransactionResult.fromAborted(100, SENDER_ID, wellKnownHapiCall(), INVALID_ACCOUNT_ID);
         assertEquals(INVALID_ACCOUNT_ID, subject.finalStatus());
     }
 
     @Test
     void finalStatusFromExecutionExceptionAbortTranslated() {
-        final var subject =
-                HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), CONTRACT_EXECUTION_EXCEPTION);
+        final var subject = HederaEvmTransactionResult.fromAborted(
+                100, SENDER_ID, wellKnownHapiCall(), CONTRACT_EXECUTION_EXCEPTION);
         assertEquals(CONTRACT_EXECUTION_EXCEPTION, subject.finalStatus());
     }
 
     @Test
     void finalStatusFromIpbAbortTranslated() {
         final var subject =
-                HederaEvmTransactionResult.fromAborted(SENDER_ID, wellKnownHapiCall(), INSUFFICIENT_PAYER_BALANCE);
+                HederaEvmTransactionResult.fromAborted(100, SENDER_ID, wellKnownHapiCall(), INSUFFICIENT_PAYER_BALANCE);
         assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.finalStatus());
     }
 
