@@ -22,10 +22,12 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.priorityAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedForProto;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -48,34 +50,38 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
+    // too many parameters
+    @SuppressWarnings("java:S107")
     public ERCGrantApprovalCall(
             @NonNull final Enhancement enhancement,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID sender,
             @NonNull final TokenID token,
-            @NonNull final AccountID spender,
+            @NonNull final AccountID spenderId,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType) {
-        super(gasCalculator, enhancement, verificationStrategy, sender, token, spender, amount, tokenType, false);
+        super(gasCalculator, enhancement, verificationStrategy, sender, token, spenderId, amount, tokenType, false);
     }
 
     @NonNull
     @Override
-    public PricedResult execute(MessageFrame frame) {
+    public PricedResult execute(@NonNull final MessageFrame frame) {
         if (token == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
-        final var spenderAccount = enhancement.nativeOperations().getAccount(spender.accountNum());
+        final var spenderNum = spenderId.accountNumOrThrow();
+        final var spenderAccount = enhancement.nativeOperations().getAccount(spenderNum);
         final var body = callGrantApproval();
-        if (spenderAccount == null && spender.accountNum() != 0) {
-            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-            var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
-            var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);
+        if (spenderAccount == null && !isNftApprovalRevocation()) {
+            final var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
+            final var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
+            final var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);
 
-            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-            var encodedRc = ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
-            var contractFunctionResult = contractFunctionResultFailedForProto(
+            final var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+            final var encodedRc =
+                    ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
+            final var contractFunctionResult = contractFunctionResultFailedForProto(
                     gasRequirement, INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID, Bytes.wrap(encodedRc));
 
             enhancement.systemOperations().externalizeResult(contractFunctionResult, INVALID_ALLOWANCE_SPENDER_ID);
@@ -91,13 +97,15 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         // https://github.com/hashgraph/hedera-services/pull/10897 is merged
         final var tokenAddress = asLongZeroAddress(token.tokenNum());
         final var accountStore = readableAccountStore();
-        final var senderAddress = priorityAddressOf(accountStore.getAccountById(senderId));
-        final var receiverAddress = priorityAddressOf(accountStore.getAccountById(spender));
+        final var ownerAddress = priorityAddressOf(requireNonNull(accountStore.getAccountById(senderId)));
+        final var spenderAddress = isNftApprovalRevocation()
+                ? ZERO_ADDRESS
+                : priorityAddressOf(requireNonNull(accountStore.getAccountById(spenderId)));
         frame.addLog(LogBuilder.logBuilder()
                 .forLogger(tokenAddress)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(senderAddress)
-                .forIndexedArgument(receiverAddress)
+                .forIndexedArgument(ownerAddress)
+                .forIndexedArgument(spenderAddress)
                 .forDataItem(amount)
                 .build());
 

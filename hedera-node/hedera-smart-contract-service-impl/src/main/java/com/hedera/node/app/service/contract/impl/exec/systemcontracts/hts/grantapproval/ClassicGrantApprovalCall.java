@@ -41,6 +41,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
+    // too many parameters
+    @SuppressWarnings("java:S107")
     public ClassicGrantApprovalCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final Enhancement enhancement,
@@ -55,7 +57,21 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
 
     @NonNull
     @Override
-    public PricedResult execute() {
+    public PricedResult execute(final MessageFrame frame) {
+        final var result = executeInternal();
+        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
+            final var tokenAddress = asLongZeroAddress(token.tokenNum());
+
+            if (tokenType.equals(TokenType.FUNGIBLE_COMMON)) {
+                frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
+            } else {
+                frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
+            }
+        }
+        return result;
+    }
+
+    private PricedResult executeInternal() {
         if (token == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
@@ -80,30 +96,12 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         }
     }
 
-    @NonNull
-    @Override
-    public PricedResult execute(final MessageFrame frame) {
-        final var result = execute();
-
-        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
-            final var tokenAddress = asLongZeroAddress(token.tokenNum());
-
-            if (tokenType.equals(TokenType.FUNGIBLE_COMMON)) {
-                frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
-            } else {
-                frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
-            }
-        }
-
-        return result;
-    }
-
     private Log getLogForFungibleAdjustAllowance(final Address logger) {
         return LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))
-                .forIndexedArgument(asLongZeroAddress(spender.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(senderId.accountNumOrThrow()))
+                .forIndexedArgument(asLongZeroAddress(spenderId.accountNumOrThrow()))
                 .forDataItem(amount)
                 .build();
     }
@@ -112,8 +110,8 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         return LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))
-                .forIndexedArgument(asLongZeroAddress(spender.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(senderId.accountNumOrThrow()))
+                .forIndexedArgument(asLongZeroAddress(spenderId.accountNumOrThrow()))
                 .forIndexedArgument(amount)
                 .build();
     }

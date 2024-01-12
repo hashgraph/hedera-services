@@ -40,7 +40,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     protected final VerificationStrategy verificationStrategy;
     protected final AccountID senderId;
     protected final TokenID token;
-    protected final AccountID spender;
+    protected final AccountID spenderId;
     protected final BigInteger amount;
     protected final TokenType tokenType;
 
@@ -52,7 +52,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
             @NonNull final TokenID token,
-            @NonNull final AccountID spender,
+            @NonNull final AccountID spenderId,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType,
             @NonNull final boolean isViewCall) {
@@ -60,7 +60,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
         this.verificationStrategy = verificationStrategy;
         this.senderId = senderId;
         this.token = token;
-        this.spender = spender;
+        this.spenderId = spenderId;
         this.amount = amount;
         this.tokenType = tokenType;
     }
@@ -105,7 +105,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
         return CryptoApproveAllowanceTransactionBody.newBuilder()
                 .nftAllowances(NftAllowance.newBuilder()
                         .tokenId(token)
-                        .spender(spender)
+                        .spender(spenderId)
                         .delegatingSpender(delegateSpenderId)
                         .owner(ownerId)
                         .serialNumbers(amount.longValue())
@@ -118,7 +118,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                 ? CryptoApproveAllowanceTransactionBody.newBuilder()
                         .tokenAllowances(TokenAllowance.newBuilder()
                                 .tokenId(token)
-                                .spender(spender)
+                                .spender(spenderId)
                                 .owner(ownerId)
                                 .amount(amount.longValue())
                                 .build())
@@ -126,7 +126,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                 : CryptoApproveAllowanceTransactionBody.newBuilder()
                         .nftAllowances(NftAllowance.newBuilder()
                                 .tokenId(token)
-                                .spender(spender)
+                                .spender(spenderId)
                                 .owner(ownerId)
                                 .serialNumbers(amount.longValue())
                                 .build())
@@ -149,7 +149,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                 : enhancement.nativeOperations().getToken(token.tokenNum()).treasuryAccountId();
     }
 
-    private boolean isNftApprovalRevocation() {
-        return spender.accountNum() == 0;
+    protected boolean isNftApprovalRevocation() {
+        return spenderId.accountNumOrThrow() == 0;
     }
 }
