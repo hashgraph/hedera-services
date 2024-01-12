@@ -493,7 +493,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // So we need to count the number of token transfers that have custom fees
         for (final var xfer : op.tokenTransfersOrElse(emptyList())) {
             final var token = readableTokenStore.get(xfer.token());
-            if (!token.customFeesOrElse(emptyList()).isEmpty()) {
+            if (token != null && !token.customFeesOrElse(emptyList()).isEmpty()) {
                 customFeeTokenTransfers++;
             }
         }

@@ -122,7 +122,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            validateTrue(fungibleBurnCount >= 0 && nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_AMOUNT);
+            validateTrue(fungibleBurnCount >= 0, INVALID_TOKEN_BURN_AMOUNT);
             final var newTotalSupply = changeSupply(
                     validated.token(),
                     treasuryRel,

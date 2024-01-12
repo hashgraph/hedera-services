@@ -105,40 +105,39 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            mintFailsWithLargeBatchSize(),
-            mintFailsWithTooLongMetadata(),
-            mintFailsWithInvalidMetadataFromBatch(),
-            mintUniqueTokenHappyPath(),
-            mintTokenWorksWhenAccountsAreFrozenByDefault(),
-            mintFailsWithDeletedToken(),
-            mintUniqueTokenWorksWithRepeatedMetadata(),
-            mintDistinguishesFeeSubTypes(),
-            mintUniqueTokenReceiptCheck(),
-            populatingMetadataForFungibleDoesNotWork(),
-            populatingAmountForNonFungibleDoesNotWork(),
-            finiteNftReachesMaxSupplyProperly(),
-            burnHappyPath(),
-            canOnlyBurnFromTreasury(),
-            burnFailsOnInvalidSerialNumber(),
-            burnRespectsBurnBatchConstraints(),
-            treasuryBalanceCorrectAfterBurn(),
-            burnWorksWhenAccountsAreFrozenByDefault(),
-            serialNumbersOnlyOnFungibleBurnFails(),
-            amountOnlyOnNonFungibleBurnFails(),
-            wipeHappyPath(),
-            wipeRespectsConstraints(),
-            commonWipeFailsWhenInvokedOnUniqueToken(),
-            uniqueWipeFailsWhenInvokedOnFungibleToken(),
-            wipeFailsWithInvalidSerialNumber(),
-            getTokenNftInfoWorks(),
-            getTokenNftInfoFailsWithNoNft(),
-            tokenDissociateHappyPath(),
-            tokenDissociateFailsIfAccountOwnsUniqueTokens(),
-        });
+        return List.of(
+                mintFailsWithLargeBatchSize(),
+                mintFailsWithTooLongMetadata(),
+                mintFailsWithInvalidMetadataFromBatch(),
+                mintUniqueTokenHappyPath(),
+                mintTokenWorksWhenAccountsAreFrozenByDefault(),
+                mintFailsWithDeletedToken(),
+                mintUniqueTokenWorksWithRepeatedMetadata(),
+                mintDistinguishesFeeSubTypes(),
+                mintUniqueTokenReceiptCheck(),
+                populatingMetadataForFungibleDoesNotWork(),
+                populatingAmountForNonFungibleDoesNotWork(),
+                finiteNftReachesMaxSupplyProperly(),
+                burnHappyPath(),
+                canOnlyBurnFromTreasury(),
+                burnFailsOnInvalidSerialNumber(),
+                burnRespectsBurnBatchConstraints(),
+                treasuryBalanceCorrectAfterBurn(),
+                burnWorksWhenAccountsAreFrozenByDefault(),
+                serialNumbersOnlyOnFungibleBurnFails(),
+                amountOnlyOnNonFungibleBurnFails(),
+                wipeHappyPath(),
+                wipeRespectsConstraints(),
+                commonWipeFailsWhenInvokedOnUniqueToken(),
+                uniqueWipeFailsWhenInvokedOnFungibleToken(),
+                wipeFailsWithInvalidSerialNumber(),
+                getTokenNftInfoWorks(),
+                getTokenNftInfoFailsWithNoNft(),
+                tokenDissociateHappyPath(),
+                tokenDissociateFailsIfAccountOwnsUniqueTokens());
     }
 
-    @HapiTest
+    @HapiTest // here
     final HapiSpec populatingMetadataForFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingMetadataForFungibleDoesNotWork")
                 .given(
@@ -720,7 +719,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
-    @HapiTest
+    @HapiTest // here
     final HapiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
         return defaultHapiSpec("CommonWipeFailsWhenInvokedOnUniqueToken")
                 .given(
@@ -752,7 +751,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 1));
     }
 
-    @HapiTest
+    @HapiTest // here
     final HapiSpec uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
         return defaultHapiSpec("UniqueWipeFailsWhenInvokedOnFungibleToken")
                 .given(
