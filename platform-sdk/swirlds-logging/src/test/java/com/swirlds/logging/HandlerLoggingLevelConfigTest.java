@@ -237,6 +237,32 @@ public class HandlerLoggingLevelConfigTest {
         Assertions.assertTrue(config.isEnabled("", null, null), "always return true if error happens");
     }
 
+    @Test
+    void testPackageShouldOverrideDefaultLevel() {
+        // given
+        final Configuration configuration = getConfigBuilder()
+                .withValue("logging.level", Level.WARN)
+                .withValue("logging.level.com.sample", Level.INFO)
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.logging.level");
+
+        // then
+        checkEnabledForLevel(config, "com.sample.Foo", Level.INFO);
+    }
+
+    @Test
+    void testClassShouldOverrideDefaultLevel() {
+        // given
+
+        final Configuration configuration = getConfigBuilder()
+                .withValue("logging.level.com.sample.package.Class", Level.TRACE)
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.logging.level");
+
+        // then
+        checkEnabledForLevel(config, "com.sample.package.Class", Level.TRACE);
+    }
+
     private static TestConfigBuilder getConfigBuilder() {
         return new TestConfigBuilder()
                 .withConverter(MarkerState.class, new MarkerStateConverter())
