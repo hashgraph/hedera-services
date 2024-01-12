@@ -16,12 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
@@ -32,10 +26,18 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 /**
  * The context of a token transfer. This is used to pass information between the steps of the transfer.
@@ -93,7 +95,17 @@ public class TransferContextImpl implements TransferContext {
             validateTrue(tokensConfig.autoCreationsIsEnabled(), NOT_SUPPORTED);
         }
         // Keep the created account in the resolutions map
-        final var createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
+        AccountID createdAccount;
+        try {
+            createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
+        } catch (HandleException e) {
+            final int autoCreationsNumber = numOfAutoCreations() + numOfLazyCreations();
+            context.reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
+            // we only want to reclaim the previously reserved throttle for `CRYPTO_CREATE` transaction
+            // if there is a failed auto-creation triggered from CryptoTransfer
+            // this is why we re-throw the HandleException, so that it will be still tackled the same in HandleWorkflow
+            throw e;
+        }
         resolutions.put(alias, createdAccount);
     }
 
