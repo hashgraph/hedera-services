@@ -378,7 +378,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    @Order(31)
+    @Order(37)
     final HapiSpec canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor() {
         final var tcValue = 1_234L;
         final var contract = "Create2SelfDestructContract";
@@ -1030,7 +1030,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(32)
+    @Order(35)
     final HapiSpec getErc20TokenNameExceedingLimits() {
         final var REDUCED_NETWORK_FEE = 1L;
         final var REDUCED_NODE_FEE = 1L;
@@ -2725,6 +2725,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(31)
     private HapiSpec someErc721GetApprovedScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2837,6 +2838,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(33)
     private HapiSpec someErc721BalanceOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2920,6 +2922,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(32)
     private HapiSpec someErc721OwnerOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -3016,6 +3019,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(34)
     HapiSpec callToNonExistingContractFailsGracefully() {
 
         return propertyPreservingHapiSpec("callToNonExistingContractFailsGracefully", NONDETERMINISTIC_ETHEREUM_DATA)
@@ -3059,7 +3063,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 .toStringUtf8())))))));
     }
 
-    @Order(33)
+    @Order(36)
     @HapiTest
     HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
@@ -3102,6 +3106,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(38)
     HapiSpec invalidContract() {
         final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
 
