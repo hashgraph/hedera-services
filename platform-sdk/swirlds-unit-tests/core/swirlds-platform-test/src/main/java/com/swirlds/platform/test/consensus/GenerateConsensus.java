@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.test.consensus;
 
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -47,12 +49,16 @@ public final class GenerateConsensus {
         final List<EventSource<?>> eventSources = new ArrayList<>();
         IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource(true)));
         final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
-        final TestIntake intake = new TestIntake(generator.getAddressBook());
+        final TestIntake intake = new TestIntake(
+                generator.getAddressBook(),
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
 
         // generate events and feed them to consensus
         for (int i = 0; i < numEvents; i++) {
             intake.addEvent(generator.generateEvent().getBaseEvent());
         }
+
+        intake.flush();
 
         // return the rounds
         return intake.getConsensusRounds();

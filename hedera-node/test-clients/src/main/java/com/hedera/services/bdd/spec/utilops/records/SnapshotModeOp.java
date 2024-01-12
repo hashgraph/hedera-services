@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
@@ -202,9 +203,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     public SnapshotModeOp(@NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... specialMatchModes) {
         this.mode = requireNonNull(mode);
-        this.matchModes = specialMatchModes.length > 0
-                ? EnumSet.copyOf(Arrays.asList(specialMatchModes))
-                : EnumSet.noneOf(SnapshotMatchMode.class);
+        this.matchModes = computeMatchModesIncluding(specialMatchModes);
         // Each snapshot should have a unique placeholder memo so that we can take multiple snapshots
         // without clearing the record streams directory in between
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -592,6 +591,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
+            } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
+                Assertions.assertTrue(expected != null && actual != null, "Token name is null");
             } else {
                 Assertions.assertEquals(
                         expected,
@@ -777,5 +778,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             log.error("Could not write readable items to txt", e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    private Set<SnapshotMatchMode> computeMatchModesIncluding(@NonNull final SnapshotMatchMode... specialMatchModes) {
+        final Set<SnapshotMatchMode> modes = new HashSet<>(Arrays.asList(specialMatchModes));
+        if (System.getenv("CI") != null) {
+            // In CI the presence of end-of-staking-period records makes all
+            // nonces non-deterministic (as any transaction may or may not
+            // trigger an end-of-period record, which consumes a nonce)
+            modes.add(NONDETERMINISTIC_NONCE);
+        }
+        return modes.isEmpty() ? EnumSet.noneOf(SnapshotMatchMode.class) : EnumSet.copyOf(modes);
     }
 }

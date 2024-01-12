@@ -76,7 +76,7 @@ class LongPairConverterTest {
     void testIncludedInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new LongPairConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "1-2"))
                 .build();
 
@@ -93,7 +93,7 @@ class LongPairConverterTest {
     void testIncludedInListInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new LongPairConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "1-2"))
                 .build();
 
@@ -110,7 +110,7 @@ class LongPairConverterTest {
     void testMultipleIncludedInListInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new LongPairConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "1-2,3-4,5-6"))
                 .build();
 

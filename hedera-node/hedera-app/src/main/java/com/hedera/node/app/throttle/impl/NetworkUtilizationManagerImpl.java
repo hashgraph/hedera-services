@@ -17,6 +17,7 @@
 package com.hedera.node.app.throttle.impl;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottles;
@@ -42,8 +43,8 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -96,7 +97,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     @Override
     public void resetFrom(@NonNull final HederaState state) {
         final var activeThrottles = backendThrottle.allActiveThrottles();
-        final var states = state.createReadableStates(CongestionThrottleService.NAME);
+        final var states = state.getReadableStates(CongestionThrottleService.NAME);
         final var throttleSnapshots = states.<ThrottleUsageSnapshots>getSingleton(
                         CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)
                 .get();
@@ -133,23 +134,31 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
                         CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY)
                 .get();
         if (!congestionLevelStarts.genericLevelStarts().isEmpty()) {
-            final var genericLevelStarts = congestionLevelStarts.genericLevelStarts().stream()
-                    .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
-                    .toArray(Instant[]::new);
+            final var genericLevelStarts = translateToArray(congestionLevelStarts.genericLevelStarts());
             congestionMultipliers.resetEntityUtilizationMultiplierStarts(genericLevelStarts);
         }
 
         if (!congestionLevelStarts.gasLevelStarts().isEmpty()) {
-            final var gasLevelStarts = congestionLevelStarts.gasLevelStarts().stream()
-                    .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
-                    .toArray(Instant[]::new);
+            final var gasLevelStarts = translateToArray(congestionLevelStarts.gasLevelStarts());
             congestionMultipliers.resetThrottleMultiplierStarts(gasLevelStarts);
         }
     }
 
+    private @NonNull Instant[] translateToArray(@NonNull final List<Timestamp> levelStartTimes) {
+        final var n = levelStartTimes.size();
+        final var array = new Instant[n];
+        for (int i = 0; i < n; i++) {
+            final var startTime = levelStartTimes.get(i);
+            if (!EPOCH.equals(startTime)) {
+                array[i] = Instant.ofEpochSecond(startTime.seconds(), startTime.nanos());
+            }
+        }
+        return array;
+    }
+
     @Override
     public void saveTo(@NonNull final HederaState state) {
-        final var states = state.createWritableStates(CongestionThrottleService.NAME);
+        final var states = state.getWritableStates(CongestionThrottleService.NAME);
         final var throttleSnapshotsState = states.<ThrottleUsageSnapshots>getSingleton(
                 CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
         final var tpsThrottleUsageSnapshots = backendThrottle.allActiveThrottles().stream()
@@ -166,21 +175,21 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
         final var congestionLevelStartsState =
                 states.<CongestionLevelStarts>getSingleton(CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY);
-        final var genericCongestionStarts = Arrays.stream(congestionMultipliers.entityUtilizationCongestionStarts())
-                .filter(Objects::nonNull)
-                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
-                .toList();
-        final var gasCongestionStarts = Arrays.stream(congestionMultipliers.throttleMultiplierCongestionStarts())
-                .filter(Objects::nonNull)
-                .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
-                .toList();
-
+        final var genericCongestionStarts = translateToList(congestionMultipliers.entityUtilizationCongestionStarts());
+        final var gasCongestionStarts = translateToList(congestionMultipliers.throttleMultiplierCongestionStarts());
         final var congestionLevelStarts = CongestionLevelStarts.newBuilder()
                 .genericLevelStarts(genericCongestionStarts)
                 .gasLevelStarts(gasCongestionStarts)
                 .build();
-
         congestionLevelStartsState.put(congestionLevelStarts);
+    }
+
+    private List<Timestamp> translateToList(@NonNull final Instant[] levelStartTimes) {
+        final List<Timestamp> list = new ArrayList<>(levelStartTimes.length);
+        for (final var startTime : levelStartTimes) {
+            list.add(startTime == null ? EPOCH : new Timestamp(startTime.getEpochSecond(), startTime.getNano()));
+        }
+        return list;
     }
 
     @Override

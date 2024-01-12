@@ -74,7 +74,8 @@ public class HederaCallOperationV038 extends CallOperation {
                     () -> super.execute(frame, evm),
                     addressValidator,
                     systemAccountDetector,
-                    () -> isStatic(frame));
+                    () -> isStatic(frame),
+                    globalDynamicProperties);
         }
     }
 

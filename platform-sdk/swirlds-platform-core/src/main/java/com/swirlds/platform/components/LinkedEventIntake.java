@@ -20,7 +20,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -35,12 +34,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * This class is responsible for adding events to {@link Consensus} and notifying event observers, including
- * {@link ConsensusRoundHandler} and {@link com.swirlds.platform.eventhandling.PreConsensusEventHandler}.
- * <p>
- * This class differs from {@link EventIntake} in that it accepts events that have already been linked with their
- * parents. This version of event intake was written to be compatible with the new intake pipeline, whereas
- * {@link EventIntake} works with the legacy intake monolith.
+ * This class is responsible for adding events to {@link Consensus} and notifying event observers.
  */
 public class LinkedEventIntake {
     /**
@@ -134,8 +128,6 @@ public class LinkedEventIntake {
                 event.clear();
                 return List.of();
             }
-
-            dispatcher.preConsensusEvent(event);
 
             final long minimumGenerationNonAncientBeforeAdding =
                     consensusSupplier.get().getMinGenerationNonAncient();

@@ -16,6 +16,9 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -75,7 +78,12 @@ public final class SmartContractMapKey implements VirtualKey {
         return ClassVersion.ORIGINAL;
     }
 
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
+    boolean equals(final BufferedData buffer) {
+        return contractId == buffer.readLong() && keyValuePairIndex == buffer.readLong();
+    }
+
+    @Deprecated
+    boolean equals(final ByteBuffer buffer) {
         return contractId == buffer.getLong() && keyValuePairIndex == buffer.getLong();
     }
 
@@ -87,27 +95,20 @@ public final class SmartContractMapKey implements VirtualKey {
      * {@inheritDoc}
      */
     @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.putLong(contractId);
-        buffer.putLong(keyValuePairIndex);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
-        contractId = buffer.getLong();
-        keyValuePairIndex = buffer.getLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(contractId);
         out.writeLong(keyValuePairIndex);
+    }
+
+    void serialize(final WritableSequentialData out) {
+        out.writeLong(contractId);
+        out.writeLong(keyValuePairIndex);
+    }
+
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
+        buffer.putLong(contractId);
+        buffer.putLong(keyValuePairIndex);
     }
 
     /**
@@ -117,6 +118,17 @@ public final class SmartContractMapKey implements VirtualKey {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         contractId = in.readLong();
         keyValuePairIndex = in.readLong();
+    }
+
+    void deserialize(final ReadableSequentialData in) {
+        contractId = in.readLong();
+        keyValuePairIndex = in.readLong();
+    }
+
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
+        contractId = buffer.getLong();
+        keyValuePairIndex = buffer.getLong();
     }
 
     /**

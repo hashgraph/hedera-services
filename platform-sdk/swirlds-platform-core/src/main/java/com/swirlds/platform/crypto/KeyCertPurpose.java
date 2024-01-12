@@ -21,8 +21,7 @@ package com.swirlds.platform.crypto;
  */
 public enum KeyCertPurpose {
     SIGNING("s"),
-    AGREEMENT("a"),
-    ENCRYPTION("e");
+    AGREEMENT("a");
 
     /** the prefix used for certificate names */
     private final String prefix;

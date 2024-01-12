@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -30,6 +32,7 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,6 +59,9 @@ public class EvmAutoCreationLogic extends AbstractAutoCreationLogic {
     protected void trackAlias(final ByteString alias, final AccountID newId) {
         if (alias.size() != EVM_ADDRESS_LEN) {
             throw new UnsupportedOperationException("Stacked alias manager cannot link aliases with size != 20.");
+        }
+        if (isMirror(alias.toByteArray())) {
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_ALIAS_KEY);
         }
         contractAliases.link(Address.wrap(Bytes.of(alias.toByteArray())), EntityIdUtils.asTypedEvmAddress(newId));
     }

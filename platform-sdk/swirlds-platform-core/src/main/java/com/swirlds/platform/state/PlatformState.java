@@ -129,7 +129,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private PlatformState(final PlatformState that) {
         super(that);
-        this.addressBook = that.addressBook.copy();
+        this.addressBook = that.addressBook == null ? null : that.addressBook.copy();
         this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
         this.runningEventHash = that.runningEventHash;
@@ -254,8 +254,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param addressBook an address book
      */
-    public void setAddressBook(@NonNull final AddressBook addressBook) {
-        this.addressBook = Objects.requireNonNull(addressBook);
+    public void setAddressBook(@Nullable final AddressBook addressBook) {
+        this.addressBook = addressBook;
     }
 
     /**

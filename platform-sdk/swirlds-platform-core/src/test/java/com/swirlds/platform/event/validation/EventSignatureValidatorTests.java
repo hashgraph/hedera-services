@@ -34,6 +34,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -255,8 +256,11 @@ class EventSignatureValidatorTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         // FUTURE WORK: expand to handle birthRound comparison for ancient.
-        validatorWithTrueVerifier.setNonAncientEventWindow(
-                new NonAncientEventWindow(ConsensusConstants.ROUND_FIRST, ConsensusConstants.ROUND_FIRST, 100L, false));
+        validatorWithTrueVerifier.setNonAncientEventWindow(new NonAncientEventWindow(
+                ConsensusConstants.ROUND_FIRST,
+                ConsensusConstants.ROUND_FIRST,
+                100L,
+                AncientMode.GENERATION_THRESHOLD));
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());

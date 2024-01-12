@@ -118,7 +118,7 @@ class ServicesAppTest {
         final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
-        final var transactionConfig = new TransactionConfig(1, 2, 3, 4, 5);
+        final var transactionConfig = new TransactionConfig(1, 2, 3, 4);
 
         given(platform.getContext()).willReturn(platformContext);
         given(platformContext.getConfiguration()).willReturn(configuration);

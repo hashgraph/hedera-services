@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.platform.NodeId;
@@ -48,6 +49,7 @@ import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusGetter;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -155,7 +157,11 @@ class ReconnectProtocolTests {
         when(fallenBehindManager.shouldReconnectFrom(any()))
                 .thenAnswer(a -> neighborsForReconnect.contains(a.getArgument(0, NodeId.class)));
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 PEER_ID,
                 mock(ReconnectThrottle.class),
@@ -193,7 +199,11 @@ class ReconnectProtocolTests {
         final ReservedSignedState reservedSignedState =
                 signedState == null ? createNullReservation() : signedState.reserve("test");
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 PEER_ID,
                 teacherThrottle,
@@ -222,7 +232,11 @@ class ReconnectProtocolTests {
         final ReconnectController reconnectController = new ReconnectController(
                 reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 PEER_ID,
                 mock(ReconnectThrottle.class),
@@ -268,10 +282,14 @@ class ReconnectProtocolTests {
         final ReconnectThrottle reconnectThrottle =
                 new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final NodeId node0 = new NodeId(0L);
         final NodeId node1 = new NodeId(1L);
         final NodeId node2 = new NodeId(2L);
         final ReconnectProtocol peer1 = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 node1,
                 reconnectThrottle,
@@ -292,6 +310,7 @@ class ReconnectProtocolTests {
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
         final ReconnectProtocol peer2 = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 node2,
                 reconnectThrottle,
@@ -333,7 +352,11 @@ class ReconnectProtocolTests {
         when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
         when(fallenBehindManager.shouldReconnectFrom(any())).thenReturn(true);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 new NodeId(0),
                 mock(ReconnectThrottle.class),
@@ -375,7 +398,11 @@ class ReconnectProtocolTests {
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 new NodeId(0),
                 reconnectThrottle,
@@ -410,7 +437,11 @@ class ReconnectProtocolTests {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 new NodeId(0),
                 reconnectThrottle,
@@ -441,7 +472,11 @@ class ReconnectProtocolTests {
         final PlatformStatusGetter inactiveStatusGetter = mock(PlatformStatusGetter.class);
         when(inactiveStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.CHECKING);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 new NodeId(0),
                 teacherThrottle,
@@ -465,7 +500,11 @@ class ReconnectProtocolTests {
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 new NodeId(0),
                 teacherThrottle,
@@ -509,7 +548,11 @@ class ReconnectProtocolTests {
 
         when(reconnectController.blockLearnerPermit()).thenReturn(false);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
+                platformContext,
                 getStaticThreadManager(),
                 new NodeId(0),
                 teacherThrottle,

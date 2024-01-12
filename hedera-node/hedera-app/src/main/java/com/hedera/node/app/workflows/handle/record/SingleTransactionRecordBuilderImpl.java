@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -73,6 +74,7 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
@@ -177,6 +179,7 @@ public class SingleTransactionRecordBuilderImpl
     private final ExternalizedRecordCustomizer customizer;
 
     private TokenID tokenID;
+    private TokenType tokenType;
 
     /**
      * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
@@ -309,7 +312,8 @@ public class SingleTransactionRecordBuilderImpl
         // Log end of user transaction to transaction state log
         logEndTransactionRecord(transactionID, transactionRecord);
 
-        return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
+        return new SingleTransactionRecord(
+                transaction, transactionRecord, transactionSidecarRecords, new TransactionOutputs(tokenType));
     }
 
     public void nullOutSideEffectFields() {
@@ -559,6 +563,13 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
         requireNonNull(tokenTransferList, "tokenTransferList must not be null");
         tokenTransferLists.add(tokenTransferList);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public SingleTransactionRecordBuilderImpl tokenType(final @NonNull TokenType tokenType) {
+        this.tokenType = requireNonNull(tokenType);
         return this;
     }
 
@@ -1119,6 +1130,11 @@ public class SingleTransactionRecordBuilderImpl
      */
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
+    }
+
+    @Override
+    public @NonNull TransactionBody transactionBody() {
+        return inProgressBody();
     }
 
     /**

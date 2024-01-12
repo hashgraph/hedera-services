@@ -41,7 +41,6 @@ import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
@@ -55,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -72,7 +72,8 @@ public class TurboSyncRunner {
     private final NodeId selfId;
     private final NodeId peerId;
     private final FallenBehindManager fallenBehindManager;
-    private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
+    private final BooleanSupplier gossipHalted;
+    private final BooleanSupplier intakeIsTooFull;
     private final IntakeEventCounter intakeEventCounter;
     private final Connection connection;
     private final SyncOutputStream dataOutputStream;
@@ -116,8 +117,8 @@ public class TurboSyncRunner {
      * @param selfId                   our ID
      * @param peerId                   the ID of the peer we are syncing with
      * @param fallenBehindManager      tracks if we are behind or not
-     * @param peerAgnosticSyncChecks   peer agnostic checks which are performed to determine whether this node should
-     *                                 sync or not
+     * @param gossipHalted           returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull        returns true if the intake queue is too full, false otherwise
      * @param intakeEventCounter       the intake event counter, counts how many events from each peer are in the intake
      *                                 pipeline
      * @param connection               the connection to the peer we are syncing with
@@ -133,7 +134,8 @@ public class TurboSyncRunner {
             @NonNull final NodeId selfId,
             @NonNull final NodeId peerId,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
+            @NonNull final BooleanSupplier gossipHalted,
+            @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final Connection connection,
             @NonNull final ParallelExecutor executor,
@@ -146,7 +148,8 @@ public class TurboSyncRunner {
         this.selfId = Objects.requireNonNull(selfId);
         this.peerId = Objects.requireNonNull(peerId);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
-        this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
+        this.gossipHalted = Objects.requireNonNull(gossipHalted);
+        this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.connection = Objects.requireNonNull(connection);
         this.dataOutputStream = connection.getDos();
@@ -218,7 +221,8 @@ public class TurboSyncRunner {
             }
         }
 
-        return peerAgnosticSyncChecks.shouldSync()
+        return !gossipHalted.getAsBoolean()
+                && !intakeIsTooFull.getAsBoolean()
                 && intakeEventCounter.getUnprocessedEventCount(peerId) < maximumPermissibleEventsInIntake;
     }
 

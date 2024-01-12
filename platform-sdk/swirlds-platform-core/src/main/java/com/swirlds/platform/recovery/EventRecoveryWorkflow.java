@@ -34,14 +34,17 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.ApplicationDefinitionLoader;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -124,9 +127,14 @@ public final class EventRecoveryWorkflow {
 
         setupConstructableRegistry();
 
+        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
+                .withConfigDataType(PathsConfig.class)
+                .build()
+                .getConfigData(PathsConfig.class);
+
         // parameters if the app needs them
         final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
+                ApplicationDefinitionLoader.loadDefault(defaultPathsConfig, getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         final SwirldMain appMain = loadAppMain(mainClassName);
@@ -181,6 +189,10 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
             final PcesFile preconsensusEventFile = PcesFile.of(
+                    platformContext
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .getAncientMode(),
                     Instant.now(),
                     0,
                     recoveredState.judge().getGeneration(),

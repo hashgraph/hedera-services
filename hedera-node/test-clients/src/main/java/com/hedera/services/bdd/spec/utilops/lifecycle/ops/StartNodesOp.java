@@ -36,7 +36,13 @@ public class StartNodesOp extends LifecycleOp {
     @Override
     protected boolean run(@NonNull final HapiTestNode node) {
         logger.info("Starting node {}...", node);
-        node.start();
+        try {
+            node.start();
+        } catch (Exception e) {
+            logger.error("Node {} failed to start", node);
+            throw e;
+        }
+        logger.info("Node {} has started...", node);
         return false;
     }
 }

@@ -16,8 +16,12 @@
 
 package com.swirlds.merkledb.serialize;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public interface BaseSerializer<T> {
 
@@ -28,7 +32,7 @@ public interface BaseSerializer<T> {
     long getCurrentDataVersion();
 
     /**
-     * Get if the number of bytes a data item takes when serialized is variable or fixed
+     * Get if the number of bytes a data item takes when serialized is variable or fixed.
      *
      * @return true if getSerializedSize() == DataFileCommon.VARIABLE_DATA_SIZE
      */
@@ -37,18 +41,27 @@ public interface BaseSerializer<T> {
     }
 
     /**
-     * Get the number of bytes a data item takes when serialized
+     * Get the number of bytes an arbitrary data item of type {@code D} takes when serialized. If
+     * serialized data items may be of different sizes, this method should return {@link
+     * #VARIABLE_DATA_SIZE}, and methods {@link #getTypicalSerializedSize()} and {@link
+     * #getSerializedSize(Object)} are mandatory to implement.
+     *
+     * <p>For fixed-sized data items, this is the only method to implement. For variable-sized
+     * data items, two more methods are needed: {@link #getTypicalSerializedSize()} and
+     * {@link #getSerializedSize(Object)}.
      *
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
     int getSerializedSize();
 
+    @Deprecated
     default int getSerializedSizeForVersion(long version) {
         return getSerializedSize();
     }
 
     /**
      * For variable sized data items get the typical number of bytes an item takes when serialized.
+     * If data items are all of fixed size, there is no need to implement this method.
      *
      * @return Either for fixed size same as getSerializedSize() or an estimated typical size
      */
@@ -60,21 +73,62 @@ public interface BaseSerializer<T> {
     }
 
     /**
+     * Returns the number of bytes a given data item takes when serialized. If data items are all
+     * of fixed size, there is no need to implement this method.
+     *
+     * @param data Data item to estimate
+     * @return Number of bytes the data item will take when serialized
+     */
+    default int getSerializedSize(@NonNull final T data) {
+        Objects.requireNonNull(data);
+        final int size = getSerializedSize();
+        if (size != VARIABLE_DATA_SIZE) {
+            return size;
+        }
+        throw new RuntimeException("TO IMPLEMENT: " + getClass().getSimpleName() + ".getSerializedSize()");
+    }
+
+    /**
+     * Serialize a data item buffer in protobuf format. Serialization format must be identical to
+     * {@link #deserialize(ReadableSequentialData)}.
+     *
+     * @param data The data item to serialize
+     * @param out Output buffer to write to
+     */
+    void serialize(@NonNull final T data, @NonNull final WritableSequentialData out);
+
+    /**
      * Serialize a data item including header to the byte buffer returning the size of the data
      * written. Serialization format must be identical to {@link #deserialize(ByteBuffer, long)}.
      *
+     * <p>Deprecation note: this method is only used by MerkleDb, when it serializes data to
+     * JDB format. This format will be eventually removed.
+     *
      * @param data The data item to serialize
      * @param buffer Output buffer to write to
-     * @return Number of bytes written
      */
-    int serialize(T data, ByteBuffer buffer) throws IOException;
+    @Deprecated
+    void serialize(T data, ByteBuffer buffer) throws IOException;
+
+    /**
+     * Deserialize a data item from a buffer where it was previously written using {@link
+     * #serialize(Object, WritableSequentialData)} method.
+     *
+     * @param in The buffer to read from containing the data item in protobuf format
+     * @return Deserialized data item
+     */
+    T deserialize(@NonNull final ReadableSequentialData in);
 
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version.
+     *
+     * <p>Deprecation note: this method is only used by MerkleDb, when it deserializes data
+     * from JDB format. This format will be eventually removed.
      *
      * @param buffer The buffer to read from containing the data item including its header
      * @param dataVersion The serialization version the data item was written with
      * @return Deserialized data item
      */
+    @Deprecated
     T deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
 }

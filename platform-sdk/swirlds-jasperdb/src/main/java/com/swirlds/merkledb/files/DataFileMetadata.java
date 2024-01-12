@@ -16,14 +16,26 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
-import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_COMPACTION_LEVEL;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_CREATION_NANOS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_CREATION_SECONDS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_INDEX;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_ITEMS_COUNT;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILEMETADATA_ITEM_VERSION;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_METADATA;
+import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
+import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -34,23 +46,25 @@ import java.util.Objects;
  * DataFile's metadata that is stored in the data file's footer
  */
 @SuppressWarnings("unused")
-public final class DataFileMetadata {
+// Future work: make this class final, once DataFileMetadataJdb is dropped
+// See https://github.com/hashgraph/hedera-services/issues/8344 for details
+public class DataFileMetadata {
 
     /**
      * Maximum level of compaction for storage files.
      */
     public static final int MAX_COMPACTION_LEVEL = 127;
-    /**
-     * The file format version, this is ready in case we need to change file format and support
-     * multiple versions.
-     */
-    private final int fileFormatVersion;
-    /**
-     * The data item value's size, if the file contains fixed size data items then this is the size
-     * in bytes of those items. If the file contains variable size items then this is the constant
-     * VARIABLE_DATA_SIZE.
-     */
-    private final int dataItemValueSize;
+
+    /** The file index, in a data file collection */
+    // Future work: make it private final, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
+    protected int index;
+
+    /** The creation date of this file */
+    // Future work: make it private final, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
+    protected Instant creationDate;
+
     /**
      * The number of data items the file contains. When metadata is loaded from a file, the number
      * of items is read directly from there. When metadata is created by {@link DataFileWriter} for
@@ -58,44 +72,37 @@ public final class DataFileMetadata {
      * right before the file is finished writing. For such new files, no code needs their metadata
      * until they are fully written, so wrong (zero) item count shouldn't be an issue.
      */
-    private volatile long dataItemCount;
-    /** The file index, in a data file collection */
-    private final int index;
-    /**
-     * The creation date of this file, this is critical as it is used when merging two files to know
-     * which files data is newer.
-     */
-    private final Instant creationDate;
+    // Future work: make it private, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
+    protected volatile long itemsCount;
+
     /** Serialization version for data stored in the file */
-    private final long serializationVersion;
+    // Future work: make it private final, once this class is final again
+    // https://github.com/hashgraph/hedera-services/issues/8344
+    protected long serializationVersion;
+
     /** The level of compaction this file has. See {@link DataFileCompactor}*/
-    private final byte compactionLevel;
+    protected byte compactionLevel;
+
+    // Set in writeTo()
+    private long dataItemCountHeaderOffset = 0;
 
     /**
      * Create a new DataFileMetadata with complete set of data
      *
-     * @param fileFormatVersion The file format version, this is ready in case we need to change
-     *     file format and support multiple versions.
-     * @param dataItemValueSize The data item value's size, if the file contains fixed size data
-     *     items then this is the size in bytes of those items. If the file contains variable size
-     *     items then this is the constant VARIABLE_DATA_SIZE.
-     * @param dataItemCount The number of data items the file contains
+     * @param itemsCount The number of data items the file contains
      * @param index The file index, in a data file collection
      * @param creationDate The creation data of this file, this is critical as it is used when
      *     merging two files to know which files data is newer.
      * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadata(
-            final int fileFormatVersion,
-            final int dataItemValueSize,
-            final long dataItemCount,
+            final long itemsCount,
             final int index,
             final Instant creationDate,
             final long serializationVersion,
             final int compactionLevel) {
-        this.fileFormatVersion = fileFormatVersion;
-        this.dataItemValueSize = dataItemValueSize;
-        this.dataItemCount = dataItemCount;
+        this.itemsCount = itemsCount;
         this.index = index;
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
@@ -110,62 +117,97 @@ public final class DataFileMetadata {
      * @throws IOException If there was a problem reading metadata footer from the file
      */
     public DataFileMetadata(Path file) throws IOException {
-        try (final SeekableByteChannel channel = Files.newByteChannel(file, StandardOpenOption.READ)) {
-            // read footer from end of file
-            final ByteBuffer buf = ByteBuffer.allocate(FOOTER_SIZE);
-            channel.position(channel.size() - FOOTER_SIZE);
-            MerkleDbFileUtils.completelyRead(channel, buf);
-            buf.rewind();
-            // parse content
-            this.fileFormatVersion = buf.getInt();
-            this.dataItemValueSize = buf.getInt();
-            this.dataItemCount = buf.getLong();
-            this.index = buf.getInt();
-            this.creationDate = Instant.ofEpochSecond(buf.getLong(), buf.getInt());
-            this.compactionLevel = buf.get();
-            this.serializationVersion = buf.getLong();
+        // Defaults
+        int index = 0;
+        long creationSeconds = 0;
+        int creationNanos = 0;
+        long itemsCount = 0;
+        long serializationVersion = 0;
+        byte compactionLevel = 0;
+
+        // Read values from the file, skipping all data items
+        try (final InputStream fin = Files.newInputStream(file, StandardOpenOption.READ)) {
+            final ReadableSequentialData in = new ReadableStreamingData(fin);
+            in.limit(Files.size(file));
+            while (in.hasRemaining()) {
+                final int tag = in.readVarInt(false);
+                final int fieldNum = tag >> TAG_FIELD_OFFSET;
+                if (fieldNum == FIELD_DATAFILE_METADATA.number()) {
+                    final int metadataSize = in.readVarInt(false);
+                    final long oldLimit = in.limit();
+                    in.limit(in.position() + metadataSize);
+                    try {
+                        while (in.hasRemaining()) {
+                            final int metadataTag = in.readVarInt(false);
+                            final int metadataFieldNum = metadataTag >> TAG_FIELD_OFFSET;
+                            if (metadataFieldNum == FIELD_DATAFILEMETADATA_INDEX.number()) {
+                                index = in.readVarInt(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_CREATION_SECONDS.number()) {
+                                creationSeconds = in.readVarLong(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_CREATION_NANOS.number()) {
+                                creationNanos = in.readVarInt(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_ITEMS_COUNT.number()) {
+                                itemsCount = in.readLong();
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_ITEM_VERSION.number()) {
+                                serializationVersion = in.readVarLong(false);
+                            } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_COMPACTION_LEVEL.number()) {
+                                final int compactionLevelInt = in.readVarInt(false);
+                                assert compactionLevelInt < MAX_COMPACTION_LEVEL;
+                                compactionLevel = (byte) compactionLevelInt;
+                            } else {
+                                throw new IllegalArgumentException(
+                                        "Unknown data file metadata field: " + metadataFieldNum);
+                            }
+                        }
+                    } finally {
+                        in.limit(oldLimit);
+                    }
+                    break;
+                } else if (fieldNum == FIELD_DATAFILE_ITEMS.number()) {
+                    // Just skip it. By default, metadata is written to the very beginning of the file,
+                    // so this code should never be executed. However, with other implementations data
+                    // items may come first, this code must be ready to handle it
+                    final int size = in.readVarInt(false);
+                    in.skip(size);
+                } else {
+                    throw new IllegalArgumentException("Unknown data file field: " + fieldNum);
+                }
+            }
         }
+
+        // Initialize this object
+        this.index = index;
+        this.creationDate = Instant.ofEpochSecond(creationSeconds, creationNanos);
+        this.itemsCount = itemsCount;
+        this.serializationVersion = serializationVersion;
+        this.compactionLevel = compactionLevel;
     }
 
-    /**
-     * Get the metadata in the form of a one page 4k bytebuffer ready to write at the end of a file.
-     *
-     * @return ByteBuffer containing the metadata
-     */
-    public ByteBuffer getFooterForWriting() {
-        ByteBuffer buf = ByteBuffer.allocate(FOOTER_SIZE);
-        buf.putInt(this.fileFormatVersion);
-        buf.putInt(this.dataItemValueSize);
-        buf.putLong(this.dataItemCount);
-        buf.putInt(this.index);
-        buf.putLong(this.creationDate.getEpochSecond());
-        buf.putInt(this.creationDate.getNano());
-        buf.put(compactionLevel);
-        buf.putLong(this.serializationVersion);
-        buf.rewind();
-        return buf;
+    void writeTo(final BufferedData out) {
+        ProtoUtils.writeDelimited(out, FIELD_DATAFILE_METADATA, fieldsSizeInBytes(), this::writeFields);
     }
 
-    /**
-     * Get the file format version, this is ready in case we need to change file format and support
-     * multiple versions.
-     */
-    public int getFileFormatVersion() {
-        return fileFormatVersion;
-    }
-
-    /**
-     * Get the data item value's size, if the file contains fixed size data items then this is the
-     * size in bytes of those items. If the file contains variable size items then this is the
-     * constant VARIABLE_DATA_SIZE.
-     */
-    public int getDataItemValueSize() {
-        return dataItemValueSize;
-    }
-
-    /** Get if the file has variable size data */
-    public boolean hasVariableSizeData() {
-        return dataItemValueSize == VARIABLE_DATA_SIZE;
+    private void writeFields(final WritableSequentialData out) {
+        if (getIndex() != 0) {
+            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_INDEX);
+            out.writeVarInt(getIndex(), false);
+        }
+        final Instant creationInstant = getCreationDate();
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_SECONDS);
+        out.writeVarLong(creationInstant.getEpochSecond(), false);
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_CREATION_NANOS);
+        out.writeVarInt(creationInstant.getNano(), false);
+        dataItemCountHeaderOffset = out.position();
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
+        out.writeLong(0); // will be updated later
+        if (getSerializationVersion() != 0) {
+            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEM_VERSION);
+            out.writeVarLong(getSerializationVersion(), false);
+        }
+        if (getCompactionLevel() != 0) {
+            ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_COMPACTION_LEVEL);
+            out.writeVarInt(compactionLevel, false);
+        }
     }
 
     /**
@@ -173,15 +215,21 @@ public final class DataFileMetadata {
      * corresponding file is completely written by {@link DataFileWriter}, the return value is 0.
      */
     public long getDataItemCount() {
-        return dataItemCount;
+        return itemsCount;
     }
 
     /**
-     * Updates number of data items in the file. This method is called by {@link DataFileWriter}
-     * right before the file is finished writing.
+     * Updates number of data items in the file. This method must be called after metadata is
+     * written to a file using {@link #writeTo(BufferedData)}.
+     *
+     * <p>This method is called by {@link DataFileWriter} right before the file is finished writing.
      */
-    void setDataItemCount(final long dataItemCount) {
-        this.dataItemCount = dataItemCount;
+    void updateDataItemCount(final BufferedData out, final long count) {
+        this.itemsCount = count;
+        assert dataItemCountHeaderOffset != 0;
+        out.position(dataItemCountHeaderOffset);
+        ProtoUtils.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
+        out.writeLong(count);
     }
 
     /** Get the files index, out of a set of data files */
@@ -199,6 +247,36 @@ public final class DataFileMetadata {
         return serializationVersion;
     }
 
+    // For testing purposes. In low-level data file tests, skip this number of bytes from the
+    // beginning of the file before reading data items, assuming file metadata is always written
+    // first, then data items
+    int metadataSizeInBytes() {
+        return ProtoUtils.sizeOfDelimited(FIELD_DATAFILE_METADATA, fieldsSizeInBytes());
+    }
+
+    private int fieldsSizeInBytes() {
+        int size = 0;
+        if (index != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_INDEX, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(index);
+        }
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_SECONDS, WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond());
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_CREATION_NANOS, WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfVarInt64(creationDate.getNano());
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT);
+        size += Long.BYTES;
+        if (serializationVersion != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_ITEM_VERSION, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt64(serializationVersion);
+        }
+        if (compactionLevel != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILEMETADATA_COMPACTION_LEVEL, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(compactionLevel);
+        }
+        return size;
+    }
+
     public int getCompactionLevel() {
         return compactionLevel;
     }
@@ -207,9 +285,7 @@ public final class DataFileMetadata {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("fileFormatVersion", fileFormatVersion)
-                .append("dataItemValueSize", dataItemValueSize)
-                .append("dataItemCount", dataItemCount)
+                .append("itemsCount", itemsCount)
                 .append("index", index)
                 .append("creationDate", creationDate)
                 .append("serializationVersion", serializationVersion)
@@ -228,11 +304,10 @@ public final class DataFileMetadata {
             return false;
         }
         final DataFileMetadata that = (DataFileMetadata) o;
-        return fileFormatVersion == that.fileFormatVersion
-                && dataItemValueSize == that.dataItemValueSize
-                && dataItemCount == that.dataItemCount
+        return itemsCount == that.itemsCount
                 && index == that.index
                 && serializationVersion == that.serializationVersion
+                && compactionLevel == that.compactionLevel
                 && Objects.equals(this.creationDate, that.creationDate);
     }
 
@@ -241,7 +316,6 @@ public final class DataFileMetadata {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(
-                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
+        return Objects.hash(itemsCount, index, creationDate, serializationVersion, compactionLevel);
     }
 }

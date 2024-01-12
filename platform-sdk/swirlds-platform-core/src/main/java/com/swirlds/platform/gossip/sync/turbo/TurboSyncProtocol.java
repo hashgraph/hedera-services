@@ -28,7 +28,7 @@ import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
@@ -36,29 +36,28 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A variation of a sync protocol that continuously performs multiple concurrent syncs.
  */
 public class TurboSyncProtocol implements Protocol {
 
-    private static final Logger logger = LogManager.getLogger(TurboSyncProtocol.class);
-
     private final PlatformContext platformContext;
     private final AddressBook addressBook;
     private final NodeId selfId;
     private final NodeId peerId;
     private final FallenBehindManager fallenBehindManager;
-    private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
+    private final BooleanSupplier gossipHalted;
+    private final BooleanSupplier intakeIsTooFull;
     private final IntakeEventCounter intakeEventCounter;
     private final ParallelExecutor executor;
     private final ShadowGraph shadowgraph;
     private final Supplier<GraphGenerations> generationsSupplier;
     private final LatestEventTipsetTracker latestEventTipsetTracker;
     private final InterruptableConsumer<GossipEvent> gossipEventConsumer;
+    private final SyncMetrics syncMetrics;
 
     /**
      * Constructor.
@@ -68,8 +67,8 @@ public class TurboSyncProtocol implements Protocol {
      * @param selfId                   the id of this node
      * @param peerId                   the id of the peer we are syncing with
      * @param fallenBehindManager      tracks if we are behind or not
-     * @param peerAgnosticSyncChecks   peer agnostic checks which are performed to determine whether this node should
-     *                                 sync or not
+     * @param gossipHalted             returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull          returns true if the intake queue is too full, false otherwise
      * @param intakeEventCounter       the intake event counter, counts how many events from each peer are in the intake
      *                                 pipeline
      * @param executor                 the executor to use for parallel read/write operations
@@ -77,6 +76,7 @@ public class TurboSyncProtocol implements Protocol {
      * @param generationsSupplier      a supplier for the current graph generation
      * @param latestEventTipsetTracker the latest event tipset tracker
      * @param gossipEventConsumer      a consumer for gossip events
+     * @param syncMetrics              encapsulates sync metrics
      */
     public TurboSyncProtocol(
             @NonNull final PlatformContext platformContext,
@@ -84,26 +84,30 @@ public class TurboSyncProtocol implements Protocol {
             @NonNull final NodeId selfId,
             @NonNull final NodeId peerId,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
+            @NonNull final BooleanSupplier gossipHalted,
+            @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor,
             @NonNull final ShadowGraph shadowgraph,
             @NonNull final Supplier<GraphGenerations> generationsSupplier,
             @NonNull final LatestEventTipsetTracker latestEventTipsetTracker,
-            @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer) {
+            @NonNull final InterruptableConsumer<GossipEvent> gossipEventConsumer,
+            @NonNull final SyncMetrics syncMetrics) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.peerId = Objects.requireNonNull(peerId);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
-        this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
+        this.gossipHalted = Objects.requireNonNull(gossipHalted);
+        this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.executor = Objects.requireNonNull(executor);
         this.shadowgraph = Objects.requireNonNull(shadowgraph);
         this.generationsSupplier = Objects.requireNonNull(generationsSupplier);
         this.latestEventTipsetTracker = Objects.requireNonNull(latestEventTipsetTracker);
         this.gossipEventConsumer = Objects.requireNonNull(gossipEventConsumer);
+        this.syncMetrics = Objects.requireNonNull(syncMetrics);
     }
 
     /**
@@ -130,10 +134,35 @@ public class TurboSyncProtocol implements Protocol {
         return shouldSync();
     }
 
+    /**
+     * Should we sync?
+     *
+     * @return true if we should sync, false otherwise
+     */
     private boolean shouldSync() {
-        return !fallenBehindManager.hasFallenBehind()
-                && peerAgnosticSyncChecks.shouldSync()
-                && !intakeEventCounter.hasUnprocessedEvents(peerId);
+        if (gossipHalted.getAsBoolean()) {
+            syncMetrics.doNotSyncHalted();
+            return false;
+        }
+
+        if (intakeIsTooFull.getAsBoolean()) {
+            syncMetrics.doNotSyncIntakeQueue();
+            return false;
+        }
+
+        if (fallenBehindManager.hasFallenBehind()) {
+            syncMetrics.doNotSyncFallenBehind();
+            return false;
+        }
+
+        if (intakeEventCounter.hasUnprocessedEvents(peerId)) {
+            syncMetrics.doNotSyncIntakeCounter();
+            return false;
+        }
+
+        // TODO other metrics
+
+        return true;
     }
 
     /**
@@ -150,7 +179,8 @@ public class TurboSyncProtocol implements Protocol {
                             selfId,
                             peerId,
                             fallenBehindManager,
-                            peerAgnosticSyncChecks,
+                            gossipHalted,
+                            intakeIsTooFull,
                             intakeEventCounter,
                             connection,
                             executor,

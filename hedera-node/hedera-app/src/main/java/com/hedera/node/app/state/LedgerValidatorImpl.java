@@ -42,7 +42,7 @@ public final class LedgerValidatorImpl implements LedgerValidator {
     public void validate(@NonNull final HederaState state) throws IllegalStateException {
         final var config = configProvider.getConfiguration().getConfigData(LedgerConfig.class);
         final var expectedTotalTinyBar = config.totalTinyBarFloat();
-        final var tokenStates = state.createReadableStates(TokenService.NAME);
+        final var tokenStates = state.getReadableStates(TokenService.NAME);
         final ReadableKVState<AccountID, Account> accounts = tokenStates.get(TokenServiceImpl.ACCOUNTS_KEY);
         final var total = new AtomicLong(0L);
 
