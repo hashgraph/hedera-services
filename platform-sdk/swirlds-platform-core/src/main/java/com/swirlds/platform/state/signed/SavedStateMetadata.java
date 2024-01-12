@@ -194,7 +194,9 @@ public record SavedStateMetadata(
                 selfId,
                 signingNodes,
                 signedState.getSigningWeight(),
-                platformState.getAddressBook().getTotalWeight(),
+                platformState.getAddressBook() == null
+                        ? 0
+                        : platformState.getAddressBook().getTotalWeight(),
                 epochHash,
                 epochHash == null ? "null" : epochHash.toMnemonic());
     }
@@ -313,6 +315,7 @@ public record SavedStateMetadata(
     }
 
     // This unused method is intentionally not deleted, in case we ever decide to add a new long to this file.
+
     /**
      * Attempt to parse a long from the data map.
      *
@@ -408,6 +411,7 @@ public record SavedStateMetadata(
     }
 
     // This unused method is intentionally not deleted, in case we ever decide to add a new instant to this file.
+
     /**
      * Attempt to parse an instant from the data map.
      *

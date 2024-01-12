@@ -739,6 +739,21 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a {@link ContractID} return the corresponding Besu {@link Address}
+     * Importantly, this method does NOT check for the existence of the contract in the ledger
+     *
+     * @param contractId
+     * @return the equivalent Besu address
+     */
+    public static @NonNull Address contractIDToBesuAddress(final ContractID contractId) {
+        if (contractId.hasEvmAddress()) {
+            return pbjToBesuAddress(contractId.evmAddress());
+        } else {
+            return asLongZeroAddress(contractId.contractNumOrThrow());
+        }
+    }
+
+    /**
      * Given a {@link ContractCreateTransactionBody} and a sponsor {@link Account}, returns a creation body
      * fully customized with the sponsor's properties.
      *

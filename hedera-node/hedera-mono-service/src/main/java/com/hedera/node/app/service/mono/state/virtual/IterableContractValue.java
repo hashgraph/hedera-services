@@ -18,8 +18,11 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToPbj;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -36,6 +39,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 /** Representation of a 256bit unsigned int, stored internally as a big-endian byte array. */
 @SuppressWarnings({"PointlessBitwiseExpression", "unused"})
 public class IterableContractValue implements VirtualValue {
+
     public static final int ITERABLE_VERSION = 2;
 
     public static final int NON_ITERABLE_SERIALIZED_SIZE = 32;
@@ -383,8 +387,14 @@ public class IterableContractValue implements VirtualValue {
         KeyPackingUtils.serializePossiblyMissingKey(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
-    @Override
-    public void serialize(final ByteBuffer out) throws IOException {
+    void serialize(final WritableSequentialData out) {
+        out.writeBytes(uint256Value);
+        serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
+        serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
+    }
+
+    @Deprecated
+    void serialize(final ByteBuffer out) {
         out.put(uint256Value);
         serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
         serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
@@ -400,8 +410,16 @@ public class IterableContractValue implements VirtualValue {
         deserializeKeys(in, SerializableDataInputStream::readByte);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    void deserialize(final ReadableSequentialData in) {
+        if (isImmutable) {
+            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        }
+        in.readBytes(this.uint256Value);
+        deserializeKeys(in, ReadableSequentialData::readByte);
+    }
+
+    @Deprecated
+    void deserialize(final ByteBuffer buffer, final int version) {
         if (isImmutable) {
             throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         }
@@ -410,8 +428,8 @@ public class IterableContractValue implements VirtualValue {
     }
 
     // --- Internal helpers
-    private <D> void deserializeKeys(final D in, final KeyPackingUtils.ByteReaderFunction<D> reader)
-            throws IOException {
+    private <D, E extends Exception> void deserializeKeys(
+            final D in, final KeyPackingUtils.ByteReaderFunction<D, E> reader) throws E {
         byte marker = reader.read(in);
         if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
             prevUint256KeyNonZeroBytes = marker;
@@ -445,6 +463,16 @@ public class IterableContractValue implements VirtualValue {
         } else {
             out.put(nonZeroBytes);
             serializePackedBytesToBuffer(key, nonZeroBytes, out);
+        }
+    }
+
+    private void serializePossiblyMissingKeyToBuffer(
+            final @Nullable int[] key, final byte nonZeroBytes, final WritableSequentialData out) {
+        if (key == null) {
+            out.writeByte(KeyPackingUtils.MISSING_KEY_SENTINEL);
+        } else {
+            out.writeByte(nonZeroBytes);
+            serializePackedBytesToPbj(key, nonZeroBytes, out);
         }
     }
 

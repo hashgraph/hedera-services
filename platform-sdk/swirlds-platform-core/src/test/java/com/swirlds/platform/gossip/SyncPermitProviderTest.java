@@ -17,10 +17,12 @@
 package com.swirlds.platform.gossip;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.platform.gossip.SyncPermitProvider.PermitRequestResult.PERMIT_ACQUIRED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.platform.NodeId;
@@ -45,7 +47,7 @@ class SyncPermitProviderTest {
 
         assertEquals(numPermits, syncPermitProvider.getNumAvailable(), "all permits should be available");
 
-        assertTrue(syncPermitProvider.tryAcquire(nodeId), "first acquire should succeed");
+        assertSame(syncPermitProvider.tryAcquire(nodeId), PERMIT_ACQUIRED, "first acquire should succeed");
         assertEquals(
                 numPermits - 1,
                 syncPermitProvider.getNumAvailable(),
@@ -70,7 +72,7 @@ class SyncPermitProviderTest {
 
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
-            assertTrue(syncPermitProvider.tryAcquire(nodeId), "acquiring permit should succeed");
+            assertSame(syncPermitProvider.tryAcquire(nodeId), PERMIT_ACQUIRED, "acquiring permit should succeed");
             assertEquals(
                     numPermits - i - 1,
                     syncPermitProvider.getNumAvailable(),
@@ -78,7 +80,10 @@ class SyncPermitProviderTest {
         }
 
         // Attempts to acquire more permits should fail
-        assertFalse(syncPermitProvider.tryAcquire(nodeId), "no further permits should be able to be acquired");
+        assertNotSame(
+                syncPermitProvider.tryAcquire(nodeId),
+                PERMIT_ACQUIRED,
+                "no further permits should be able to be acquired");
 
         // Releasing permits should result in more permits being available
         for (int i = 0; i < numPermits; i++) {
@@ -99,11 +104,14 @@ class SyncPermitProviderTest {
 
         // Acquire all the permits
         for (int i = 0; i < numPermits; i++) {
-            assertTrue(syncPermitProvider.tryAcquire(nodeId));
+            assertSame(syncPermitProvider.tryAcquire(nodeId), PERMIT_ACQUIRED);
         }
 
         // Attempts to acquire more permits should fail
-        assertFalse(syncPermitProvider.tryAcquire(nodeId), "no further permits should be able to be acquired");
+        assertNotSame(
+                syncPermitProvider.tryAcquire(nodeId),
+                PERMIT_ACQUIRED,
+                "no further permits should be able to be acquired");
 
         final AtomicBoolean waitComplete = new AtomicBoolean(false);
 
@@ -145,23 +153,28 @@ class SyncPermitProviderTest {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits, intakeEventCounter);
 
-        assertTrue(syncPermitProvider.tryAcquire(nodeId), "nothing should prevent a permit from being acquired");
+        assertSame(
+                syncPermitProvider.tryAcquire(nodeId),
+                PERMIT_ACQUIRED,
+                "nothing should prevent a permit from being acquired");
 
         intakeEventCounter.eventEnteredIntakePipeline(nodeId);
 
         // returning the permit is fine
         syncPermitProvider.returnPermit();
 
-        assertFalse(
+        assertNotSame(
                 syncPermitProvider.tryAcquire(nodeId),
+                PERMIT_ACQUIRED,
                 "permit should not be able to be acquired with unprocessed event in intake pipeline");
 
         intakeEventCounter.eventExitedIntakePipeline(nodeId);
         // an event in the pipeline for a different node shouldn't have any effect
         intakeEventCounter.eventEnteredIntakePipeline(otherNodeId);
 
-        assertTrue(
+        assertSame(
                 syncPermitProvider.tryAcquire(nodeId),
+                PERMIT_ACQUIRED,
                 "permit should be able to be acquired after event is through intake pipeline");
     }
 }

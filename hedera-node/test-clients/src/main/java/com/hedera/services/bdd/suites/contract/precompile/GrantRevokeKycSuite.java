@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -58,7 +59,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class GrantRevokeKycSuite extends HapiSuite {
 
@@ -110,7 +111,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
         final AtomicReference<TokenID> tokenWithoutKeyID = new AtomicReference<>();
         final var invalidTokenID = TokenID.newBuilder().build();
 
-        return defaultHapiSpec("GrantRevokeKycFail")
+        return defaultHapiSpec("GrantRevokeKycFail", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(KYC_KEY),
                         newKeyNamed(NON_KYC_KEY),
