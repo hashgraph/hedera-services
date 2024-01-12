@@ -16,7 +16,14 @@
 
 package com.swirlds.merkledb;
 
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -24,8 +31,10 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -53,6 +62,25 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      * holder will have been configured by the time this static initializer runs.
      */
     private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+
+    private static final FieldDefinition FIELD_TABLECONFIG_HASHVERSION =
+            new FieldDefinition("hashVersion", FieldType.UINT32, false, true, false, 1);
+    private static final FieldDefinition FIELD_TABLECONFIG_DIGESTTYPEID =
+            new FieldDefinition("digestTypeId", FieldType.UINT32, false, false, false, 2);
+    private static final FieldDefinition FIELD_TABLECONFIG_KEYVERSION =
+            new FieldDefinition("keyVersion", FieldType.UINT32, false, true, false, 3);
+    private static final FieldDefinition FIELD_TABLECONFIG_KEYSERIALIZERCLSID =
+            new FieldDefinition("keySerializerClassId", FieldType.UINT64, false, false, false, 4);
+    private static final FieldDefinition FIELD_TABLECONFIG_VALUEVERSION =
+            new FieldDefinition("valueVersion", FieldType.UINT32, false, true, false, 5);
+    private static final FieldDefinition FIELD_TABLECONFIG_VALUESERIALIZERCLSID =
+            new FieldDefinition("valueSerializerClassId", FieldType.UINT64, false, false, false, 6);
+    private static final FieldDefinition FIELD_TABLECONFIG_PREFERDISKINDICES =
+            new FieldDefinition("preferDiskIndices", FieldType.UINT32, false, true, false, 7);
+    private static final FieldDefinition FIELD_TABLECONFIG_MAXNUMBEROFKEYS =
+            new FieldDefinition("maxNumberOfKeys", FieldType.UINT64, false, true, false, 8);
+    private static final FieldDefinition FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD =
+            new FieldDefinition("hashesRamToDiskThreshold", FieldType.UINT64, false, true, false, 9);
 
     /**
      * Hash version.
@@ -130,21 +158,126 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
             final short hashVersion,
             final DigestType hashType,
             final short keyVersion,
-            final KeySerializer<K> keySerializer,
+            @NonNull final KeySerializer<K> keySerializer,
             final short valueVersion,
-            final ValueSerializer<V> valueSerializer) {
+            @NonNull final ValueSerializer<V> valueSerializer) {
         this.hashVersion = hashVersion;
         this.hashType = hashType;
         this.keyVersion = keyVersion;
-        if (keySerializer == null) {
-            throw new IllegalArgumentException("Null key serializer");
-        }
+        Objects.requireNonNull(keySerializer, "Null key serializer");
         this.keySerializer = keySerializer;
         this.valueVersion = valueVersion;
-        if (valueSerializer == null) {
-            throw new IllegalArgumentException("Null value serializer");
-        }
+        Objects.requireNonNull(valueSerializer, "Null value serializer");
         this.valueSerializer = valueSerializer;
+    }
+
+    public MerkleDbTableConfig(final ReadableSequentialData in) {
+        // Defaults
+        hashVersion = 0;
+        hashType = DigestType.SHA_384;
+        keyVersion = 0;
+        valueVersion = 0;
+
+        while (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final int fieldNum = tag >> TAG_FIELD_OFFSET;
+            if (fieldNum == FIELD_TABLECONFIG_HASHVERSION.number()) {
+                hashVersion = (short) in.readVarInt(false);
+            } else if (fieldNum == FIELD_TABLECONFIG_DIGESTTYPEID.number()) {
+                final int digestTypeId = in.readVarInt(false);
+                hashType = DigestType.valueOf(digestTypeId);
+            } else if (fieldNum == FIELD_TABLECONFIG_KEYVERSION.number()) {
+                keyVersion = (short) in.readVarInt(false);
+            } else if (fieldNum == FIELD_TABLECONFIG_KEYSERIALIZERCLSID.number()) {
+                final long classId = in.readVarLong(false);
+                keySerializer = ConstructableRegistry.getInstance().createObject(classId);
+            } else if (fieldNum == FIELD_TABLECONFIG_VALUEVERSION.number()) {
+                valueVersion = (short) in.readVarInt(false);
+            } else if (fieldNum == FIELD_TABLECONFIG_VALUESERIALIZERCLSID.number()) {
+                final long classId = in.readVarLong(false);
+                valueSerializer = ConstructableRegistry.getInstance().createObject(classId);
+            } else if (fieldNum == FIELD_TABLECONFIG_PREFERDISKINDICES.number()) {
+                preferDiskBasedIndices = in.readVarInt(false) != 0;
+            } else if (fieldNum == FIELD_TABLECONFIG_MAXNUMBEROFKEYS.number()) {
+                maxNumberOfKeys = in.readVarLong(false);
+            } else if (fieldNum == FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD.number()) {
+                hashesRamToDiskThreshold = in.readVarLong(false);
+            } else {
+                throw new IllegalArgumentException("Unknown table config field: " + fieldNum);
+            }
+        }
+
+        Objects.requireNonNull(hashType, "Null or wrong hash type");
+        Objects.requireNonNull(keySerializer, "Null or unknown key serializer");
+        Objects.requireNonNull(valueSerializer, "Null or unknown value serializer");
+    }
+
+    public int pbjSizeInBytes() {
+        int size = 0;
+        if (hashVersion != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_HASHVERSION, ProtoUtils.WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(hashVersion);
+        }
+        size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_DIGESTTYPEID, ProtoUtils.WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfVarInt32(hashType.id());
+        if (keyVersion != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_KEYVERSION, ProtoUtils.WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(keyVersion);
+        }
+        size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_KEYSERIALIZERCLSID, ProtoUtils.WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfVarInt64(keySerializer.getClassId());
+        if (valueVersion != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_VALUEVERSION, ProtoUtils.WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(valueVersion);
+        }
+        size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_VALUESERIALIZERCLSID, ProtoUtils.WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfVarInt64(valueSerializer.getClassId());
+        if (preferDiskBasedIndices) {
+            size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_PREFERDISKINDICES, ProtoUtils.WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(1);
+        }
+        if (maxNumberOfKeys != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_MAXNUMBEROFKEYS, ProtoUtils.WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt64(maxNumberOfKeys);
+        }
+        if (hashesRamToDiskThreshold != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD, ProtoUtils.WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt64(hashesRamToDiskThreshold);
+        }
+        return size;
+    }
+
+    public void writeTo(final WritableSequentialData out) {
+        if (hashVersion != 0) {
+            ProtoUtils.writeTag(out, FIELD_TABLECONFIG_HASHVERSION);
+            out.writeVarInt(hashVersion, false);
+        }
+        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_DIGESTTYPEID);
+        out.writeVarInt(hashType.id(), false);
+        if (keyVersion != 0) {
+            ProtoUtils.writeTag(out, FIELD_TABLECONFIG_KEYVERSION);
+            out.writeVarInt(keyVersion, false);
+        }
+        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_KEYSERIALIZERCLSID);
+        out.writeVarLong(keySerializer.getClassId(), false);
+        if (valueVersion != 0) {
+            ProtoUtils.writeTag(out, FIELD_TABLECONFIG_VALUEVERSION);
+            out.writeVarInt(valueVersion, false);
+        }
+        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_VALUESERIALIZERCLSID);
+        out.writeVarLong(valueSerializer.getClassId(), false);
+        if (preferDiskBasedIndices) {
+            ProtoUtils.writeTag(out, FIELD_TABLECONFIG_PREFERDISKINDICES);
+            out.writeVarInt(1, false);
+        }
+        if (maxNumberOfKeys != 0) {
+            ProtoUtils.writeTag(out, FIELD_TABLECONFIG_MAXNUMBEROFKEYS);
+            out.writeVarLong(maxNumberOfKeys, false);
+        }
+        if (hashesRamToDiskThreshold != 0) {
+            ProtoUtils.writeTag(out, FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD);
+            out.writeVarLong(hashesRamToDiskThreshold, false);
+        }
     }
 
     /**

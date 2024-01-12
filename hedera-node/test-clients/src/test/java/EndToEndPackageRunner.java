@@ -38,18 +38,10 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
@@ -324,18 +316,10 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodes() {
         return List.of(
-                extractSpecsFromSuite(BalanceOperationSuite::new),
-                extractSpecsFromSuite(CallCodeOperationSuite::new),
-                extractSpecsFromSuite(CallOperationSuite::new),
                 extractSpecsFromSuite(CreateOperationSuite::new),
-                extractSpecsFromSuite(DelegateCallOperationSuite::new),
-                extractSpecsFromSuite(ExtCodeCopyOperationSuite::new),
-                extractSpecsFromSuite(ExtCodeHashOperationSuite::new),
-                extractSpecsFromSuite(ExtCodeSizeOperationSuite::new),
                 extractSpecsFromSuite(GlobalPropertiesSuite::new),
                 extractSpecsFromSuite(SelfDestructSuite::new),
-                extractSpecsFromSuite(SStoreSuite::new),
-                extractSpecsFromSuite(StaticCallOperationSuite::new));
+                extractSpecsFromSuite(SStoreSuite::new));
     }
 
     @Tag("contract")
@@ -343,16 +327,8 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodesEth() {
         return List.of(new DynamicContainer[] {
-            extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
-            extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
-            extractSpecsFromSuiteForEth(CallOperationSuite::new),
             extractSpecsFromSuiteForEth(CreateOperationSuite::new),
-            extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
-            extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
-            extractSpecsFromSuiteForEth(ExtCodeHashOperationSuite::new),
-            extractSpecsFromSuiteForEth(ExtCodeSizeOperationSuite::new),
             extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
-            extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
             extractSpecsFromSuiteForEth(SelfDestructSuite::new),
             extractSpecsFromSuiteForEth(SStoreSuite::new)
         });

@@ -73,9 +73,9 @@ public class VirtualMapFactory {
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new VirtualBlobMerkleDbKeySerializer(),
+                new VirtualBlobKeySerializer(),
                 CURRENT_SERIALIZATION_VERSION,
-                new VirtualBlobMerkleDbValueSerializer());
+                new VirtualBlobValueSerializer());
         tableConfig.maxNumberOfKeys(MAX_BLOBS);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
@@ -88,18 +88,16 @@ public class VirtualMapFactory {
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new ContractMerkleDbKeySerializer(),
+                new ContractKeySerializer(),
                 CURRENT_SERIALIZATION_VERSION,
-                new IterableContractMerkleDbValueSerializer());
+                new IterableContractValueSerializer());
         tableConfig.maxNumberOfKeys(MAX_STORAGE_ENTRIES);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-
         return new VirtualMap<>(ITERABLE_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> newScheduleListStorage() {
-
         final var tableConfig = new MerkleDbTableConfig<>(
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
@@ -111,7 +109,6 @@ public class VirtualMapFactory {
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         final MerkleDbDataSourceBuilder<EntityNumVirtualKey, ScheduleVirtualValue> dsBuilder =
                 new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-
         return new VirtualMap<>(SCHEDULE_LIST_STORAGE_VM_NAME, dsBuilder);
     }
 
@@ -126,7 +123,6 @@ public class VirtualMapFactory {
                 .maxNumberOfKeys(MAX_SCHEDULE_SECONDS)
                 .preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         final var dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-
         return new VirtualMap<>(SCHEDULE_TEMPORAL_STORAGE_VM_NAME, dsBuilder);
     }
 
@@ -142,7 +138,6 @@ public class VirtualMapFactory {
                 .preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         final MerkleDbDataSourceBuilder<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> dsBuilder =
                 new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-
         return new VirtualMap<>(SCHEDULE_EQUALITY_STORAGE_VM_NAME, dsBuilder);
     }
 
@@ -152,9 +147,9 @@ public class VirtualMapFactory {
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new EntityNumMerkleDbKeySerializer(),
+                new EntityNumVirtualKeySerializer(),
                 CURRENT_SERIALIZATION_VERSION,
-                new OnDiskAccountMerkleDbValueSerializer());
+                new OnDiskAccountValueSerializer());
         tableConfig.maxNumberOfKeys(MAX_ACCOUNTS);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
@@ -167,9 +162,9 @@ public class VirtualMapFactory {
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new EntityNumMerkleDbKeySerializer(),
+                new EntityNumVirtualKeySerializer(),
                 CURRENT_SERIALIZATION_VERSION,
-                new OnDiskTokenRelMerkleDbValueSerializer());
+                new OnDiskTokenRelValueSerializer());
         tableConfig.maxNumberOfKeys(MAX_TOKEN_RELS);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
@@ -182,9 +177,9 @@ public class VirtualMapFactory {
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new UniqueTokenMerkleDbKeySerializer(),
+                new UniqueTokenKeySerializer(),
                 CURRENT_SERIALIZATION_VERSION,
-                new UniqueTokenMerkleDbValueSerializer());
+                new UniqueTokenValueSerializer());
         tableConfig.maxNumberOfKeys(MAX_MINTABLE_NFTS);
         tableConfig.preferDiskIndices(false);
         dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);

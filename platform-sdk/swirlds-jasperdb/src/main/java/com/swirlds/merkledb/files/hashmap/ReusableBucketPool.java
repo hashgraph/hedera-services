@@ -16,9 +16,9 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Function;
 
 /**
  * HalfDiskHashMap buckets are somewhat expensive resources. Every bucket has an
@@ -55,28 +55,27 @@ public class ReusableBucketPool<K extends VirtualKey> {
     /** Buckets */
     private final ConcurrentLinkedDeque<Bucket<K>> buckets;
 
-    /** Key serializer */
-    private final KeySerializer<K> keySerializer;
+    private final Function<ReusableBucketPool<K>, Bucket<K>> newBucketSupplier;
 
     /**
      * Creates a new reusable bucket pool of the default size.
      *
-     * @param serializer Key serializer used by the buckets in the pool
+     * @param bucketSupplier To create new buckets
      */
-    public ReusableBucketPool(final BucketSerializer<K> serializer) {
-        this(DEFAULT_POOL_SIZE, serializer);
+    public ReusableBucketPool(final Function<ReusableBucketPool<K>, Bucket<K>> bucketSupplier) {
+        this(DEFAULT_POOL_SIZE, bucketSupplier);
     }
 
     /**
      * Creates a new reusable bucket pool of the specified size.
      *
-     * @param serializer Key serializer used by the buckets in the pool
+     * @param bucketSupplier To create new buckets
      */
-    public ReusableBucketPool(final int size, final BucketSerializer<K> serializer) {
+    public ReusableBucketPool(final int size, Function<ReusableBucketPool<K>, Bucket<K>> bucketSupplier) {
+        this.newBucketSupplier = bucketSupplier;
         buckets = new ConcurrentLinkedDeque<>();
-        keySerializer = serializer.getKeySerializer();
         for (int i = 0; i < size; i++) {
-            buckets.offerLast(new Bucket<>(keySerializer, this));
+            buckets.offerLast(bucketSupplier.apply(this));
         }
     }
 
@@ -90,7 +89,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
     public Bucket<K> getBucket() {
         Bucket<K> bucket = buckets.pollLast();
         if (bucket == null) {
-            bucket = new Bucket<>(keySerializer, this);
+            bucket = newBucketSupplier.apply(this);
         }
         bucket.clear();
         return bucket;

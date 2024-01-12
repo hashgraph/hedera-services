@@ -16,6 +16,9 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -49,24 +52,21 @@ public class BenchmarkKey implements VirtualLongKey {
     }
 
     @Override
-    public void serialize(ByteBuffer buffer) {
+    public void serialize(final SerializableDataOutputStream outputStream) throws IOException {
+        outputStream.write(keyBytes);
+    }
+
+    void serialize(final WritableSequentialData out) {
+        out.writeBytes(keyBytes);
+    }
+
+    @Deprecated
+    void serialize(ByteBuffer buffer) {
         buffer.put(keyBytes);
     }
 
     @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
-        keyBytes = new byte[keySize];
-        buffer.get(keyBytes);
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream outputStream) throws IOException {
-        outputStream.write(keyBytes);
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream inputStream, int dataVersion) throws IOException {
+    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
         keyBytes = new byte[keySize];
         int n = keySize;
@@ -75,8 +75,15 @@ public class BenchmarkKey implements VirtualLongKey {
         }
     }
 
-    public static int getSerializedSize() {
-        return keySize;
+    void deserialize(final ReadableSequentialData in) {
+        keyBytes = new byte[keySize];
+        in.readBytes(keyBytes);
+    }
+
+    @Deprecated
+    void deserialize(ByteBuffer buffer) {
+        keyBytes = new byte[keySize];
+        buffer.get(keyBytes);
     }
 
     @Override
@@ -105,8 +112,31 @@ public class BenchmarkKey implements VirtualLongKey {
         return Arrays.equals(this.keyBytes, that.keyBytes);
     }
 
-    public boolean equals(ByteBuffer buffer, int dataVersion) {
-        if (dataVersion != VERSION) return false;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < keyBytes.length; i++) {
+            sb.append(keyBytes[i] & 0xFF);
+            if (i < keyBytes.length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    boolean equals(BufferedData buffer) {
+        for (int i = 0; i < keySize; ++i) {
+            if (buffer.readByte() != keyBytes[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Deprecated
+    boolean equals(ByteBuffer buffer) {
         for (int i = 0; i < keySize; ++i) {
             if (buffer.get() != keyBytes[i]) return false;
         }

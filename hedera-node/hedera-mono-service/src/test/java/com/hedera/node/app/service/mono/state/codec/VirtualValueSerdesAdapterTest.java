@@ -29,7 +29,8 @@ public class VirtualValueSerdesAdapterTest extends AbstractVirtualCodecTest<Virt
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     public VirtualValueSerdesAdapterTest() {
-        super(MonoMapCodecAdapter.codecForVirtualValue(VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new));
+        super(MonoMapCodecAdapter.codecForVirtualValue(
+                VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new, new VirtualBlobValueSerializer()));
     }
 
     @Test

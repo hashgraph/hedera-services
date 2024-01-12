@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.fixtures;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -33,6 +34,17 @@ public class FakeCryptoCreateRecordBuilder {
             private Bytes evmAddress;
             private long transactionFee;
             private String memo;
+
+            @NotNull
+            @Override
+            public TransactionBody transactionBody() {
+                return TransactionBody.DEFAULT;
+            }
+
+            @Override
+            public long transactionFee() {
+                return 0;
+            }
 
             @NotNull
             @Override
