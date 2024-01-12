@@ -168,6 +168,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             this.alsoSigningWithFullPrefix(contractCall.otherSigs.toArray(new String[0]));
         }
         shouldRegisterTxn = true;
+        this.permissibleStatuses = contractCall.getPermissibleStatuses();
+        this.permissiblePrechecks = contractCall.getPermissiblePrechecks();
     }
 
     public HapiEthereumCall notTryingAsHexedliteral() {

@@ -79,6 +79,7 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -440,15 +441,25 @@ public class SwirldsPlatform implements Platform {
         try {
             final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
+            // When we perform the migration to using birth round bounding, we will need to read
+            // the old type and start writing the new type.
+            final AncientMode currentFileType = platformContext
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .useBirthRoundAncientThreshold()
+                    ? AncientMode.BIRTH_ROUND_THRESHOLD
+                    : AncientMode.GENERATION_THRESHOLD;
+
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
                     recycleBin,
                     databaseDirectory,
                     initialState.getRound(),
-                    preconsensusEventStreamConfig.permitGaps());
+                    preconsensusEventStreamConfig.permitGaps(),
+                    currentFileType);
 
-            preconsensusEventFileManager = new PcesFileManager(
-                    platformContext, Time.getCurrent(), initialPcesFiles, selfId, initialState.getRound());
+            preconsensusEventFileManager =
+                    new PcesFileManager(platformContext, initialPcesFiles, selfId, initialState.getRound());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -791,7 +802,6 @@ public class SwirldsPlatform implements Platform {
 
             platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
                     initialState.getRound(), initialMinimumGenerationNonAncient, platformContext));
-            platformWiring.updateMinimumGenerationNonAncient(initialState.getMinRoundGeneration());
 
             // We don't want to invoke these callbacks until after we are starting up.
             final long round = initialState.getRound();
@@ -977,7 +987,6 @@ public class SwirldsPlatform implements Platform {
                             signedState.getState().getPlatformState().getAddressBook()));
             platformWiring.updateNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
                     signedState.getRound(), signedState.getMinRoundGeneration(), platformContext));
-            platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 

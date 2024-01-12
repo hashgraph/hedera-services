@@ -16,14 +16,24 @@
 
 package com.swirlds.merkledb;
 
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -52,17 +63,17 @@ import org.apache.logging.log4j.Logger;
  * data sources. The database holds information about all table serialization configs (key and value
  * serializer classes). It also tracks opened data sources.
  *
- * By default, when a new virtual data source is created by {@link MerkleDbDataSourceBuilder}, it
+ * <p>By default, when a new virtual data source is created by {@link MerkleDbDataSourceBuilder}, it
  * uses a database in a temporary folder. When multiple data sources are created, they all share the
  * same database instance. This temporary location can be overridden using {@link
  * #setDefaultPath(Path)} method.
  *
- * When virtual data source builder creates a data source snapshot in a specified folder (which
+ * <p>When virtual data source builder creates a data source snapshot in a specified folder (which
  * is the folder where platform state file is written), it uses a {@code MerkleDb} instance that
  * corresponds to that folder. When a data source is copied, it uses yet another database instance
  * in a different temp folder.
  *
- * Tables vs data sources. Sometimes these two terms are used interchangeably, but they are
+ * <p>Tables vs data sources. Sometimes these two terms are used interchangeably, but they are
  * slightly different. Tables are about configs: how keys and values are serialized, whether disk
  * based indexes are preferred, and so on. Tables are also data on disk, whether it's currently used
  * by any virtual maps or not. Data sources are runtime objects, they provide methods to work with
@@ -89,10 +100,19 @@ public final class MerkleDb {
      */
     private static final String TABLES_DIRNAME = "tables";
     /** Metadata file name. Relative to database storage dir */
-    private static final String METADATA_FILENAME = "metadata.mdb";
+    private static final String METADATA_FILENAME_OLD = "metadata.mdb";
+
+    private static final String METADATA_FILENAME = "database_metadata.pbj";
 
     /** Label for database component used in logging, stats, etc. */
     public static final String MERKLEDB_COMPONENT = "merkledb";
+
+    /**
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * holder will have been configured by the time this static initializer runs.
+     */
+    private final MerkleDbConfig config;
 
     /**
      * All virtual database instances in a process. Once we have something like "application
@@ -139,9 +159,12 @@ public final class MerkleDb {
      * corresponding data source is closed. When a primary data source is closed, its data is
      * preserved on disk.
      *
-     * Secondary tables are not included to snapshots and aren't written to DB metadata.
+     * <p>Secondary tables are not included to snapshots and aren't written to DB metadata.
      */
     private final Set<Integer> primaryTables = ConcurrentHashMap.newKeySet();
+
+    private static final FieldDefinition FIELD_DBMETADATA_TABLEMETADATA =
+            new FieldDefinition("tableMetadata", FieldType.MESSAGE, true, true, false, 11);
 
     /**
      * Returns a virtual database instance for a given path. If the instance doesn't exist, it gets
@@ -151,7 +174,11 @@ public final class MerkleDb {
      * @return Virtual database instance that stores its data in the specified path
      */
     public static MerkleDb getInstance(final Path path) {
-        return instances.computeIfAbsent(path != null ? path : getDefaultPath(), MerkleDb::new);
+        return getInstance(path, ConfigurationHolder.getConfigData(MerkleDbConfig.class));
+    }
+
+    static MerkleDb getInstance(final Path path, final MerkleDbConfig config) {
+        return instances.computeIfAbsent(path != null ? path : getDefaultPath(), p -> new MerkleDb(p, config));
     }
 
     /**
@@ -216,7 +243,8 @@ public final class MerkleDb {
      *
      * @param storageDir A folder to store database files in
      */
-    private MerkleDb(final Path storageDir) {
+    private MerkleDb(final Path storageDir, final MerkleDbConfig config) {
+        this.config = config;
         if (storageDir == null) {
             throw new IllegalArgumentException("Cannot create a MerkleDatabase instance with null storageDir");
         }
@@ -235,7 +263,8 @@ public final class MerkleDb {
             throw new UncheckedIOException(z);
         }
         // If this is a new database, create the metadata file
-        if (!Files.exists(storageDir.resolve(METADATA_FILENAME))) {
+        if (!Files.exists(storageDir.resolve(METADATA_FILENAME_OLD))
+                && !Files.exists(storageDir.resolve(METADATA_FILENAME))) {
             storeMetadata();
         }
         logger.info(MERKLE_DB.getMarker(), "New MerkleDb instance is created, storageDir={}", storageDir);
@@ -309,6 +338,10 @@ public final class MerkleDb {
         return getTablesDir(baseDir).resolve(tableName + "-" + tableId);
     }
 
+    public MerkleDbConfig getConfig() {
+        return config;
+    }
+
     /**
      * Creates a new data source (table) in this database instance with the given name.
      *
@@ -350,7 +383,7 @@ public final class MerkleDb {
      * Make a data source copy. The copied data source has the same metadata and label (table name),
      * but a different table ID.
      *
-     * Only one data source for any given label can be active at a time, that is used by a virtual
+     * <p>Only one data source for any given label can be active at a time, that is used by a virtual
      * map in the merkle tree. If makeCopyPrimary is {@code true}, the copy is marked as active, and
      * the original data source is marked as secondary. This happens when a learner creates a copy
      * of a virtual root during reconnects. If makeCopyPrimary is {@code false}, the copy is not
@@ -419,7 +452,7 @@ public final class MerkleDb {
         if (metadata == null) {
             throw new IllegalStateException("Unknown table: " + name);
         }
-        final int tableId = metadata.tableId();
+        final int tableId = metadata.getTableId();
         return getDataSource(tableId, name, dbCompactionEnabled);
     }
 
@@ -466,7 +499,7 @@ public final class MerkleDb {
         if (metadata == null) {
             throw new IllegalArgumentException("Unknown table ID: " + tableId);
         }
-        final String label = metadata.tableName();
+        final String label = metadata.getTableName();
         tableConfigs.set(tableId, null);
         DataFileCommon.deleteDirectoryAndContents(getTableDir(label, tableId));
         storeMetadata();
@@ -491,7 +524,7 @@ public final class MerkleDb {
         }
         final TableMetadata metadata = tableConfigs.get(tableId);
         @SuppressWarnings("unchecked")
-        final MerkleDbTableConfig<K, V> tableConfig = metadata != null ? metadata.tableConfig() : null;
+        final MerkleDbTableConfig<K, V> tableConfig = metadata != null ? metadata.getTableConfig() : null;
         return tableConfig;
     }
 
@@ -534,7 +567,7 @@ public final class MerkleDb {
      * created in the specified target folder, if not {@code null}, or in the default MerkleDb
      * folder otherwise.
      *
-     * This method must be called before the database instance is created in the target folder.
+     * <p>This method must be called before the database instance is created in the target folder.
      *
      * @param source Source folder
      * @param target Target folder, optional. If {@code null}, the default MerkleDb folder is used
@@ -544,7 +577,8 @@ public final class MerkleDb {
      */
     public static MerkleDb restore(final Path source, final Path target) throws IOException {
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath();
-        if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
+        if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME_OLD))
+                && !Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
             // For all data files, it's enough to create hard-links from the source dir to the
             // target dir. However, hard-linking the metadata file wouldn't work. The target
@@ -552,7 +586,13 @@ public final class MerkleDb {
             // in DB metadata. With hard links, changing target metadata would also change the
             // source metadata, which is strictly prohibited as existing saved states must
             // never be changed. So just copy the metadata file
-            Files.copy(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
+            if (Files.exists(source.resolve(METADATA_FILENAME))) {
+                assert !Files.exists(source.resolve(METADATA_FILENAME_OLD));
+                Files.copy(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
+            } else {
+                assert !Files.exists(source.resolve(METADATA_FILENAME));
+                Files.copy(source.resolve(METADATA_FILENAME_OLD), defaultInstancePath.resolve(METADATA_FILENAME_OLD));
+            }
             final Path sharedDirPath = source.resolve(SHARED_DIRNAME);
             // No shared data yet, so the folder may be empty or even may not exist
             if (Files.exists(sharedDirPath)) {
@@ -575,7 +615,7 @@ public final class MerkleDb {
      * Writes database metadata file to the specified dir. Only table configs from the given list of
      * tables are included.
      *
-     * Metadata file contains the following data:
+     * <p>Metadata file contains the following data:
      *
      * <ul>
      *   <li>number of tables
@@ -587,19 +627,33 @@ public final class MerkleDb {
      */
     @SuppressWarnings("rawtypes")
     private void storeMetadata(final Path dir, final Collection<TableMetadata> tables) {
-        final Path tableConfigFile = dir.resolve(METADATA_FILENAME);
-        try (OutputStream fileOut =
-                        Files.newOutputStream(tableConfigFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-                SerializableDataOutputStream out = new SerializableDataOutputStream(fileOut)) {
-            out.writeInt(tables.size());
-            for (TableMetadata metadata : tables) {
-                final int tableId = metadata.tableId();
-                out.writeInt(tableId);
-                out.writeNormalisedString(metadata.tableName());
-                out.writeSerializable(metadata.tableConfig(), false);
+        if (config.usePbj()) {
+            final Path dbMetadataFile = dir.resolve(METADATA_FILENAME);
+            try (final OutputStream fileOut =
+                    Files.newOutputStream(dbMetadataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+                final WritableSequentialData out = new WritableStreamingData(fileOut);
+                for (final TableMetadata metadata : tables) {
+                    final int len = metadata.pbjSizeInBytes();
+                    ProtoUtils.writeDelimited(out, FIELD_DBMETADATA_TABLEMETADATA, len, metadata::writeTo);
+                }
+            } catch (final IOException z) {
+                throw new UncheckedIOException(z);
             }
-        } catch (final IOException z) {
-            throw new UncheckedIOException(z);
+        } else {
+            final Path dbMetadataFile = dir.resolve(METADATA_FILENAME_OLD);
+            try (final OutputStream fileOut =
+                            Files.newOutputStream(dbMetadataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+                    SerializableDataOutputStream out = new SerializableDataOutputStream(fileOut)) {
+                out.writeInt(tables.size());
+                for (final TableMetadata metadata : tables) {
+                    final int tableId = metadata.getTableId();
+                    out.writeInt(tableId);
+                    out.writeNormalisedString(metadata.getTableName());
+                    out.writeSerializable(metadata.getTableConfig(), false);
+                }
+            } catch (final IOException z) {
+                throw new UncheckedIOException(z);
+            }
         }
     }
 
@@ -625,8 +679,35 @@ public final class MerkleDb {
     @SuppressWarnings("rawtypes")
     private static AtomicReferenceArray<TableMetadata> loadMetadata(final Path dir) {
         final AtomicReferenceArray<TableMetadata> tableConfigs = new AtomicReferenceArray<>(MAX_TABLES);
-        final Path tableConfigFile = dir.resolve(METADATA_FILENAME);
-        if (Files.exists(tableConfigFile)) {
+        final Path tableConfigFilePbj = dir.resolve(METADATA_FILENAME);
+        final Path tableConfigFile = dir.resolve(METADATA_FILENAME_OLD);
+        if (Files.exists(tableConfigFilePbj)) {
+            try (InputStream fileIn = Files.newInputStream(tableConfigFilePbj, StandardOpenOption.READ)) {
+                final ReadableSequentialData in = new ReadableStreamingData(fileIn);
+                in.limit(Files.size(tableConfigFilePbj));
+                while (in.hasRemaining()) {
+                    final int tag = in.readVarInt(false);
+                    final int fieldNum = tag >> TAG_FIELD_OFFSET;
+                    if (fieldNum == FIELD_DBMETADATA_TABLEMETADATA.number()) {
+                        final int size = in.readVarInt(false);
+                        final long oldLimit = in.limit();
+                        in.limit(in.position() + size);
+                        final TableMetadata tableMetadata = new TableMetadata(in);
+                        in.limit(oldLimit);
+                        final int tableId = tableMetadata.getTableId();
+                        if ((tableId < 0) || (tableId >= MAX_TABLES)) {
+                            throw new IllegalStateException("Corrupted MerkleDb metadata: wrong table ID");
+                        }
+                        tableConfigs.set(tableId, tableMetadata);
+                    } else {
+                        throw new IllegalArgumentException("Unknown database metadata field: " + fieldNum);
+                    }
+                }
+
+            } catch (final IOException z) {
+                throw new UncheckedIOException(z);
+            }
+        } else if (Files.exists(tableConfigFile)) {
             try (InputStream fileIn = Files.newInputStream(tableConfigFile, StandardOpenOption.READ);
                     SerializableDataInputStream in = new SerializableDataInputStream(fileIn)) {
                 final int size = in.readInt();
@@ -656,7 +737,7 @@ public final class MerkleDb {
         // I wish there was AtomicReferenceArray.stream()
         for (int i = 0; i < tableConfigs.length(); i++) {
             final TableMetadata tableMetadata = tableConfigs.get(i);
-            if ((tableMetadata != null) && tableName.equals(tableMetadata.tableName())) {
+            if ((tableMetadata != null) && tableName.equals(tableMetadata.getTableName())) {
                 return true;
             }
         }
@@ -674,7 +755,7 @@ public final class MerkleDb {
         // I wish there was AtomicReferenceArray.stream()
         for (int i = 0; i < tableConfigs.length(); i++) {
             final TableMetadata metadata = tableConfigs.get(i);
-            if ((metadata != null) && tableName.equals(metadata.tableName()) && primaryTables.contains(i)) {
+            if ((metadata != null) && tableName.equals(metadata.getTableName()) && primaryTables.contains(i)) {
                 return metadata;
             }
         }
@@ -682,10 +763,10 @@ public final class MerkleDb {
     }
 
     /**
-     * Returns the list of primary tables in this database. The corresponding data source may
+     * Returns the set of primary tables in this database. The corresponding data source may
      * or may not be opened.
      *
-     * @return List of all tables in the database
+     * @return Set of all tables in the database
      */
     private Set<TableMetadata> getPrimaryTables() {
         // I wish there was AtomicReferenceArray.stream()
@@ -702,29 +783,125 @@ public final class MerkleDb {
     }
 
     /**
-     * A simple record to store table metadata: ID, name, and serialization config. Table metadata
+     * A simple class to store table metadata: ID, name, and serialization config. Table metadata
      * exist for all tables in the database regardless of whether the corresponding data sources are
      * not opened yet, opened, or already closed.
      *
-     * @param tableId Table ID
-     * @param tableName Table name
-     * @param tableConfig Table serialization config
      */
     @SuppressWarnings("rawtypes")
-    private record TableMetadata(int tableId, String tableName, MerkleDbTableConfig tableConfig) {
-        public TableMetadata {
+    private static class TableMetadata {
+
+        private final int tableId;
+
+        private final String tableName;
+
+        private final MerkleDbTableConfig tableConfig;
+
+        private static final FieldDefinition FIELD_TABLEMETADATA_TABLEID =
+                new FieldDefinition("tableId", FieldType.UINT32, false, true, false, 1);
+        private static final FieldDefinition FIELD_TABLEMETADATA_TABLENAME =
+                new FieldDefinition("tableName", FieldType.BYTES, false, false, false, 2);
+        private static final FieldDefinition FIELD_TABLEMETADATA_TABLECONFIG =
+                new FieldDefinition("tableConfig", FieldType.MESSAGE, false, false, false, 3);
+
+        /**
+         * Creates a new table metadata object.
+         *
+         * @param tableId Table ID
+         * @param tableName Table name
+         * @param tableConfig Table serialization config
+         */
+        public TableMetadata(int tableId, String tableName, MerkleDbTableConfig tableConfig) {
             if (tableId < 0) {
                 throw new IllegalArgumentException("Table ID < 0");
             }
             if (tableId >= MAX_TABLES) {
                 throw new IllegalArgumentException("Table ID >= MAX_TABLES");
             }
+            this.tableId = tableId;
             if (tableName == null) {
                 throw new IllegalArgumentException("Table name is null");
             }
+            this.tableName = tableName;
             if (tableConfig == null) {
                 throw new IllegalArgumentException("Table config is null");
             }
+            this.tableConfig = tableConfig;
+        }
+
+        /**
+         * Creates a new table metadata object by reading it from an input strem.
+         *
+         * @param in Input stream to read table metadata from
+         */
+        public TableMetadata(final ReadableSequentialData in) {
+            // Defaults
+            int tableId = 0;
+            String tableName = null;
+            MerkleDbTableConfig tableConfig = null;
+
+            while (in.hasRemaining()) {
+                final int tag = in.readVarInt(false);
+                final int fieldNum = tag >> TAG_FIELD_OFFSET;
+                if (fieldNum == FIELD_TABLEMETADATA_TABLEID.number()) {
+                    tableId = in.readVarInt(false);
+                } else if (fieldNum == FIELD_TABLEMETADATA_TABLENAME.number()) {
+                    final int len = in.readVarInt(false);
+                    final byte[] bb = new byte[len];
+                    in.readBytes(bb);
+                    tableName = new String(bb, StandardCharsets.UTF_8);
+                } else if (fieldNum == FIELD_TABLEMETADATA_TABLECONFIG.number()) {
+                    final int len = in.readVarInt(false);
+                    final long oldLimit = in.limit();
+                    in.limit(in.position() + len);
+                    tableConfig = new MerkleDbTableConfig(in);
+                    in.limit(oldLimit);
+                } else {
+                    throw new IllegalArgumentException("Unknown table metadata field: " + fieldNum);
+                }
+            }
+
+            Objects.requireNonNull(tableName, "Null table name");
+            Objects.requireNonNull(tableConfig, "Null table config");
+
+            this.tableId = tableId;
+            this.tableName = tableName;
+            this.tableConfig = tableConfig;
+        }
+
+        public int getTableId() {
+            return tableId;
+        }
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public MerkleDbTableConfig getTableConfig() {
+            return tableConfig;
+        }
+
+        public int pbjSizeInBytes() {
+            int size = 0;
+            if (tableId != 0) {
+                size += ProtoUtils.sizeOfTag(FIELD_TABLEMETADATA_TABLEID, ProtoUtils.WIRE_TYPE_VARINT);
+                size += ProtoUtils.sizeOfVarInt32(tableId);
+            }
+            size += ProtoUtils.sizeOfDelimited(
+                    FIELD_TABLEMETADATA_TABLENAME, tableName.getBytes(StandardCharsets.UTF_8).length);
+            size += ProtoUtils.sizeOfDelimited(FIELD_TABLEMETADATA_TABLECONFIG, tableConfig.pbjSizeInBytes());
+            return size;
+        }
+
+        public void writeTo(final WritableSequentialData out) {
+            if (tableId != 0) {
+                ProtoUtils.writeTag(out, FIELD_TABLEMETADATA_TABLEID);
+                out.writeVarInt(tableId, false);
+            }
+            final byte[] bb = tableName.getBytes(StandardCharsets.UTF_8);
+            ProtoUtils.writeDelimited(out, FIELD_TABLEMETADATA_TABLENAME, bb.length, t -> t.writeBytes(bb));
+            ProtoUtils.writeDelimited(
+                    out, FIELD_TABLEMETADATA_TABLECONFIG, tableConfig.pbjSizeInBytes(), tableConfig::writeTo);
         }
     }
 

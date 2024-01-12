@@ -18,9 +18,12 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
@@ -30,8 +33,10 @@ import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class UniqueTokenKeySerializerTest {
+
     private static final long EXAMPLE_SERIAL = 0xFAFF_FFFF_FFFF_FFFFL;
-    public static final int UNIQUE_TOKEN_KEY_SIZE = 17;
+
+    private static final int UNIQUE_TOKEN_KEY_SIZE = 17;
 
     @Test
     void deserializeToUniqueTokenKey_whenValidVersion_shouldMatch() throws IOException {
@@ -47,12 +52,30 @@ class UniqueTokenKeySerializerTest {
     }
 
     @Test
-    void serializeUniqueTokenKey_shouldReturnExpectedBytes() throws IOException {
+    void serializeToPbj_shouldReturnExpectedBytes() {
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(UNIQUE_TOKEN_KEY_SIZE);
+        final WritableSequentialData out = BufferedData.wrap(byteBuffer);
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+
+        final long originalPos = out.position();
+        serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), out);
+        final long finalPos = out.position();
+
+        assertThat(finalPos - originalPos).isEqualTo(UNIQUE_TOKEN_KEY_SIZE);
+        assertThat(byteBuffer.array())
+                .isEqualTo(Bytes.concat(
+                        new byte[] {(byte) 0x88},
+                        Longs.toByteArray(Long.MAX_VALUE),
+                        Longs.toByteArray(EXAMPLE_SERIAL)));
+    }
+
+    @Test
+    void serializeToByteBuffer_shouldReturnExpectedBytes() throws IOException {
         final ByteBuffer byteBuffer = ByteBuffer.allocate(UNIQUE_TOKEN_KEY_SIZE);
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        final int len = serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), byteBuffer);
+        serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), byteBuffer);
 
-        assertThat(len).isEqualTo(UNIQUE_TOKEN_KEY_SIZE);
+        assertThat(byteBuffer.position()).isEqualTo(UNIQUE_TOKEN_KEY_SIZE);
         assertThat(byteBuffer.array())
                 .isEqualTo(Bytes.concat(
                         new byte[] {(byte) 0x88},
@@ -81,15 +104,6 @@ class UniqueTokenKeySerializerTest {
                 .isFalse();
     }
 
-    @Test
-    void deserializeKeySize_shouldReturnExpectedSize() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.wrap(new byte[UNIQUE_TOKEN_KEY_SIZE]);
-        new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL).serialize(buffer);
-        buffer.rewind();
-        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        assertThat(serializer.deserializeKeySize(buffer)).isEqualTo(UNIQUE_TOKEN_KEY_SIZE);
-    }
-
     // Test invariants. The below tests are designed to fail if one accidentally modifies specified
     // constants.
     @Test
@@ -106,6 +120,13 @@ class UniqueTokenKeySerializerTest {
     }
 
     @Test
+    void serializer_getSerializedSize() {
+        final var key = new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL);
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        assertEquals(UNIQUE_TOKEN_KEY_SIZE, serializer.getSerializedSize(key));
+    }
+
+    @Test
     void serializer_version() {
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         assertThat(serializer.getVersion()).isEqualTo(1);
@@ -115,7 +136,7 @@ class UniqueTokenKeySerializerTest {
     @Test
     void serializer_classId() {
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        assertThat(serializer.getClassId()).isEqualTo(0xb3c94b6cf62aa6c4L);
+        assertThat(serializer.getClassId()).isEqualTo(0xb3c94b6cf62aa6c5L);
     }
 
     @Test

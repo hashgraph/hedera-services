@@ -31,6 +31,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -134,12 +135,12 @@ public class SerdeUtils {
     }
 
     public static <T extends VirtualValue> T deserializeFromBuffer(
-            final Supplier<T> factory, final int version, final byte[] serializedForm) {
-        final var reconstruction = factory.get();
+            final int version, final byte[] serializedForm, final ValueSerializer<T> serializer) {
+        final T reconstruction;
 
         final var buffer = ByteBuffer.wrap(serializedForm);
         try {
-            reconstruction.deserialize(buffer, version);
+            reconstruction = serializer.deserialize(buffer, version);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -164,10 +165,11 @@ public class SerdeUtils {
         return baos.toByteArray();
     }
 
-    public static <T extends VirtualValue> byte[] serializeToBuffer(final T source, final int maxSerializedLen) {
+    public static <T extends VirtualValue> byte[] serializeToBuffer(
+            final T source, final ValueSerializer<T> serializer, final int maxSerializedLen) {
         final var buffer = ByteBuffer.wrap(new byte[maxSerializedLen]);
         try {
-            source.serialize(buffer);
+            serializer.serialize(source, buffer);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
