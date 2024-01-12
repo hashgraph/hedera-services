@@ -18,6 +18,8 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.io.FileManipulation.corruptFile;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.truncateFile;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -29,12 +31,14 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,14 +50,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("PCES Read Write Tests")
 class PcesReadWriteTests {
@@ -80,9 +85,14 @@ class PcesReadWriteTests {
         FileUtils.deleteDirectory(testDirectory);
     }
 
-    @Test
+    protected static Stream<Arguments> buildArguments() {
+        return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
+    }
+
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Write Then Read Test")
-    void writeThenReadTest() throws IOException {
+    void writeThenReadTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final int numEvents = 100;
@@ -99,15 +109,21 @@ class PcesReadWriteTests {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
-        long maximumGeneration = Long.MIN_VALUE;
+        long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
-        maximumGeneration += random.nextInt(0, 10);
+        upperBound += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
+                ancientMode,
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                upperBound,
+                0,
+                testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
         for (final GossipEvent event : events) {
@@ -125,9 +141,10 @@ class PcesReadWriteTests {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Read Files After Minimum Test")
-    void readFilesAfterMinimumTest() throws IOException {
+    void readFilesAfterMinimumTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final int numEvents = 100;
@@ -144,21 +161,22 @@ class PcesReadWriteTests {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
-        long maximumGeneration = Long.MIN_VALUE;
+        long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
-        final long middle = maximumGeneration / 2;
+        final long middle = upperBound / 2;
 
-        maximumGeneration += random.nextInt(0, 10);
+        upperBound += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
+                ancientMode,
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 0,
-                maximumGeneration,
-                maximumGeneration,
+                upperBound,
+                upperBound,
                 testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
@@ -172,11 +190,11 @@ class PcesReadWriteTests {
         final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
 
-        // We don't want any events with a generation less than the middle
+        // We don't want any events with an ancient indicator less than the middle
         final Iterator<GossipEvent> it = events.iterator();
         while (it.hasNext()) {
             final GossipEvent event = it.next();
-            if (event.getGeneration() < middle) {
+            if (event.getAncientIndicator(ancientMode) < middle) {
                 it.remove();
             }
         }
@@ -187,12 +205,14 @@ class PcesReadWriteTests {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Read Empty File Test")
-    void readEmptyFileTest() throws IOException {
+    void readEmptyFileTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PcesFile file = PcesFile.of(
+                ancientMode,
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 random.nextLong(0, 1000),
@@ -208,74 +228,78 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @MethodSource("buildArguments")
     @DisplayName("Truncated Event Test")
-    void truncatedEventTest(final boolean truncateOnBoundary) throws IOException {
-        final Random random = RandomUtils.getRandomPrintSeed();
+    void truncatedEventTest(@NonNull final AncientMode ancientMode) throws IOException {
+        for (final boolean truncateOnBoundary : List.of(true, false)) {
+            final Random random = RandomUtils.getRandomPrintSeed();
 
-        final int numEvents = 100;
+            final int numEvents = 100;
 
-        final StandardGraphGenerator generator = new StandardGraphGenerator(
-                random.nextLong(),
-                new StandardEventSource(),
-                new StandardEventSource(),
-                new StandardEventSource(),
-                new StandardEventSource());
+            final StandardGraphGenerator generator = new StandardGraphGenerator(
+                    random.nextLong(),
+                    new StandardEventSource(),
+                    new StandardEventSource(),
+                    new StandardEventSource(),
+                    new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
-        for (int i = 0; i < numEvents; i++) {
-            events.add(generator.generateEvent().getBaseEvent());
-        }
+            final List<GossipEvent> events = new ArrayList<>();
+            for (int i = 0; i < numEvents; i++) {
+                events.add(generator.generateEvent().getBaseEvent());
+            }
 
-        long maximumGeneration = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
-            maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
-        }
+            long upperBound = Long.MIN_VALUE;
+            for (final GossipEvent event : events) {
+                upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
+            }
 
-        maximumGeneration += random.nextInt(0, 10);
+            upperBound += random.nextInt(0, 10);
 
-        final PcesFile file = PcesFile.of(
-                RandomUtils.randomInstant(random),
-                random.nextInt(0, 100),
-                0,
-                maximumGeneration,
-                maximumGeneration,
-                testDirectory);
+            final PcesFile file = PcesFile.of(
+                    ancientMode,
+                    RandomUtils.randomInstant(random),
+                    random.nextInt(0, 100),
+                    0,
+                    upperBound,
+                    upperBound,
+                    testDirectory);
 
-        final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
+            final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
-        for (int i = 0; i < events.size(); i++) {
-            final GossipEvent event = events.get(i);
-            mutableFile.writeEvent(event);
-            byteBoundaries.put(i, (int) mutableFile.fileSize());
-        }
+            final PcesMutableFile mutableFile = file.getMutableFile();
+            for (int i = 0; i < events.size(); i++) {
+                final GossipEvent event = events.get(i);
+                mutableFile.writeEvent(event);
+                byteBoundaries.put(i, (int) mutableFile.fileSize());
+            }
 
-        mutableFile.close();
+            mutableFile.close();
 
-        final int lastEventIndex =
-                random.nextInt(0, events.size() - 2 /* make sure we always truncate at least one event */);
+            final int lastEventIndex =
+                    random.nextInt(0, events.size() - 2 /* make sure we always truncate at least one event */);
 
-        final int truncationPosition = byteBoundaries.get(lastEventIndex) + (truncateOnBoundary ? 0 : 1);
+            final int truncationPosition = byteBoundaries.get(lastEventIndex) + (truncateOnBoundary ? 0 : 1);
 
-        truncateFile(file.getPath(), truncationPosition);
+            truncateFile(file.getPath(), truncationPosition);
 
-        final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
-        final List<GossipEvent> deserializedEvents = new ArrayList<>();
-        iterator.forEachRemaining(deserializedEvents::add);
+            final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
+            final List<GossipEvent> deserializedEvents = new ArrayList<>();
+            iterator.forEachRemaining(deserializedEvents::add);
 
-        assertEquals(truncateOnBoundary, !iterator.hasPartialEvent());
+            assertEquals(truncateOnBoundary, !iterator.hasPartialEvent());
 
-        assertEquals(lastEventIndex + 1, deserializedEvents.size());
+            assertEquals(lastEventIndex + 1, deserializedEvents.size());
 
-        for (int i = 0; i < deserializedEvents.size(); i++) {
-            assertEquals(events.get(i), deserializedEvents.get(i));
+            for (int i = 0; i < deserializedEvents.size(); i++) {
+                assertEquals(events.get(i), deserializedEvents.get(i));
+            }
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Corrupted Events Test")
-    void corruptedEventsTest() throws IOException {
+    void corruptedEventsTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final int numEvents = 100;
@@ -292,15 +316,21 @@ class PcesReadWriteTests {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
-        long maximumGeneration = Long.MIN_VALUE;
+        long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
-        maximumGeneration += random.nextInt(0, 10);
+        upperBound += random.nextInt(0, 10);
 
         final PcesFile file = PcesFile.of(
-                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
+                ancientMode,
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                upperBound,
+                0,
+                testDirectory);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -329,9 +359,10 @@ class PcesReadWriteTests {
         assertThrows(IOException.class, iterator::next);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Write Invalid Event Test")
-    void writeInvalidEventTest() throws IOException {
+    void writeInvalidEventTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final int numEvents = 100;
@@ -348,30 +379,31 @@ class PcesReadWriteTests {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
-        long maximumGeneration = Long.MIN_VALUE;
+        long lowerBound = Long.MAX_VALUE;
+        long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
-            maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
+            lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
-        // Intentionally choose minimum and maximum generations that do not permit all generated events
-        final long restrictedMinimumGeneration = minimumGeneration + (minimumGeneration + maximumGeneration) / 4;
-        final long restrictedMaximumGeneration = maximumGeneration - (minimumGeneration + maximumGeneration) / 4;
+        // Intentionally choose minimum and maximum boundaries that do not permit all generated events
+        final long restrictedLowerBound = lowerBound + (lowerBound + upperBound) / 4;
+        final long restrictedUpperBound = upperBound - (lowerBound + upperBound) / 4;
 
         final PcesFile file = PcesFile.of(
+                ancientMode,
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
-                restrictedMinimumGeneration,
-                restrictedMaximumGeneration,
+                restrictedLowerBound,
+                restrictedUpperBound,
                 0,
                 testDirectory);
         final PcesMutableFile mutableFile = file.getMutableFile();
 
         final List<GossipEvent> validEvents = new ArrayList<>();
         for (final GossipEvent event : events) {
-            if (event.getGeneration() >= restrictedMinimumGeneration
-                    && event.getGeneration() <= restrictedMaximumGeneration) {
+            if (event.getAncientIndicator(ancientMode) >= restrictedLowerBound
+                    && event.getAncientIndicator(ancientMode) <= restrictedUpperBound) {
                 mutableFile.writeEvent(event);
                 validEvents.add(event);
             } else {
@@ -389,9 +421,10 @@ class PcesReadWriteTests {
         assertFalse(iterator.hasNext());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Span Compression Test")
-    void spanCompressionTest() throws IOException {
+    void spanCompressionTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed(0);
 
         final int numEvents = 100;
@@ -408,20 +441,21 @@ class PcesReadWriteTests {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
-        long maximumGeneration = Long.MIN_VALUE;
+        long lowerBound = Long.MAX_VALUE;
+        long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
-            maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
+            lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
-        maximumGeneration += random.nextInt(1, 10);
+        upperBound += random.nextInt(1, 10);
 
         final PcesFile file = PcesFile.of(
+                ancientMode,
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
+                lowerBound,
+                upperBound,
                 0,
                 testDirectory);
 
@@ -431,17 +465,15 @@ class PcesReadWriteTests {
         }
 
         mutableFile.close();
-        final PcesFile compressedFile = mutableFile.compressGenerationalSpan(0);
+        final PcesFile compressedFile = mutableFile.compressSpan(0);
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
-        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
-        assertTrue(maximumGeneration > compressedFile.getMaximumGeneration());
-        assertEquals(
-                mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration());
+        assertEquals(file.getLowerBound(), compressedFile.getLowerBound());
+        assertTrue(upperBound > compressedFile.getUpperBound());
+        assertEquals(mutableFile.getUtilizedSpan(), compressedFile.getUpperBound() - compressedFile.getLowerBound());
         assertNotEquals(file.getPath(), compressedFile.getPath());
-        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertNotEquals(file.getUpperBound(), compressedFile.getUpperBound());
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
@@ -454,9 +486,10 @@ class PcesReadWriteTests {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Partial Span Compression Test")
-    void partialSpanCompressionTest() throws IOException {
+    void partialSpanCompressionTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed(0);
 
         final int numEvents = 100;
@@ -473,21 +506,22 @@ class PcesReadWriteTests {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
-        long minimumEventGeneration = Long.MAX_VALUE;
-        long maximumEventGeneration = Long.MIN_VALUE;
+        long lowerBound = Long.MAX_VALUE;
+        long upperBound = Long.MIN_VALUE;
         for (final GossipEvent event : events) {
-            minimumEventGeneration = Math.min(minimumEventGeneration, event.getGeneration());
-            maximumEventGeneration = Math.max(maximumEventGeneration, event.getGeneration());
+            lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
-        final long maximumFileGeneration = maximumEventGeneration + random.nextInt(10, 20);
+        final long maximumFileBoundary = upperBound + random.nextInt(10, 20);
         final long uncompressedSpan = 5;
 
         final PcesFile file = PcesFile.of(
+                ancientMode,
                 RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
-                minimumEventGeneration,
-                maximumFileGeneration,
+                lowerBound,
+                maximumFileBoundary,
                 0,
                 testDirectory);
 
@@ -497,17 +531,17 @@ class PcesReadWriteTests {
         }
 
         mutableFile.close();
-        final PcesFile compressedFile = mutableFile.compressGenerationalSpan(maximumEventGeneration + uncompressedSpan);
+        final PcesFile compressedFile = mutableFile.compressSpan(upperBound + uncompressedSpan);
 
         assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
         assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
-        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
-        assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.getMaximumGeneration());
+        assertEquals(file.getLowerBound(), compressedFile.getLowerBound());
+        assertEquals(upperBound + uncompressedSpan, compressedFile.getUpperBound());
         assertEquals(
-                mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration() - uncompressedSpan);
+                mutableFile.getUtilizedSpan(),
+                compressedFile.getUpperBound() - compressedFile.getLowerBound() - uncompressedSpan);
         assertNotEquals(file.getPath(), compressedFile.getPath());
-        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertNotEquals(file.getUpperBound(), compressedFile.getUpperBound());
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
@@ -520,10 +554,11 @@ class PcesReadWriteTests {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Empty File Test")
-    void emptyFileTest() throws IOException {
-        final PcesFile file = PcesFile.of(Instant.now(), 0, 0, 100, 0, testDirectory);
+    void emptyFileTest(@NonNull final AncientMode ancientMode) throws IOException {
+        final PcesFile file = PcesFile.of(ancientMode, Instant.now(), 0, 0, 100, 0, testDirectory);
 
         final Path path = file.getPath();
 

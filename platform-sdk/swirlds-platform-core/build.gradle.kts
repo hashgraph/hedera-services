@@ -37,6 +37,7 @@ jmhModuleInfo {
 }
 
 testModuleInfo {
+    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.common.testing")

@@ -20,19 +20,23 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * Iterates over the events in a single preconsensus event file.
  */
 public class PcesFileIterator implements IOIterator<GossipEvent> {
 
-    private final long minimumGeneration;
+    private final long lowerBound;
+    private final AncientMode fileType;
     private final SerializableDataInputStream stream;
     private boolean hasPartialEvent = false;
     private final CountingStreamExtension counter;
@@ -42,15 +46,17 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
     /**
      * Create a new iterator that walks over events in a preconsensus event file.
      *
-     * @param fileDescriptor
-     * 		describes a preconsensus event file
-     * @param minimumGeneration
-     * 		the minimum generation to return, any events in the file with a smaller
-     * 		generation are ignored and not returned
+     * @param fileDescriptor describes a preconsensus event file
+     * @param lowerBound     the lower bound for all events to be returned, corresponds to either generation or birth
+     *                       round depending on the {@link PcesFile} type
+     * @param fileType       the type of file to read
      */
-    public PcesFileIterator(final PcesFile fileDescriptor, final long minimumGeneration) throws IOException {
+    public PcesFileIterator(
+            @NonNull final PcesFile fileDescriptor, final long lowerBound, @NonNull final AncientMode fileType)
+            throws IOException {
 
-        this.minimumGeneration = minimumGeneration;
+        this.lowerBound = lowerBound;
+        this.fileType = Objects.requireNonNull(fileType);
         counter = new CountingStreamExtension();
         stream = new SerializableDataInputStream(new ExtendableInputStream(
                 new BufferedInputStream(
@@ -79,7 +85,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
 
             try {
                 final GossipEvent candidate = stream.readSerializable(false, GossipEvent::new);
-                if (candidate.getGeneration() >= minimumGeneration) {
+                if (candidate.getAncientIndicator(fileType) >= lowerBound) {
                     next = candidate;
                 }
             } catch (final EOFException e) {
@@ -95,8 +101,8 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
     }
 
     /**
-     * If true then this file contained a partial event. If false then the last event in the file was fully written
-     * when the file was closed.
+     * If true then this file contained a partial event. If false then the last event in the file was fully written when
+     * the file was closed.
      */
     public boolean hasPartialEvent() {
         return hasPartialEvent;
@@ -115,6 +121,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public GossipEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException("no files remain in this iterator");

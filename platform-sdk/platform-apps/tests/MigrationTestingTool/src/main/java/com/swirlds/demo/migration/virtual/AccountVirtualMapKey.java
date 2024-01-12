@@ -16,6 +16,9 @@
 
 package com.swirlds.demo.migration.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -35,16 +38,16 @@ public class AccountVirtualMapKey implements VirtualKey {
     }
 
     private long realmID;
-    private long shardId;
+    private long shardID;
     private long accountID;
 
     public AccountVirtualMapKey() {
         this(0, 0, 0);
     }
 
-    public AccountVirtualMapKey(final long realmID, final long shardId, final long accountID) {
+    public AccountVirtualMapKey(final long realmID, final long shardID, final long accountID) {
         this.realmID = realmID;
-        this.shardId = shardId;
+        this.shardID = shardID;
         this.accountID = accountID;
     }
 
@@ -70,8 +73,21 @@ public class AccountVirtualMapKey implements VirtualKey {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(realmID);
-        out.writeLong(shardId);
+        out.writeLong(shardID);
         out.writeLong(accountID);
+    }
+
+    void serialize(final WritableSequentialData out) {
+        out.writeLong(realmID);
+        out.writeLong(shardID);
+        out.writeLong(accountID);
+    }
+
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
+        buffer.putLong(realmID);
+        buffer.putLong(shardID);
+        buffer.putLong(accountID);
     }
 
     /**
@@ -80,32 +96,30 @@ public class AccountVirtualMapKey implements VirtualKey {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         this.realmID = in.readLong();
-        this.shardId = in.readLong();
+        this.shardID = in.readLong();
         this.accountID = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.putLong(realmID);
-        buffer.putLong(shardId);
-        buffer.putLong(accountID);
+    void deserialize(final ReadableSequentialData in) {
+        this.realmID = in.readLong();
+        this.shardID = in.readLong();
+        this.accountID = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer) {
         this.realmID = buffer.getLong();
-        this.shardId = buffer.getLong();
+        this.shardID = buffer.getLong();
         this.accountID = buffer.getLong();
     }
 
-    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
-        return realmID == buffer.getLong() && shardId == buffer.getLong() && accountID == buffer.getLong();
+    boolean equals(final BufferedData buffer) {
+        return realmID == buffer.readLong() && shardID == buffer.readLong() && accountID == buffer.readLong();
+    }
+
+    @Deprecated
+    boolean equals(final ByteBuffer buffer, final int version) {
+        return realmID == buffer.getLong() && shardID == buffer.getLong() && accountID == buffer.getLong();
     }
 
     /**
@@ -115,7 +129,7 @@ public class AccountVirtualMapKey implements VirtualKey {
     public String toString() {
         return "AccountVirtualMapKey{" + "realmID="
                 + realmID + ", shardId="
-                + shardId + ", accountID="
+                + shardID + ", accountID="
                 + accountID + '}';
     }
 
@@ -131,7 +145,7 @@ public class AccountVirtualMapKey implements VirtualKey {
             return false;
         }
         final AccountVirtualMapKey that = (AccountVirtualMapKey) other;
-        return realmID == that.realmID && shardId == that.shardId && accountID == that.accountID;
+        return realmID == that.realmID && shardID == that.shardID && accountID == that.accountID;
     }
 
     /**
@@ -139,7 +153,7 @@ public class AccountVirtualMapKey implements VirtualKey {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(realmID, shardId, accountID);
+        return Objects.hash(realmID, shardID, accountID);
     }
 
     public static int getSizeInBytes() {

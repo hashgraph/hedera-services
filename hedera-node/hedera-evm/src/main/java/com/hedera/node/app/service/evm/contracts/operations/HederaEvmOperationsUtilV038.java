@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
@@ -31,6 +32,7 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 
 public interface HederaEvmOperationsUtilV038 {
+    public static String EVM_VERSION_0_46 = "v0.46";
 
     /**
      * An extracted address check and execution of extended Hedera Operations. Halts the execution
@@ -53,15 +55,19 @@ public interface HederaEvmOperationsUtilV038 {
             @NonNull final Supplier<Operation.OperationResult> supplierExecution,
             @NonNull final BiPredicate<Address, MessageFrame> addressValidator,
             @NonNull final Predicate<Address> systemAccountDetector,
-            @NonNull final Supplier<Operation.OperationResult> systemAccountExecutionSupplier) {
+            @NonNull final Supplier<Operation.OperationResult> systemAccountExecutionSupplier,
+            @NonNull final EvmProperties evmProperties) {
         try {
             final var address = Words.toAddress(supplierAddressBytes.get());
             if (systemAccountDetector.test(address)) {
                 return systemAccountExecutionSupplier.get();
             }
-            if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
-                return new Operation.OperationResult(
-                        supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+
+            if (!evmProperties.callsToNonExistingEntitiesEnabled(frame.getContractAddress())) {
+                if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
+                    return new Operation.OperationResult(
+                            supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+                }
             }
 
             return supplierExecution.get();

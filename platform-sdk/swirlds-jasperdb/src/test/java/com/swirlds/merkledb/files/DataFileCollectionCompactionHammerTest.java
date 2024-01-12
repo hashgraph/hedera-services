@@ -20,8 +20,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -71,8 +73,12 @@ class DataFileCollectionCompactionHammerTest {
             final var serializer = new ExampleFixedSizeDataSerializer();
             String storeName = "benchmark";
             final var coll = new DataFileCollection<>(
-                    tempFileDir.resolve(storeName), storeName, serializer, (key, dataLocation, dataValue) -> {});
-            final var compactor = new DataFileCompactor(storeName, coll, index, null, null, null, null);
+                    ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                    tempFileDir.resolve(storeName),
+                    storeName,
+                    serializer,
+                    (dataLocation, dataValue) -> {});
+            final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
 
             final Random rand = new Random(777);
             for (int i = 0; i < numFiles; i++) {
@@ -91,7 +97,7 @@ class DataFileCollectionCompactionHammerTest {
             }
 
             final long start = System.currentTimeMillis();
-            final var filesToMerge = (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
+            final var filesToMerge = coll.getAllCompletedFiles();
             compactor.compactFiles(index, filesToMerge, 1);
             System.out.println(numFiles + " files took " + (System.currentTimeMillis() - start) + "ms");
             index.close();
@@ -128,8 +134,12 @@ class DataFileCollectionCompactionHammerTest {
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "hammer";
         final var coll = new DataFileCollection<>(
-                tempFileDir.resolve(storeName), storeName, serializer, (key, dataLocation, dataValue) -> {});
-        final var compactor = new DataFileCompactor(storeName, coll, index, null, null, null, null);
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                tempFileDir.resolve(storeName),
+                storeName,
+                serializer,
+                (dataLocation, dataValue) -> {});
+        final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
 
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);
@@ -155,8 +165,7 @@ class DataFileCollectionCompactionHammerTest {
         ExecutorService compactorService = Executors.newSingleThreadExecutor();
         Future<?> compactorFuture = compactorService.submit((Callable<Void>) () -> {
             while (!stop.get()) {
-                final List<DataFileReader<?>> filesToMerge =
-                        (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
+                final List<DataFileReader<long[]>> filesToMerge = coll.getAllCompletedFiles();
                 if (filesToMerge.size() > compactor.getMinNumberOfFilesToCompact()) {
                     System.out.println(filesToMerge.size());
                 }

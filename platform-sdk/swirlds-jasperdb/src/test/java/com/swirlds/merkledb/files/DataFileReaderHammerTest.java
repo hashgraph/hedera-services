@@ -18,6 +18,8 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -70,9 +72,9 @@ public class DataFileReaderHammerTest {
         final ExecutorService exec = Executors.newFixedThreadPool(readerThreads);
         final Random rand = new Random();
         final DataFileMetadata metadata =
-                new DataFileMetadata(0, itemSize, itemCount, 0, Instant.now(), 0, INITIAL_COMPACTION_LEVEL);
+                new DataFileMetadata(itemCount, 0, Instant.now(), 0, INITIAL_COMPACTION_LEVEL);
         final DataFileReader<byte[]> dataReader =
-                new DataFileReader<>(tempFile, new TestDataItemSerializer(itemSize), metadata);
+                new DataFileReaderPbj<>(tempFile, new TestDataItemSerializer(itemSize), metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);
         final AtomicReferenceArray<Thread> threads = new AtomicReferenceArray<>(readerThreads);
         final Future<?>[] jobs = new Future[readerThreads];
@@ -144,26 +146,35 @@ public class DataFileReaderHammerTest {
         }
 
         @Override
-        public int serialize(byte[] data, ByteBuffer buffer) throws IOException {
-            buffer.put(data);
-            return size;
-        }
-
-        @Override
-        public byte[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-            final byte[] r = new byte[size];
-            buffer.get(r);
-            return r;
-        }
-
-        @Override
         public int getHeaderSize() {
-            return 0;
+            throw new UnsupportedOperationException("Not implemented");
         }
 
         @Override
         public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-            return new DataItemHeader(size, 0);
+            throw new UnsupportedOperationException("Not implemented");
+        }
+
+        @Override
+        public void serialize(byte[] data, WritableSequentialData out) {
+            out.writeBytes(data);
+        }
+
+        @Override
+        public void serialize(byte[] data, ByteBuffer buffer) throws IOException {
+            throw new UnsupportedOperationException("Not implemented");
+        }
+
+        @Override
+        public byte[] deserialize(ReadableSequentialData in) {
+            final byte[] r = new byte[size];
+            in.readBytes(r);
+            return r;
+        }
+
+        @Override
+        public byte[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+            throw new UnsupportedOperationException("Not implemented");
         }
     }
 }

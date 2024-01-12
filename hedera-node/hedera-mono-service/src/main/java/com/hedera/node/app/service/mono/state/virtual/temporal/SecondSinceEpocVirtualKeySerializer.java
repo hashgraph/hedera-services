@@ -16,66 +16,25 @@
 
 package com.hedera.node.app.service.mono.state.virtual.temporal;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<SecondSinceEpocVirtualKey> {
+
     static final long CLASS_ID = 0xced4f0425c211ba2L;
+
     static final int CURRENT_VERSION = 1;
 
     static final long DATA_VERSION = 1;
 
-    @Override
-    public int deserializeKeySize(ByteBuffer byteBuffer) {
-        return SecondSinceEpocVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public int getSerializedSize() {
-        return SecondSinceEpocVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public long getCurrentDataVersion() {
-        return DATA_VERSION;
-    }
-
-    @Override
-    public KeyIndexType getIndexType() {
-        return KeyIndexType.GENERIC;
-    }
-
-    @Override
-    public SecondSinceEpocVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
-        final var key = new SecondSinceEpocVirtualKey();
-        key.deserialize(byteBuffer, (int) version);
-        return key;
-    }
-
-    @Override
-    public boolean equals(ByteBuffer buffer, int version, SecondSinceEpocVirtualKey key) throws IOException {
-        return key.equals(buffer, version);
-    }
-
-    @Override
-    public int serialize(SecondSinceEpocVirtualKey key, ByteBuffer byteBuffer) throws IOException {
-        key.serialize(byteBuffer);
-        return SecondSinceEpocVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
-    }
+    // Serializer info
 
     @Override
     public long getClassId() {
@@ -85,5 +44,67 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
+    }
+
+    // Data version
+
+    @Override
+    public long getCurrentDataVersion() {
+        return DATA_VERSION;
+    }
+
+    // Key serialization
+
+    @Override
+    public KeyIndexType getIndexType() {
+        return KeyIndexType.GENERIC;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return SecondSinceEpocVirtualKey.sizeInBytes();
+    }
+
+    @Override
+    public void serialize(@NonNull final SecondSinceEpocVirtualKey key, @NonNull final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serialize(out);
+    }
+
+    @Override
+    @Deprecated
+    public void serialize(final SecondSinceEpocVirtualKey key, final ByteBuffer buffer) throws IOException {
+        key.serialize(buffer);
+    }
+
+    // Key deserialization
+
+    @Override
+    public SecondSinceEpocVirtualKey deserialize(@NonNull ReadableSequentialData in) {
+        final var key = new SecondSinceEpocVirtualKey();
+        key.deserialize(in);
+        return key;
+    }
+
+    @Override
+    @Deprecated
+    public SecondSinceEpocVirtualKey deserialize(ByteBuffer buffer, long version) throws IOException {
+        final var key = new SecondSinceEpocVirtualKey();
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public boolean equals(@NonNull BufferedData buffer, @NonNull SecondSinceEpocVirtualKey keyToCompare) {
+        Objects.requireNonNull(buffer);
+        Objects.requireNonNull(keyToCompare);
+        return keyToCompare.equalsTo(buffer);
+    }
+
+    @Override
+    @Deprecated
+    public boolean equals(ByteBuffer buffer, int version, SecondSinceEpocVirtualKey key) throws IOException {
+        return key.equalsTo(buffer, version);
     }
 }
