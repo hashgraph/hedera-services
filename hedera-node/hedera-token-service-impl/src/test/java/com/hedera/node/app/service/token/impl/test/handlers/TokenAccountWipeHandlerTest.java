@@ -114,6 +114,17 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
         recordBuilder = new TokenAccountWipeRecordBuilder() {
             private long newTotalSupply;
 
+            @NotNull
+            @Override
+            public TransactionBody transactionBody() {
+                return TransactionBody.DEFAULT;
+            }
+
+            @Override
+            public long transactionFee() {
+                return 0;
+            }
+
             @Override
             public long getNewTotalSupply() {
                 return newTotalSupply;

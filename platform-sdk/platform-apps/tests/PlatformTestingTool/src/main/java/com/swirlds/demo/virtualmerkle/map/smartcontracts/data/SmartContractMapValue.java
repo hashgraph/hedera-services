@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
@@ -162,18 +164,21 @@ public final class SmartContractMapValue implements VirtualValue {
         return 32;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         // Raw write is used due to fixed byte count requirement
         out.write(value);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    void serialize(final WritableSequentialData out) {
+        out.writeBytes(value);
+    }
+
+    @Deprecated
+    void serialize(final ByteBuffer buffer) {
+        buffer.put(value);
+    }
+
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = new byte[getSizeInBytes()];
@@ -182,19 +187,12 @@ public final class SmartContractMapValue implements VirtualValue {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.put(value);
+    void deserialize(final ReadableSequentialData in) {
+        in.readBytes(this.value);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    @Deprecated
+    void deserialize(final ByteBuffer buffer, final int version) {
         buffer.get(this.value, 0, getSizeInBytes());
     }
 

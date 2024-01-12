@@ -87,6 +87,7 @@ public class SigningReqsSuite extends HapiSuite {
 
         return propertyPreservingHapiSpec(
                         "AutoRenewAccountCanUseLegacySigActivationIfConfigured",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES)

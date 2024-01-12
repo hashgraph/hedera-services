@@ -16,16 +16,25 @@
 
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<ScheduleEqualityVirtualValue> {
+
     static final long CLASS_ID = 0x218235815b54ea30L;
+
     static final int CURRENT_VERSION = 1;
+
     static final int DATA_VERSION = 1;
+
     // guesstimate of the typical size of a serialized value
     private static final int TYPICAL_SIZE = 32;
+
+    // Serializer info
 
     @Override
     public long getClassId() {
@@ -37,10 +46,14 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
         return CURRENT_VERSION;
     }
 
+    // Data version
+
     @Override
     public long getCurrentDataVersion() {
         return DATA_VERSION;
     }
+
+    // Value serialization
 
     @Override
     public int getSerializedSize() {
@@ -53,14 +66,39 @@ public class ScheduleEqualityVirtualValueSerializer implements ValueSerializer<S
     }
 
     @Override
-    public int serialize(ScheduleEqualityVirtualValue value, ByteBuffer byteBuffer) throws IOException {
-        return value.serializeReturningBytesWritten(byteBuffer);
+    public int getSerializedSize(@NonNull ScheduleEqualityVirtualValue value) {
+        return value.serializedSizeInBytes();
     }
 
     @Override
-    public ScheduleEqualityVirtualValue deserialize(ByteBuffer byteBuffer, long dataVersion) throws IOException {
+    public void serialize(
+            @NonNull final ScheduleEqualityVirtualValue value, @NonNull final WritableSequentialData out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
+        value.serialize(out);
+    }
+
+    @Override
+    @Deprecated
+    public void serialize(final ScheduleEqualityVirtualValue value, final ByteBuffer buffer) {
+        value.serialize(buffer);
+    }
+
+    // Value deserialization
+
+    @Override
+    public ScheduleEqualityVirtualValue deserialize(@NonNull final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
         final var value = new ScheduleEqualityVirtualValue();
-        value.deserialize(byteBuffer, (int) dataVersion);
+        value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated
+    public ScheduleEqualityVirtualValue deserialize(ByteBuffer buffer, long dataVersion) {
+        final var value = new ScheduleEqualityVirtualValue();
+        value.deserialize(buffer, (int) dataVersion);
         return value;
     }
 }

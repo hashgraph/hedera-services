@@ -65,6 +65,9 @@ class DependencyMigrationTest extends MerkleTestBase {
     private ThrottleAccumulator accumulator;
 
     @Mock
+    private HederaLifecycles lifecycles;
+
+    @Mock
     private NetworkInfo networkInfo;
 
     private MerkleHederaState merkleTree;
@@ -72,8 +75,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree =
-                new MerkleHederaState((tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {}, (s, ab, pc) -> {});
+        merkleTree = new MerkleHederaState(lifecycles);
     }
 
     @Nested
