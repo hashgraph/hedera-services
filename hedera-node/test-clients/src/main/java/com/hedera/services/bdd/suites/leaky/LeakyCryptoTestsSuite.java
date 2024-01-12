@@ -229,7 +229,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 autoAssociationWorksForContracts(),
                 // Interactions between HIP-18 and HIP-542
                 customFeesHaveExpectedAutoCreateInteractions(),
-                callToExpiredContractResultsInSuccess());
+                callToExpiredContractResultsInSuccess(),
                 accountDeletionDoesNotReleaseAliasWithDisabledFF());
     }
 

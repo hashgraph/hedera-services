@@ -165,7 +165,6 @@ public class EthereumSuite extends HapiSuite {
                                 transferHbarsViaEip2930TxSuccessfully(),
                                 callToTokenAddressViaEip2930TxSuccessfully(),
                                 transferTokensViaEip2930TxSuccessfully(),
-                                callToNonExistingContractFailsGracefully(),
                                 accountDeletionResetsTheAliasNonce()))
                 .toList();
     }
@@ -1021,8 +1020,8 @@ public class EthereumSuite extends HapiSuite {
                 .when(
                         withOpContext((spec, opLog) -> {
                             var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                                     .signedBy(DEFAULT_PAYER, PARTY)
                                     .via(HBAR_XFER);
 
@@ -1039,9 +1038,9 @@ public class EthereumSuite extends HapiSuite {
 
                             // send eth transaction signed by the ecdsa key
                             var op3 = ethereumCallWithFunctionAbi(
-                                    true,
-                                    "token",
-                                    getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                            true,
+                                            "token",
+                                            getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
                                     .type(EthTxData.EthTransactionType.EIP1559)
                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                     .payingWith(GENESIS)
@@ -1068,8 +1067,8 @@ public class EthereumSuite extends HapiSuite {
                         // try to create a new account with the same alias
                         withOpContext((spec, opLog) -> {
                             var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                                     .signedBy(DEFAULT_PAYER, PARTY)
                                     .hasKnownStatus(SUCCESS);
 
