@@ -30,9 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
-import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -72,20 +70,20 @@ public class BurnDecoder {
                 ? maybeToken.tokenIdOrThrow()
                 : TokenID.newBuilder().tokenNum(tokenNum).build();
         return TransactionBody.newBuilder()
-                .tokenBurn(burn(
-                        tokenId,
-                        isNonFungible ? -1 : maybeAmount,
-                        isNonFungible ? maybeSerialNos : Collections.emptyList()))
+                .tokenBurn(burn(tokenId, isNonFungible, maybeAmount, maybeSerialNos))
                 .build();
     }
 
     private TokenBurnTransactionBody burn(
-            @NonNull final TokenID tokenID, final long amount, @Nullable final List<Long> serialNos) {
+            @NonNull final TokenID tokenID,
+            final boolean isNonFungible,
+            final long amount,
+            @NonNull final List<Long> serialNos) {
         final var builder = TokenBurnTransactionBody.newBuilder().token(tokenID);
-        if (amount >= 0) {
-            builder.amount(amount);
-        } else {
+        if (isNonFungible) {
             builder.serialNumbers(serialNos);
+        } else {
+            builder.amount(amount);
         }
         return builder.build();
     }
