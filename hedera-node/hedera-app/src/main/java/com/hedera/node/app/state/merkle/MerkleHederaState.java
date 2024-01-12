@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -33,9 +32,7 @@ import com.hedera.node.app.spi.state.WritableQueueStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HandleConsensusRoundListener;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.PreHandleListener;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
@@ -95,10 +92,10 @@ import org.apache.logging.log4j.Logger;
 public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState, HederaState {
     private static final Logger logger = LogManager.getLogger(MerkleHederaState.class);
 
-    /** Used when asked for a service's readable states that we don't have */
+    /**
+     * Used when asked for a service's readable states that we don't have
+     */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
-    /** Used when asked for a service's writable states that we don't have */
-    private static final WritableStates EMPTY_WRITABLE_STATES = new EmptyWritableStates();
 
     // For serialization
     /**
@@ -120,36 +117,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private long classId;
 
     /**
-     * This callback is invoked whenever the consensus round happens. The Hashgraph Platform, today,
-     * only communicates the consensus round through the {@link SwirldState} interface. In the
-     * future it will use a callback on a platform created via a platform builder. Until that
-     * happens the only way our application will know of new transactions, will be through this
-     * callback. Since this is not serialized and saved to state, it must be restored on application
-     * startup. If this is never set, the application will never be able to handle a new round of
-     * transactions.
-     *
-     * <p>This reference is moved forward to the working mutable state.
+     * The callbacks for Hedera lifecycle events.
      */
-    private HandleConsensusRoundListener onHandleConsensusRound;
-
-    /**
-     * This callback is invoked whenever there is an event to pre-handle.
-     *
-     * <p>This reference is moved forward to the working mutable state.
-     */
-    private final PreHandleListener onPreHandle;
-
-    /**
-     * This callback is invoked whenever the state is initialized.
-     *
-     * <p>This reference is moved forward to the working mutable state.
-     */
-    private OnStateInitialized onInit;
-
-    /**
-     * This callback is invoked whenever the updateWeight is called.
-     */
-    private OnUpdateWeight onUpdateWeight;
+    private final HederaLifecycles lifecycles;
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -170,19 +140,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
      *
-     * @param onPreHandle            The callback to invoke when an event is ready for pre-handle
-     * @param onHandleConsensusRound The callback invoked when the platform has
-     * @param onInit                 The callback to invoke when state is initialized by the platform
+     * @param lifecycles The lifecycle callbacks. Cannot be null.
      */
-    public MerkleHederaState(
-            @NonNull final PreHandleListener onPreHandle,
-            @NonNull final HandleConsensusRoundListener onHandleConsensusRound,
-            @NonNull final OnStateInitialized onInit,
-            @NonNull final OnUpdateWeight onUpdateWeight) {
-        this.onPreHandle = requireNonNull(onPreHandle);
-        this.onHandleConsensusRound = requireNonNull(onHandleConsensusRound);
-        this.onInit = requireNonNull(onInit);
-        this.onUpdateWeight = requireNonNull(onUpdateWeight);
+    public MerkleHederaState(@NonNull final HederaLifecycles lifecycles) {
+        this.lifecycles = requireNonNull(lifecycles);
         this.classId = CLASS_ID;
     }
 
@@ -197,13 +158,13 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Deprecated(forRemoval = true)
     public MerkleHederaState() {
         // ConstructableRegistry requires a "working" no-arg constructor
-        onPreHandle = null;
+        this.lifecycles = null;
         this.classId = DO_NOT_USE_IN_REAL_LIFE_CLASS_ID;
     }
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * Called by the platform whenever the state should be initialized. This can happen at genesis startup,
      * on restart, on reconnect, or any other time indicated by the {@code trigger}.
      */
@@ -217,7 +178,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,
         // we simply call the callback handler, which is implemented by the app.
-        this.onInit.onStateInitialized(this, platform, platformState, trigger, deserializedVersion);
+        lifecycles.onStateInitialized(this, platform, platformState, trigger, deserializedVersion);
     }
 
     /**
@@ -227,7 +188,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public AddressBook updateWeight(
             @NonNull final AddressBook configAddressBook, @NonNull final PlatformContext context) {
-        this.onUpdateWeight.updateWeight(this, configAddressBook, context);
+        lifecycles.onUpdateWeight(this, configAddressBook, context);
         return configAddressBook;
     }
 
@@ -241,6 +202,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         super(from);
 
         this.classId = from.classId;
+        this.lifecycles = from.lifecycles;
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -256,21 +218,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                 setChild(childIndex, childToCopy.copy());
             }
         }
-
-        // **MOVE** over the handle listener. Don't leave it on the immutable state
-        this.onHandleConsensusRound = from.onHandleConsensusRound;
-        from.onHandleConsensusRound = null;
-
-        // **MOVE** over the pre-handle; but also leave on the immutable state
-        this.onPreHandle = from.onPreHandle;
-
-        // **MOVE** over the onInit handler. Don't leave it on the immutable state
-        this.onInit = from.onInit;
-        from.onInit = null;
-
-        // **MOVE** over the onUpdateWeight handler. Don't leave it on the immutable state
-        this.onUpdateWeight = from.onUpdateWeight;
-        from.onUpdateWeight = null;
     }
 
     @Override
@@ -333,7 +280,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         });
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MerkleHederaState copy() {
         throwIfImmutable();
@@ -348,9 +297,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         throwIfImmutable();
-        if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.onConsensusRound(round, platformState, this);
-        }
+        lifecycles.onHandleConsensusRound(round, platformState, this);
     }
 
     /**
@@ -358,9 +305,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     @Override
     public void preHandle(@NonNull final Event event) {
-        if (onPreHandle != null) {
-            onPreHandle.onPreHandle(event, this);
-        }
+        lifecycles.onPreHandle(event, this);
     }
 
     /**
@@ -377,10 +322,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
      * MUST have a correct label applied.
      *
-     * @param md   The metadata associated with the state
+     * @param md The metadata associated with the state
      * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
-     *                                  it doesn't have a label, or if the label isn't right.
+     * it doesn't have a label, or if the label isn't right.
      */
     <K, V> void putServiceStateIfAbsent(
             @NonNull final StateMetadata<K, V> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
@@ -436,7 +381,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * Removes the node and metadata from the state merkle tree.
      *
      * @param serviceName The service name. Cannot be null.
-     * @param stateKey    The state key
+     * @param stateKey The state key
      */
     void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
         throwIfImmutable();
@@ -466,7 +411,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * Simple utility method that finds the state node index.
      *
      * @param serviceName the service name
-     * @param stateKey    the state key
+     * @param stateKey the state key
      * @return -1 if not found, otherwise the index into the children
      */
     private int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {

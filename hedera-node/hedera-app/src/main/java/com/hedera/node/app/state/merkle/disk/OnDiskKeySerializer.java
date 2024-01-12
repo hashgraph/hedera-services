@@ -18,12 +18,13 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -40,6 +41,7 @@ import java.util.Objects;
  * @param <K>
  */
 public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>> {
+
     /**
      * This is a hint for virtual maps, it's the best guess as of now. Should be revisited later
      * based on the information about real mainnet entities.
@@ -48,6 +50,9 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x9992382838283412L;
+
+    // Serializer version
+    private static final int VERSION = 1;
 
     private final long classId;
     private final Codec<K> codec;
@@ -66,6 +71,27 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
         this.md = Objects.requireNonNull(md);
         this.codec = md.stateDefinition().keyCodec();
     }
+
+    // Serializer info
+
+    @Override
+    public long getClassId() {
+        return classId;
+    }
+
+    @Override
+    public int getVersion() {
+        return VERSION;
+    }
+
+    // Key info
+
+    @Override
+    public long getCurrentDataVersion() {
+        return OnDiskKey.VERSION;
+    }
+
+    // Key serialization
 
     @Override
     public int getSerializedSize() {
@@ -95,58 +121,64 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
     }
 
     @Override
+    public int getSerializedSize(@NonNull final OnDiskKey<K> key) {
+        return codec.measureRecord(key.getKey());
+    }
+
+    @Override
     public int getTypicalSerializedSize() {
         return TYPICAL_SIZE;
     }
 
+    // Key serialization
+
     @Override
-    public long getCurrentDataVersion() {
-        return 1;
+    public void serialize(@NonNull final OnDiskKey<K> key, final @NonNull WritableSequentialData out) {
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            codec.write(key.getKey(), out);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
-        return byteBuffer.getInt() + Integer.BYTES;
+    @Deprecated(forRemoval = true)
+    public void serialize(final OnDiskKey<K> key, final ByteBuffer buffer) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    // Key deserialization
+
+    @Override
+    public OnDiskKey<K> deserialize(@NonNull final ReadableSequentialData in) {
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            final K k = codec.parse(in);
+            Objects.requireNonNull(k);
+            return new OnDiskKey<>(md, k);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
-        final var buff = BufferedData.wrap(byteBuffer);
-        final var len = buff.readInt();
-        final var pos = buff.position();
-        final var oldLimit = buff.limit();
-        buff.limit(pos + len);
-        final var k = codec.parse(buff);
-        buff.limit(oldLimit);
-        Objects.requireNonNull(k);
-        return new OnDiskKey<>(md, k);
+    public OnDiskKey<K> deserialize(final ByteBuffer buffer, final long ignored) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public int serialize(OnDiskKey<K> key, ByteBuffer buffer) throws IOException {
-        Objects.requireNonNull(key);
-        Objects.requireNonNull(buffer);
-        return key.serializeReturningWrittenBytes(buffer);
+    public boolean equals(@NonNull final BufferedData bufferedData, @NonNull final OnDiskKey<K> keyToCompare) {
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            return codec.fastEquals(keyToCompare.getKey(), bufferedData);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public boolean equals(@NonNull final ByteBuffer byteBuffer, final int ignored, @Nullable final OnDiskKey<K> key)
-            throws IOException {
-        // I really don't have a fast path for this. Which is very problematic for performance.
-        // All we can do is serialize one or deserialize the other! It would be nice if PBJ
-        // had a special method for this, but then we'd have to pipe it through all our APIs again
-        // or create some kind of Codec object with all this stuff on it.
-        final var other = deserialize(byteBuffer, 0);
-        return other.equals(key);
-    }
-
-    @Override
-    public long getClassId() {
-        return classId;
-    }
-
-    @Override
-    public int getVersion() {
-        return 1;
+    public boolean equals(final ByteBuffer byteBuffer, final int ignored, final OnDiskKey<K> key) {
+        throw new UnsupportedOperationException();
     }
 }

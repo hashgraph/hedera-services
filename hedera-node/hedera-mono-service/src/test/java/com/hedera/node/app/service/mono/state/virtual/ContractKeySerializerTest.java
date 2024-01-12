@@ -86,14 +86,10 @@ class ContractKeySerializerTest {
     }
 
     @Test
-    void deserializeKeySizeWorks() {
+    void serializedSizeWorks() {
         final var contractIdNonZeroBytes = contractKey.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
-        final ByteBuffer bin = ByteBuffer.allocate(1);
-        bin.put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .rewind();
-
-        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.deserializeKeySize(bin));
+        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.getSerializedSize(contractKey));
     }
 
     @Test

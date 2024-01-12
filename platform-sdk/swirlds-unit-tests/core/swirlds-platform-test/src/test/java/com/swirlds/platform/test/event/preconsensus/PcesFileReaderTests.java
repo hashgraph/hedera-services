@@ -19,7 +19,9 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_MINIMUM_GENERATION;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,11 +40,13 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
@@ -65,7 +69,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("PcesFileReader Tests")
 class PcesFileReaderTests {
@@ -82,14 +87,11 @@ class PcesFileReaderTests {
 
     private final int fileCount = 100;
 
-    private List<PcesFile> files;
-
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
         fileDirectory = testDirectory.resolve("data").resolve("0");
         random = getRandomPrintSeed();
-        files = new ArrayList<>();
     }
 
     @AfterEach
@@ -97,11 +99,11 @@ class PcesFileReaderTests {
         FileUtils.deleteDirectory(testDirectory);
     }
 
-    private PlatformContext buildContext() {
-        return buildContext(false);
+    private PlatformContext buildContext(@NonNull final AncientMode ancientMode) {
+        return buildContext(false, ancientMode);
     }
 
-    private PlatformContext buildContext(final boolean permitGaps) {
+    private PlatformContext buildContext(final boolean permitGaps, @NonNull final AncientMode ancientMode) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
                 .withValue(
@@ -109,11 +111,17 @@ class PcesFileReaderTests {
                         testDirectory.resolve("recycle")) // FUTURE: No property defined for value
                 .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
                 .withValue(PcesConfig_.PERMIT_GAPS, permitGaps)
+                .withValue(PcesConfig_.COMPACT_LAST_FILE_ON_STARTUP, false)
+                .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();
 
         return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
+    }
+
+    protected static Stream<Arguments> buildArguments() {
+        return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
     }
 
     /**
@@ -133,18 +141,21 @@ class PcesFileReaderTests {
         out.close();
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Read Files In Order Test")
-    void readFilesInOrderTest() throws IOException {
+    void readFilesInOrderTest(@NonNull final AncientMode ancientMode) throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
+        final List<PcesFile> files = new ArrayList<>();
+
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        final long nonExistentGeneration = minimumGeneration - 1;
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        final long nonExistentValue = lowerBound - 1;
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         for (long sequenceNumber = firstSequenceNumber;
@@ -152,94 +163,104 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-            maximumGeneration =
-                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
             createDummyFile(file);
         }
 
-        final PcesFileTracker fileTracker =
-                PcesFileReader.readFilesFromDisk(buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false);
+        final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
-        assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_MINIMUM_GENERATION, 0));
+        assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
         assertIteratorEquality(
-                files.iterator(), fileTracker.getFileIterator(files.getFirst().getMaximumGeneration(), 0));
+                files.iterator(), fileTracker.getFileIterator(files.getFirst().getUpperBound(), 0));
 
-        // attempt to start a non-existent generation
-        assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(nonExistentGeneration, 0));
+        // attempt to start a non-existent ancient indicator
+        assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(nonExistentValue, 0));
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @MethodSource("buildArguments")
     @DisplayName("Read Files In Order Gap Test")
-    void readFilesInOrderGapTest(final boolean permitGaps) throws IOException {
-        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
-        // This will cause the files not to line up alphabetically, and this is a scenario that the
-        // code should be able to handle.
-        final long firstSequenceNumber = random.nextLong(950, 1000);
+    void readFilesInOrderGapTest(@NonNull final AncientMode ancientMode) throws IOException {
+        for (final boolean permitGaps : List.of(true, false)) {
+            // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+            // This will cause the files not to line up alphabetically, and this is a scenario that the
+            // code should be able to handle.
+            final long firstSequenceNumber = random.nextLong(950, 1000);
 
-        final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
-        Instant timestamp = Instant.now();
+            final List<PcesFile> files = new ArrayList<>();
 
-        // Skip the file right in the middle of the sequence
-        final long sequenceNumberToSkip = (2 * firstSequenceNumber + fileCount) / 2;
+            final long maxDelta = random.nextLong(10, 20);
+            long lowerBound = random.nextLong(0, 1000);
+            long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
+            Instant timestamp = Instant.now();
 
-        for (long sequenceNumber = firstSequenceNumber;
-                sequenceNumber < firstSequenceNumber + fileCount;
-                sequenceNumber++) {
+            // Skip the file right in the middle of the sequence
+            final long sequenceNumberToSkip = (2 * firstSequenceNumber + fileCount) / 2;
 
-            final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
+            for (long sequenceNumber = firstSequenceNumber;
+                    sequenceNumber < firstSequenceNumber + fileCount;
+                    sequenceNumber++) {
 
-            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-            maximumGeneration =
-                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
-            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+                final PcesFile file =
+                        PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
-            if (sequenceNumber == sequenceNumberToSkip) {
-                // Intentionally don't write a file
-                continue;
+                lowerBound = random.nextLong(lowerBound, upperBound + 1);
+                upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+                timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+                if (sequenceNumber == sequenceNumberToSkip) {
+                    // Intentionally don't write a file
+                    continue;
+                }
+
+                files.add(file);
+                createDummyFile(file);
             }
 
-            files.add(file);
-            createDummyFile(file);
-        }
+            final PlatformContext platformContext = buildContext(permitGaps, ancientMode);
 
-        final PlatformContext platformContext = buildContext(permitGaps);
-
-        if (permitGaps) {
-            final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
-                    platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, true);
-            // Gaps are allowed. We should see all files except for the one that was skipped.
-            assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_MINIMUM_GENERATION, 0));
-        } else {
-            // Gaps are not allowed.
-            assertThrows(
-                    IllegalStateException.class,
-                    () -> PcesFileReader.readFilesFromDisk(
-                            platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, permitGaps));
+            if (permitGaps) {
+                final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
+                        platformContext, TestRecycleBin.getInstance(), fileDirectory, 0, true, ancientMode);
+                // Gaps are allowed. We should see all files except for the one that was skipped.
+                assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
+            } else {
+                // Gaps are not allowed.
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> PcesFileReader.readFilesFromDisk(
+                                platformContext,
+                                TestRecycleBin.getInstance(),
+                                fileDirectory,
+                                0,
+                                permitGaps,
+                                ancientMode));
+            }
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Read Files From Middle Test")
-    void readFilesFromMiddleTest() throws IOException {
+    void readFilesFromMiddleTest(@NonNull final AncientMode ancientMode) throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
+        final List<PcesFile> files = new ArrayList<>();
+
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         for (long sequenceNumber = firstSequenceNumber;
@@ -247,29 +268,27 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-            maximumGeneration =
-                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
             createDummyFile(file);
         }
 
-        final PcesFileTracker fileTracker =
-                PcesFileReader.readFilesFromDisk(buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false);
+        final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
-        // with a generation greater than or equal to the target generation. Choose a generation that falls
-        // roughly in the middle of the sequence of files.
-        final long targetGeneration = (files.getFirst().getMaximumGeneration()
-                        + files.get(fileCount - 1).getMaximumGeneration())
-                / 2;
+        // with an ancient indicator greater than or equal to the target threshold. Choose an ancient indicator
+        // that falls roughly in the middle of the sequence of files.
+        final long targetAncientIdentifier =
+                (files.getFirst().getUpperBound() + files.get(fileCount - 1).getUpperBound()) / 2;
 
         final List<PcesFile> iteratedFiles = new ArrayList<>();
-        fileTracker.getFileIterator(targetGeneration, 0).forEachRemaining(iteratedFiles::add);
+        fileTracker.getFileIterator(targetAncientIdentifier, 0).forEachRemaining(iteratedFiles::add);
 
         // Find the index in the file list that was returned first by the iterator
         int indexOfFirstFile = 0;
@@ -280,11 +299,11 @@ class PcesFileReaderTests {
         }
 
         // The file immediately before the returned file should not contain any targeted events
-        assertTrue(files.get(indexOfFirstFile - 1).getMaximumGeneration() < targetGeneration);
+        assertTrue(files.get(indexOfFirstFile - 1).getUpperBound() < targetAncientIdentifier);
 
         // The first file returned from the iterator should
-        // have a maximum generation greater than or equal to the target generation.
-        assertTrue(iteratedFiles.getFirst().getMaximumGeneration() >= targetGeneration);
+        // have an upper bound greater than or equal to the target ancient indicator.
+        assertTrue(iteratedFiles.getFirst().getUpperBound() >= targetAncientIdentifier);
 
         // Make sure that the iterator returns files in the correct order.
         final List<PcesFile> expectedFiles = new ArrayList<>(iteratedFiles.size());
@@ -296,22 +315,23 @@ class PcesFileReaderTests {
 
     /**
      * Similar to the other test that starts iteration in the middle, except that files will have the same
-     * generational
-     * bounds with high probability. Not a scenario we are likely to encounter in production, but it's a tricky
-     * edge
+     * bounds with high probability. Not a scenario we are likely to encounter in production, but it's a tricky edge
      * case we need to handle elegantly.
      */
-    @Test
-    @DisplayName("Read Files From Middle Repeating Generations Test")
-    void readFilesFromMiddleRepeatingGenerationsTest() throws IOException {
+    @ParameterizedTest
+    @MethodSource("buildArguments")
+    @DisplayName("Read Files From Middle Repeating Boundaries Test")
+    void readFilesFromMiddleRepeatingBoundariesTest(@NonNull final AncientMode ancientMode) throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
+        final List<PcesFile> files = new ArrayList<>();
+
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         for (long sequenceNumber = firstSequenceNumber;
@@ -319,13 +339,12 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
-            // Advance the generation bounds only 10% of the time
+            // Advance the bounds only 10% of the time
             if (random.nextLong() < 0.1) {
-                minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-                maximumGeneration =
-                        Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+                lowerBound = random.nextLong(lowerBound, upperBound + 1);
+                upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             }
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
@@ -333,18 +352,17 @@ class PcesFileReaderTests {
             createDummyFile(file);
         }
 
-        final PcesFileTracker fileTracker =
-                PcesFileReader.readFilesFromDisk(buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false);
+        final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
-        // with a generation greater than or equal to the target generation. Choose a generation that falls
+        // with an ancient indicator greater than or equal to the target. Choose an ancient indicator that falls
         // roughly in the middle of the sequence of files.
-        final long targetGeneration = (files.getFirst().getMaximumGeneration()
-                        + files.get(fileCount - 1).getMaximumGeneration())
-                / 2;
+        final long targetAncientIdentifier =
+                (files.getFirst().getUpperBound() + files.get(fileCount - 1).getUpperBound()) / 2;
 
         final List<PcesFile> iteratedFiles = new ArrayList<>();
-        fileTracker.getFileIterator(targetGeneration, 0).forEachRemaining(iteratedFiles::add);
+        fileTracker.getFileIterator(targetAncientIdentifier, 0).forEachRemaining(iteratedFiles::add);
 
         // Find the index in the file list that was returned first by the iterator
         int indexOfFirstFile = 0;
@@ -355,11 +373,11 @@ class PcesFileReaderTests {
         }
 
         // The file immediately before the returned file should not contain any targeted events
-        assertTrue(files.get(indexOfFirstFile - 1).getMaximumGeneration() < targetGeneration);
+        assertTrue(files.get(indexOfFirstFile - 1).getUpperBound() < targetAncientIdentifier);
 
         // The first file returned from the iterator should
-        // have a maximum generation greater than or equal to the target generation.
-        assertTrue(iteratedFiles.getFirst().getMaximumGeneration() >= targetGeneration);
+        // have an upper bound greater than or equal to the target ancient indicator.
+        assertTrue(iteratedFiles.getFirst().getUpperBound() >= targetAncientIdentifier);
 
         // Make sure that the iterator returns files in the correct order.
         final List<PcesFile> expectedFiles = new ArrayList<>(iteratedFiles.size());
@@ -369,17 +387,20 @@ class PcesFileReaderTests {
         assertIteratorEquality(expectedFiles.iterator(), iteratedFiles.iterator());
     }
 
-    @Test
-    @DisplayName("Read Files From High Generation Test")
-    void readFilesFromHighGenerationTest() throws IOException {
+    @ParameterizedTest
+    @MethodSource("buildArguments")
+    @DisplayName("Read Files From High ancient indicator Test")
+    void readFilesFromHighAncientIdentifierTest(@NonNull final AncientMode ancientMode) throws IOException {
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
         // code should be able to handle.
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
+        final List<PcesFile> files = new ArrayList<>();
+
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         for (long sequenceNumber = firstSequenceNumber;
@@ -387,39 +408,38 @@ class PcesFileReaderTests {
                 sequenceNumber++) {
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, 0, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-            maximumGeneration =
-                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
             createDummyFile(file);
         }
 
-        final PcesFileTracker fileTracker =
-                PcesFileReader.readFilesFromDisk(buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false);
+        final PcesFileTracker fileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode);
 
-        // Request a generation higher than all files in the data store
-        final long targetGeneration = files.get(fileCount - 1).getMaximumGeneration() + 1;
+        // Request an ancient indicator higher than all files in the data store
+        final long targetAncientIdentifier = files.get(fileCount - 1).getUpperBound() + 1;
 
-        final Iterator<PcesFile> iterator = fileTracker.getFileIterator(targetGeneration, 0);
+        final Iterator<PcesFile> iterator = fileTracker.getFileIterator(targetAncientIdentifier, 0);
         assertFalse(iterator.hasNext());
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Read Files From Empty Stream Test")
-    void readFilesFromEmptyStreamTest() {
+    void readFilesFromEmptyStreamTest(@NonNull final AncientMode ancientMode) {
         assertThrows(
                 NoSuchFileException.class,
                 () -> PcesFileReader.readFilesFromDisk(
-                        buildContext(), TestRecycleBin.getInstance(), fileDirectory, 0, false));
+                        buildContext(ancientMode), TestRecycleBin.getInstance(), fileDirectory, 0, false, ancientMode));
     }
 
     /**
-     * When fixing a discontinuity, invalid files are moved to a "recycle bin" directory. This method validates
-     * that
+     * When fixing a discontinuity, invalid files are moved to a "recycle bin" directory. This method validates that
      * behavior.
      */
     private void validateRecycledFiles(
@@ -451,15 +471,17 @@ class PcesFileReaderTests {
     }
 
     /**
-     * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at the first file
-     * in the
+     * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at the first file in the
      * stream.
      */
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Start And First File Discontinuity In Middle Test")
-    void startAtFirstFileDiscontinuityInMiddleTest() throws IOException {
+    void startAtFirstFileDiscontinuityInMiddleTest(@NonNull final AncientMode ancientMode) throws IOException {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
+
+        final List<PcesFile> files = new ArrayList<>();
 
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -467,8 +489,8 @@ class PcesFileReaderTests {
         final long firstSequenceNumber = random.nextLong(950, 1000);
 
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         final long discontinuitySequenceNumber =
@@ -486,11 +508,10 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
-            maximumGeneration =
-                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -502,7 +523,7 @@ class PcesFileReaderTests {
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext();
+        final PlatformContext platformContext = buildContext(ancientMode);
         final RecycleBinImpl recycleBin = new RecycleBinImpl(
                 platformContext.getConfiguration(),
                 new NoOpMetrics(),
@@ -513,54 +534,53 @@ class PcesFileReaderTests {
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
-        final PcesFileTracker fileTracker1 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound1, false);
+        final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound1, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(),
-                fileTracker1.getFileIterator(NO_MINIMUM_GENERATION, startingRound1));
+                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(NO_LOWER_BOUND, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
-        final PcesFileTracker fileTracker2 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound2, false);
+        final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound2, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(),
-                fileTracker2.getFileIterator(NO_MINIMUM_GENERATION, startingRound2));
+                filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(NO_LOWER_BOUND, startingRound2));
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
-        final PcesFileTracker fileTracker3 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound3, false);
+        final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
 
         assertIteratorEquality(
-                filesBeforeDiscontinuity.iterator(),
-                fileTracker3.getFileIterator(NO_MINIMUM_GENERATION, startingRound3));
+                filesBeforeDiscontinuity.iterator(), fileTracker3.getFileIterator(NO_LOWER_BOUND, startingRound3));
 
         validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
         final long startingRound4 = 0;
-        final PcesFileTracker fileTracker4 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound4, false);
+        final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound4, false, ancientMode);
 
         assertIteratorEquality(
-                Collections.emptyIterator(), fileTracker4.getFileIterator(NO_MINIMUM_GENERATION, startingRound4));
+                Collections.emptyIterator(), fileTracker4.getFileIterator(NO_LOWER_BOUND, startingRound4));
 
         validateRecycledFiles(List.of(), files, platformContext);
     }
 
     /**
-     * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at a file that
-     * comes
+     * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at a file that comes
      * before the discontinuity, but it isn't the first file in the stream.
      */
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Start At Middle File Discontinuity In Middle Test")
-    void startAtMiddleFileDiscontinuityInMiddleTest() throws IOException {
+    void startAtMiddleFileDiscontinuityInMiddleTest(@NonNull final AncientMode ancientMode) throws IOException {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
+
+        final List<PcesFile> files = new ArrayList<>();
 
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -568,8 +588,8 @@ class PcesFileReaderTests {
         final int firstSequenceNumber = random.nextInt(950, 1000);
 
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound + 1, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         final int discontinuitySequenceNumber =
@@ -589,10 +609,10 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
-            maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
+            lowerBound = random.nextLong(lowerBound + 1, upperBound + 1);
+            upperBound = random.nextLong(upperBound + 1, upperBound + maxDelta);
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             if (sequenceNumber >= startSequenceNumber) {
@@ -608,9 +628,9 @@ class PcesFileReaderTests {
 
         // Note that the file at index 0 is not the first file in the stream,
         // but it is the first file we want to iterate
-        final long startGeneration = files.getFirst().getMaximumGeneration();
+        final long startAncientIdentifier = files.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext();
+        final PlatformContext platformContext = buildContext(ancientMode);
 
         final RecycleBinImpl recycleBin = new RecycleBinImpl(
                 platformContext.getConfiguration(),
@@ -622,48 +642,53 @@ class PcesFileReaderTests {
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
-        final PcesFileTracker fileTracker1 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound1, false);
+        final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound1, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startGeneration, startingRound1));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker1.getFileIterator(startAncientIdentifier, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
-        final PcesFileTracker fileTracker2 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound2, false);
+        final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound2, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startGeneration, startingRound2));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker2.getFileIterator(startAncientIdentifier, startingRound2));
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
-        final PcesFileTracker fileTracker3 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound3, false);
+        final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
         assertIteratorEquality(
-                filesBeforeDiscontinuity.iterator(), fileTracker3.getFileIterator(startGeneration, startingRound3));
+                filesBeforeDiscontinuity.iterator(),
+                fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
 
         validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
         final long startingRound4 = 0;
-        final PcesFileTracker fileTracker4 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound4, false);
+        final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound4, false, ancientMode);
         assertIteratorEquality(
-                Collections.emptyIterator(), fileTracker4.getFileIterator(startGeneration, startingRound4));
+                Collections.emptyIterator(), fileTracker4.getFileIterator(startAncientIdentifier, startingRound4));
 
         validateRecycledFiles(List.of(), files, platformContext);
     }
 
     /**
-     * In this test, a discontinuity is placed in the middle of the stream, and we begin iterating on that exact
-     * file.
+     * In this test, a discontinuity is placed in the middle of the stream, and we begin iterating on that exact file.
      */
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Start At Middle File Discontinuity In Middle Test")
-    void startAtDiscontinuityInMiddleTest() throws IOException {
+    void startAtDiscontinuityInMiddleTest(@NonNull final AncientMode ancientMode) throws IOException {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
+
+        final List<PcesFile> files = new ArrayList<>();
 
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -674,8 +699,8 @@ class PcesFileReaderTests {
         // increases by at least 1 from file to file. The purpose for this is to make validation logic simpler.
 
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound + 1, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         final int discontinuitySequenceNumber =
@@ -693,10 +718,10 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
-            maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
+            lowerBound = random.nextLong(lowerBound + 1, upperBound + 1);
+            upperBound = random.nextLong(upperBound + 1, upperBound + maxDelta);
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -710,9 +735,9 @@ class PcesFileReaderTests {
 
         // Note that the file at index 0 is not the first file in the stream,
         // but it is the first file we want to iterate
-        final long startGeneration = filesAfterDiscontinuity.getFirst().getMaximumGeneration();
+        final long startAncientIdentifier = filesAfterDiscontinuity.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext();
+        final PlatformContext platformContext = buildContext(ancientMode);
 
         final RecycleBinImpl recycleBin = new RecycleBinImpl(
                 platformContext.getConfiguration(),
@@ -724,49 +749,53 @@ class PcesFileReaderTests {
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
-        final PcesFileTracker fileTracker1 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound1, false);
+        final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound1, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startGeneration, startingRound1));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker1.getFileIterator(startAncientIdentifier, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
-        final PcesFileTracker fileTracker2 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound2, false);
+        final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound2, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startGeneration, startingRound2));
+                filesAfterDiscontinuity.iterator(),
+                fileTracker2.getFileIterator(startAncientIdentifier, startingRound2));
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
-        final PcesFileTracker fileTracker3 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound3, false);
-        // There is no files with a compatible origin and events with generations in the span we want.
+        final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
+        // There is no files with a compatible origin and events with ancient indicators in the span we want.
         assertIteratorEquality(
-                Collections.emptyIterator(), fileTracker3.getFileIterator(startGeneration, startingRound3));
+                Collections.emptyIterator(), fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
 
         validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
         final long startingRound4 = 0;
-        final PcesFileTracker fileTracker4 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound4, false);
+        final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound4, false, ancientMode);
         assertIteratorEquality(
-                Collections.emptyIterator(), fileTracker4.getFileIterator(startGeneration, startingRound4));
+                Collections.emptyIterator(), fileTracker4.getFileIterator(startAncientIdentifier, startingRound4));
 
         validateRecycledFiles(List.of(), files, platformContext);
     }
 
     /**
-     * In this test, a discontinuity is placed in the middle of the stream, and we begin iterating after that
-     * file.
+     * In this test, a discontinuity is placed in the middle of the stream, and we begin iterating after that file.
      */
-    @Test
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Start After Discontinuity In Middle Test")
-    void startAfterDiscontinuityInMiddleTest() throws IOException {
+    void startAfterDiscontinuityInMiddleTest(@NonNull final AncientMode ancientMode) throws IOException {
         final List<PcesFile> filesBeforeDiscontinuity = new ArrayList<>();
         final List<PcesFile> filesAfterDiscontinuity = new ArrayList<>();
+
+        final List<PcesFile> files = new ArrayList<>();
 
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -777,8 +806,8 @@ class PcesFileReaderTests {
         // increases by at least 1 from file to file. The purpose for this is to make validation logic simpler.
 
         final long maxDelta = random.nextLong(10, 20);
-        long minimumGeneration = random.nextLong(0, 1000);
-        long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + maxDelta);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound + 1, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
 
         final int discontinuitySequenceNumber =
@@ -796,10 +825,10 @@ class PcesFileReaderTests {
             }
 
             final PcesFile file =
-                    PcesFile.of(timestamp, sequenceNumber, minimumGeneration, maximumGeneration, origin, fileDirectory);
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
 
-            minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
-            maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
+            lowerBound = random.nextLong(lowerBound + 1, upperBound + 1);
+            upperBound = random.nextLong(upperBound + 1, upperBound + maxDelta);
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);
@@ -813,9 +842,9 @@ class PcesFileReaderTests {
 
         // Note that the file at index 0 is not the first file in the stream,
         // but it is the first file we want to iterate
-        final long startGeneration = filesAfterDiscontinuity.getFirst().getMaximumGeneration();
+        final long startAncientBoundary = filesAfterDiscontinuity.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext();
+        final PlatformContext platformContext = buildContext(ancientMode);
         final RecycleBinImpl recycleBin = new RecycleBinImpl(
                 platformContext.getConfiguration(),
                 new NoOpMetrics(),
@@ -826,36 +855,107 @@ class PcesFileReaderTests {
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
-        final PcesFileTracker fileTracker1 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound1, false);
+        final PcesFileTracker fileTracker1 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound1, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startGeneration, startingRound1));
+                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(startAncientBoundary, startingRound1));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
         final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
-        final PcesFileTracker fileTracker2 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound2, false);
+        final PcesFileTracker fileTracker2 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound2, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startGeneration, startingRound2));
+                filesAfterDiscontinuity.iterator(), fileTracker2.getFileIterator(startAncientBoundary, startingRound2));
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
-        final PcesFileTracker fileTracker3 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound3, false);
+        final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
         assertIteratorEquality(
-                Collections.emptyIterator(), fileTracker3.getFileIterator(startGeneration, startingRound3));
+                Collections.emptyIterator(), fileTracker3.getFileIterator(startAncientBoundary, startingRound3));
 
         validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
         final long startingRound4 = 0;
-        final PcesFileTracker fileTracker4 =
-                PcesFileReader.readFilesFromDisk(platformContext, recycleBin, fileDirectory, startingRound4, false);
+        final PcesFileTracker fileTracker4 = PcesFileReader.readFilesFromDisk(
+                platformContext, recycleBin, fileDirectory, startingRound4, false, ancientMode);
         assertIteratorEquality(
-                Collections.emptyIterator(), fileTracker4.getFileIterator(startGeneration, startingRound4));
+                Collections.emptyIterator(), fileTracker4.getFileIterator(startAncientBoundary, startingRound4));
 
         validateRecycledFiles(List.of(), files, platformContext);
+    }
+
+    @Test
+    void readFilesOfBothTypesTest() throws IOException {
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final long maxDelta = random.nextLong(10, 20);
+        long lowerBound = random.nextLong(0, 1000);
+        long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
+        Instant timestamp = Instant.now();
+
+        // Phase 1: write files using generations
+
+        final List<PcesFile> generationFiles = new ArrayList<>();
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final PcesFile file = PcesFile.of(
+                    GENERATION_THRESHOLD, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
+
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            generationFiles.add(file);
+            createDummyFile(file);
+        }
+
+        // Phase 2: write files using birth rounds
+        final List<PcesFile> birthRoundFiles = new ArrayList<>();
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final PcesFile file = PcesFile.of(
+                    BIRTH_ROUND_THRESHOLD, timestamp, sequenceNumber, lowerBound, upperBound, 0, fileDirectory);
+
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = Math.max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            birthRoundFiles.add(file);
+            createDummyFile(file);
+        }
+
+        // Phase 3: read files of both types
+
+        final PcesFileTracker generationFileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(GENERATION_THRESHOLD),
+                TestRecycleBin.getInstance(),
+                fileDirectory,
+                0,
+                false,
+                GENERATION_THRESHOLD);
+
+        final PcesFileTracker birthRoundFileTracker = PcesFileReader.readFilesFromDisk(
+                buildContext(BIRTH_ROUND_THRESHOLD),
+                TestRecycleBin.getInstance(),
+                fileDirectory,
+                0,
+                false,
+                BIRTH_ROUND_THRESHOLD);
+
+        assertIteratorEquality(generationFiles.iterator(), generationFileTracker.getFileIterator(NO_LOWER_BOUND, 0));
+        assertIteratorEquality(birthRoundFiles.iterator(), birthRoundFileTracker.getFileIterator(NO_LOWER_BOUND, 0));
     }
 }

@@ -45,13 +45,19 @@ public class AbstractCodeCache {
     public Code getIfPresent(final Address address) {
         final var cacheKey = new BytesKey(address.toArray());
 
+        final boolean isToken = entityAccess.isTokenAccount(address);
+        if (!entityAccess.isUsable(address) && !isToken) {
+            cache.invalidate(cacheKey);
+            return null;
+        }
+
         var code = cache.getIfPresent(cacheKey);
 
         if (code != null) {
             return code;
         }
 
-        if (entityAccess.isTokenAccount(address)) {
+        if (isToken) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
             code = CodeFactory.createCode(interpolatedBytecode, 0, false);
             cache.put(cacheKey, code);

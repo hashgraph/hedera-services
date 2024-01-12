@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeSizeOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
     private final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private final Address ethAddressInstance = Address.fromHexString(ethAddress);
     private final Account account = new SimpleAccount(ethAddressInstance, 0, Wei.ONE);
@@ -59,6 +61,9 @@ class HederaExtCodeSizeOperationV038Test {
     EVM evm;
 
     @Mock
+    EvmProperties evmProperties;
+
+    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     HederaExtCodeSizeOperationV038 subject;
@@ -68,13 +73,14 @@ class HederaExtCodeSizeOperationV038Test {
         given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
 
-        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
     }
 
     @Test
     void executeWorldUpdaterResolvesToNull() {
         given(mf.getStackItem(0)).willReturn(ethAddressInstance);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -104,6 +110,7 @@ class HederaExtCodeSizeOperationV038Test {
         given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
         given(mf.getRemainingGas()).willReturn(100L);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         var opResult = subject.execute(mf, evm);
@@ -116,7 +123,7 @@ class HederaExtCodeSizeOperationV038Test {
     @Test
     void successfulExecutionPrecompileAddress() {
         // given:
-        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.getStackItem(0)).willReturn(ethAddressInstance);
         // when:
         var opResult = subject.execute(mf, evm);

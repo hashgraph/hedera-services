@@ -16,10 +16,10 @@
 
 package com.swirlds.virtual.merkle;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class TestKeySerializer implements KeySerializer<TestKey> {
@@ -49,36 +49,36 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
     }
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return buffer.getInt();
+    public void serialize(final TestKey data, final WritableSequentialData out) {
+        data.serialize(out);
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) {
-        // nop
+    public void serialize(TestKey data, ByteBuffer buffer) {
+        data.serialize(buffer);
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) {
-        // nop
+    public TestKey deserialize(final ReadableSequentialData in) {
+        final TestKey key = new TestKey();
+        key.deserialize(in);
+        return key;
     }
 
     @Override
     public TestKey deserialize(final ByteBuffer buffer, final long dataVersion) {
         final TestKey key = new TestKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
         return key;
     }
 
     @Override
-    public int serialize(final TestKey data, final ByteBuffer buffer) {
-        data.serialize(buffer);
-        return TestKey.BYTES;
+    public boolean equals(final BufferedData buffer, final TestKey keyToCompare) {
+        return buffer.readLong() == keyToCompare.getKeyAsLong();
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final TestKey keyToCompare)
-            throws IOException {
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final TestKey keyToCompare) {
         return buffer.getLong() == keyToCompare.getKeyAsLong();
     }
 }
