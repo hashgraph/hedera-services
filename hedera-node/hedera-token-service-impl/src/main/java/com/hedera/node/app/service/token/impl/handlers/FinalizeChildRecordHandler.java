@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -85,5 +86,8 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
+
+        final var result = ContractFunctionResult.newBuilder().build();
+        recordBuilder.contractCallResult(result);
     }
 }
