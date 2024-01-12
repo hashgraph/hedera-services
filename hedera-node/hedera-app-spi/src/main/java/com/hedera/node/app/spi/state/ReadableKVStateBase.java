@@ -68,7 +68,9 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
         Objects.requireNonNull(key);
         if (!hasBeenRead(key)) {
             final var value = readFromDataSource(key);
-            markRead(key, value);
+            if (value != null) {
+                markRead(key, value);
+            }
         }
         return readCache.get(key);
     }
@@ -121,7 +123,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * @param key The key
      * @param value The value
      */
-    protected final void markRead(@NonNull K key, @Nullable V value) {
+    protected final void markRead(@NonNull K key, @NonNull V value) {
         readCache.put(key, value);
     }
 
