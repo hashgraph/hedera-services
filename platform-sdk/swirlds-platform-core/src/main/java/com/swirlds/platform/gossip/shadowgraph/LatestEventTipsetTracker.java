@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.internal.EventImpl;
@@ -40,6 +41,7 @@ public class LatestEventTipsetTracker {
     private final NodeId selfId;
     private final AddressBook addressBook;
     private Tipset latestSelfEventTipset;
+    private final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
 
     /**
      * Constructor.
@@ -70,6 +72,7 @@ public class LatestEventTipsetTracker {
      */
     public synchronized void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
+        childlessEventTracker.pruneOldEvents(nonAncientEventWindow);
     }
 
     /**
@@ -109,6 +112,16 @@ public class LatestEventTipsetTracker {
     }
 
     /**
+     * Get a list of non-ancient childless events, i.e. the "tips" of the hashgraph.
+     *
+     * @return the childless events, this list is safe to modify
+     */
+    @NonNull
+    public List<EventDescriptor> getTips() {
+        return childlessEventTracker.getChildlessEvents();
+    }
+
+    /**
      * The event to add. Used to update tipsets.
      *
      * @param event The event to insert.
@@ -131,5 +144,7 @@ public class LatestEventTipsetTracker {
         if (event.getCreatorId().equals(selfId)) {
             latestSelfEventTipset = tipset;
         }
+
+        childlessEventTracker.addEvent(event.getBaseEvent().getDescriptor(), parentDescriptors);
     }
 }

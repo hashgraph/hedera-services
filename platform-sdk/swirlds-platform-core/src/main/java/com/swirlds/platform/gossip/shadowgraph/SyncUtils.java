@@ -603,7 +603,7 @@ public final class SyncUtils {
      * transmitted.
      *
      * <p>
-     * A tip in this context is defined as an event with no self child.
+     * A tip in this context is defined as an event with no children.
      *
      * @param previousTips                the tips of events we have transmitted so far
      * @param eventsToTransmit            the events we are transmitting
@@ -628,15 +628,19 @@ public final class SyncUtils {
             tips.put(event.getBaseHash(), event);
         }
 
-        // A tip is an event with no self child. Check the self parent of each event, and remove that parent
+        // A tip is an event with children. Check the parents of each event, and remove any parent
         // from the set if it exists.
 
         for (final EventImpl event : eventsToTransmit) {
             final EventImpl selfParent = event.getSelfParent();
-            if (selfParent == null) {
-                continue;
+            if (selfParent != null) {
+                tips.remove(selfParent.getBaseHash());
             }
-            tips.remove(selfParent.getBaseHash());
+
+            final EventImpl otherParent = event.getOtherParent();
+            if (otherParent != null) {
+                tips.remove(otherParent.getBaseHash());
+            }
         }
 
         return new ArrayList<>(tips.values());

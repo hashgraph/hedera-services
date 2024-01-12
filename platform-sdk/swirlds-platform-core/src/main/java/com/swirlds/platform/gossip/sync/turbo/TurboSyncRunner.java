@@ -45,6 +45,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -313,9 +314,10 @@ public class TurboSyncRunner {
      */
     @NonNull
     private List<Hash> sendTips() throws IOException {
-        final List<Hash> myTips = shadowgraph.getTips().stream()
-                .map(e -> e.getEvent().getBaseHash())
-                .toList();
+
+        final List<EventDescriptor> tipDescriptors = latestEventTipsetTracker.getTips();
+        final List<Hash> myTips =
+                tipDescriptors.stream().map(EventDescriptor::getHash).toList();
 
         // If we sync more rapidly than we create events then we will end up sending the same tips over and over.
         // The following serialization algorithm is designed to minimize the impact of this problem.
