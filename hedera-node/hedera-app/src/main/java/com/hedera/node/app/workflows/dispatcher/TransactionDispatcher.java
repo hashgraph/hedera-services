@@ -149,8 +149,7 @@ public class TransactionDispatcher {
     }
 
     @NonNull
-    public TransactionHandler getHandler(@NonNull final TransactionBody txBody) {
-        requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
+    private TransactionHandler getHandler(@NonNull final TransactionBody txBody) {
         return switch (txBody.data().kind()) {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler();
             case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler();

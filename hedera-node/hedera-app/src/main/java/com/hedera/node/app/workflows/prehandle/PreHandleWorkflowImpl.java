@@ -293,7 +293,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // 2b. Call Pre-Transaction Handlers
         try {
             // First, perform semantic checks on the transaction
-            dispatcher.dispatchPureChecks(txInfo.txBody());
+            dispatcher.dispatchPureChecks(txBody);
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
             // Finally, let the transaction handler do warm up of other state it may want to use later
