@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,6 @@ public class Create2OperationSuite extends HapiSuite {
                 canDeleteViaAlias(),
                 cannotSelfDestructToMirrorAddress(),
                 priorityAddressIsCreate2ForStaticHapiCalls(),
-                canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
                 create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
                 canUseAliasesInPrecompilesAndContractKeys(),
                 inlineCreateCanFailSafely(),
@@ -1273,63 +1272,6 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    @HapiTest
-    final HapiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
-        final var contract = "AddressValueRet";
-        final var aliasCall = "aliasCall";
-        final var mirrorCall = "mirrorCall";
-
-        final AtomicReference<String> aliasAddr = new AtomicReference<>();
-        final AtomicReference<String> mirrorAddr = new AtomicReference<>();
-        final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
-        final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
-
-        final var salt = unhex(SALT);
-
-        return defaultHapiSpec("CanInternallyCallAliasedAddressesOnlyViaCreate2Address")
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).payingWith(GENESIS),
-                        contractCall(contract, "createReturner", salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .via(CREATE_2_TXN),
-                        captureOneChildCreate2MetaFor(RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
-                .when(
-                        sourcing(() -> contractCallLocal(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
-                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
-                                .payingWith(GENESIS)
-                                .exposingTypedResultsTo(results -> {
-                                    LOG.info(RETURNER_REPORTED_LOG_MESSAGE, results);
-                                    staticCallMirrorAns.set((BigInteger) results[0]);
-                                })),
-                        sourcing(() -> contractCallLocal(contract, CALL_RETURNER, asHeadlongAddress(aliasAddr.get()))
-                                .payingWith(GENESIS)
-                                .exposingTypedResultsTo(results -> {
-                                    LOG.info("Returner reported {} when" + " called with alias" + " address", results);
-                                    staticCallAliasAns.set((BigInteger) results[0]);
-                                })),
-                        sourcing(() -> contractCall(contract, CALL_RETURNER, asHeadlongAddress(aliasAddr.get()))
-                                .payingWith(GENESIS)
-                                .via(aliasCall)),
-                        sourcing(() -> contractCall(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
-                                .payingWith(GENESIS)
-                                .via(mirrorCall)))
-                .then(withOpContext((spec, opLog) -> {
-                    final var mirrorLookup = getTxnRecord(mirrorCall);
-                    allRunFor(spec, mirrorLookup);
-                    final var mirrorResult = mirrorLookup
-                            .getResponseRecord()
-                            .getContractCallResult()
-                            .getContractCallResult();
-                    assertEquals(
-                            ByteString.EMPTY,
-                            mirrorResult,
-                            "Internal calls with mirror address should not be" + " possible for aliased contracts");
-                }));
-    }
-
     public static HapiContractCallLocal setExpectedCreate2Address(
             String contract,
             BigInteger salt,

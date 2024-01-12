@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.evm.Evm38ValidationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
@@ -48,7 +49,8 @@ public class SequentialSuites {
             LeakyCryptoTestsSuite::new,
             LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
-            StakingSuite::new
+            StakingSuite::new,
+            Evm38ValidationSuite::new
         };
     }
 }

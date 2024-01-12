@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -107,7 +105,6 @@ public class ContractDeleteSuite extends HapiSuite {
                 deleteTransfersToContract(),
                 cannotDeleteOrSelfDestructTokenTreasury(),
                 cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
-                cannotSendValueToTokenAccount(),
                 cannotUseMoreThanChildContractLimit());
     }
 
@@ -158,46 +155,6 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 // Reverted internal CONTRACT_CREATION messages are not externalized
                                 .hasChildRecords());
-    }
-
-    @HapiTest
-    final HapiSpec cannotSendValueToTokenAccount() {
-        final var multiKey = "multiKey";
-        final var nonFungibleToken = "NFT";
-        final var contract = "ManyChildren";
-        final var internalViolation = "internal";
-        final var externalViolation = "external";
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        return defaultHapiSpec("CannotSendValueToTokenAccount")
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(nonFungibleToken)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(0)
-                                .supplyKey(multiKey)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))))
-                .when(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        sourcing(() -> contractCall(
-                                        contract, "sendSomeValueTo", asHeadlongAddress(tokenMirrorAddr.get()))
-                                .sending(ONE_HBAR)
-                                .payingWith(TOKEN_TREASURY)
-                                .via(internalViolation)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing((() -> contractCall(tokenMirrorAddr.get())
-                                .sending(1L)
-                                .payingWith(TOKEN_TREASURY)
-                                .refusingEthConversion()
-                                .via(externalViolation)
-                                .hasKnownStatus(LOCAL_CALL_MODIFICATION_EXCEPTION))))
-                .then(
-                        getTxnRecord(internalViolation).hasPriority(recordWith().feeGreaterThan(0L)),
-                        getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
     @HapiTest

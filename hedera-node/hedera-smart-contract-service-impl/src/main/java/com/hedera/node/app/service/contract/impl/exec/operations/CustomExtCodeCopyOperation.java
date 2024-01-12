@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -61,7 +62,7 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
                 return new OperationResult(cost(frame, memOffset, numBytes, true), null);
             }
             // Otherwise the address must be present
-            if (!addressChecks.isPresent(address, frame)) {
+            if (proxyUpdaterFor(frame).contractMustBePresent() && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(
                         cost(frame, memOffset, numBytes, true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }

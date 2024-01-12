@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WEI_VAL
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -407,6 +408,28 @@ class ActionStackTest {
     }
 
     @Test
+    void finalizationLazyCallWithUnresolvedAddress() {
+        given(parentFrame.getState()).willReturn(CODE_SUCCESS);
+        final var gasUsed = REMAINING_GAS / 3;
+        given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS - gasUsed);
+        given(parentFrame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
+        givenUnresolvableEvmAddress();
+
+        final var wrappedAction = new ActionWrapper(LAZY_CREATE_ACTION);
+        allActions.add(wrappedAction);
+        actionsStack.push(wrappedAction);
+
+        subject.finalizeLastAction(parentFrame, ActionStack.Validation.OFF);
+
+        assertEquals(1, allActions.size());
+        assertEquals(wrappedAction, allActions.get(0));
+        final var finalAction = allActions.get(0).get();
+        assertEquals(gasUsed, finalAction.gasUsed());
+        assertEquals(null, finalAction.recipientAccount());
+        assertTrue(actionsStack.isEmpty());
+    }
+
+    @Test
     void revertReasonPreservedIfPresentAndCreationRecipientNulledOut() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.REVERT);
         final var gasUsed = REMAINING_GAS / 3;
@@ -576,5 +599,10 @@ class ActionStackTest {
     private void givenResolvableEvmAddress() {
         given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
+    }
+
+    private void givenUnresolvableEvmAddress() {
+        given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(null);
     }
 }
