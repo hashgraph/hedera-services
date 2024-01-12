@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -383,7 +383,7 @@ class TaskSchedulerTransformersTests {
      */
     @Test
     void advancedWireTransformerTest() {
-        // Component A passes data to components B, C, and D.
+        // Component A passes data to components B, C, D and E.
         final WiringModel model = TestWiringModelBuilder.create();
 
         final AtomicBoolean error = new AtomicBoolean(false);
@@ -396,7 +396,11 @@ class TaskSchedulerTransformersTests {
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved =
-                outA.buildAdvancedTransformer("reserve FooBar", FooBar::copyAndReserve, FooBar::release, null);
+                outA.buildAdvancedTransformer(
+                        "reserve FooBar",
+                        FooBar::copyAndReserve,
+                        FooBar::release,
+                        FooBar::release);
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
@@ -416,9 +420,17 @@ class TaskSchedulerTransformersTests {
                 .cast();
         final BindableInputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
 
+        final TaskScheduler<Void> taskSchedulerE = model.schedulerBuilder("E")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .withUnhandledTaskCapacity(1)
+                .build()
+                .cast();
+        final BindableInputWire<FooBar, Void> inE = taskSchedulerE.buildInputWire("E in");
+
         outAReserved.solderTo(inB);
         outAReserved.solderTo(inC);
         outAReserved.solderTo(inD);
+        outAReserved.solderTo(inE, SolderType.OFFER);
 
         final AtomicInteger countA = new AtomicInteger();
         inA.bind(x -> {
@@ -447,6 +459,12 @@ class TaskSchedulerTransformersTests {
             countD.getAndIncrement();
             x.release();
         });
+        final AtomicInteger countE = new AtomicInteger();
+        inE.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countE.getAndIncrement();
+            x.release();
+        });
 
         final List<FooBar> fooBars = new ArrayList<>(100);
         for (int i = 0; i < 100; i++) {
@@ -459,6 +477,8 @@ class TaskSchedulerTransformersTests {
         assertEventuallyEquals(100, countB::get, Duration.ofSeconds(1), "B did not receive all data");
         assertEventuallyEquals(100, countC::get, Duration.ofSeconds(1), "C did not receive all data");
         assertEventuallyEquals(100, countD::get, Duration.ofSeconds(1), "D did not receive all data");
+        assertEventuallyTrue( () -> countE.get() >= 1 && countE.get()<=100, Duration.ofSeconds(1),
+                "E did not receive data or received too much data");
 
         assertEventuallyTrue(
                 () -> {
@@ -478,7 +498,7 @@ class TaskSchedulerTransformersTests {
     }
 
     private record FooBarTransformer(String name) implements AdvancedTransformation<FooBar, FooBar> {
-        @Nullable
+        @NonNull
         @Override
         public FooBar transform(@NonNull final FooBar fooBar) {
             return fooBar.copyAndReserve();
@@ -491,7 +511,7 @@ class TaskSchedulerTransformersTests {
 
         @Override
         public void outputCleanup(@NonNull final FooBar fooBar) {
-            // TODO unit test
+            fooBar.release();
         }
 
         @NonNull
@@ -507,6 +527,8 @@ class TaskSchedulerTransformersTests {
      */
     @Test
     void advancedWireTransformerInterfaceVariationTest() {
+        //TODO either remove this test or merge it with the other
+        
         // Component A passes data to components B, C, and D.
         final WiringModel model = TestWiringModelBuilder.create();
 
