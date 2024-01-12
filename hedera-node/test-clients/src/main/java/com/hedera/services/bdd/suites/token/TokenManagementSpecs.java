@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -232,7 +233,7 @@ public class TokenManagementSpecs extends HapiSuite {
         final int TRANSFER_AMOUNT = 50;
         final int BURN_AMOUNT = 60;
 
-        return defaultHapiSpec("BurnTokenFailsDueToInsufficientTreasuryBalance")
+        return defaultHapiSpec("BurnTokenFailsDueToInsufficientTreasuryBalance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed("burnKey"),
                         cryptoCreate("misc").balance(0L),
