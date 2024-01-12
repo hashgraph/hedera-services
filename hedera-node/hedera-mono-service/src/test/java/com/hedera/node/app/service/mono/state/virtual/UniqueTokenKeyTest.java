@@ -70,7 +70,7 @@ class UniqueTokenKeyTest {
     private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(final long num, final long serial)
             throws IOException {
         final UniqueTokenKey key = new UniqueTokenKey();
-        key.deserialize(serializeToByteBuffer(num, serial), UniqueTokenKey.CURRENT_VERSION);
+        key.deserialize(serializeToByteBuffer(num, serial));
         assertThat(key.getNum()).isEqualTo(num);
         assertThat(key.getTokenSerial()).isEqualTo(serial);
         return key;
@@ -177,15 +177,6 @@ class UniqueTokenKeyTest {
 
     private static ByteBuffer asByteBuffer(final int value) {
         return ByteBuffer.wrap(new byte[] {(byte) value});
-    }
-
-    @Test
-    void deserializeKeySize_withVariousPackedLengths_returnsTheCorrectLengths() {
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0))).isEqualTo(1);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x8))).isEqualTo(9);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x80))).isEqualTo(9);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x34))).isEqualTo(8);
-        assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x88))).isEqualTo(17);
     }
 
     @Test

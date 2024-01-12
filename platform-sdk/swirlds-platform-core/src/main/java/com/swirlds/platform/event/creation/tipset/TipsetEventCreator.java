@@ -31,10 +31,12 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -69,7 +71,7 @@ public class TipsetEventCreator implements EventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * The address book for the current network.
@@ -141,7 +143,11 @@ public class TipsetEventCreator implements EventCreator {
         cryptography = platformContext.getCryptography();
         antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
-        tipsetTracker = new TipsetTracker(time, addressBook);
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+        tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
                 platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
@@ -149,6 +155,8 @@ public class TipsetEventCreator implements EventCreator {
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
     }
 
     /**
@@ -275,7 +283,7 @@ public class TipsetEventCreator implements EventCreator {
             // If there are no available other parents, it is only legal to create a new event if we are
             // creating a genesis event. In order to create a genesis event, we must have never created
             // an event before and the current non-ancient event window must have never been advanced.
-            if (nonAncientEventWindow != NonAncientEventWindow.INITIAL_EVENT_WINDOW || lastSelfEvent != null) {
+            if (!nonAncientEventWindow.isGenesis() || lastSelfEvent != null) {
                 // event creation isn't legal
                 return null;
             }
@@ -421,7 +429,7 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                nonAncientEventWindow.useBirthRoundForAncient()
+                nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
                         ? nonAncientEventWindow.pendingConsensusRound()
                         : addressBook.getRound(),
                 timeCreated,

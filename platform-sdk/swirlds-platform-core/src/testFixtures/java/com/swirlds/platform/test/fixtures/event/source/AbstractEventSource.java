@@ -84,14 +84,14 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     private long eventCount;
 
     /**
-     * A dynamic value generator that is used to determine the age of the other parent
-     * (for when we ask another node for the other parent)
+     * A dynamic value generator that is used to determine the age of the other parent (for when we ask another node for
+     * the other parent)
      */
     private DynamicValueGenerator<Integer> otherParentRequestIndex;
 
     /**
-     * A dynamic value generator that is used to determine the age of the other parent
-     * (for when another node is requesting the other parent from us)
+     * A dynamic value generator that is used to determine the age of the other parent (for when another node is
+     * requesting the other parent from us)
      */
     private DynamicValueGenerator<Integer> otherParentProviderIndex;
 
@@ -108,12 +108,9 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     /**
      * Creates a new instance with the supplied transaction generator and weight.
      *
-     * @param useFakeHashes
-     * 		indicates if fake hashes should be used instead of real ones
-     * @param transactionGenerator
-     * 		a transaction generator to use when creating events
-     * @param weight
-     * 		the weight allocated to this event source
+     * @param useFakeHashes        indicates if fake hashes should be used instead of real ones
+     * @param transactionGenerator a transaction generator to use when creating events
+     * @param weight               the weight allocated to this event source
      */
     protected AbstractEventSource(
             final boolean useFakeHashes, final TransactionGenerator transactionGenerator, final long weight) {
@@ -148,8 +145,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     }
 
     /**
-     * Maintain the maximum size of a list of events by removing the last element (if needed). Utility method that
-     * is useful for child classes.
+     * Maintain the maximum size of a list of events by removing the last element (if needed). Utility method that is
+     * useful for child classes.
      */
     protected void pruneEventList(final LinkedList<IndexedEvent> events) {
         if (events.size() > getRecentEventRetentionSize()) {
@@ -226,12 +223,24 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
 
         final IndexedEvent otherParentEvent = otherParent.getRecentEvent(random, otherParentIndex);
 
+        // Temporary hack: use the generation as the birth round. This should be sufficient for many use cases
+        // that don't use the birth round for anything other than deciding if the event is ancient. This won't
+        // work for consensus, and we will have to upgrade our simulation framework prior to converting
+        // consensus to use the birth round.
+        final IndexedEvent latestSelfEvent = getLatestEvent(random);
+        final long birthRound = Math.max(
+                        otherParentEvent == null ? 0 : otherParentEvent.getGeneration(),
+                        latestSelfEvent == null ? 0 : latestSelfEvent.getGeneration())
+                + 1;
+        ;
+
         event = RandomEventUtils.randomEventWithTimestamp(
                 random,
                 nodeId,
                 timestamp,
+                birthRound,
                 transactionGenerator.generate(random),
-                getLatestEvent(random),
+                latestSelfEvent,
                 otherParentEvent,
                 useFakeHashes);
 
