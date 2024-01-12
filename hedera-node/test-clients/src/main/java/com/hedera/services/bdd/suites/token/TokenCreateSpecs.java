@@ -627,7 +627,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec onlyValidCustomFeeScheduleCanBeCreated() {
-        return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
+        return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(customFeesKey),
                         cryptoCreate(htsCollector),
