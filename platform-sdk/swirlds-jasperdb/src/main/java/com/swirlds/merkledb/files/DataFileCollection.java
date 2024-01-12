@@ -16,15 +16,24 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
+import static com.swirlds.merkledb.files.DataFileCommon.FILE_EXTENSION;
 import static com.swirlds.merkledb.files.DataFileCommon.byteOffsetFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static java.util.Collections.singletonList;
 
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
@@ -32,15 +41,20 @@ import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,7 +80,7 @@ import org.apache.logging.log4j.Logger;
  * newest data item for any matching key. It may look like a map, but it is not. You need an
  * external index outside this class to be able to store key-to-data location mappings.
  *
- * The keys are assumed to be a contiguous block of long values. We do not have an explicit way
+ * <p>The keys are assumed to be a contiguous block of long values. We do not have an explicit way
  * of deleting data, we depend on the range of valid keys. Any data items with keys outside the
  * current valid range will be deleted the next time they are merged. This works for our VirtualMap
  * use cases where the key is always a path and there is a valid range of path keys for internal and
@@ -77,6 +91,7 @@ import org.apache.logging.log4j.Logger;
  */
 @SuppressWarnings({"unused", "unchecked"})
 public class DataFileCollection<D> implements Snapshotable {
+
     private static final Logger logger = LogManager.getLogger(DataFileCollection.class);
 
     /**
@@ -92,10 +107,21 @@ public class DataFileCollection<D> implements Snapshotable {
      * name is provided, and metadata file with the name above isn't found, metadata file with name
      * legacyStoreName + suffix is tried.
      */
-    private static final String METADATA_FILENAME_SUFFIX = "_metadata.dfc";
+    private static final String METADATA_FILENAME_SUFFIX_OLD = "_metadata.dfc";
+
+    private static final String METADATA_FILENAME_SUFFIX = "_metadata.pbj";
 
     /** The number of times to retry index based reads */
     private static final int NUM_OF_READ_RETRIES = 5;
+
+    /** File collection metadata fields */
+    private static final FieldDefinition FIELD_FILECOLLECTION_MINVALIDKEY =
+            new FieldDefinition("minValidKey", FieldType.UINT64, false, true, false, 1);
+
+    private static final FieldDefinition FIELD_FILECOLLECTION_MAXVALIDKEY =
+            new FieldDefinition("maxValidKey", FieldType.UINT64, false, true, false, 2);
+
+    private final MerkleDbConfig config;
 
     /** The directory to store data files */
     private final Path storeDir;
@@ -159,6 +185,7 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Construct a new DataFileCollection.
      *
+     * @param config MerkleDb config
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
@@ -169,18 +196,20 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     public DataFileCollection(
+            final MerkleDbConfig config,
             final Path storeDir,
             final String storeName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback loadedDataCallback)
+            final LoadedDataCallback<D> loadedDataCallback)
             throws IOException {
         this(
+                config,
                 storeDir,
                 storeName,
                 null,
                 dataItemSerializer,
                 loadedDataCallback,
-                ImmutableIndexedObjectListUsingArray::new);
+                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader<D>>(DataFileReader[]::new, l));
     }
 
     /**
@@ -188,6 +217,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * metadata file exist with the legacy store name prefix, they will be processed by this file
      * collection. New data files will be written with {@code storeName} as the prefix.
      *
+     * @param config MerkleDb config
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
@@ -201,19 +231,21 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     public DataFileCollection(
+            final MerkleDbConfig config,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback loadedDataCallback)
+            final LoadedDataCallback<D> loadedDataCallback)
             throws IOException {
         this(
+                config,
                 storeDir,
                 storeName,
                 legacyStoreName,
                 dataItemSerializer,
                 loadedDataCallback,
-                ImmutableIndexedObjectListUsingArray::new);
+                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader<D>>(DataFileReader[]::new, l));
     }
 
     /**
@@ -222,6 +254,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * will be processed by this file collection. New data files will be written with {@code
      * storeName} as the prefix.
      *
+     * @param config MerkleDb config
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
@@ -237,14 +270,16 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     protected DataFileCollection(
+            final MerkleDbConfig config,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
-            final LoadedDataCallback loadedDataCallback,
+            final LoadedDataCallback<D> loadedDataCallback,
             final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
                     indexedObjectListConstructor)
             throws IOException {
+        this.config = config;
         this.storeDir = storeDir;
         this.storeName = storeName;
         this.legacyStoreName = legacyStoreName;
@@ -341,14 +376,21 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem opening a new data file
      */
     public void startWriting() throws IOException {
+        startWriting(config.usePbj());
+    }
+
+    // Future work: remove this method, once JDB is no longer supported
+    // See https://github.com/hashgraph/hedera-services/issues/8344 for details
+    @Deprecated
+    void startWriting(boolean usePbj) throws IOException {
         final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
         }
-        final DataFileWriter<D> writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL);
+        final DataFileWriter<D> writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL, usePbj);
         currentDataFileWriter.set(writer);
         final DataFileMetadata metadata = writer.getMetadata();
-        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata);
+        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata, usePbj);
         currentDataFileReader.set(reader);
     }
 
@@ -452,7 +494,8 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws ClosedChannelException In the very rare case merging closed the file between us
      *     checking if file is open and reading
      */
-    protected ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
+    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
+    protected Object readDataItemBytes(final long dataLocation) throws IOException {
         final DataFileReader<D> file = readerForDataLocation(dataLocation);
         return (file != null) ? file.readDataItemBytes(dataLocation) : null;
     }
@@ -473,11 +516,20 @@ public class DataFileCollection<D> implements Snapshotable {
         if (file == null) {
             return null;
         }
-        final ByteBuffer dataItemBytes = file.readDataItemBytes(dataLocation);
+        // https://github.com/hashgraph/hedera-services/issues/8344: change to BufferedData
+        final Object dataItemBytes = file.readDataItemBytes(dataLocation);
         if (dataItemBytes == null) {
             return null;
         }
-        return dataItemSerializer.deserialize(dataItemBytes, file.getMetadata().getSerializationVersion());
+        if (dataItemBytes instanceof ByteBuffer bbBytes) {
+            // JDB
+            return dataItemSerializer.deserialize(bbBytes, file.getMetadata().getSerializationVersion());
+        } else if (dataItemBytes instanceof BufferedData bdBytes) {
+            // PBJ
+            return dataItemSerializer.deserialize(bdBytes);
+        } else {
+            throw new RuntimeException("Unknown data item bytes format");
+        }
     }
 
     private <T> T retryReadUsingIndex(
@@ -563,7 +615,8 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @throws IOException If there was a problem reading the data item.
      */
-    public ByteBuffer readDataItemBytesUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
+    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
+    public Object readDataItemBytesUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
         return retryReadUsingIndex(index, keyIntoIndex, this::readDataItemBytes);
     }
 
@@ -615,12 +668,14 @@ public class DataFileCollection<D> implements Snapshotable {
 
     /**
      * Simple callback class during reading an existing set of files during startup, so that indexes
-     * can be built
+     * can be built.
+     *
+     * @param <D> data item type
      */
     @FunctionalInterface
-    public interface LoadedDataCallback {
-        /** Add an index entry for the given key and data location and value */
-        void newIndexEntry(long key, long dataLocation, ByteBuffer dataValue);
+    public interface LoadedDataCallback<D> {
+        /** Add an index entry for the given data location and value */
+        void newIndexEntry(long dataLocation, @NonNull D dataValue);
     }
 
     // =================================================================================================================
@@ -644,8 +699,11 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param metadata The metadata for the file at filePath, to save reading from file
      * @return The newly added DataFileReader.
      */
-    DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata) throws IOException {
-        final DataFileReader<D> newDataFileReader = new DataFileReader<>(filePath, dataItemSerializer, metadata);
+    DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata, final boolean usePbj)
+            throws IOException {
+        final DataFileReader<D> newDataFileReader = usePbj
+                ? new DataFileReaderPbj<>(filePath, dataItemSerializer, metadata)
+                : new DataFileReaderJdb<>(filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
         dataFiles.getAndUpdate(currentFileList -> {
             try {
                 return (currentFileList == null)
@@ -685,13 +743,17 @@ public class DataFileCollection<D> implements Snapshotable {
      *     case of merge.
      * @return the newly created data file
      */
-    DataFileWriter<D> newDataFile(final Instant creationTime, int compactionLevel) throws IOException {
+    DataFileWriter<D> newDataFile(final Instant creationTime, int compactionLevel, final boolean usePbj)
+            throws IOException {
         final int newFileIndex = nextFileIndex.getAndIncrement();
         if (logger.isTraceEnabled()) {
             setOfNewFileIndexes.add(newFileIndex);
         }
-        return new DataFileWriter<>(
-                storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel);
+        return usePbj
+                ? new DataFileWriterPbj<>(
+                        storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel)
+                : new DataFileWriterJdb<>(
+                        storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel);
     }
 
     /**
@@ -705,17 +767,33 @@ public class DataFileCollection<D> implements Snapshotable {
         Files.createDirectories(directory);
         // write metadata, this will be incredibly fast, and we need to capture min and max key
         // while in save lock
-        try (final DataOutputStream metaOut =
-                new DataOutputStream(Files.newOutputStream(directory.resolve(storeName + METADATA_FILENAME_SUFFIX)))) {
-            final KeyRange keyRange = validKeyRange;
-            metaOut.writeInt(METADATA_FILE_FORMAT_VERSION);
-            metaOut.writeLong(keyRange.getMinValidKey());
-            metaOut.writeLong(keyRange.getMaxValidKey());
-            metaOut.flush();
+        final KeyRange keyRange = validKeyRange;
+        if (config.usePbj()) {
+            final Path metadataFile = directory.resolve(storeName + METADATA_FILENAME_SUFFIX);
+            try (final OutputStream fileOut = Files.newOutputStream(metadataFile)) {
+                final WritableSequentialData out = new WritableStreamingData(fileOut);
+                if (keyRange.getMinValidKey() != 0) {
+                    ProtoUtils.writeTag(out, FIELD_FILECOLLECTION_MINVALIDKEY);
+                    out.writeVarLong(keyRange.getMinValidKey(), false);
+                }
+                if (keyRange.getMaxValidKey() != 0) {
+                    ProtoUtils.writeTag(out, FIELD_FILECOLLECTION_MAXVALIDKEY);
+                    out.writeVarLong(keyRange.getMaxValidKey(), false);
+                }
+                fileOut.flush();
+            }
+        } else {
+            final Path metadataFile = directory.resolve(storeName + METADATA_FILENAME_SUFFIX_OLD);
+            try (final DataOutputStream metaOut = new DataOutputStream(Files.newOutputStream(metadataFile))) {
+                metaOut.writeInt(METADATA_FILE_FORMAT_VERSION);
+                metaOut.writeLong(keyRange.getMinValidKey());
+                metaOut.writeLong(keyRange.getMaxValidKey());
+                metaOut.flush();
+            }
         }
     }
 
-    private boolean tryLoadFromExistingStore(final LoadedDataCallback loadedDataCallback) throws IOException {
+    private boolean tryLoadFromExistingStore(final LoadedDataCallback<D> loadedDataCallback) throws IOException {
         if (!Files.isDirectory(storeDir)) {
             throw new IOException("Tried to initialize DataFileCollection with a storage "
                     + "directory that is not a directory. ["
@@ -730,7 +808,9 @@ public class DataFileCollection<D> implements Snapshotable {
             final DataFileReader<D>[] dataFileReaders = new DataFileReader[fullWrittenFilePaths.length];
             try {
                 for (int i = 0; i < fullWrittenFilePaths.length; i++) {
-                    dataFileReaders[i] = new DataFileReader<>(fullWrittenFilePaths[i], dataItemSerializer);
+                    dataFileReaders[i] = fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION)
+                            ? new DataFileReaderPbj<>(fullWrittenFilePaths[i], dataItemSerializer)
+                            : new DataFileReaderJdb<>(fullWrittenFilePaths[i], dataItemSerializer);
                 }
                 // sort the readers into data file index order
                 Arrays.sort(dataFileReaders);
@@ -756,23 +836,46 @@ public class DataFileCollection<D> implements Snapshotable {
         }
     }
 
-    private void loadFromExistingFiles(
-            final DataFileReader<D>[] dataFileReaders, final LoadedDataCallback loadedDataCallback) throws IOException {
-        logger.info(
-                MERKLE_DB.getMarker(),
-                "Loading existing set of [{}] data files for DataFileCollection [{}]",
-                dataFileReaders.length,
-                storeName);
-        // read metadata
-        Path metaDataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX);
+    private boolean loadMetadata() throws IOException {
+        boolean loadPbj = true;
         boolean loadedLegacyMetadata = false;
-        if (!Files.exists(metaDataFile)) {
-            // try loading using legacy name
-            metaDataFile = storeDir.resolve(legacyStoreName + METADATA_FILENAME_SUFFIX);
+        Path metadataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX);
+        if (!Files.exists(metadataFile)) {
+            metadataFile = storeDir.resolve(legacyStoreName + METADATA_FILENAME_SUFFIX);
             loadedLegacyMetadata = true;
         }
-        if (Files.exists(metaDataFile)) {
-            try (final DataInputStream metaIn = new DataInputStream(Files.newInputStream(metaDataFile))) {
+        if (!Files.exists(metadataFile)) {
+            loadPbj = false;
+            metadataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX_OLD);
+        }
+        if (!Files.exists(metadataFile)) {
+            metadataFile = storeDir.resolve(legacyStoreName + METADATA_FILENAME_SUFFIX_OLD);
+            loadedLegacyMetadata = true;
+        }
+        if (!Files.exists(metadataFile)) {
+            return false;
+        }
+        if (loadPbj) {
+            try (final InputStream fileIn = Files.newInputStream(metadataFile, StandardOpenOption.READ)) {
+                final ReadableSequentialData in = new ReadableStreamingData(fileIn);
+                in.limit(Files.size(metadataFile));
+                long minValidKey = 0;
+                long maxValidKey = 0;
+                while (in.hasRemaining()) {
+                    final int tag = in.readVarInt(false);
+                    final int fieldNum = tag >> TAG_FIELD_OFFSET;
+                    if (fieldNum == FIELD_FILECOLLECTION_MINVALIDKEY.number()) {
+                        minValidKey = in.readVarLong(false);
+                    } else if (fieldNum == FIELD_FILECOLLECTION_MAXVALIDKEY.number()) {
+                        maxValidKey = in.readVarLong(false);
+                    } else {
+                        throw new IllegalArgumentException("Unknown file collection metadata field: " + fieldNum);
+                    }
+                }
+                validKeyRange = new KeyRange(minValidKey, maxValidKey);
+            }
+        } else {
+            try (final DataInputStream metaIn = new DataInputStream(Files.newInputStream(metadataFile))) {
                 final int fileVersion = metaIn.readInt();
                 if (fileVersion != METADATA_FILE_FORMAT_VERSION) {
                     throw new IOException("Tried to read a file with incompatible file format version ["
@@ -783,10 +886,23 @@ public class DataFileCollection<D> implements Snapshotable {
                 }
                 validKeyRange = new KeyRange(metaIn.readLong(), metaIn.readLong());
             }
-            if (loadedLegacyMetadata) {
-                Files.delete(metaDataFile);
-            }
-        } else {
+        }
+        if (loadedLegacyMetadata) {
+            Files.delete(metadataFile);
+        }
+        return true;
+    }
+
+    private void loadFromExistingFiles(
+            final DataFileReader<D>[] dataFileReaders, final LoadedDataCallback<D> loadedDataCallback)
+            throws IOException {
+        logger.info(
+                MERKLE_DB.getMarker(),
+                "Loading existing set of [{}] data files for DataFileCollection [{}]",
+                dataFileReaders.length,
+                storeName);
+        // read metadata
+        if (!loadMetadata()) {
             logger.warn(
                     EXCEPTION.getMarker(),
                     "Loading existing set of data files but no metadata file was found in [{}]",
@@ -799,14 +915,11 @@ public class DataFileCollection<D> implements Snapshotable {
         // now call indexEntryCallback
         if (loadedDataCallback != null) {
             // now iterate over every file and every key
-            for (final DataFileReader<D> file : dataFileReaders) {
-                try (final DataFileIterator iterator =
-                        new DataFileIterator(file.getPath(), file.getMetadata(), dataItemSerializer)) {
+            for (final DataFileReader<D> reader : dataFileReaders) {
+                try (final DataFileIterator<D> iterator = reader.createIterator()) {
                     while (iterator.next()) {
                         loadedDataCallback.newIndexEntry(
-                                iterator.getDataItemsKey(),
-                                iterator.getDataItemsDataLocation(),
-                                iterator.getDataItemData());
+                                iterator.getDataItemDataLocation(), iterator.getDataItemData());
                     }
                 }
             }

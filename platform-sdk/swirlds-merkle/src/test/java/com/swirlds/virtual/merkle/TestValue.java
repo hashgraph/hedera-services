@@ -52,14 +52,35 @@ public final class TestValue implements VirtualValue {
         return 1;
     }
 
+    int sizeInBytes() {
+        final byte[] data = CommonUtils.getNormalisedStringBytes(s);
+        return Integer.BYTES + data.length;
+    }
+
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         out.writeNormalisedString(s);
     }
 
+    void serialize(ByteBuffer buffer) {
+        final byte[] data = CommonUtils.getNormalisedStringBytes(this.s);
+        buffer.putInt(data.length);
+        buffer.put(data);
+    }
+
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         s = in.readNormalisedString(1024);
+    }
+
+    void deserialize(ByteBuffer buffer, int version) {
+        final int length = buffer.getInt();
+        if (length > 1024) {
+            throw new IllegalStateException("Bad data from buffer for string length. Value: " + length);
+        }
+        final byte[] data = new byte[length];
+        buffer.get(data, 0, length);
+        this.s = CommonUtils.getNormalisedStringFromBytes(data);
     }
 
     @Override
@@ -78,25 +99,6 @@ public final class TestValue implements VirtualValue {
     @Override
     public String toString() {
         return "TestValue{ " + s + " }";
-    }
-
-    @Override
-    public void serialize(ByteBuffer buffer) throws IOException {
-        final byte[] data = CommonUtils.getNormalisedStringBytes(this.s);
-        buffer.putInt(data.length);
-        buffer.put(data);
-    }
-
-    @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
-        final int length = buffer.getInt();
-        if (length > 1024) {
-            throw new IOException("Bad data from buffer for string length. Value: " + length);
-        }
-
-        final byte[] data = new byte[length];
-        buffer.get(data, 0, length);
-        this.s = CommonUtils.getNormalisedStringFromBytes(data);
     }
 
     @Override

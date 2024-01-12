@@ -22,6 +22,7 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -44,6 +45,12 @@ public class Version030FeatureFlags implements FeatureFlags {
 
     @Override
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
+        return false;
+    }
+
+    @Override
+    public boolean isAllowCallsToNonContractAccountsEnabled(
+            @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
         return false;
     }
 }

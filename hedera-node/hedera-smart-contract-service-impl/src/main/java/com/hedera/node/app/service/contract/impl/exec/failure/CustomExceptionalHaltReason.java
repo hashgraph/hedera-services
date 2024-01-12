@@ -24,7 +24,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
+    INVALID_CONTRACT_ID("Invalid contract id"),
     INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
+    INVALID_ALIAS_KEY("Invalid alias key"),
     SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
     CONTRACT_IS_TREASURY("Token treasuries cannot be deleted"),
     INVALID_SIGNATURE("Invalid signature"),
@@ -60,6 +62,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
         } else if (reason == INVALID_SOLIDITY_ADDRESS) {
             return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+        } else if (reason == INVALID_ALIAS_KEY) {
+            return ResponseCodeEnum.INVALID_ALIAS_KEY;
         } else if (reason == INVALID_SIGNATURE) {
             return ResponseCodeEnum.INVALID_SIGNATURE;
         } else if (reason == CONTRACT_ENTITY_LIMIT_REACHED) {
@@ -70,6 +74,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
         } else if (reason == CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS) {
             return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+        } else if (reason == CustomExceptionalHaltReason.INVALID_CONTRACT_ID) {
+            return ResponseCodeEnum.INVALID_CONTRACT_ID;
         } else {
             return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
         }

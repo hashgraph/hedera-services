@@ -54,20 +54,20 @@ public abstract class BaseBench {
     protected static final String RUN_DELIMITER = "--------------------------------";
 
     @Param({"100"})
-    public int numFiles = 100;
+    public int numFiles = 500;
 
     @Param({"100000"})
-    public int numRecords = 100_000;
+    public int numRecords = 10_000;
 
     @Param({"1000000"})
-    public int maxKey = 1_000_000;
+    public int maxKey = 10_000_000;
 
     // 8 - VirtualLongKey, 8+ - generic VirtualKey
     @Param({"8"})
-    public int keySize = 8;
+    public int keySize = 32;
 
     @Param({"128"})
-    public int recordSize = 128;
+    public int recordSize = 1024;
 
     @Param({"32"})
     public int numThreads = 32;
@@ -84,10 +84,10 @@ public abstract class BaseBench {
     /* Verify benchmark results */
     protected boolean verify;
 
-    private BenchmarkConfig benchmarkConfig;
+    private static Configuration configuration;
 
-    private static BenchmarkConfig loadConfig() throws IOException {
-        final Configuration configuration = ConfigurationBuilder.create()
+    private static void loadConfig() throws IOException {
+        configuration = ConfigurationBuilder.create()
                 .withSource(new LegacyFileConfigSource(Path.of(".", "settings.txt")))
                 .withConfigDataType(BenchmarkConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
@@ -102,12 +102,12 @@ public abstract class BaseBench {
         try (OutputStream os = Files.newOutputStream(Path.of(".", "settingsUsed.txt"))) {
             os.write(settingsUsed.toString().getBytes(StandardCharsets.UTF_8));
         }
-        return configuration.getConfigData(BenchmarkConfig.class);
     }
 
     @Setup
     public void setup() throws IOException {
-        benchmarkConfig = loadConfig();
+        loadConfig();
+        final BenchmarkConfig benchmarkConfig = getConfig(BenchmarkConfig.class);
         logger.info("Benchmark configuration: {}", benchmarkConfig);
         logger.info("Build: {}", Utils.buildVersion());
 
@@ -148,7 +148,7 @@ public abstract class BaseBench {
     @TearDown
     public void destroy() {
         BenchmarkMetrics.stop();
-        if (!benchmarkConfig.saveDataDirectory()) {
+        if (!getConfig().saveDataDirectory()) {
             Utils.deleteRecursively(benchDir);
         }
     }
@@ -192,7 +192,7 @@ public abstract class BaseBench {
 
     public void afterTest(boolean keepTestDir, RunnableWithException runnable) throws Exception {
         BenchmarkMetrics.report();
-        if (benchmarkConfig.printHistogram()) {
+        if (getConfig().printHistogram()) {
             // Class histogram is interesting before closing
             Utils.printClassHistogram(15);
         }
@@ -238,6 +238,10 @@ public abstract class BaseBench {
     }
 
     public BenchmarkConfig getConfig() {
-        return benchmarkConfig;
+        return getConfig(BenchmarkConfig.class);
+    }
+
+    public <T extends Record> T getConfig(Class<T> configCls) {
+        return configuration.getConfigData(configCls);
     }
 }

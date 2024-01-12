@@ -46,9 +46,9 @@ public class PcesMutableFile {
     private final CountingStreamExtension counter;
 
     /**
-     * The highest generation of all events written to the file.
+     * The highest ancient indicator of all events written to the file.
      */
-    private long highestGenerationInFile;
+    private long highestAncientIdentifierInFile;
 
     /**
      * The output stream to write to.
@@ -74,17 +74,17 @@ public class PcesMutableFile {
                         new FileOutputStream(descriptor.getPath().toFile())),
                 counter));
         out.writeInt(FILE_VERSION);
-        highestGenerationInFile = descriptor.getMinimumGeneration();
+        highestAncientIdentifierInFile = descriptor.getLowerBound();
     }
 
     /**
-     * Check if this file is eligible to contain an event based on generational bounds.
+     * Check if this file is eligible to contain an event based on bounds.
      *
-     * @param generation the generation of the event in question
+     * @param ancientIdentifier the ancient indicator of the event in question
      * @return true if this file is eligible to contain the event
      */
-    public boolean canContain(final long generation) {
-        return descriptor.canContain(generation);
+    public boolean canContain(final long ancientIdentifier) {
+        return descriptor.canContain(ancientIdentifier);
     }
 
     /**
@@ -93,31 +93,32 @@ public class PcesMutableFile {
      * @param event the event to write
      */
     public void writeEvent(final GossipEvent event) throws IOException {
-        if (!descriptor.canContain(event.getGeneration())) {
+        if (!descriptor.canContain(event.getAncientIndicator(descriptor.getFileType()))) {
             throw new IllegalStateException(
-                    "Cannot write event " + event.getHashedData().getHash() + " with generation "
-                            + event.getGeneration() + " to file " + descriptor);
+                    "Cannot write event " + event.getHashedData().getHash() + " with ancient indicator "
+                            + event.getAncientIndicator(descriptor.getFileType()) + " to file " + descriptor);
         }
         out.writeSerializable(event, false);
-        highestGenerationInFile = Math.max(highestGenerationInFile, event.getGeneration());
+        highestAncientIdentifierInFile =
+                Math.max(highestAncientIdentifierInFile, event.getAncientIndicator(descriptor.getFileType()));
     }
 
     /**
      * Atomically rename this file so that its un-utilized span is 0.
      *
-     * @param highestGenerationInPreviousFile the previous file's highest generation. Even if we are not utilizing the
-     *                                        entire span of this file, we cannot reduce the highest generation so that
-     *                                        it is smaller than the previous file's highest generation.
+     * @param upperBoundInPreviousFile the previous file's upper bound. Even if we are not utilizing the
+     *                                        entire span of this file, we cannot reduce the upper bound so that
+     *                                        it is smaller than the previous file's highest upper bound.
      * @return the new span compressed file
      */
-    public PcesFile compressGenerationalSpan(final long highestGenerationInPreviousFile) {
-        if (highestGenerationInFile == descriptor.getMaximumGeneration()) {
+    public PcesFile compressSpan(final long upperBoundInPreviousFile) {
+        if (highestAncientIdentifierInFile == descriptor.getUpperBound()) {
             // No need to compress, we used the entire span.
             return descriptor;
         }
 
         final PcesFile newDescriptor = descriptor.buildFileWithCompressedSpan(
-                Math.max(highestGenerationInFile, highestGenerationInPreviousFile));
+                Math.max(highestAncientIdentifierInFile, upperBoundInPreviousFile));
 
         try {
             Files.move(descriptor.getPath(), newDescriptor.getPath(), StandardCopyOption.ATOMIC_MOVE);
@@ -152,26 +153,26 @@ public class PcesMutableFile {
     }
 
     /**
-     * Get the difference between the highest generation written to the file and the lowest legal generation for this
-     * file. Higher values mean that the maximum generation was chosen well.
+     * Get the difference between the highest ancient indicator written to the file and the lowest legal ancient indicator for this
+     * file. Higher values mean that the upper bound was chosen well.
      */
-    public long getUtilizedGenerationalSpan() {
-        return highestGenerationInFile - descriptor.getMinimumGeneration();
+    public long getUtilizedSpan() {
+        return highestAncientIdentifierInFile - descriptor.getLowerBound();
     }
 
     /**
-     * Get the generational span that is unused in this file. Low values mean that the maximum generation was chosen
+     * Get the span that is unused in this file. Low values mean that the upperBound was chosen
      * well, resulting in less overlap between files. A value of 0 represents a "perfect" choice.
      */
-    public long getUnUtilizedGenerationalSpan() {
-        return descriptor.getMaximumGeneration() - highestGenerationInFile;
+    public long getUnUtilizedSpan() {
+        return descriptor.getUpperBound() - highestAncientIdentifierInFile;
     }
 
     /**
-     * Get the span of generations that this file can legally contain.
+     * Get the span of ancient indicators that this file can legally contain.
      */
-    public long getGenerationalSpan() {
-        return descriptor.getMaximumGeneration() - descriptor.getMinimumGeneration();
+    public long getSpan() {
+        return descriptor.getUpperBound() - descriptor.getLowerBound();
     }
 
     /**

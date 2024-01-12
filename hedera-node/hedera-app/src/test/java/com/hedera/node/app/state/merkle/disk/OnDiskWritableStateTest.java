@@ -38,8 +38,6 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         @Test
         @DisplayName("The size of the state is the size of the virtual map")
         void sizeWorks() {
-            setupFruitVirtualMap();
-
             final var state = new OnDiskWritableKVState<>(fruitVirtualMetadata, fruitVirtualMap);
             assertThat(state.size()).isZero();
 
