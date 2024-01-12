@@ -110,9 +110,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         // We have not queried this key before, so let's look it up and store that we have
         // read this key. And then return the value.
         final var val = getForModifyFromDataSource(key);
-        if(val != null){
-            markRead(key, val);
-        }
+        markRead(key, val);
         return val;
     }
 
