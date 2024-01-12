@@ -17,6 +17,9 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -33,11 +36,12 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
 
     private static final long CLASS_ID = 0x3992113882234886L;
 
-    private static final long DATA_VERSION = 1;
-    private final StateMetadata<?, V> md;
+    private static final int VERSION = 1;
 
     // guesstimate of the typical size of a serialized value
     private static final int TYPICAL_SIZE = 1024;
+
+    private final StateMetadata<?, V> md;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
@@ -53,33 +57,38 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
         this.md = Objects.requireNonNull(md);
     }
 
-    /** {@inheritDoc} */
+    // Serializer info
+
     @Override
     public long getClassId() {
         // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
         return md == null ? CLASS_ID : md.onDiskValueSerializerClassId();
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getVersion() {
-        return 1;
+        return VERSION;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public int serialize(OnDiskValue<V> value, ByteBuffer byteBuffer) throws IOException {
-        return value.serializeReturningWrittenBytes(byteBuffer);
-    }
+    // Value info
 
     @Override
     public long getCurrentDataVersion() {
-        return DATA_VERSION;
+        return OnDiskValue.VERSION;
     }
+
+    // Value serialization
 
     @Override
     public int getSerializedSize() {
         return VARIABLE_DATA_SIZE;
+    }
+
+    @Override
+    public int getSerializedSize(OnDiskValue<V> value) {
+        assert md != null;
+        final Codec<V> codec = md.stateDefinition().valueCodec();
+        return codec.measureRecord(value.getValue());
     }
 
     @Override
@@ -88,9 +97,39 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
     }
 
     @Override
-    public OnDiskValue<V> deserialize(ByteBuffer byteBuffer, long dataVersion) throws IOException {
-        final OnDiskValue<V> value = new OnDiskValue<>(md);
-        value.deserialize(byteBuffer, (int) dataVersion);
-        return value;
+    public void serialize(@NonNull final OnDiskValue<V> value, @NonNull final WritableSequentialData out) {
+        assert md != null;
+        final Codec<V> codec = md.stateDefinition().valueCodec();
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            codec.write(value.getValue(), out);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void serialize(final OnDiskValue<V> value, final ByteBuffer buffer) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    // Value deserialization
+
+    @Override
+    public OnDiskValue<V> deserialize(@NonNull final ReadableSequentialData in) {
+        assert md != null;
+        final Codec<V> codec = md.stateDefinition().valueCodec();
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            final V value = codec.parse(in);
+            return new OnDiskValue<>(md, value);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public OnDiskValue<V> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+        throw new UnsupportedOperationException();
     }
 }

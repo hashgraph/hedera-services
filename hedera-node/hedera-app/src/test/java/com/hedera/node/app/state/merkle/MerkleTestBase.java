@@ -34,7 +34,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
@@ -44,13 +43,13 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * This base class provides helpful methods and defaults for simplifying the other merkle related
@@ -102,6 +101,9 @@ public class MerkleTestBase extends StateTestBase {
      * the test code.
      */
     protected ConstructableRegistry registry;
+
+    @TempDir
+    private Path virtualDbPath;
 
     // The "FRUIT" Map is part of FIRST_SERVICE
     protected String fruitLabel;
@@ -220,25 +222,18 @@ public class MerkleTestBase extends StateTestBase {
     @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
-        final MerkleDbTableConfig<OnDiskKey<String>, OnDiskValue<String>> tableConfig = new MerkleDbTableConfig<>(
-                        (short) 1,
-                        DigestType.SHA_384,
-                        (short) 1,
-                        new OnDiskKeySerializer<>(md),
-                        (short) 1,
-                        new OnDiskValueSerializer<>(md))
-                .hashesRamToDiskThreshold(0)
-                .maxNumberOfKeys(100)
-                .preferDiskIndices(true);
-
-        try {
-            final VirtualDataSourceBuilder<OnDiskKey<String>, OnDiskValue<String>> dsBuilder =
-                    new MerkleDbDataSourceBuilder<>(
-                            TemporaryFileBuilder.buildTemporaryDirectory("merkledb"), tableConfig);
-            return new VirtualMap<>(label, dsBuilder);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        final var merkleDbTableConfig = new MerkleDbTableConfig<>(
+                (short) 1,
+                DigestType.SHA_384,
+                (short) 1,
+                new OnDiskKeySerializer<>(md),
+                (short) 1,
+                new OnDiskValueSerializer<>(md));
+        merkleDbTableConfig.hashesRamToDiskThreshold(0);
+        merkleDbTableConfig.maxNumberOfKeys(100);
+        merkleDbTableConfig.preferDiskIndices(true);
+        final var builder = new MerkleDbDataSourceBuilder<>(virtualDbPath, merkleDbTableConfig);
+        return new VirtualMap<>(label, builder);
     }
 
     /**
@@ -301,6 +296,8 @@ public class MerkleTestBase extends StateTestBase {
     /** A convenience method used to deserialize a merkle tree */
     protected <T extends MerkleNode> T parseTree(@NonNull final byte[] state, @NonNull final Path tempDir)
             throws IOException {
+        // Restore to a fresh MerkleDb instance
+        MerkleDb.resetDefaultInstancePath();
         final var byteInputStream = new ByteArrayInputStream(state);
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);
