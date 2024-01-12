@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
@@ -27,7 +28,6 @@ import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.NodeStartPayload;
-import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -40,6 +40,8 @@ import org.apache.logging.log4j.Logger;
  * static stateful objects.
  */
 final class StaticPlatformBuilder {
+
+    public static final String LOG4J_FILE_NAME = "log4j2.xml";
 
     private static final Logger logger = LogManager.getLogger(StaticPlatformBuilder.class);
 
@@ -80,9 +82,8 @@ final class StaticPlatformBuilder {
 
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        // Setup logging, using the configuration to tell us the location of the log4j2.xml
-        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
-        final Path log4jPath = pathsConfig.getLogPath();
+        // Setup logging
+        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
         try {
             Log4jSetup.startLoggingFramework(log4jPath).await();
         } catch (final InterruptedException e) {

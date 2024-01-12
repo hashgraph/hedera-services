@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@ import java.util.Map;
 public enum HederaEvmVersion {
     VERSION_030("v0.30"),
     VERSION_034("v0.34"),
-    VERSION_038("v0.38");
+    VERSION_038("v0.38"),
+    VERSION_046("v0.46");
 
     public static final Map<String, HederaEvmVersion> EVM_VERSIONS = Map.of(
             VERSION_030.key(), VERSION_030,
             VERSION_034.key(), VERSION_034,
-            VERSION_038.key(), VERSION_038);
+            VERSION_038.key(), VERSION_038,
+            VERSION_046.key(), VERSION_046);
 
     HederaEvmVersion(String key) {
         this.key = key;

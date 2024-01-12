@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ package com.swirlds.merkle.map;
 import static com.swirlds.common.merkle.copy.MerklePathReplacement.getParentInPath;
 import static com.swirlds.common.merkle.copy.MerklePathReplacement.replacePath;
 import static com.swirlds.common.merkle.utility.MerkleUtils.findChildPositionInParent;
+import static com.swirlds.fchashmap.FCHashMap.REBUILD_SPLIT_FACTOR;
+import static com.swirlds.fchashmap.FCHashMap.REBUILD_THREAD_COUNT;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -34,7 +35,6 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.StopWatch;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.fchashmap.ModifiableValue;
-import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.merkle.map.internal.MerkleMapEntrySet;
 import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
@@ -883,10 +883,7 @@ public class MerkleMap<K, V extends MerkleNode & Keyed<K>> extends PartialBinary
     @SuppressWarnings("unchecked")
     @Override
     public void rebuild() {
-        final FCHashMapConfig fcHashMapConfig = ConfigurationHolder.getConfigData(FCHashMapConfig.class);
-
-        final int splitDepth =
-                fcHashMapConfig.rebuildSplitFactor() + getTree().getRoot().getDepth();
+        final int splitDepth = REBUILD_SPLIT_FACTOR + getTree().getRoot().getDepth();
 
         // Collect all internal nodes at the split depth, and any
         // entries that happen to appear at or above the split depth.
@@ -919,7 +916,7 @@ public class MerkleMap<K, V extends MerkleNode & Keyed<K>> extends PartialBinary
             // Process each subtree using the thread pool.
 
             final List<Future<?>> futures = new ArrayList<>(internalNodes.size());
-            final ExecutorService executor = new ForkJoinPool(fcHashMapConfig.rebuildThreadCount());
+            final ExecutorService executor = new ForkJoinPool(REBUILD_THREAD_COUNT);
             for (final MerkleNode subtreeRoot : internalNodes) {
                 futures.add(executor.submit(() -> rebuildSubtree(subtreeRoot)));
             }

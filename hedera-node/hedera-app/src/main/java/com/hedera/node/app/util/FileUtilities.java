@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class FileUtilities {
 
     @NonNull
     public static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
-        final var states = state.createReadableStates(FileService.NAME);
+        final var states = state.getReadableStates(FileService.NAME);
         final var filesMap = states.<FileID, File>get(BLOBS_KEY);
         final var file = filesMap.get(fileID);
         return file != null ? file.contents() : Bytes.EMPTY;

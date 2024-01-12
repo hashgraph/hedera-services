@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>
- * A map that with {@link java.util.HashMap HashMap} like O(1) performance that provides {@link FastCopyable} semantics.
+ * A map that with {@link java.util.HashMap HashMap} like O(1) performance that provides {@link FastCopyable}
+ * semantics.
  * </p>
  *
  * <p>
@@ -39,13 +40,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </p>
  *
  * <p>
- * It is always thread safe to read unreleased immutable copies
- * (as long as not done concurrently with the deletion of that copy).
+ * It is always thread safe to read unreleased immutable copies (as long as not done concurrently with the deletion of
+ * that copy).
  * </p>
  *
  * <p>
- * It is thread safe safe to read and write simultaneously to the mutable copy of the map.
- * {@link #size} may return incorrect results if executed concurrently with an operation that modifies the size.
+ * It is thread safe safe to read and write simultaneously to the mutable copy of the map. {@link #size} may return
+ * incorrect results if executed concurrently with an operation that modifies the size.
  * </p>
  *
  * <p>
@@ -57,17 +58,26 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     <li>calling {@link #release()} concurrently with read or write operations</li>
  * </ul>
  *
- * @param <K>
- * 		the type of the key
- * @param <V>
- * 		the type of the value
+ * @param <K> the type of the key
+ * @param <V> the type of the value
  */
 public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
+
     /**
-     * When a copy of an FCHashMap is made, that copy is in the same family as the original. A sequence of copies
-     * form a single family. The FCHashMapFamily object manages the data shared between copies in a family,
-     * as well as managing the lifecycle and eventual deletion of data when it is no longer needed by any
-     * un-deleted copy in the family.
+     * split the binary tree at this depth relative to the root of the binary tree. The tree will be split into
+     * 2^split-factor subtrees, and each subtree will be eligible to be handled on a separate thread.
+     */
+    public static final int REBUILD_SPLIT_FACTOR = 7;
+
+    /**
+     * rebuilding the FCHashMap in a MerkleMap, use this many threads to rebuild the tree.
+     */
+    public static final int REBUILD_THREAD_COUNT = 24;
+
+    /**
+     * When a copy of an FCHashMap is made, that copy is in the same family as the original. A sequence of copies form a
+     * single family. The FCHashMapFamily object manages the data shared between copies in a family, as well as managing
+     * the lifecycle and eventual deletion of data when it is no longer needed by any un-deleted copy in the family.
      */
     final FCHashMapFamily<K, V> family;
 
@@ -101,8 +111,7 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
     /**
      * Create a new FCHashMap.
      *
-     * @param capacity
-     * 		the initial capacity of the map
+     * @param capacity the initial capacity of the map
      */
     public FCHashMap(final int capacity) {
 
@@ -116,8 +125,7 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
     /**
      * Copy constructor.
      *
-     * @param that
-     * 		the map to copy
+     * @param that the map to copy
      */
     private FCHashMap(final FCHashMap<K, V> that) {
         this.family = that.family;
@@ -159,13 +167,12 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
 
     /**
      * <p>
-     * Use this to clean up resources held by this copy.
-     * Failure to call delete on a copy before it is garbage collected will result in a memory leak.
+     * Use this to clean up resources held by this copy. Failure to call delete on a copy before it is garbage collected
+     * will result in a memory leak.
      * </p>
      *
      * <p>
-     * Not thread safe.
-     * Must not be called at the same time another thread is attempting to read from this copy.
+     * Not thread safe. Must not be called at the same time another thread is attempting to read from this copy.
      * </p>
      */
     @Override
@@ -206,14 +213,14 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
 
     /**
      * <p>
-     * Directly inject a value into the map. This method designed for rapid initialization of an FCHashMap,
-     * and should only be used on maps being initialized. Should not be called after the map has been
-     * copied or modified by any method other than this method..
+     * Directly inject a value into the map. This method designed for rapid initialization of an FCHashMap, and should
+     * only be used on maps being initialized. Should not be called after the map has been copied or modified by any
+     * method other than this method..
      * </p>
      *
      * <p>
-     * This method does not update the size of the data structure. After all injections have been completed,
-     * call {@link #initialResize()}.
+     * This method does not update the size of the data structure. After all injections have been completed, call
+     * {@link #initialResize()}.
      * </p>
      *
      * <p>
@@ -226,8 +233,8 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
 
     /**
      * This method MUST be called if the FCHashMap has been initialized using {@link #initialInjection(Object, Object)}.
-     * If called, must be called before any copies of the map are made or any modifications are made by any
-     * method other than {@link #initialInjection(Object, Object)}.
+     * If called, must be called before any copies of the map are made or any modifications are made by any method other
+     * than {@link #initialInjection(Object, Object)}.
      */
     public void initialResize() {
         size.set(family.getData().size());
@@ -243,9 +250,9 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
     }
 
     /**
-     * Not thread safe on an immutable copy of the map if it is possible that another thread may have deleted the
-     * map copy. Map deletion and reads against the map must be externally synchronized. The function hasBeenDeleted()
-     * can be used to check to see if the copy has been deleted.
+     * Not thread safe on an immutable copy of the map if it is possible that another thread may have deleted the map
+     * copy. Map deletion and reads against the map must be externally synchronized. The function hasBeenDeleted() can
+     * be used to check to see if the copy has been deleted.
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -259,9 +266,9 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
 
     /**
      * <p>
-     * Get a value that is safe to directly modify. If value has been modified this round then return it.
-     * If value was modified in a previous round, call {@link FastCopyable#copy()} on it, insert it into
-     * the map, and return it. If the value is null, then return null.
+     * Get a value that is safe to directly modify. If value has been modified this round then return it. If value was
+     * modified in a previous round, call {@link FastCopyable#copy()} on it, insert it into the map, and return it. If
+     * the value is null, then return null.
      * </p>
      *
      * <p>
@@ -269,15 +276,14 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
      * </p>
      *
      * <p>
-     * This method is only permitted to be used on maps that contain values that implement {@link FastCopyable}.
-     * Using this method on maps that contain values that do not implement {@link FastCopyable} will
-     * result in undefined behavior.
+     * This method is only permitted to be used on maps that contain values that implement {@link FastCopyable}. Using
+     * this method on maps that contain values that do not implement {@link FastCopyable} will result in undefined
+     * behavior.
      * </p>
      *
-     * @param key
-     * 		the key
-     * @return a {@link ModifiableValue} that contains a value is safe to directly modify, or null if the key
-     * 		is not in the map
+     * @param key the key
+     * @return a {@link ModifiableValue} that contains a value is safe to directly modify, or null if the key is not in
+     * the map
      */
     public ModifiableValue<V> getForModify(final K key) {
         throwIfImmutable();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,13 +141,13 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     @NonNull
     @Override
     public Iterator<E> iterator() {
-        if (dsIterator == null) dsIterator = iterateOnDataSource();
+        final var iterator = iterateOnDataSource();
         final var addedElementsIterator = addedElements.iterator();
         final var numAddedElements = addedElements.size();
         return new Iterator<>() {
             @Override
             public boolean hasNext() {
-                return dsIterator.hasNext() || addedElementsIterator.hasNext();
+                return iterator.hasNext() || addedElementsIterator.hasNext();
             }
 
             @Override
@@ -155,7 +155,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
                 if (numAddedElements != addedElements.size()) {
                     throw new ConcurrentModificationException();
                 }
-                return dsIterator.hasNext() ? dsIterator.next() : addedElementsIterator.next();
+                return iterator.hasNext() ? iterator.next() : addedElementsIterator.next();
             }
         };
     }

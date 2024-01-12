@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,8 @@ class EmergencyReconnectTests {
     private EmergencyReconnectProtocol learnerProtocol;
     private EmergencyReconnectProtocol teacherProtocol;
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    private final PlatformContext platformContext =
+            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
 
     @BeforeEach
     public void setup() throws ExecutionException, InterruptedException, ConstructableRegistryException {
@@ -281,6 +283,7 @@ class EmergencyReconnectTests {
     private EmergencyReconnectProtocol createTeacherProtocol(
             final NotificationEngine notificationEngine, final ReconnectController reconnectController) {
         return new EmergencyReconnectProtocol(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,
@@ -303,6 +306,7 @@ class EmergencyReconnectTests {
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
         return new EmergencyReconnectProtocol(
+                platformContext,
                 Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,

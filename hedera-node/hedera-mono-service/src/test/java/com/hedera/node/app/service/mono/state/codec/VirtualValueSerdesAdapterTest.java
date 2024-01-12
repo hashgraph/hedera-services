@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,8 @@ public class VirtualValueSerdesAdapterTest extends AbstractVirtualCodecTest<Virt
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     public VirtualValueSerdesAdapterTest() {
-        super(MonoMapCodecAdapter.codecForVirtualValue(VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new));
+        super(MonoMapCodecAdapter.codecForVirtualValue(
+                VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new, new VirtualBlobValueSerializer()));
     }
 
     @Test

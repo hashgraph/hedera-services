@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -877,8 +877,9 @@ public class HapiSpec implements Runnable {
         return internalDefaultHapiSpec(name, false, emptyList(), snapshotMatchModes);
     }
 
-    public static Def.PropertyPreserving propertyPreservingHapiSpec(final String name) {
-        return (String... props) -> internalDefaultHapiSpec(name, false, Arrays.asList(props));
+    public static Def.PropertyPreserving propertyPreservingHapiSpec(
+            final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+        return (String... props) -> internalDefaultHapiSpec(name, false, Arrays.asList(props), snapshotMatchModes);
     }
 
     public static Def.PropertyPreserving onlyPropertyPreservingHapiSpec(final String name) {

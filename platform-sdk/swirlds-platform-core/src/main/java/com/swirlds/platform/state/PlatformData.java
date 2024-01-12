@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,12 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.NonCryptographicHashing;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
@@ -188,6 +186,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+
+        if (version < ClassVersion.ROUNDS_NON_ANCIENT) {
+            throw new IOException("Unsupported version " + version);
+        }
+
         round = in.readLong();
         if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
             // numEventsCons
@@ -217,19 +220,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         }
 
         creationSoftwareVersion = in.readSerializable();
-
-        if (version >= ClassVersion.EPOCH_HASH) {
-            epochHash = in.readSerializable(false, Hash::new);
-        }
-
-        if (version < ClassVersion.ROUNDS_NON_ANCIENT) {
-            roundsNonAncient = ConfigurationHolder.getInstance()
-                    .get()
-                    .getConfigData(ConsensusConfig.class)
-                    .roundsNonAncient();
-        } else {
-            roundsNonAncient = in.readInt();
-        }
+        epochHash = in.readSerializable(false, Hash::new);
+        roundsNonAncient = in.readInt();
 
         if (version >= ClassVersion.CONSENSUS_SNAPSHOT) {
             snapshot = in.readSerializable(false, ConsensusSnapshot::new);

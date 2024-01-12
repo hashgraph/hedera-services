@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,11 @@ class EventDeduplicatorTests {
         when(event.getDescriptor()).thenReturn(descriptor);
         when(event.getGeneration()).thenReturn(generation);
         when(event.getUnhashedData()).thenReturn(unhashedData);
+        // FUTURE WORK: Add birthRound to arguments and replace the first round constant below.
+        when(event.getAncientIndicator(any()))
+                .thenAnswer(args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD
+                        ? ConsensusConstants.ROUND_FIRST
+                        : generation);
 
         return event;
     }
@@ -186,8 +191,9 @@ class EventDeduplicatorTests {
                 // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
                 deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
                         ConsensusConstants.ROUND_FIRST,
-                        ConsensusConstants.ROUND_NEGATIVE_INFINITY,
-                        minimumGenerationNonAncient));
+                        ConsensusConstants.ROUND_FIRST,
+                        minimumGenerationNonAncient,
+                        AncientMode.GENERATION_THRESHOLD));
             }
         }
 

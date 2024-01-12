@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -97,7 +98,7 @@ public class InOrderLinker {
     /**
      * The current non-ancient event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -124,20 +125,24 @@ public class InOrderLinker {
         this.missingParentAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "missingParents")
-                        .withDescription("Parent child relationships where a parent was missing")
-                        .withUnit("parent child relationships"));
+                        .withDescription("Parent child relationships where a parent was missing"));
         this.generationMismatchAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "parentGenerationMismatch")
-                        .withDescription(
-                                "Parent child relationships where claimed parent generation did not match actual parent generation")
-                        .withUnit("parent child relationships"));
+                .getOrCreate(
+                        new LongAccumulator.Config(PLATFORM_CATEGORY, "parentGenerationMismatch")
+                                .withDescription(
+                                        "Parent child relationships where claimed parent generation did not match actual parent generation"));
         this.timeCreatedMismatchAccumulator = platformContext
                 .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
-                        .withDescription(
-                                "Parent child relationships where child time created wasn't strictly after parent time created")
-                        .withUnit("parent child relationships"));
+                .getOrCreate(
+                        new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
+                                .withDescription(
+                                        "Parent child relationships where child time created wasn't strictly after parent time created"));
+
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode());
     }
 
     /**
@@ -251,7 +256,7 @@ public class InOrderLinker {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
 
         parentDescriptorMap.shiftWindow(
-                nonAncientEventWindow.getLowerBound(),
+                nonAncientEventWindow.getAncientThreshold(),
                 (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
     }
 

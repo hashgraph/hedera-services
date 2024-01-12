@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.reconnect.emergency;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -49,8 +50,10 @@ public class EmergencyReconnectTeacher {
     private final ThreadManager threadManager;
     private final Configuration configuration;
     private final Time time;
+    private final PlatformContext platformContext;
 
     /**
+     * @param platformContext        the platform context
      * @param time                   provides wall clock time
      * @param threadManager          responsible for managing thread lifecycles
      * @param stateSupplier          return the state for emergency reconnect
@@ -59,19 +62,20 @@ public class EmergencyReconnectTeacher {
      * @param configuration          the configuration for the platform
      */
     public EmergencyReconnectTeacher(
+            @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final Supplier<ReservedSignedState> stateSupplier,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final Configuration configuration) {
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
-        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
-        this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier must not be null");
-        this.reconnectSocketTimeout =
-                Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
-        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
-        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.stateSupplier = Objects.requireNonNull(stateSupplier);
+        this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
+        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
+        this.configuration = Objects.requireNonNull(configuration);
     }
 
     /**
@@ -113,6 +117,7 @@ public class EmergencyReconnectTeacher {
                             connection.getOtherId());
 
                     new ReconnectTeacher(
+                                    platformContext,
                                     time,
                                     threadManager,
                                     connection,

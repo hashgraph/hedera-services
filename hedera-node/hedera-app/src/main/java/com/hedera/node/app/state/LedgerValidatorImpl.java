@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public final class LedgerValidatorImpl implements LedgerValidator {
     public void validate(@NonNull final HederaState state) throws IllegalStateException {
         final var config = configProvider.getConfiguration().getConfigData(LedgerConfig.class);
         final var expectedTotalTinyBar = config.totalTinyBarFloat();
-        final var tokenStates = state.createReadableStates(TokenService.NAME);
+        final var tokenStates = state.getReadableStates(TokenService.NAME);
         final ReadableKVState<AccountID, Account> accounts = tokenStates.get(TokenServiceImpl.ACCOUNTS_KEY);
         final var total = new AtomicLong(0L);
 

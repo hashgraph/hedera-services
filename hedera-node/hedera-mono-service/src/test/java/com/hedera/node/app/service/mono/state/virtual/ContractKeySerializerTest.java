@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,14 +86,10 @@ class ContractKeySerializerTest {
     }
 
     @Test
-    void deserializeKeySizeWorks() {
+    void serializedSizeWorks() {
         final var contractIdNonZeroBytes = contractKey.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
-        final ByteBuffer bin = ByteBuffer.allocate(1);
-        bin.put(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes())
-                .rewind();
-
-        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.deserializeKeySize(bin));
+        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.getSerializedSize(contractKey));
     }
 
     @Test

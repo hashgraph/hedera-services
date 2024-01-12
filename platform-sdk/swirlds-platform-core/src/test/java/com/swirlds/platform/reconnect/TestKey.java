@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.reconnect;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -54,13 +56,19 @@ public final class TestKey implements VirtualLongKey {
         return 1;
     }
 
-    @Override
-    public void serialize(final ByteBuffer buffer) {
+    public void serialize(final WritableSequentialData out) {
+        out.writeLong(k);
+    }
+
+    void serialize(final ByteBuffer buffer) {
         buffer.putLong(k);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) {
+    public void deserialize(final ReadableSequentialData in) {
+        k = in.readLong();
+    }
+
+    void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
     }
 

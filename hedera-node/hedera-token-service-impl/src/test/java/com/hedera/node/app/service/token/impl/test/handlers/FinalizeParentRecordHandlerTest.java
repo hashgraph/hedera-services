@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactor
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -129,6 +130,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
+        given(context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class))
+                .willReturn(mock(SingleTransactionRecordBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeParentRecord(ACCOUNT_1212_ID, context))
                 .isInstanceOf(HandleException.class)
@@ -151,6 +154,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
+        given(context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class))
+                .willReturn(mock(SingleTransactionRecordBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeParentRecord(ACCOUNT_1212_ID, context))
                 .isInstanceOf(HandleException.class)

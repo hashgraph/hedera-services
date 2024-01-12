@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
+
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
@@ -57,7 +59,7 @@ public class CustomExtCodeHashOperation extends ExtCodeHashOperation {
                 return new OperationResult(cost(true), null);
             }
             // Otherwise the address must be present
-            if (!addressChecks.isPresent(address, frame)) {
+            if (proxyUpdaterFor(frame).contractMustBePresent() && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);

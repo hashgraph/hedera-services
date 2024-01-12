@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_MINIMUM_GENERATION;
+import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
 
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
+import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,14 +45,25 @@ public class PcesFileTracker {
     /**
      * Tracks all files currently on disk.
      */
-    private final RandomAccessDeque<PreconsensusEventFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
+    private final RandomAccessDeque<PcesFile> files = new RandomAccessDeque<>(INITIAL_RING_BUFFER_SIZE);
+
+    private final AncientMode fileType;
+
+    /**
+     * Constructor.
+     *
+     * @param fileType the type of file to track
+     */
+    public PcesFileTracker(@NonNull final AncientMode fileType) {
+        this.fileType = Objects.requireNonNull(fileType);
+    }
 
     /**
      * Get the first file in the file list.
      *
      * @return the first file in the file list
      */
-    public PreconsensusEventFile getFirstFile() {
+    public PcesFile getFirstFile() {
         return files.getFirst();
     }
 
@@ -60,7 +72,7 @@ public class PcesFileTracker {
      *
      * @return the last file in the file list
      */
-    public PreconsensusEventFile getLastFile() {
+    public PcesFile getLastFile() {
         return files.getLast();
     }
 
@@ -69,7 +81,7 @@ public class PcesFileTracker {
      *
      * @return the file that was removed
      */
-    public PreconsensusEventFile removeFirstFile() {
+    public PcesFile removeFirstFile() {
         return files.removeFirst();
     }
 
@@ -78,7 +90,7 @@ public class PcesFileTracker {
      *
      * @return the file that was removed
      */
-    public PreconsensusEventFile removeLastFile() {
+    public PcesFile removeLastFile() {
         return files.removeLast();
     }
 
@@ -101,7 +113,7 @@ public class PcesFileTracker {
         long totalFileByteCount = 0;
 
         // Measure the size of each file.
-        for (final PreconsensusEventFile file : files) {
+        for (final PcesFile file : files) {
             totalFileByteCount += Files.size(file.getPath());
         }
 
@@ -113,7 +125,7 @@ public class PcesFileTracker {
      *
      * @param file the file to be added
      */
-    public void addFile(@NonNull final PreconsensusEventFile file) {
+    public void addFile(@NonNull final PcesFile file) {
         Objects.requireNonNull(file);
         files.addLast(file);
     }
@@ -124,7 +136,8 @@ public class PcesFileTracker {
      * @param index the index of the file to get
      * @return the file at the specified index
      */
-    public PreconsensusEventFile getFile(final int index) {
+    @NonNull
+    public PcesFile getFile(final int index) {
         return files.get(index);
     }
 
@@ -134,28 +147,28 @@ public class PcesFileTracker {
      * @param index the index of the file to set
      * @param file  the file to set
      */
-    public void setFile(final int index, @NonNull final PreconsensusEventFile file) {
+    public void setFile(final int index, @NonNull final PcesFile file) {
         Objects.requireNonNull(file);
         files.set(index, file);
     }
 
     /**
-     * Get an iterator that walks over all events starting with a specified generation.
+     * Get an iterator that walks over all events starting with a specified lower bound.
      * <p>
      * Note: this method only works at system startup time, using this iterator after startup has undefined behavior. A
      * future task will be to enable event iteration after startup.
      *
-     * @param minimumGeneration the desired minimum generation, iterator is guaranteed to return all available events
-     *                          with a generation greater or equal to this value. No events with a smaller generation
-     *                          will be returned. A value of {@link PcesFileManager ::NO_MINIMUM_GENERATION}
-     *                          will cause the returned iterator to walk over all available events.
-     * @param startingRound     the round to start iterating from
+     * @param lowerBound    the desired lower bound, iterator is guaranteed to return all available events with an
+     *                      ancient indicator (i.e. a generation or a birth round depending on the
+     *                      {@link AncientMode}) greater or equal to this value. No events with a smaller ancient
+     *                      identifier will be returned. A value of {@link PcesFileManager#NO_LOWER_BOUND} will cause
+     *                      the returned iterator to walk over all available events.
+     * @param startingRound the round to start iterating from
      * @return an iterator that walks over events
      */
-    public @NonNull PreconsensusEventMultiFileIterator getEventIterator(
-            final long minimumGeneration, final long startingRound) {
-        return new PreconsensusEventMultiFileIterator(
-                minimumGeneration, getFileIterator(minimumGeneration, startingRound));
+    @NonNull
+    public PcesMultiFileIterator getEventIterator(final long lowerBound, final long startingRound) {
+        return new PcesMultiFileIterator(lowerBound, getFileIterator(lowerBound, startingRound), fileType);
     }
 
     /**
@@ -164,19 +177,21 @@ public class PcesFileTracker {
      * Note: this method only works at system startup time, using this iterator after startup has undefined behavior. A
      * future task will be to enable event iteration after startup.
      *
-     * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
-     *                          contain events with a generation greater or equal to this value. A value of
-     *                          {@link PcesFileManager#NO_MINIMUM_GENERATION} will cause the returned
-     *                          iterator to walk over all available event files.
-     * @param startingRound     the round to start iterating from
+     * @param lowerBound  the desired lower bound, iterator is guaranteed to walk over all files that may contain events
+     *                    with an ancient indicator (i.e. a generation or birth round depending on the
+     *                    {@link AncientMode}) greater or equal to this value. A value of
+     *                    {@link PcesFileManager#NO_LOWER_BOUND} will cause the returned iterator to walk over all
+     *                    available event files.
+     * @param originRound the origin round to start iterating from. The origin of a PCES segment is used to
+     *                    differentiate segments of PCES files separated by discontinuities.
      * @return an unmodifiable iterator that walks over event files in order
      */
-    public @NonNull Iterator<PreconsensusEventFile> getFileIterator(
-            final long minimumGeneration, final long startingRound) {
-        final int firstFileIndex = getFirstRelevantFileIndex(startingRound);
+    @NonNull
+    public Iterator<PcesFile> getFileIterator(final long lowerBound, final long originRound) {
+        final int firstFileIndex = getFirstRelevantFileIndex(originRound);
 
-        // Edge case: we want all events regardless of generation
-        if (minimumGeneration == NO_MINIMUM_GENERATION) {
+        // Edge case: we want all events regardless of lower bound
+        if (lowerBound == NO_LOWER_BOUND) {
             return new UnmodifiableIterator<>(files.iterator(firstFileIndex));
         }
 
@@ -186,44 +201,44 @@ public class PcesFileTracker {
             return Collections.emptyIterator();
         }
 
-        // Edge case: our first file comes after the requested starting generation
-        if (files.get(firstFileIndex).getMinimumGeneration() >= minimumGeneration) {
-            // Unless we observe at least one file with a minimum generation less than the requested minimum,
-            // then we can't know for certain that we have all data for the requested minimum generation.
+        // Edge case: our first file comes after the requested lower bound
+        if (files.get(firstFileIndex).getLowerBound() >= lowerBound) {
+            // Unless we observe at least one file with a lower bound less than the requested minimum,
+            // then we can't know for certain that we have all data for the requested lower bound.
             logger.warn(
                     STARTUP.getMarker(),
                     "The preconsensus event stream has insufficient data to guarantee that all events with the "
-                            + "requested generation of {} are present, the first file has a minimum generation of {}",
-                    minimumGeneration,
-                    files.getFirst().getMinimumGeneration());
+                            + "requested lower bound of {} are present, the first file has a lower bound of {}",
+                    lowerBound,
+                    files.getFirst().getLowerBound());
 
             return new UnmodifiableIterator<>(files.iterator(firstFileIndex));
         }
 
-        // Edge case: all of our data comes before the requested starting generation
-        if (files.getLast().getMaximumGeneration() < minimumGeneration) {
+        // Edge case: all of our data comes before the requested lower bound
+        if (files.getLast().getUpperBound() < lowerBound) {
             logger.warn(
                     STARTUP.getMarker(),
                     "The preconsensus event stream has insufficient data to guarantee that "
-                            + "all events with the requested minimum generation of {} are present, "
-                            + "the last file has a maximum generation of {}",
-                    minimumGeneration,
-                    files.getLast().getMaximumGeneration());
+                            + "all events with the requested lower bound of {} are present, "
+                            + "the last file has a lower bound of {}",
+                    lowerBound,
+                    files.getLast().getUpperBound());
             return Collections.emptyIterator();
         }
 
         // Standard case: we need to stream data starting from a file somewhere in the middle of stream
         final int fileCount = files.size();
         for (int index = firstFileIndex; index < fileCount; index++) {
-            final PreconsensusEventFile file = files.get(index);
-            if (file.getMaximumGeneration() >= minimumGeneration) {
-                // We have found the first file that may contain events at the requested generation.
+            final PcesFile file = files.get(index);
+            if (file.getUpperBound() >= lowerBound) {
+                // We have found the first file that may contain events at the requested lower bound.
                 return new UnmodifiableIterator<>(files.iterator(index));
             }
         }
 
         // It should not be possible to reach this point.
-        throw new IllegalStateException("Failed to find a file that may contain events at the requested generation");
+        throw new IllegalStateException("Failed to find a file that may contain events at the requested lower bound");
     }
 
     /**
@@ -233,10 +248,10 @@ public class PcesFileTracker {
      * If no file is compatible with the starting round, return -1. If there are no compatible files, that means there
      * are either no files, or all files have an origin that exceeds the starting round.
      *
-     * @param startingRound the round to start streaming from
+     * @param originRound the origin round to start streaming from
      * @return the index of the first file to consider for a given starting round
      */
-    public int getFirstRelevantFileIndex(final long startingRound) {
+    public int getFirstRelevantFileIndex(final long originRound) {
         // When streaming from the preconsensus event stream, we need to start at
         // the file with the largest origin that does not exceed the starting round.
 
@@ -246,7 +261,7 @@ public class PcesFileTracker {
         for (int index = 0; index < files.size(); index++) {
             final long fileOrigin = files.get(index).getOrigin();
 
-            if (fileOrigin > startingRound) {
+            if (fileOrigin > originRound) {
                 // Once we find the first file with an origin that exceeds the starting round, we can stop searching.
                 // File origins only increase, so we know that all files after this one will also exceed the round.
                 return candidateIndex;

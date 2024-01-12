@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,9 +86,10 @@ public interface V030Module {
             @NonNull final FrameRunner frameRunner,
             @ServicesV030 @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @ServicesV030 @NonNull final ContractCreationProcessor contractCreationProcessor,
-            @NonNull final CustomGasCharging gasCharging) {
+            @NonNull final CustomGasCharging gasCharging,
+            @ServicesV030 @NonNull final FeatureFlags featureFlags) {
         return new TransactionProcessor(
-                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
+                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor, featureFlags);
     }
 
     @Provides
@@ -186,8 +187,8 @@ public interface V030Module {
     @ServicesV030
     static Operation provideCallOperation(
             @NonNull final GasCalculator gasCalculator,
-            @ServicesV030 @NonNull final FeatureFlags featureFlags,
-            @ServicesV030 @NonNull final AddressChecks addressChecks) {
+            @ServicesV030 @NonNull final AddressChecks addressChecks,
+            @ServicesV030 @NonNull final FeatureFlags featureFlags) {
         return new CustomCallOperation(featureFlags, gasCalculator, addressChecks);
     }
 

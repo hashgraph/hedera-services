@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class KeyValuePairConverterTest {
     void testIncludedInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new KeyValuePairConverter())
+                .withConverter(KeyValuePair.class, new KeyValuePairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "key=value"))
                 .build();
 
@@ -97,7 +97,7 @@ class KeyValuePairConverterTest {
     void testIncludedInListInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new KeyValuePairConverter())
+                .withConverter(KeyValuePair.class, new KeyValuePairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "key=value"))
                 .build();
 
@@ -114,7 +114,7 @@ class KeyValuePairConverterTest {
     void testMultipleIncludedInListInConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConverter(new KeyValuePairConverter())
+                .withConverter(KeyValuePair.class, new KeyValuePairConverter())
                 .withSource(new SimpleConfigSource("testProperty", "key1=value1,key2=value2,key3=value3"))
                 .build();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -90,6 +92,19 @@ class AccountStoreTest {
         Account account = subject.loadContract(miscId);
 
         assertEquals(Id.fromGrpcAccount(miscMerkleId.toGrpcAccountId()), account.getId());
+    }
+
+    @Test
+    void isContractUsableForValidContractReturnsTrue() {
+        miscMerkleAccount.setSmartContract(true);
+        setupWithUnexpiredAccount(miscMerkleId, miscMerkleAccount);
+        assertTrue(OK.equals(subject.isContractUsable(miscId)));
+    }
+
+    @Test
+    void isContractUsableForInvalidContractReturnsFalse() {
+        final Id nonExistingId = new Id(0L, 0L, 999_999_999L);
+        assertFalse(OK.equals(subject.isContractUsable(nonExistingId)));
     }
 
     @Test

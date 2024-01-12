@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,13 +59,10 @@ import java.security.cert.X509Certificate;
 public record KeysAndCerts(
         KeyPair sigKeyPair,
         KeyPair agrKeyPair,
-        KeyPair encKeyPair,
         X509Certificate sigCert,
         X509Certificate agrCert,
-        X509Certificate encCert,
         PublicStores publicStores) {
     private static final int SIG_SEED = 2;
-    private static final int ENC_SEED = 1;
     private static final int AGR_SEED = 0;
 
     /**
@@ -94,14 +91,11 @@ public record KeysAndCerts(
             throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyLoadingException {
         final String signingName = KeyCertPurpose.SIGNING.storeName(name);
         final String agreementName = KeyCertPurpose.AGREEMENT.storeName(name);
-        final String encryptionName = KeyCertPurpose.ENCRYPTION.storeName(name);
         return new KeysAndCerts(
                 getKeyPair(privateKeyStore, password, signingName),
                 getKeyPair(privateKeyStore, password, agreementName),
-                getKeyPair(privateKeyStore, password, encryptionName),
                 publicStores.getCertificate(KeyCertPurpose.SIGNING, name),
                 publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name),
-                publicStores.getCertificate(KeyCertPurpose.ENCRYPTION, name),
                 publicStores);
     }
 
@@ -145,19 +139,15 @@ public record KeysAndCerts(
             final PublicStores publicStores)
             throws NoSuchAlgorithmException, NoSuchProviderException, KeyStoreException, KeyGeneratingException {
         final KeyPairGenerator sigKeyGen;
-        final KeyPairGenerator encKeyGen;
         final KeyPairGenerator agrKeyGen;
 
         final SecureRandom sigDetRandom; // deterministic CSPRNG, used briefly then discarded
-        final SecureRandom encDetRandom; // deterministic CSPRNG, used briefly then discarded
         final SecureRandom agrDetRandom; // deterministic CSPRNG, used briefly then discarded
 
         sigKeyGen = KeyPairGenerator.getInstance(CryptoConstants.SIG_TYPE1, CryptoConstants.SIG_PROVIDER);
-        encKeyGen = KeyPairGenerator.getInstance(CryptoConstants.ENC_TYPE, CryptoConstants.ENC_PROVIDER);
         agrKeyGen = KeyPairGenerator.getInstance(CryptoConstants.AGR_TYPE, CryptoConstants.AGR_PROVIDER);
 
         sigDetRandom = CryptoUtils.getDetRandom(); // deterministic, not shared
-        encDetRandom = CryptoUtils.getDetRandom(); // deterministic, not shared
         agrDetRandom = CryptoUtils.getDetRandom(); // deterministic, not shared
 
         sigDetRandom.setSeed(masterKey);
@@ -165,12 +155,6 @@ public record KeysAndCerts(
         sigDetRandom.setSeed(memberId);
         sigDetRandom.setSeed(SIG_SEED);
         sigKeyGen.initialize(CryptoConstants.SIG_KEY_SIZE_BITS, sigDetRandom);
-
-        encDetRandom.setSeed(masterKey);
-        encDetRandom.setSeed(swirldId);
-        encDetRandom.setSeed(memberId);
-        encDetRandom.setSeed(ENC_SEED);
-        encKeyGen.initialize(CryptoConstants.ENC_KEY_SIZE_BITS, encDetRandom);
 
         agrDetRandom.setSeed(masterKey);
         agrDetRandom.setSeed(swirldId);
@@ -180,26 +164,21 @@ public record KeysAndCerts(
 
         final KeyPair sigKeyPair = sigKeyGen.generateKeyPair();
         final KeyPair agrKeyPair = agrKeyGen.generateKeyPair();
-        final KeyPair encKeyPair = encKeyGen.generateKeyPair();
 
         final String dnS = CryptoStatic.distinguishedName("s-" + name);
         final String dnA = CryptoStatic.distinguishedName("a-" + name);
-        final String dnE = CryptoStatic.distinguishedName("e-" + name);
 
-        // create the 3 certs (java.security.cert.Certificate)
-        // all 3 are signed by sigKeyPair, so sigCert is self-signed
+        // create the 2 certs (java.security.cert.Certificate)
+        // both are signed by sigKeyPair, so sigCert is self-signed
         final X509Certificate sigCert =
                 CryptoStatic.generateCertificate(dnS, sigKeyPair, dnS, sigKeyPair, sigDetRandom);
         final X509Certificate agrCert =
-                CryptoStatic.generateCertificate(dnE, agrKeyPair, dnS, sigKeyPair, agrDetRandom);
-        final X509Certificate encCert =
-                CryptoStatic.generateCertificate(dnA, encKeyPair, dnS, sigKeyPair, encDetRandom);
+                CryptoStatic.generateCertificate(dnA, agrKeyPair, dnS, sigKeyPair, agrDetRandom);
 
         // add to the 3 trust stores (which have references stored here and in the caller)
         publicStores.setCertificate(KeyCertPurpose.SIGNING, sigCert, name);
         publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agrCert, name);
-        publicStores.setCertificate(KeyCertPurpose.ENCRYPTION, encCert, name);
 
-        return new KeysAndCerts(sigKeyPair, agrKeyPair, encKeyPair, sigCert, agrCert, encCert, publicStores);
+        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,8 @@ import static com.swirlds.common.io.streams.SerializableDataOutputStream.getInst
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
-import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_BITS_PER_SECOND;
-import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_PING_MICROSECONDS;
 import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -36,8 +33,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.system.transaction.SystemTransactionBitsPerSecond;
-import com.swirlds.platform.system.transaction.SystemTransactionPing;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
@@ -85,69 +80,6 @@ class TransactionSerializationTest {
         TestExpectedSerializationLength(deserialized, true);
 
         TestExpectedSerializationLength(systemTransactionSignature, false);
-        TestExpectedSerializationLength(deserialized, false);
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 10, 64, 100})
-    void BitsSecondSerializeDeserializeTest(final int nodeAmount) throws IOException {
-        long[] numbers = null;
-        if (nodeAmount > 0) {
-            numbers = new long[nodeAmount];
-            for (int i = 0; i < numbers.length; i++) {
-                numbers[i] = random.nextLong();
-            }
-        }
-
-        final SystemTransactionBitsPerSecond systemTransactionBitsPerSecond =
-                new SystemTransactionBitsPerSecond(numbers);
-        final SystemTransactionBitsPerSecond deserialized = serializeDeserialize(systemTransactionBitsPerSecond);
-
-        assertArrayEquals(systemTransactionBitsPerSecond.getAvgBitsPerSecSent(), deserialized.getAvgBitsPerSecSent());
-        assertEquals(systemTransactionBitsPerSecond.isSystem(), deserialized.isSystem());
-        assertEquals(systemTransactionBitsPerSecond.getVersion(), deserialized.getVersion());
-        assertEquals(systemTransactionBitsPerSecond.getClassId(), deserialized.getClassId());
-        assertEquals(
-                systemTransactionBitsPerSecond.getMinimumSupportedVersion(), deserialized.getMinimumSupportedVersion());
-
-        assertEquals(systemTransactionBitsPerSecond, deserialized);
-        assertEquals(systemTransactionBitsPerSecond.getType(), SYS_TRANS_BITS_PER_SECOND);
-        assertEquals(SYS_TRANS_BITS_PER_SECOND, deserialized.getType());
-
-        TestExpectedSerializationLength(systemTransactionBitsPerSecond, true);
-        TestExpectedSerializationLength(deserialized, true);
-
-        TestExpectedSerializationLength(systemTransactionBitsPerSecond, false);
-        TestExpectedSerializationLength(deserialized, false);
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 10, 64, 100})
-    void PingSerializeDeserializeTest(final int nodeAmount) throws IOException {
-        int[] numbers = null;
-        if (nodeAmount > 0) {
-            numbers = new int[nodeAmount];
-            for (int i = 0; i < numbers.length; i++) {
-                numbers[i] = random.nextInt();
-            }
-        }
-        final SystemTransactionPing systemTransactionPing = new SystemTransactionPing(numbers);
-        final SystemTransactionPing deserialized = serializeDeserialize(systemTransactionPing);
-
-        assertArrayEquals(systemTransactionPing.getAvgPingMilliseconds(), deserialized.getAvgPingMilliseconds());
-        assertEquals(systemTransactionPing.isSystem(), deserialized.isSystem());
-        assertEquals(systemTransactionPing.getVersion(), deserialized.getVersion());
-        assertEquals(systemTransactionPing.getClassId(), deserialized.getClassId());
-        assertEquals(systemTransactionPing.getMinimumSupportedVersion(), deserialized.getMinimumSupportedVersion());
-
-        assertEquals(systemTransactionPing, deserialized);
-        assertEquals(systemTransactionPing.getType(), SYS_TRANS_PING_MICROSECONDS);
-        assertEquals(SYS_TRANS_PING_MICROSECONDS, deserialized.getType());
-
-        TestExpectedSerializationLength(systemTransactionPing, true);
-        TestExpectedSerializationLength(deserialized, true);
-
-        TestExpectedSerializationLength(systemTransactionPing, false);
         TestExpectedSerializationLength(deserialized, false);
     }
 

@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.ethereum;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -73,7 +72,6 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_K
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -111,7 +109,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -988,47 +985,6 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec callToNonExistingContractFailsGracefully() {
-
-        return defaultHapiSpec("callToNonExistingContractFailsGracefully")
-                .given(
-                        withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ethereumCallWithFunctionAbi(
-                                        false,
-                                        "invalid",
-                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via("invalidContractCallTxn")
-                                .nonce(0)
-                                .gasPrice(0L)
-                                .gasLimit(1_000_000L)
-                                .hasKnownStatusFrom(INVALID_CONTRACT_ID))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        getTxnRecord("invalidContractCallTxn")
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .error(Bytes.of(INVALID_CONTRACT_ID
-                                                                .name()
-                                                                .getBytes())
-                                                        .toHexString())
-                                                .senderId(spec.registry()
-                                                        .getAccountID(spec.registry()
-                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
-                                                                .getAlias()
-                                                                .toStringUtf8())))))));
-    }
-
-    @HapiTest
     final HapiSpec accountDeletionResetsTheAliasNonce() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -1065,8 +1021,8 @@ public class EthereumSuite extends HapiSuite {
                 .when(
                         withOpContext((spec, opLog) -> {
                             var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                                     .signedBy(DEFAULT_PAYER, PARTY)
                                     .via(HBAR_XFER);
 
@@ -1083,9 +1039,9 @@ public class EthereumSuite extends HapiSuite {
 
                             // send eth transaction signed by the ecdsa key
                             var op3 = ethereumCallWithFunctionAbi(
-                                            true,
-                                            "token",
-                                            getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                    true,
+                                    "token",
+                                    getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
                                     .type(EthTxData.EthTransactionType.EIP1559)
                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                     .payingWith(GENESIS)
@@ -1112,8 +1068,8 @@ public class EthereumSuite extends HapiSuite {
                         // try to create a new account with the same alias
                         withOpContext((spec, opLog) -> {
                             var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                                     .signedBy(DEFAULT_PAYER, PARTY)
                                     .hasKnownStatus(SUCCESS);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,7 @@ import com.hedera.services.bdd.spec.utilops.streams.EventualAssertionResult;
 import java.time.Duration;
 
 public abstract class EventualAssertion extends UtilOp {
-    // Default timeout just a bit longer than the record file period of
-    // hedera.recordStream.logPeriod=2 seconds
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(3L);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5L);
 
     protected final EventualAssertionResult result;
 
