@@ -730,40 +730,6 @@ public final class Hedera implements SwirldMain {
         daggerApp.handleWorkflow().handleRound(state, platformState, round);
     }
 
-    /**
-     * Invoked by the platform to update weights of all nodes, to be used in consensus.
-     * This only happens during upgrade.
-     * @param state current state
-     * @param configAddressBook address book from config.txt
-     * @param context platform context
-     */
-    public void onUpdateWeight(
-            @NonNull final MerkleHederaState state,
-            @NonNull AddressBook configAddressBook,
-            @NonNull final PlatformContext context) {
-        final var tokenServiceState = state.getReadableStates(TokenService.NAME);
-        if (!tokenServiceState.isEmpty()) {
-            final var readableStoreFactory = new ReadableStoreFactory(state);
-            // Get all nodeIds added in the config.txt
-            Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
-            final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
-            final var allNodeIds = stakingInfoStore.getAll();
-            for (final var nodeId : allNodeIds) {
-                final var stakingInfo = requireNonNull(stakingInfoStore.get(nodeId));
-                NodeId id = new NodeId(nodeId);
-                // ste weight for the nodes that exist in state and remove from
-                // nodes given in config.txt. This is needed to recognize newly added nodes
-                configAddressBook.updateWeight(id, stakingInfo.weight());
-                configNodeIds.remove(id);
-            }
-            // for any newly added nodes that doesn't exist in state, weight should be set to 0
-            // irrespective of the weight provided in config.txt
-            configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
-        } else {
-            logger.warn("Token service state is empty to update weights from StakingInfo Map");
-        }
-    }
-
     /*==================================================================================================================
     *
     * gRPC Server Lifecycle

@@ -325,8 +325,8 @@ public final class TransactionStateLogger {
      * @param <V> The type of the value
      */
     public static <K, V> void logMapPut(@NonNull final String label, @NonNull final K key, @Nullable final V value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
-            logger.debug(
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+            logger.info(
                     "      PUT into map {} key {} value {}",
                     label,
                     formatKey(key),
@@ -345,8 +345,8 @@ public final class TransactionStateLogger {
      */
     public static <K, V> void logMapRemove(
             @NonNull final String label, @NonNull final K key, @Nullable final InMemoryValue<K, V> value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
-            logger.debug(
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+            logger.info(
                     "      REMOVE from map {} key {} removed value {}",
                     label,
                     formatKey(key),
@@ -365,8 +365,8 @@ public final class TransactionStateLogger {
      */
     public static <K, V> void logMapRemove(
             @NonNull final String label, @NonNull final K key, @Nullable final OnDiskValue<V> value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
-            logger.debug(
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+            logger.info(
                     "      REMOVE from map {} key {} removed value {}",
                     label,
                     formatKey(key),
@@ -396,8 +396,8 @@ public final class TransactionStateLogger {
      * @param <V> The type of the value
      */
     public static <K, V> void logMapGet(@NonNull final String label, @NonNull final K key, @Nullable final V value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
-            logger.debug(
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+            logger.info(
                     "      GET on map {} key {} value {}",
                     label,
                     formatKey(key),
@@ -416,8 +416,8 @@ public final class TransactionStateLogger {
      */
     public static <K, V> void logMapGetForModify(
             @NonNull final String label, @NonNull final K key, @Nullable final V value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
-            logger.debug(
+        if (logger.isInfoEnabled() && Thread.currentThread().getName().startsWith(HANDLE_THREAD_NAME)) {
+            logger.info(
                     "      GET_FOR_MODIFY on map {} key {} value {}",
                     label,
                     formatKey(key),
