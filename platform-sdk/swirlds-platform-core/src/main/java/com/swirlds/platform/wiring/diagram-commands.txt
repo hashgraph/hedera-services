@@ -10,12 +10,13 @@ pcli diagram \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
     -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
-    -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
-    -g 'State Signature Collection:reservedStateSplitter,allStatesReserver,filterOnlyCompleteStates,completeStatesReserver,gossipEventTransformer' \
+    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
     -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
@@ -32,16 +33,20 @@ pcli diagram \
     -s 'heartbeat:heartbeat:♡' \
     -s 'eventCreationManager:non-validated events:†' \
     -s 'applicationTransactionPrehandler:futures:★' \
+    -s 'extractOldestMinimumGenerationOnDisk:minimum generation to store:s' \
     -l 'eventDurabilityNexus:countUpLatch:linkedEventIntake' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntakeSplitter,getNonAncientEventWindow,getMinimumGenerationNonAncient' \
-    -g 'State File Management:signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
-    -g 'State Signature Collection:systemTransactionsFilter,systemTransactionsSplitter,stateSignatureTransactionsFilter,stateSignatureCollector' \
+    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction' \
+    -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer,eventHasher' \
     -g 'PCES:pcesSequencer,pcesWriter,eventDurabilityNexus' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
     -c 'Orphan Buffer' \
     -c 'Linked Event Intake' \
     -c 'State File Management' \
-    -c 'State Signature Collection'
+    -c 'State Signature Collection' \
+    -c 'State Signature Collection' \
+    -c 'State File Management' \
+    -c 'PCES'
