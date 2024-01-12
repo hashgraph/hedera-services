@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
@@ -38,6 +39,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -65,6 +67,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock
     private PreHandleContext preHandleContext;
 
+    @Mock(strictness = LENIENT)
+    private TokenBaseRecordBuilder recordBuilder;
+
     @BeforeEach
     void setup() {
         super.setUp();
@@ -79,6 +84,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(context.recordBuilder(any())).willReturn(recordBuilder);
     }
 
     @Test

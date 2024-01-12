@@ -135,14 +135,12 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
+        final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-
             validateTrue(op.amount() >= 0 && op.metadata().isEmpty(), INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
             long newTotalSupply =
                     mintFungible(token, treasuryRel, op.amount(), accountStore, tokenStore, tokenRelStore);
-            final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
-
             recordBuilder.newTotalSupply(newTotalSupply);
         } else {
             // get the config needed for validation
@@ -163,14 +161,13 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     tokenStore,
                     tokenRelStore,
                     nftStore);
-            final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
-
             recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
             // TODO: Need to build transfer ownership from list to transfer NFT to treasury
             // This should probably be done in finalize method on token service which constructs the
             // transfer list looking at state
         }
+        recordBuilder.tokenType(token.tokenType());
     }
 
     /**

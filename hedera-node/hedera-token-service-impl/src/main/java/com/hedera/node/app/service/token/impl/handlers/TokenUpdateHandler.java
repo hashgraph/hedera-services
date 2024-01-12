@@ -178,6 +178,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
+        recordBuilder.tokenType(token.tokenType());
     }
 
     /**

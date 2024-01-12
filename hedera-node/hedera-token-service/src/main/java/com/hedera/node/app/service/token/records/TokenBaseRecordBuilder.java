@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,16 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
- * transaction.
+ * The base interface for Token Service record builders that record operations on Tokens.
  */
-public interface TokenUpdateRecordBuilder extends TokenBaseRecordBuilder {
+public interface TokenBaseRecordBuilder extends SingleTransactionRecordBuilder {
     /**
-     * Adds the token relations that are created by auto associations.
-     * This information is needed while building the transfer list, to set the auto association flag.
-     * @param tokenAssociation the token association that is created by auto association
-     * @return the builder
+     * Sets the {@link TokenType} of the token the recorded transaction created or modified.
      */
-    TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType);
 }
