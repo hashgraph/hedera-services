@@ -66,9 +66,8 @@ public class StateSignatureCollector {
     private final SignedStateMetrics signedStateMetrics;
 
     /**
-     * Start empty, with no known signed states. The number of addresses in platform.hashgraph.getAddressBook() must not
-     * change in the future. The addressBook must contain exactly the set of members who can sign the state. A signed
-     * state is considered completed when it has signatures from a sufficient threshold of nodes.
+     * Start empty, with no known signed states. A signed state is considered completed when it has signatures from a
+     * sufficient threshold of nodes.
      *
      * @param stateConfig        configuration for state
      * @param signedStateMetrics a collection of signed state metrics

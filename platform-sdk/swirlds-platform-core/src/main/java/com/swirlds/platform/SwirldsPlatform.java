@@ -563,7 +563,7 @@ public class SwirldsPlatform implements Platform {
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn, v) ->
                         consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
-        final BiConsumer<State, ConsensusRound> consensusSystemTransactionConsumer = (state, round) -> {
+        final BiConsumer<State, ConsensusRound> roundAndStateConsumer = (state, round) -> {
             consensusSystemTransactionManager.handleRound(state, round);
             platformWiring.getSignatureCollectorConsensusInput().put(round);
         };
@@ -604,7 +604,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 currentAddressBook,
                 selfId,
-                consensusSystemTransactionConsumer,
+                roundAndStateConsumer,
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 platformStatusManager,
                 initialState.getState(),
