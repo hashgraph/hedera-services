@@ -55,7 +55,7 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         this.contractId = contractId;
     }
 
-    public static int getSizeInBytes() {
+    static int getSizeInBytes() {
         return Long.BYTES;
     }
 
