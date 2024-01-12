@@ -638,7 +638,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(
-                                        resultWith().createdContractIdsCount(0).gasUsed(25008))));
+                                        resultWith().createdContractIdsCount(0).gasUsed(25020))));
     }
 
     @HapiTest

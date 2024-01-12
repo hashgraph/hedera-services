@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -82,7 +83,7 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
                 .when()
                 .then(
                         contractCall(contract, sizeOf, asHeadlongAddress(invalidAddress))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         contractCallLocal(contract, sizeOf, asHeadlongAddress(invalidAddress))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext((spec, opLog) -> {

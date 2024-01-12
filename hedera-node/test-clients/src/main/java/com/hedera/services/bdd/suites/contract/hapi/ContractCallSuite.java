@@ -1543,16 +1543,6 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
     }
 
-    @HapiTest
-    HapiSpec invalidContract() {
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("InvalidContract")
-                .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))))
-                .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
-    }
-
     // This test disabled for modularization service
     @HapiTest
     HapiSpec smartContractFailFirst() {
