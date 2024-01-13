@@ -957,23 +957,44 @@ public final class Hedera implements SwirldMain {
         try {
             // i.e. only run once
             if (differentialEventTestCounter < 1) {
-                final String fileName = "<path-to-.evts-file>"; // PUT EVENTS FILE HERE
-                System.out.println("DIFF-TEST: running events from file " + fileName);
+                // PUT DIR CONTAINING .EVTS FILES HERE:
+                final var evtsDir = ".evts dir here";
+                // STARTING ROUND OF THE STATE FILE HERE:
+                var startingRound = 151988064;
 
-                    final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
+                System.out.println("DIFF-TEST: Locating .evts files in dir [" + evtsDir + "]");
+                final var filesToRun = new ArrayList<Path>();
+                try (final Stream<Path> paths = Files.walk(Paths.get(evtsDir))) {
+                    paths
+                            // filter out the eventsStreams directory
+                            .filter(p-> !p.toString().contains("eventsStreams"))
+                            // grab all other .evts files
+                            .filter(p-> p.toString().endsWith(".evts"))
+                            // make sure the .evts files are in time-ascending order
+                            .sorted()
+                            .forEach(filesToRun::add);
+                }
+
+                System.out.println("DIFF-TEST: Found [" + filesToRun.size() + "] files for DIFF-TEST");
+                for (final Path fileName : filesToRun) {
+                    System.out.println("DIFF-TEST: running events from file " + fileName);
+                    try (final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
                             platform.getAddressBook(),
                             fileName,
                             startingRound,
-                            true);
-                    while (roundIterator.hasNext()) {
-                        var nextRound = roundIterator.next();
-                        System.out.println(
-                                "DIFF-TEST: file round: " + nextRound.getRoundNum() + "; counter: "
-                                        + differentialEventTestCounter++);
-                        daggerApp.handleWorkflow().handleRound(state, platformState, nextRound);
-                        System.out.println(
-                                "DIFF-TEST: file round " + nextRound.getRoundNum() + " processed");
-                        startingRound++;
+                            true)) {
+                        while (roundIterator.hasNext()) {
+                            var nextRound = roundIterator.next();
+                            System.out.println(
+                                    "DIFF-TEST: file round: " + nextRound.getRoundNum()
+                                            + "; counter: "
+                                            + differentialEventTestCounter++);
+                            daggerApp.handleWorkflow().handleRound(state, platformState, nextRound);
+                            System.out.println(
+                                    "DIFF-TEST: file round " + nextRound.getRoundNum()
+                                            + " processed");
+                            startingRound++;
+                        }
                     }
                 }
             } else if (normalHandleCounter < 100) {
