@@ -265,7 +265,7 @@ public class HandleWorkflow {
                             e);
                 }
             }
-            System.out.println("DIFF-TEST: handled event " + eventCounter++ + " of " + round.getEventCount() + " with "
+            System.out.println("DIFF-TEST: handled event " + ++eventCounter + " of " + round.getEventCount() + " with "
                     + userTxnCounter + " user txns");
         }
 

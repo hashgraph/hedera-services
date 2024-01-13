@@ -129,6 +129,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
@@ -692,13 +693,24 @@ public final class Hedera implements SwirldMain {
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
 
         // Now that the BBM (big bang migration) is completed, remove the old state children
-        var test = state.getChild(UNIQUE_TOKENS);
-        if (test != null) {
-            System.out.println("BBM: old state still exists. deleting...");
-            for (int i = 0; i < 14; i++) {
+        final var testMonoNode = state.getChild(UNIQUE_TOKENS);
+        if (testMonoNode != null) {
+            System.out.println("BBM: old state children still exist. deleting...");
+            for (int i = 0; i <= PAYER_RECORDS_OR_CONSOLIDATED_FCQ; i++) {
+                // Delete all the old mono children nodes from state
                 state.setChild(i, null);
             }
-            System.out.println("BBM: old state deleted");
+
+            final List<MerkleNode> children = new ArrayList<>();
+            for (int i = PAYER_RECORDS_OR_CONSOLIDATED_FCQ + 1; i < state.getNumberOfChildren(); i++) {
+                // For each modular child node, copy it so the modular data isn't erased
+                final var modularChild = state.getChild(i);
+                children.add(modularChild.copy());
+            }
+
+            // Now clear out state entirely, then re-add the copies of the new modular children nodes
+            state.addDeserializedChildren(children, 0);
+            System.out.println("BBM: old state children node cleanup done");
         }
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
