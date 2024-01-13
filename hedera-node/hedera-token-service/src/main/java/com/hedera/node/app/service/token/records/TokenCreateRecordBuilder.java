@@ -19,14 +19,13 @@ package com.hedera.node.app.service.token.records;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenCreate}
  * transaction.
  */
-public interface TokenCreateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface TokenCreateRecordBuilder extends TokenBaseRecordBuilder {
     /**
      * Tracks creation of a new token by number. Even if someday we support creating multiple
      * tokens within a smart contract call, we will still only need to track one created token
@@ -46,5 +45,5 @@ public interface TokenCreateRecordBuilder extends SingleTransactionRecordBuilder
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    TokenCreateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }
