@@ -41,8 +41,6 @@ import com.swirlds.platform.stats.MaxStat;
 import com.swirlds.platform.system.PlatformStatNames;
 import java.time.temporal.ChronoUnit;
 
-// TODO wire up more metrics for turbo sync
-
 /**
  * Interface to update relevant sync statistics
  */
