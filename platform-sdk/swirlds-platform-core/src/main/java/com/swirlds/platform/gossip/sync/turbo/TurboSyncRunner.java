@@ -388,6 +388,7 @@ public class TurboSyncRunner {
      * Perform a single iteration of the protocol.
      */
     private void runProtocolIteration() throws ParallelExecutionException {
+        // TODO does this really need to happen on threads?
         executor.doParallel(this::receiveData, this::sendData, NO_OP);
         syncMetrics.syncComplete();
     }
