@@ -68,24 +68,90 @@ import java.util.stream.Collectors;
  */
 public class TurboSyncRunner {
 
+    /**
+     * Used to play nicely with the parallel execution API.
+     */
     private static final Runnable NO_OP = () -> {
     };
 
+    /**
+     * The platform context.
+     */
     private final PlatformContext platformContext;
+
+    /**
+     * The ID of this node.
+     */
     private final NodeId selfId;
+
+    /**
+     * The ID of the peer we are syncing with.
+     */
     private final NodeId peerId;
+
+    /**
+     * Tracks the number of peers that tell us we have fallen behind and signals when we have fallen behind.
+     */
     private final FallenBehindManager fallenBehindManager;
+
+    /**
+     * Will return true if gossip has been halted.
+     */
     private final BooleanSupplier gossipHalted;
+
+    /**
+     * Will return true if the intake pipeline is too full.
+     */
     private final BooleanSupplier intakeIsTooFull;
+
+    /**
+     * Counts the number of events from each peer that are in the intake pipeline.
+     */
     private final IntakeEventCounter intakeEventCounter;
+
+    /**
+     * The connection to the peer we are syncing with.
+     */
     private final Connection connection;
+
+    /**
+     * The output stream to the peer.
+     */
     private final SyncOutputStream dataOutputStream;
+
+    /**
+     * The input stream from the peer.
+     */
     private final SyncInputStream dataInputStream;
+
+    /**
+     * The executor to use for parallel read/write operations.
+     */
     private final ParallelExecutor executor;
+
+    /**
+     * The shadowgraph, contains events we know about.
+     */
     private final ShadowGraph shadowgraph;
+
+    /**
+     * A supplier of the current graph generations.
+     */
     private final Supplier<GraphGenerations> generationsSupplier;
+
+    /**
+     * Tracks the tipset of the latest self event and also tracks childless events.
+     */
     private final LatestEventTipsetTracker latestEventTipsetTracker;
+
+    /**
+     * When we receive an event from a peer, pass it to this consumer.
+     */
     private final InterruptableConsumer<GossipEvent> gossipEventConsumer;
+
+    /**
+     * Metrics tracking syncing.
+     */
     private final SyncMetrics syncMetrics;
 
     /**
@@ -100,22 +166,26 @@ public class TurboSyncRunner {
      */
     private final boolean hashOnSyncThread;
 
-    private TurboSyncDataReceived dataReceivedA;
-    private TurboSyncDataReceived dataReceivedB;
-    private TurboSyncDataReceived dataReceivedC;
-
-    private TurboSyncDataSent dataSentA;
-    private TurboSyncDataSent dataSentB;
-    private TurboSyncDataSent dataSentC;
-
+    /**
+     * The current sync cycle number. This value is sent once per sync iteration as a sanity check to ensure that the
+     * streams are aligned. When this reaches {@link Integer#MAX_VALUE} it will wrap around into negative numbers, which
+     * is fine.
+     */
     private int cycleNumber = 0;
 
+    /**
+     * The maximum number of tips that are supported.
+     */
     private final int maxTipCount;
+
+    /**
+     * The maximum number of events that are allowed to be in the intake pipeline for a single peer.
+     */
     private final int maximumPermissibleEventsInIntake;
 
     /**
-     * If true, then we have decided we want to abort the sync protocol. We still have to do a little more work
-     * before we can actually abort in order to avoid leaving garbage on the wire.
+     * If true, then we have decided we want to abort the sync protocol. We still have to do a little more work before
+     * we can actually abort in order to avoid leaving garbage on the wire.
      */
     private boolean abortRequested = false;
 
@@ -124,6 +194,42 @@ public class TurboSyncRunner {
      * before we can actually abort in order to avoid leaving garbage on the wire.
      */
     private boolean peerRequestedAbort = false;
+
+    /**
+     * All data received from the peer in the current iteration is written here. At the end of the phase, it is shifted
+     * to dataReceivedB.
+     */
+    private TurboSyncDataReceived dataReceivedA;
+
+    /**
+     * All data received from the peer in the previous iteration is stored here. At the end of the phase, it is shifted
+     * to dataReceivedC.
+     */
+    private TurboSyncDataReceived dataReceivedB;
+
+    /**
+     * All data received from the peer in the iteration before the previous iteration is stored here. At the end of the
+     * phase, it is deleted.
+     */
+    private TurboSyncDataReceived dataReceivedC;
+
+    /**
+     * Information about what we sent to the peer in the current iteration is written here. At the end of the phase, it
+     * is shifted to dataSentB.
+     */
+    private TurboSyncDataSent dataSentA;
+
+    /**
+     * Information about what we sent to the peer in the previous iteration is written here. At the end of the phase, it
+     * is shifted to dataSentC.
+     */
+    private TurboSyncDataSent dataSentB;
+
+    /**
+     * Information about what we sent to the peer in the iteration before the previous iteration is written here. At the
+     * end of the phase, it is deleted.
+     */
+    private TurboSyncDataSent dataSentC;
 
     /**
      * Constructor.
@@ -242,8 +348,8 @@ public class TurboSyncRunner {
     }
 
     /**
-     * Handles the state transitions when we want to abort a sync. There are several reasons why we might want
-     * to stop syncing, such as being in a fallen behind status or having our queues fill up too much.
+     * Handles the state transitions when we want to abort a sync. There are several reasons why we might want to stop
+     * syncing, such as being in a fallen behind status or having our queues fill up too much.
      */
     private void checkIfProtocolShouldBeAborted() {
         if (fallenBehindManager.hasFallenBehind() ||
