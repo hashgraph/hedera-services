@@ -302,6 +302,15 @@ public class TurboSyncRunner {
                 shiftDataWindow();
                 cycleNumber++;
             } while (!abortRequested && !peerRequestedAbort && !areNodesOutOfSync());
+
+            // TODO temporary: make sure we don't leave garbage on the wire
+            dataOutputStream.writeInt(cycleNumber * 2);
+            dataOutputStream.flush();
+            final int peerCycleNumber = dataInputStream.readInt();
+            if (peerCycleNumber != cycleNumber * 2) {
+                throw new IOException("Expected cycle " + cycleNumber * 2 + ", got " + peerCycleNumber);
+            }
+
         } finally {
             if (dataSentA != null) {
                 dataSentA.release();
@@ -406,6 +415,7 @@ public class TurboSyncRunner {
 
         dataOutputStream.writeBoolean(abortRequested);
         if (abortRequested) {
+            dataOutputStream.flush();
             return;
         }
 
