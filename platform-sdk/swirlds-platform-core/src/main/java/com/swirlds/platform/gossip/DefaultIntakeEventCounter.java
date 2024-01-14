@@ -80,7 +80,13 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
      */
     @Override
     public int getUnprocessedEventCount(@NonNull final NodeId peer) {
-        return unprocessedEventCounts.get(peer).get();
+
+        final int count = unprocessedEventCounts.get(peer).get();
+        if (count > 200) {
+            System.out.println("getUnprocessedEventCount: " + count); // TODO
+        }
+
+        return count;
     }
 
     /**

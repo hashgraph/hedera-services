@@ -93,7 +93,7 @@ public class SyncMetrics {
     private final CountPerSecond outgoingSyncRequestsPerSec;
 
     private static final CountPerSecond.Config SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "sync")
+                    PLATFORM_CATEGORY, "syncsPerSecond")
             .withUnit("hz")
             .withDescription("Total number of syncs completed per second");
     private final CountPerSecond syncsPerSec;

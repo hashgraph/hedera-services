@@ -68,7 +68,8 @@ import java.util.stream.Collectors;
  */
 public class TurboSyncRunner {
 
-    private static final Runnable NO_OP = () -> {};
+    private static final Runnable NO_OP = () -> {
+    };
 
     private final PlatformContext platformContext;
     private final NodeId selfId;
@@ -113,6 +114,18 @@ public class TurboSyncRunner {
     private final int maximumPermissibleEventsInIntake;
 
     /**
+     * If true, then we have decided we want to abort the sync protocol. We still have to do a little more work
+     * before we can actually abort in order to avoid leaving garbage on the wire.
+     */
+    private boolean abortRequested = false;
+
+    /**
+     * If true, then the peer has requested that we abort the sync protocol. We still have to do a little more work
+     * before we can actually abort in order to avoid leaving garbage on the wire.
+     */
+    private boolean peerRequestedAbort = false;
+
+    /**
      * Constructor.
      *
      * @param platformContext          the platform context
@@ -120,8 +133,8 @@ public class TurboSyncRunner {
      * @param selfId                   our ID
      * @param peerId                   the ID of the peer we are syncing with
      * @param fallenBehindManager      tracks if we are behind or not
-     * @param gossipHalted           returns true if gossip is halted, false otherwise
-     * @param intakeIsTooFull        returns true if the intake queue is too full, false otherwise
+     * @param gossipHalted             returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull          returns true if the intake queue is too full, false otherwise
      * @param intakeEventCounter       the intake event counter, counts how many events from each peer are in the intake
      *                                 pipeline
      * @param connection               the connection to the peer we are syncing with
@@ -178,11 +191,12 @@ public class TurboSyncRunner {
      */
     public void run() throws IOException, ParallelExecutionException {
         try {
-            while (shouldSyncProtocolContinue()) {
+            do {
+                checkIfProtocolShouldBeAborted();
                 runProtocolIteration();
                 shiftDataWindow();
                 cycleNumber++;
-            }
+            } while (!abortRequested && !peerRequestedAbort && !areNodesOutOfSync());
         } finally {
             if (dataSentA != null) {
                 dataSentA.release();
@@ -197,38 +211,49 @@ public class TurboSyncRunner {
     }
 
     /**
-     * Check various boundary conditions and end the sync protocol if necessary.
+     * Check if the nodes are out of sync (i.e. we have fallen behind, or the peer has fallen behind). When nodes go out
+     * of sync we can abort the sync protocol immediately since the peer will reach the same conclusion in the same
+     * iteration that we do.
+     *
+     * @return true if the nodes are out of sync, false otherwise
      */
-    private boolean shouldSyncProtocolContinue() {
-        if (fallenBehindManager.hasFallenBehind()) {
-            // We have fallen behind, stop syncing.
-            // We can't sync again until we reconnect.
-            return false;
-        }
+    private boolean areNodesOutOfSync() {
+        // The most recent exchanged generations will be in phase B.
 
-        // Determine if one of us is behind the other.
-        if (dataSentB != null) {
-            // The most recent exchanged generations will be in phase B.
+        final Generations myGenerations = dataSentB.generationsSent();
+        final Generations theirGenerations = dataReceivedB.theirGenerations();
 
-            final Generations myGenerations = dataSentB.generationsSent();
-            final Generations theirGenerations = dataReceivedB.theirGenerations();
-
-            switch (SyncFallenBehindStatus.getStatus(myGenerations, theirGenerations)) {
-                case NONE_FALLEN_BEHIND -> fallenBehindManager.reportNotFallenBehind(peerId);
-                case SELF_FALLEN_BEHIND -> {
-                    fallenBehindManager.reportFallenBehind(peerId);
-                    return false;
-                }
-                case OTHER_FALLEN_BEHIND -> {
-                    // The peer will realize it has fallen behind and will stop syncing.
-                    return false;
-                }
+        final SyncFallenBehindStatus status = SyncFallenBehindStatus.getStatus(myGenerations, theirGenerations);
+        switch (status) {
+            case NONE_FALLEN_BEHIND -> {
+                fallenBehindManager.reportNotFallenBehind(peerId);
+                return false;
             }
+            case SELF_FALLEN_BEHIND -> {
+                fallenBehindManager.reportFallenBehind(peerId);
+                return true;
+            }
+            case OTHER_FALLEN_BEHIND -> {
+                // The peer will realize it has fallen behind and will stop syncing.
+                return true;
+            }
+            default -> throw new IllegalStateException("Unexpected status: " + status);
         }
+    }
 
-        return !gossipHalted.getAsBoolean()
-                && !intakeIsTooFull.getAsBoolean()
-                && intakeEventCounter.getUnprocessedEventCount(peerId) < maximumPermissibleEventsInIntake;
+    /**
+     * Handles the state transitions when we want to abort a sync. There are several reasons why we might want
+     * to stop syncing, such as being in a fallen behind status or having our queues fill up too much.
+     */
+    private void checkIfProtocolShouldBeAborted() {
+        if (fallenBehindManager.hasFallenBehind() ||
+                gossipHalted.getAsBoolean() ||
+                intakeIsTooFull.getAsBoolean() ||
+                intakeEventCounter.getUnprocessedEventCount(peerId) > maximumPermissibleEventsInIntake) {
+
+            // We need to abort. We will continue for one more cycle and then stop syncing.
+            abortRequested = true;
+        }
     }
 
     /**
@@ -269,6 +294,11 @@ public class TurboSyncRunner {
         // Sanity check: make sure both participants have aligned streams.
         dataOutputStream.writeInt(cycleNumber);
 
+        dataOutputStream.writeBoolean(abortRequested);
+        if (abortRequested) {
+            return;
+        }
+
         final List<EventImpl> tipsOfSendList = sendEvents();
         sendBooleans();
         final List<Hash> tipsSent = sendTips();
@@ -297,6 +327,11 @@ public class TurboSyncRunner {
         final int cycleNumber = dataInputStream.readInt();
         if (cycleNumber != this.cycleNumber) {
             throw new IOException("Expected cycle " + this.cycleNumber + ", got " + cycleNumber);
+        }
+
+        if (dataInputStream.readBoolean()) {
+            peerRequestedAbort = true;
+            return;
         }
 
         receiveEvents();
