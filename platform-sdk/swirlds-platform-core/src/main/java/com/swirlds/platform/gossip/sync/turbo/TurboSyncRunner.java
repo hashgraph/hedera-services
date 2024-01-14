@@ -388,7 +388,11 @@ public class TurboSyncRunner {
      * Perform a single iteration of the protocol.
      */
     private void runProtocolIteration() throws ParallelExecutionException {
-        // TODO does this really need to happen on threads?
+        // Most of the time syncs are small, and reading/writing doesn't require parallel execution.
+        // However, it's possible that if we have a large sync, one node or the other won't
+        // be able to write all of the required data onto the socket if the other node is
+        // not simultaneously reading from the socket. So, we use do the read and write in parallel
+        // to avoid deadlock if there are large syncs.
         executor.doParallel(this::receiveData, this::sendData, NO_OP);
         syncMetrics.syncComplete();
     }

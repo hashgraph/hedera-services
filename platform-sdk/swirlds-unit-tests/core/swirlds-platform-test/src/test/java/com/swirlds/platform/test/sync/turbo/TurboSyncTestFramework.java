@@ -16,15 +16,26 @@
 
 package com.swirlds.platform.test.sync.turbo;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.platform.test.sync.ConnectionFactory.createSocketConnections;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.sync.turbo.TurboSyncRunner;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Utility methods for testing turbo sync.
@@ -55,24 +66,64 @@ public final class TurboSyncTestFramework {
     public static TestSynchronizationResult simulateSynchronization(
             @NonNull final Random random,
             @NonNull final AddressBook addressBook,
-            @NonNull final List<GossipEvent> eventsA,
-            @NonNull final List<GossipEvent> eventsB) {
+            @NonNull final List<EventImpl> eventsA,
+            @NonNull final List<EventImpl> eventsB)
+            throws IOException {
 
         final NodeId nodeA = addressBook.getNodeId(0);
         final NodeId nodeB = addressBook.getNodeId(0);
 
         final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
 
+        final Pair<Connection, Connection> connections = createSocketConnections(nodeA, nodeB);
+
         final List<GossipEvent> eventsReceivedA = new ArrayList<>();
-        final TurboSyncRunner runnerA = new TurboSyncTestNodeBuilder(startingTime, addressBook, nodeA, nodeB, null)
+        final TurboSyncRunner runnerA = new TurboSyncTestNodeBuilder(
+                        startingTime, addressBook, nodeA, nodeB, connections.left())
                 .withEventConsumer(eventsReceivedA::add)
+                .withKnownEvents(eventsA)
                 .build();
 
         final List<GossipEvent> eventsReceivedB = new ArrayList<>();
-        final TurboSyncRunner runnerB = new TurboSyncTestNodeBuilder(startingTime, addressBook, nodeB, nodeA, null)
+        final TurboSyncRunner runnerB = new TurboSyncTestNodeBuilder(
+                        startingTime, addressBook, nodeB, nodeA, connections.right())
                 .withEventConsumer(eventsReceivedB::add)
+                .withKnownEvents(eventsB)
                 .build();
 
-        return new TestSynchronizationResult(List.of(), List.of());
+        final AtomicBoolean completedA = new AtomicBoolean(false);
+        final AtomicBoolean errorA = new AtomicBoolean(false);
+        new Thread(() -> {
+                    try {
+                        runnerA.run();
+                    } catch (final IOException | ParallelExecutionException e) {
+                        errorA.set(true);
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                    completedA.set(true);
+                })
+                .start();
+
+        final AtomicBoolean completedB = new AtomicBoolean(false);
+        final AtomicBoolean errorB = new AtomicBoolean(false);
+        new Thread(() -> {
+                    try {
+                        runnerB.run();
+                    } catch (final IOException | ParallelExecutionException e) {
+                        e.printStackTrace();
+                        errorB.set(true);
+                        throw new RuntimeException(e);
+                    }
+                    completedB.set(true);
+                })
+                .start();
+
+        assertEventuallyTrue(completedA::get, Duration.ofSeconds(1), "Node A did not finish");
+        assertEventuallyTrue(completedB::get, Duration.ofSeconds(1), "Node A did not finish");
+        assertFalse(errorA.get(), "Node A had an error");
+        assertFalse(errorB.get(), "Node B had an error");
+
+        return new TestSynchronizationResult(eventsReceivedA, eventsReceivedB);
     }
 }
