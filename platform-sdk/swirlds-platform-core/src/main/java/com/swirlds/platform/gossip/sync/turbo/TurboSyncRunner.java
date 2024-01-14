@@ -71,8 +71,7 @@ public class TurboSyncRunner {
     /**
      * Used to play nicely with the parallel execution API.
      */
-    private static final Runnable NO_OP = () -> {
-    };
+    private static final Runnable NO_OP = () -> {};
 
     /**
      * The platform context.
@@ -352,10 +351,10 @@ public class TurboSyncRunner {
      * syncing, such as being in a fallen behind status or having our queues fill up too much.
      */
     private void checkIfProtocolShouldBeAborted() {
-        if (fallenBehindManager.hasFallenBehind() ||
-                gossipHalted.getAsBoolean() ||
-                intakeIsTooFull.getAsBoolean() ||
-                intakeEventCounter.getUnprocessedEventCount(peerId) > maximumPermissibleEventsInIntake) {
+        if (fallenBehindManager.hasFallenBehind()
+                || gossipHalted.getAsBoolean()
+                || intakeIsTooFull.getAsBoolean()
+                || intakeEventCounter.getUnprocessedEventCount(peerId) > maximumPermissibleEventsInIntake) {
 
             // We need to abort. We will continue for one more cycle and then stop syncing.
             abortRequested = true;
