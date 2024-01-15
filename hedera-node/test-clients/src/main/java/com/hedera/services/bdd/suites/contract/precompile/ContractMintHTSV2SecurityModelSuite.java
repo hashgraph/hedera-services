@@ -140,22 +140,21 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
 
     List<HapiSpec> negativeSpecs() {
         return List.of(
-                V2Security002FungibleTokenMintNegative(),
-                V2Security003NonFungibleTokenMintInContractNegative(),
-                V2Security003NonFungibleTokenMintInSignerNegative()
+                V2Security002FungibleTokenMintInTreasuryNegative(),
+                V2Security003NonFungibleTokenMintInTreasuryNegative()
         );
     }
 
     List<HapiSpec> positiveSpecs() {
         return List.of(
-                V2Security002FungibleTokenMintPositive(),
-                V2Security003NonFungibleTokenMintPositive()
+                V2Security002FungibleTokenMintInTreasuryPositive(),
+                V2Security003NonFungibleTokenMintInTreasuryPositive()
          );
     }
 
 
     @HapiTest
-    final HapiSpec V2Security002FungibleTokenMintPositive() {
+    final HapiSpec V2Security002FungibleTokenMintInTreasuryPositive() {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -252,7 +251,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security003NonFungibleTokenMintPositive() {
+    final HapiSpec V2Security003NonFungibleTokenMintInTreasuryPositive() {
         final var amount = 1;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -348,7 +347,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security002FungibleTokenMintNegative() {
+    final HapiSpec V2Security002FungibleTokenMintInTreasuryNegative() {
         final var amount = 10L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -431,7 +430,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security003NonFungibleTokenMintInContractNegative() {
+    final HapiSpec V2Security003NonFungibleTokenMintInTreasuryNegative() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("V2Security003NonFungibleTokenMintNegative")
@@ -511,94 +510,6 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         getTxnRecord(TOKEN_HAS_NO_UPDATED_KEY)
                                 .andAllChildRecords()
                                 .hasChildRecords(recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
-                );
-    }
-
-    @HapiTest
-    final HapiSpec V2Security003NonFungibleTokenMintInSignerNegative() {
-        final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("V2Security003NonFungibleTokenMintNegative")
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-                .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(TOKEN_TREASURY)
-                                .supplyKey(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(idLit -> nonFungible.set(asToken(idLit))),
-                        tokenAssociate(SIGNER, NON_FUNGIBLE_TOKEN),
-                        uploadInitCode(HTS_CALLS),
-                        contractCreate(HTS_CALLS),
-                        uploadInitCode(MINT_CONTRACT)
-                       )
-                .when(
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCreate(
-                                        MINT_CONTRACT,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))),
-                                newKeyNamed(MULTI_KEY),
-                                newKeyNamed(THRESHOLD_KEY)
-                                        .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, HTS_CALLS))),
-                                newKeyNamed(TRESHOLD_KEY_WITH_SIGNER_KEY)
-                                        .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MINT_CONTRACT))),
-                                contractCall(
-                                        MINT_CONTRACT,
-                                        "mintAndTransferNonFungibleToken",
-                                        new byte[][] {TEST_METADATA_1.getBytes()},
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(SIGNER)))
-                                        )
-                                        .via(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
-                                        .gas(GAS_TO_OFFER)
-                                        .signedBy(SIGNER)
-                                        .payingWith(SIGNER)
-//                                getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0),
-//                                cryptoUpdate(SIGNER).key(TRESHOLD_KEY_WITH_SIGNER_KEY),
-//                                tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY),
-//                                contractCall(
-//                                        HTS_CALLS,
-//                                        "mintTokenCall",
-//                                        HapiParserUtil.asHeadlongAddress(
-//                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-//                                        BigInteger.valueOf(0L),
-//                                        new byte[][] {TEST_METADATA_1.getBytes()})
-//                                        .via(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY)
-//                                        .gas(GAS_TO_OFFER)
-//                                        .alsoSigningWithFullPrefix(SIGNER)
-//                                        .payingWith(SIGNER),
-//                                getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0),
-//                                tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(MULTI_KEY),
-//                                cryptoUpdate(SIGNER).key(THRESHOLD_KEY),
-//                                contractCall(
-//                                        HTS_CALLS,
-//                                        "mintTokenCall",
-//                                        HapiParserUtil.asHeadlongAddress(
-//                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-//                                        BigInteger.valueOf(0L),
-//                                        new byte[][] {TEST_METADATA_1.getBytes()})
-//                                        .via(TOKEN_HAS_NO_UPDATED_KEY)
-//                                        .gas(GAS_TO_OFFER)
-//                                        .signedBy(SIGNER)
-//                                        .payingWith(SIGNER),
-//                                getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0)
-                        )))
-                .then(
-                        getTxnRecord(SIGNER_AND_TOKEN_HAVE_NO_UPDATED_KEYS)
-                                .andAllChildRecords()
-                                .hasChildRecords(recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
-//                        getTxnRecord(SIGNER_MINTS_WITH_SIGNER_PUBLIC_KEY)
-//                                .andAllChildRecords()
-//                                .hasChildRecords(recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-//                        getTxnRecord(TOKEN_HAS_NO_UPDATED_KEY)
-//                                .andAllChildRecords()
-//                                .hasChildRecords(recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
                 );
     }
 

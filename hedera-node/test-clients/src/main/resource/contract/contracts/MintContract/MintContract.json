@@ -32,42 +32,6 @@
     {
       "inputs": [
         {
-          "internalType": "int64",
-          "name": "amount",
-          "type": "int64"
-        },
-        {
-          "internalType": "address",
-          "name": "receiver",
-          "type": "address"
-        }
-      ],
-      "name": "mintAndTransferFungibleToken",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes[]",
-          "name": "metadata",
-          "type": "bytes[]"
-        },
-        {
-          "internalType": "address",
-          "name": "receiver",
-          "type": "address"
-        }
-      ],
-      "name": "mintAndTransferNonFungibleToken",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "uint64",
           "name": "amount",
           "type": "uint64"
