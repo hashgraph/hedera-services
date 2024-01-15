@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -63,20 +62,6 @@ class PcesSequencerTests {
         final GossipEvent event = new GossipEvent();
 
         sequencer.assignStreamSequenceNumber(event);
-        assertThrows(IllegalStateException.class, () -> sequencer.assignStreamSequenceNumber(event));
-    }
-
-    @Test
-    @DisplayName("Set Stale Test")
-    void setStaleTest() {
-        final PcesSequencer sequencer = new PcesSequencer();
-
-        final GossipEvent event = new GossipEvent();
-
-        sequencer.assignStreamSequenceNumber(event);
-        event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
-        assertEquals(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER, event.getStreamSequenceNumber());
-
         assertThrows(IllegalStateException.class, () -> sequencer.assignStreamSequenceNumber(event));
     }
 }
