@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -123,6 +124,9 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var copy = token.copyBuilder().customFees(op.customFees());
         // add token to the modifications map
         tokenStore.put(copy.build());
+
+        final var record = context.recordBuilder(TokenBaseRecordBuilder.class);
+        record.tokenType(token.tokenType());
     }
 
     /**
