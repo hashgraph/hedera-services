@@ -23,7 +23,7 @@ plugins {
 dependencies {
     implementation("com.adarshr:gradle-test-logger-plugin:4.0.0")
     implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.26.0")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.23.3")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.24.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation(
