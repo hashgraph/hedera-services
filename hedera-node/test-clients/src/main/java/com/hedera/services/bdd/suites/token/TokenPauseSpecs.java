@@ -62,6 +62,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -72,7 +73,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public final class TokenPauseSpecs extends HapiSuite {
 
@@ -142,8 +143,8 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pausedTokenInCustomFeeCaseStudy() {
-        return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
+    HapiSpec pausedTokenInCustomFeeCaseStudy() {
+        return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
@@ -310,7 +311,7 @@ public final class TokenPauseSpecs extends HapiSuite {
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
         final String thirdUser = THIRD_USER;
-        return defaultHapiSpec("pausedFungibleTokenCannotBeUsed")
+        return defaultHapiSpec("pausedFungibleTokenCannotBeUsed", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
