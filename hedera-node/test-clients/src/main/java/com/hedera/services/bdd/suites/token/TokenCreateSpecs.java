@@ -336,7 +336,8 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec(
                         "CreationWithoutKYCSetsCorrectStatus",
                         NONDETERMINISTIC_TOKEN_NAMES,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getAccountInfo(TOKEN_TREASURY)

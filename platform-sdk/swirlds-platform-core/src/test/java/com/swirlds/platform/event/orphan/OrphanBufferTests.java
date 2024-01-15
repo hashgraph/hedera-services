@@ -167,6 +167,10 @@ class OrphanBufferTests {
                 .thenReturn(new EventDescriptor(eventHash, eventCreator, eventGeneration, eventBirthRound));
         when(event.getGeneration()).thenReturn(eventGeneration);
         when(event.getSenderId()).thenReturn(eventCreator);
+        when(event.getAncientIndicator(any()))
+                .thenAnswer(args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD
+                        ? eventBirthRound
+                        : eventGeneration);
 
         return event;
     }

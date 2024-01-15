@@ -704,7 +704,8 @@ public class SwirldsPlatform implements Platform {
                 eventObserverDispatcher,
                 shadowGraph,
                 latestEventTipsetTracker,
-                intakeEventCounter);
+                intakeEventCounter,
+                platformWiring.getKeystoneEventSequenceNumberOutput());
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
