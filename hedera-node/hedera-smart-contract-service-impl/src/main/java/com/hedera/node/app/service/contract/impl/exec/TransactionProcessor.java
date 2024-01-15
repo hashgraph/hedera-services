@@ -18,11 +18,13 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.AbortException.validateTrueOrAbort;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.contractIDToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.sponsorCustomizedCreation;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -46,6 +48,7 @@ import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Arrays;
 import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -293,6 +296,16 @@ public class TransactionProcessor {
             // Only set up the lazy creation if the transaction has a value and a valid alias
             final var alias = transaction.contractIdOrThrow().evmAddress();
             if (transaction.hasValue() && alias != null) {
+                final var senderId = sender.hederaId();
+                final var relayerId = relayer.hederaId();
+                // attempt to send hbar to zero address will result in revert and will charge
+                // gas
+                final var zeroAddress = new byte[20];
+                validateTrueOrAbort(
+                        !Arrays.equals(zeroAddress, alias.toByteArray()), INVALID_SOLIDITY_ADDRESS, senderId);
+
+                // do not attempt to lazy create account with alias that is a long zero address
+                validateTrueOrAbort(!isLongZeroAddress(alias.toByteArray()), INVALID_CONTRACT_ID, senderId);
                 parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
                 updater.setupTopLevelLazyCreate(requireNonNull(parties.receiverAddress));
             } else {

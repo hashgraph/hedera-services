@@ -51,6 +51,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -67,6 +72,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -79,7 +85,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-// @HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
@@ -134,7 +140,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         final AtomicReference<String> relayerEvmAddress = new AtomicReference<>();
         final AtomicReference<String> exploitTokenEvmAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("badRelayClient")
+        return defaultHapiSpec(
+                        "badRelayClient",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(adminKey),
                         newKeyNamed(maliciousEOA).shape(SECP_256K1_SHAPE),
@@ -192,7 +202,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec depositSuccess() {
-        return defaultHapiSpec("depositSuccess")
+        return defaultHapiSpec("depositSuccess", NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -262,7 +272,10 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     @HapiTest
     HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
         final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
-        return defaultHapiSpec("ethereumCallWithCalldataBiggerThanMaxSucceeds")
+        return defaultHapiSpec(
+                        "ethereumCallWithCalldataBiggerThanMaxSucceeds",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -327,7 +340,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec smallContractCreate() {
-        return defaultHapiSpec("smallContractCreate")
+        return defaultHapiSpec("smallContractCreate", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -372,7 +385,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     @HapiTest
     HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
-        return defaultHapiSpec("bigContractCreate")
+        return defaultHapiSpec("bigContractCreate", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -418,7 +431,10 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     @HapiTest
     HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
-        return defaultHapiSpec("contractCreateWithConstructorArgs")
+        return defaultHapiSpec(
+                        "contractCreateWithConstructorArgs",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -474,7 +490,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     @HapiTest
     HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
-        return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
+        return defaultHapiSpec("topLevelBurnToZeroAddressReverts", NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))
@@ -493,7 +509,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     @HapiTest
     HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
         final var nonExistentMirrorAddress = Utils.asSolidityAddress(0, 0, 666_666);
-        return defaultHapiSpec("topLevelLazyCreateOfMirrorAddressReverts")
+        return defaultHapiSpec(
+                        "topLevelLazyCreateOfMirrorAddressReverts",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))
@@ -514,7 +534,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         final var receiverSigAccount = "receiverSigAccount";
         final AtomicReference<byte[]> receiverMirrorAddr = new AtomicReference<>();
         final var preCallBalance = "preCallBalance";
-        return defaultHapiSpec("topLevelSendToReceiverSigRequiredAccountReverts")
+        return defaultHapiSpec("topLevelSendToReceiverSigRequiredAccountReverts", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
@@ -540,7 +560,10 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec internalBurnToZeroAddressReverts() {
-        return defaultHapiSpec("internalBurnToZeroAddressReverts")
+        return defaultHapiSpec(
+                        "internalBurnToZeroAddressReverts",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),

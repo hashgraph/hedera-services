@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
@@ -76,7 +78,8 @@ public class EthereumTransactionHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        // Ignore the return value; we just want to cache the signature for use in handle()
+        // Ignore the return value; we just want to cache the signature for use in
+        // handle()
         computeEthTxSigsFor(
                 context.body().ethereumTransactionOrThrow(),
                 context.createStore(ReadableFileStore.class),
@@ -84,12 +87,13 @@ public class EthereumTransactionHandler implements TransactionHandler {
     }
 
     /**
-     * If the given transaction, when hydrated from the given file store with the given config, implies a valid
+     * If the given transaction, when hydrated from the given file store with the
+     * given config, implies a valid
      * {@link EthTxSigs}, returns it. Otherwise, returns null.
      *
-     * @param op the transaction
+     * @param op        the transaction
      * @param fileStore the file store
-     * @param config the configuration
+     * @param config    the configuration
      * @return the implied Ethereum signature metadata
      */
     public @Nullable EthTxSigs maybeEthTxSigsFor(
