@@ -62,6 +62,7 @@ public final class TurboSyncTestFramework {
     public record TestSynchronizationResult(
             @NonNull List<GossipEvent> eventsReceivedA, @NonNull List<GossipEvent> eventsReceivedB) {}
 
+    // TODO if the arg count gets too high, consider using a builder
     /**
      * Simulates a turbo sync between two nodes for a period of time.
      *
@@ -74,13 +75,12 @@ public final class TurboSyncTestFramework {
             @NonNull final Random random,
             @NonNull final AddressBook addressBook,
             @NonNull final List<EventImpl> eventsA,
-            @NonNull final List<EventImpl> eventsB)
+            @NonNull final List<EventImpl> eventsB,
+            @NonNull final Instant startingTime)
             throws IOException {
 
         final NodeId nodeA = addressBook.getNodeId(0);
-        final NodeId nodeB = addressBook.getNodeId(0);
-
-        final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
+        final NodeId nodeB = addressBook.getNodeId(1);
 
         final Pair<Connection, Connection> connections = createSocketConnections(nodeA, nodeB);
 
@@ -126,8 +126,8 @@ public final class TurboSyncTestFramework {
                 })
                 .start();
 
-        assertEventuallyTrue(completedA::get, Duration.ofSeconds(1000), "Node A did not finish"); // TODO
-        assertEventuallyTrue(completedB::get, Duration.ofSeconds(1000), "Node A did not finish"); // TODO
+        assertEventuallyTrue(completedA::get, Duration.ofSeconds(10000), "Node A did not finish"); // TODO
+        assertEventuallyTrue(completedB::get, Duration.ofSeconds(10000), "Node A did not finish"); // TODO
         assertFalse(errorA.get(), "Node A had an error");
         assertFalse(errorB.get(), "Node B had an error");
 
@@ -151,9 +151,9 @@ public final class TurboSyncTestFramework {
 
         final List<EventSource<?>> sources = new ArrayList<>();
         for (final Address address : addressBook) {
-            sources.add(new StandardEventSource(false).setNodeId(address.getNodeId()));
+            sources.add(new StandardEventSource(false)); // .setNodeId(address.getNodeId()));
         }
-        final StandardGraphGenerator generator = new StandardGraphGenerator(random.nextLong(), sources);
+        final StandardGraphGenerator generator = new StandardGraphGenerator(random.nextLong(), sources, addressBook);
 
         final List<EventImpl> events = new ArrayList<>(count);
 

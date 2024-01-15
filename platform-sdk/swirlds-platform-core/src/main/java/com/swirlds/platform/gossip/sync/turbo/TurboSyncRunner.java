@@ -51,6 +51,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -683,28 +684,25 @@ public class TurboSyncRunner {
         final Predicate<ShadowEvent> knownAncestorsPredicate =
                 SyncUtils.unknownNonAncient(knownAncestors, myGenerations, theirGenerations);
 
-        // in order to get the peer the latest events, we get a new set of tips to search from
-        final List<ShadowEvent> myNewTips = shadowgraph.getTips();
-
-        // find all ancestors of tips that are not known
+        final var shadowTips = shadowgraph.shadows(dataSentC.tipsSent());
         final List<ShadowEvent> unknownTips =
-                myNewTips.stream().filter(knownAncestorsPredicate).collect(Collectors.toList());
+                shadowTips.stream().filter(knownAncestorsPredicate).collect(Collectors.toList());
+
         final Set<ShadowEvent> sendSet = shadowgraph.findAncestors(unknownTips, knownAncestorsPredicate);
         // add the tips themselves
         sendSet.addAll(unknownTips);
 
-        final List<EventImpl> eventsTheyMayNeed =
-                sendSet.stream().map(ShadowEvent::getEvent).collect(Collectors.toCollection(ArrayList::new));
+        final List<EventImpl> eventsTheyMayNeed = sendSet.stream()
+                .sorted(Comparator.comparingLong(a -> a.getEvent().getGeneration()))
+                .map(ShadowEvent::getEvent)
+                .collect(Collectors.toCollection(ArrayList::new));
 
-        final List<EventImpl> sendList = filterLikelyDuplicates(
+        return filterLikelyDuplicates( // TODO double check sorting in develop...
                 selfId,
                 nonAncestorFilterThreshold,
                 platformContext.getTime().now(),
                 eventsTheyMayNeed,
-                latestEventTipsetTracker.getTipsetOfLatestSelfEvent(eventsTheyMayNeed));
-
-        SyncUtils.sort(sendList);
-        return sendList;
+                latestEventTipsetTracker.getLatestSelfEventTipset());
     }
 
     /**

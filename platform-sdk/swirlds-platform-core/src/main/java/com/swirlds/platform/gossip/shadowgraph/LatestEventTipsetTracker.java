@@ -86,32 +86,6 @@ public class LatestEventTipsetTracker {
     }
 
     /**
-     * Get the tipset of the latest self event in a list of events. If there are no self events in this list, return the
-     * tipset of the latest self event. Event list is in topological order from left to right.
-     *
-     * @param events The list of events to search.
-     * @return The tipset of the latest self event in the list, or null if there are no known self events.
-     */
-    @Nullable
-    public Tipset getTipsetOfLatestSelfEvent(@NonNull final List<EventImpl> events) {
-
-        // Iterate backwards over the list. The latest self event will be the first one found.
-        for (int index = events.size() - 1; index >= 0; index--) {
-            final EventImpl event = events.get(index);
-            if (event.getCreatorId().equals(selfId)) {
-                synchronized (this) {
-                    return tipsetTracker.getTipset(event.getBaseEvent().getDescriptor());
-                }
-            }
-        }
-
-        // There wasn't a self event in the list. Return the latest self event tipset.
-        synchronized (this) {
-            return latestSelfEventTipset;
-        }
-    }
-
-    /**
      * Get a list of non-ancient childless events, i.e. the "tips" of the hashgraph.
      *
      * @return the childless events, this list is safe to modify

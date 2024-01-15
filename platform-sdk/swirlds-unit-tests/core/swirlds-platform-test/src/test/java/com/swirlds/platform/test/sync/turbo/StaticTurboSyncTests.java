@@ -17,7 +17,11 @@
 package com.swirlds.platform.test.sync.turbo;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.test.sync.turbo.TurboSyncTestFramework.generateEvents;
+import static com.swirlds.platform.test.sync.turbo.TurboSyncTestFramework.nodeHasAllEvents;
 import static com.swirlds.platform.test.sync.turbo.TurboSyncTestFramework.simulateSynchronization;
+import static com.swirlds.platform.test.sync.turbo.TurboSyncTestFramework.wereDuplicateEventsSent;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -27,15 +31,16 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.sync.turbo.TurboSyncTestFramework.TestSynchronizationResult;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * This class contains tests with static hashgraphs. At the start of each test, each node is given a set of events,
- * and new events are not introduced into the system during the test. In this scenario, we expect to see zero
- * duplicate events, and both nodes should end up with a complete set of events.
+ * This class contains tests with static hashgraphs. At the start of each test, each node is given a set of events, and
+ * new events are not introduced into the system during the test. In this scenario, we expect to see zero duplicate
+ * events, and both nodes should end up with a complete set of events.
  */
 class StaticTurboSyncTests {
 
@@ -49,7 +54,7 @@ class StaticTurboSyncTests {
      */
     @Test
     void noEventsTest() throws IOException {
-        final Random random = getRandomPrintSeed(0); // TODO
+        final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(8).build();
@@ -57,30 +62,33 @@ class StaticTurboSyncTests {
         final List<EventImpl> initialEventsA = List.of();
         final List<EventImpl> initialEventsB = List.of();
 
+        final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
+
         final TestSynchronizationResult result =
-                simulateSynchronization(random, addressBook, initialEventsA, initialEventsB);
+                simulateSynchronization(random, addressBook, initialEventsA, initialEventsB, startingTime);
 
         assertTrue(result.eventsReceivedA().isEmpty());
         assertTrue(result.eventsReceivedB().isEmpty());
     }
 
-    //    @Test
-    //    void oneNodeHasAllTheEvents() throws IOException {
-    //        final Random random = getRandomPrintSeed();
-    //
-    //        final AddressBook addressBook =
-    //                new RandomAddressBookGenerator(random).setSize(8).build();
-    //
-    //        final List<EventImpl> initialEventsA = generateEvents(random, addressBook, 100);
-    //        final List<EventImpl> initialEventsB = List.of();
-    //
-    //        final TestSynchronizationResult result = simulateSynchronization(random, addressBook, initialEventsA,
-    // initialEventsB);
-    //
-    //        assertTrue(result.eventsReceivedA().isEmpty());
-    //
-    //        assertFalse(wereDuplicateEventsSent(initialEventsB, result.eventsReceivedB()));
-    //        System.out.println("eventsReceivedB: " + result.eventsReceivedB().size());
-    //        assertTrue(nodeHasAllEvents(initialEventsB, result.eventsReceivedB(), initialEventsA));
-    //    }
+    @Test
+    void oneNodeHasAllTheEvents() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(8).build();
+
+        final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
+
+        final List<EventImpl> initialEventsA = generateEvents(random, addressBook, startingTime, 100);
+        final List<EventImpl> initialEventsB = List.of();
+
+        final TestSynchronizationResult result =
+                simulateSynchronization(random, addressBook, initialEventsA, initialEventsB, startingTime);
+
+        assertTrue(result.eventsReceivedA().isEmpty());
+
+        assertFalse(wereDuplicateEventsSent(initialEventsB, result.eventsReceivedB()));
+        assertTrue(nodeHasAllEvents(initialEventsB, result.eventsReceivedB(), initialEventsA));
+    }
 }
