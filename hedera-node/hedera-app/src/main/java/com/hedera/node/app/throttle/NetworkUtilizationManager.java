@@ -17,6 +17,7 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,6 +65,14 @@ public interface NetworkUtilizationManager {
      * @param value the amount of gas to leak
      */
     void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value);
+
+    /*
+     * Leaks the claimed capacity for a number of transactions of the same functionality.
+     *
+     * @param n the number of transactions to consider
+     * @param function the functionality type of the transactions
+     */
+    void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function);
 
     /*
      * Resets the throttle usage and congestion multiplier from the given state.
