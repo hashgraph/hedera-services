@@ -153,7 +153,10 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         suites.sort(SUITE_DESCRIPTOR_COMPARATOR);
         suites.forEach(engineDescriptor::addChild);
 
-        engineDescriptor.addChild(new RecordStreamValidationTestDescriptor(engineDescriptor));
+        // if hapi test suites are being run, add record stream validation to the engineDescriptor as well
+        if (!suites.isEmpty()) {
+            engineDescriptor.addChild(new RecordStreamValidationTestDescriptor(engineDescriptor));
+        }
 
         return engineDescriptor;
     }
