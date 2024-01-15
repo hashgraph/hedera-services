@@ -315,6 +315,7 @@ public class TurboSyncRunner {
             if (peerCycleNumber != cycleNumber * 2) {
                 throw new IOException("Expected cycle " + cycleNumber * 2 + ", got " + peerCycleNumber);
             }
+            logger.info(STARTUP.getMarker(), "sync complete with peer " + peerId + ", cycle = " + cycleNumber); // TODO
 
         } finally {
             if (dataSentA != null) {
@@ -326,7 +327,6 @@ public class TurboSyncRunner {
             if (dataSentC != null) {
                 dataSentC.release();
             }
-            logger.info(STARTUP.getMarker(), "sync complete with peer " + peerId + ", cycle = " + cycleNumber); // TODO
         }
     }
 
