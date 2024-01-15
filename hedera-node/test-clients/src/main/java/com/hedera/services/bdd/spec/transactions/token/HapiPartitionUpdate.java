@@ -19,17 +19,12 @@ package com.hedera.services.bdd.spec.transactions.token;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenCreatePartitionDefinitionTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.api.proto.java.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -38,40 +33,33 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
+public class HapiPartitionUpdate extends HapiTxnOp<HapiPartitionUpdate> {
 
-    static final Logger log = LogManager.getLogger(HapiPartitionCreate.class);
+    static final Logger log = LogManager.getLogger(HapiPartitionUpdate.class);
 
     private final String token;
 
-    public HapiPartitionCreate(final String token) {
+    public HapiPartitionUpdate(final String token) {
         this.token = token;
     }
 
-    protected HapiPartitionCreate self() {
+    protected HapiPartitionUpdate self() {
         return this;
     }
 
     @Override
     public HederaFunctionality type() {
-        return HederaFunctionality.TokenCreatePartition;
+        return HederaFunctionality.TokenUpdatePartition;
     }
 
-    private Optional<String> parent_token_id = Optional.empty();
+    private Optional<String> newName = Optional.empty();
 
-    private Optional<String> name = Optional.empty();
-
-    public HapiPartitionCreate parent_token_id(final String parent_token_id) {
-        this.parent_token_id = Optional.of(parent_token_id);
+    public HapiPartitionUpdate name(final String name) {
+        this.newName = Optional.of(name);
         return this;
     }
 
-    public HapiPartitionCreate name(final String name) {
-        this.name = Optional.of(name);
-        return this;
-    }
-
-    public HapiPartitionCreate memo(final String memo) {
+    public HapiPartitionUpdate memo(final String memo) {
         this.memo = Optional.of(memo);
         return this;
     }
@@ -85,14 +73,15 @@ public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         var id = TxnUtils.asTokenId(token, spec);
-        final TokenCreatePartitionDefinitionTransactionBody opBody = spec.txns()
-                .<TokenCreatePartitionDefinitionTransactionBody, TokenCreatePartitionDefinitionTransactionBody.Builder>
-                        body(TokenCreatePartitionDefinitionTransactionBody.class, b -> {
-                    b.setParentTokenId(id);
-                    name.ifPresent(b::setName);
-                    memo.ifPresent(s -> b.setMemo(s));
-                });
-        return b -> b.setTokenCreatePartition(opBody);
+        final TokenUpdatePartitionTransactionBody opBody = spec.txns()
+                .<TokenUpdatePartitionTransactionBody, TokenUpdatePartitionTransactionBody.Builder>body(
+                        TokenUpdatePartitionTransactionBody.class, b -> {
+                            b.setToken(id);
+                            newName.ifPresent(b::setName);
+                            memo.ifPresent(s -> b.setMemo(
+                                    StringValue.newBuilder().setValue(s).build()));
+                        });
+        return b -> b.setTokenUpdatePartition(opBody);
     }
 
     protected List<Function<HapiSpec, Key>> defaultSigners(final Function<HapiSpec, String> effectivePayer) {
@@ -110,7 +99,7 @@ public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::createTokenPartitionDefinition;
+        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateTokenPartitionDefinition;
     }
 
     @Override
@@ -118,23 +107,14 @@ public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
         if (actualStatus != SUCCESS) {
             return;
         }
-        var id = TxnUtils.asTokenId(token, spec);
         final var registry = spec.registry();
-        parent_token_id.ifPresent(s -> registry.saveTokenId(token, id));
-        name.ifPresent(s -> registry.saveName(token, s));
+        newName.ifPresent(s -> registry.saveName(token, s));
         memo.ifPresent(s -> registry.saveMemo(token, s));
-        final TokenID partitionId = lastReceipt.getTokenID();
-        registry.savePartitionId(token, partitionId);
     }
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("Partition", token);
-        Optional.ofNullable(lastReceipt).ifPresent(receipt -> {
-            if (receipt.getTokenID().getTokenNum() != 0) {
-                helper.add("created", receipt.getTokenID().getTokenNum());
-            }
-        });
+        MoreObjects.ToStringHelper helper = super.toStringHelper().add("Partition", token);
         return helper;
     }
 }
