@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.sync.turbo;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.filterLikelyDuplicates;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getMyTipsTheyKnow;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getTheirTipsIHave;
@@ -60,6 +61,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class is responsible for managing the business logic of an initialized {@link TurboSyncProtocol}. Where as
@@ -67,6 +70,8 @@ import java.util.stream.Collectors;
  * performing the syncing.
  */
 public class TurboSyncRunner {
+
+    private static final Logger logger = LogManager.getLogger(TurboSyncRunner.class);
 
     /**
      * Used to play nicely with the parallel execution API.
@@ -321,6 +326,7 @@ public class TurboSyncRunner {
             if (dataSentC != null) {
                 dataSentC.release();
             }
+            logger.info(STARTUP.getMarker(), "sync complete with peer " + peerId); // TODO
         }
     }
 
@@ -345,10 +351,12 @@ public class TurboSyncRunner {
             }
             case SELF_FALLEN_BEHIND -> {
                 fallenBehindManager.reportFallenBehind(peerId);
+                logger.info(STARTUP.getMarker(), "self fallen behind, peer = " + peerId); // TODO
                 return true;
             }
             case OTHER_FALLEN_BEHIND -> {
                 // The peer will realize it has fallen behind and will stop syncing.
+                logger.info(STARTUP.getMarker(), "peer fallen behind, peer = " + peerId); // TODO
                 return true;
             }
             default -> throw new IllegalStateException("Unexpected status: " + status);
@@ -364,6 +372,8 @@ public class TurboSyncRunner {
                 || gossipHalted.getAsBoolean()
                 || intakeIsTooFull.getAsBoolean()
                 || intakeEventCounter.getUnprocessedEventCount(peerId) > maximumPermissibleEventsInIntake) {
+
+            logger.info(STARTUP.getMarker(), "aborting with peer " + peerId);
 
             // We need to abort. We will continue for one more cycle and then stop syncing.
             abortRequested = true;
@@ -451,6 +461,7 @@ public class TurboSyncRunner {
 
         if (dataInputStream.readBoolean()) {
             peerRequestedAbort = true;
+            logger.info(STARTUP.getMarker(), "peer requested abort, peer = " + peerId); // TODO
             return;
         }
 
