@@ -42,12 +42,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-/**
- * This class contains tests with static hashgraphs. At the start of each test, each node is given a set of events, and
- * new events are not introduced into the system during the test. In this scenario, we expect to see zero duplicate
- * events, and both nodes should end up with a complete set of events.
- */
-class StaticTurboSyncTests {
+class TurboSyncTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
@@ -201,4 +196,7 @@ class StaticTurboSyncTests {
         assertFalse(wereDuplicateEventsSent(initialEventsB, result.eventsReceivedB()));
         assertTrue(nodeHasAllEvents(initialEventsB, result.eventsReceivedB(), allEvents));
     }
+
+    // TODO don't send ancient events
+    // TODO one node is behind
 }
