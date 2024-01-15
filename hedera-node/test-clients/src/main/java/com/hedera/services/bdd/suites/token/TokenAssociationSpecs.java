@@ -62,6 +62,7 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -70,7 +71,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public class TokenAssociationSpecs extends HapiSuite {
 
@@ -117,7 +118,7 @@ public class TokenAssociationSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec handlesUseOfDefaultTokenId() {
-        return defaultHapiSpec("HandlesUseOfDefaultTokenId")
+        return defaultHapiSpec("HandlesUseOfDefaultTokenId", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
                 .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));

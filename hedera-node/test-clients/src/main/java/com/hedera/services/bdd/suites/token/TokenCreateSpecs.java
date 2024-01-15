@@ -177,7 +177,7 @@ public class TokenCreateSpecs extends HapiSuite {
         final String creationTxn = "creationTxn";
         final String failedCreationTxn = "failedCreationTxn";
 
-        return defaultHapiSpec("ValidateNewTokenAssociations")
+        return defaultHapiSpec("ValidateNewTokenAssociations", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(tbd),
                         cryptoDelete(tbd),
@@ -336,7 +336,8 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec(
                         "CreationWithoutKYCSetsCorrectStatus",
                         NONDETERMINISTIC_TOKEN_NAMES,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_TOKEN_NAMES)
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getAccountInfo(TOKEN_TREASURY)
@@ -801,7 +802,7 @@ public class TokenCreateSpecs extends HapiSuite {
 
     @HapiTest
     final HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
-        return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate")
+        return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(customFeesKey),
                         cryptoCreate(htsCollector).receiverSigRequired(true),
