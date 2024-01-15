@@ -327,7 +327,7 @@ public class TurboSyncRunner {
             if (dataSentC != null) {
                 dataSentC.release();
             }
-            logger.info(STARTUP.getMarker(), "sync complete with peer " + peerId); // TODO
+            logger.info(STARTUP.getMarker(), "sync complete with peer " + peerId + ", cycle = " + cycleNumber); // TODO
         }
     }
 
@@ -352,12 +352,16 @@ public class TurboSyncRunner {
             }
             case SELF_FALLEN_BEHIND -> {
                 fallenBehindManager.reportFallenBehind(peerId);
-                logger.info(STARTUP.getMarker(), "self fallen behind, peer = " + peerId); // TODO
+                logger.info(
+                        STARTUP.getMarker(),
+                        "self fallen behind, peer = " + peerId + ", cycle = " + cycleNumber); // TODO
                 return true;
             }
             case OTHER_FALLEN_BEHIND -> {
                 // The peer will realize it has fallen behind and will stop syncing.
-                logger.info(STARTUP.getMarker(), "peer fallen behind, peer = " + peerId); // TODO
+                logger.info(
+                        STARTUP.getMarker(),
+                        "peer fallen behind, peer = " + peerId + ", cycle = " + cycleNumber); // TODO
                 return true;
             }
             default -> throw new IllegalStateException("Unexpected status: " + status);
@@ -374,7 +378,7 @@ public class TurboSyncRunner {
                 || intakeIsTooFull.getAsBoolean()
                 || intakeEventCounter.getUnprocessedEventCount(peerId) > maximumPermissibleEventsInIntake) {
 
-            logger.info(STARTUP.getMarker(), "aborting with peer " + peerId);
+            logger.info(STARTUP.getMarker(), "aborting with peer " + peerId + ", cycle = " + cycleNumber);
 
             // We need to abort. We will continue for one more cycle and then stop syncing.
             abortRequested = true;
@@ -462,7 +466,8 @@ public class TurboSyncRunner {
 
         if (dataInputStream.readBoolean()) {
             peerRequestedAbort = true;
-            logger.info(STARTUP.getMarker(), "peer requested abort, peer = " + peerId); // TODO
+            logger.info(
+                    STARTUP.getMarker(), "peer requested abort, peer = " + peerId + ", cycle = " + cycleNumber); // TODO
             return;
         }
 
