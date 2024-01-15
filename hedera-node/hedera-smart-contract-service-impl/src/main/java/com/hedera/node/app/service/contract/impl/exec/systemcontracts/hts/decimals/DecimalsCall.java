@@ -49,7 +49,7 @@ public class DecimalsCall extends AbstractRevertibleTokenViewCall {
     @Override
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            throw new HandleException(INVALID_TOKEN_ID);
+            throw new UnsupportedOperationException();
         } else {
             final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
             return successResult(
