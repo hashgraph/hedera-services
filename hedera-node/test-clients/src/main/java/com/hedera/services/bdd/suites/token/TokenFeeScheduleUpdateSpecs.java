@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
@@ -54,7 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
 public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
 
@@ -80,7 +81,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
         final var feeScheduleKey = "feeSchedule";
         final var expectedBasePriceUsd = 0.001;
 
-        return defaultHapiSpec("BaseOperationIsChargedExpectedFee")
+        return defaultHapiSpec("BaseOperationIsChargedExpectedFee", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(feeScheduleKey),
                         cryptoCreate("civilian").key(feeScheduleKey),
