@@ -19,7 +19,6 @@ package com.swirlds.platform.event.preconsensus;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
  * A class used to determine if an event is guaranteed to be durable, i.e. flushed to disk.
@@ -46,12 +45,6 @@ public class EventDurabilityNexus {
      * @return true if the event is guaranteed to be durable, false otherwise
      */
     public boolean isEventDurable(@NonNull final GossipEvent event) {
-        Objects.requireNonNull(event);
-        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            // Stale events are not written to disk.
-            return false;
-        }
-
         return event.getStreamSequenceNumber() <= latestDurableSequenceNumber.getCount();
     }
 
@@ -62,11 +55,6 @@ public class EventDurabilityNexus {
      * @throws InterruptedException if interrupted while waiting
      */
     public void waitUntilDurable(@NonNull final GossipEvent event) throws InterruptedException {
-        Objects.requireNonNull(event);
-        if (event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event is stale and will never be durable");
-        }
-
         latestDurableSequenceNumber.await(event.getStreamSequenceNumber());
     }
 }
