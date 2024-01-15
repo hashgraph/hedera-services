@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -277,7 +278,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var tokenSymbol = "F";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("getErc20TokenSymbol", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("getErc20TokenSymbol", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -958,7 +959,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     final HapiSpec getErc721Symbol() {
         final var tokenSymbol = "N";
 
-        return defaultHapiSpec("getErc721Symbol", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec("getErc721Symbol", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1576,7 +1577,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec(
                         "someErc721ApproveAndRemoveScenariosPass",
-                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         ALLOW_EMPTY_ERROR_MSG,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -3160,6 +3161,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         return defaultHapiSpec(
                         "erc721TransferFromWithApproval",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),

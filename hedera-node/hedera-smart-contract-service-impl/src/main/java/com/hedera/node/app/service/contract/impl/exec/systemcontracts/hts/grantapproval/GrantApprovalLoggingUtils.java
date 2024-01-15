@@ -30,8 +30,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class GrantApprovalLoggingUtils {
-    // todo add some docs here!
-    public static void logSuccessfulApprove(
+
+    public static void logSuccessfulFTApprove(
             @NonNull final TokenID tokenId,
             @NonNull final AccountID sender,
             @NonNull final AccountID spender,
@@ -46,6 +46,24 @@ public class GrantApprovalLoggingUtils {
 
         frame.addLog(builderFor(tokenId, sender, spender, accountStore)
                 .forDataItem(amount)
+                .build());
+    }
+    // todo add some docs here!
+    public static void logSuccessfulNFTApprove(
+            @NonNull final TokenID tokenId,
+            @NonNull final AccountID sender,
+            @NonNull final AccountID spender,
+            final long amount,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final MessageFrame frame) {
+        requireNonNull(tokenId);
+        requireNonNull(frame);
+        requireNonNull(sender);
+        requireNonNull(spender);
+        requireNonNull(accountStore);
+
+        frame.addLog(builderFor(tokenId, sender, spender, accountStore)
+                .forIndexedArgument(amount)
                 .build());
     }
 
