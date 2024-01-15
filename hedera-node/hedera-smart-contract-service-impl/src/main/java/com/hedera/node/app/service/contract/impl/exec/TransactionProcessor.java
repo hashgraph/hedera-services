@@ -113,12 +113,15 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        final var parties = computeInvolvedParties(transaction, updater, config);
+        InvolvedParties parties;
         try {
+            parties = computeInvolvedParties(transaction, updater, config);
             return processTransactionWithParties(
                     transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
         } catch (HandleException e) {
-            throw new AbortException(e.getStatus(), parties.senderId());
+            final var sender = updater.getHederaAccount(transaction.senderId());
+            final var senderId = sender != null ? sender.hederaId() : transaction.senderId();
+            throw new AbortException(e.getStatus(), senderId);
         }
     }
 
