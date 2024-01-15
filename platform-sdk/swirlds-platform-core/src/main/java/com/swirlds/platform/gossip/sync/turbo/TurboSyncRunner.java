@@ -309,12 +309,12 @@ public class TurboSyncRunner {
             } while (!abortRequested && !peerRequestedAbort && !areNodesOutOfSync());
 
             // TODO temporary: make sure we don't leave garbage on the wire
-            dataOutputStream.writeInt(cycleNumber * 2);
-            dataOutputStream.flush();
-            final int peerCycleNumber = dataInputStream.readInt();
-            if (peerCycleNumber != cycleNumber * 2) {
-                throw new IOException("Expected cycle " + cycleNumber * 2 + ", got " + peerCycleNumber);
-            }
+            //            dataOutputStream.writeInt(cycleNumber * 2);
+            //            dataOutputStream.flush();
+            //            final int peerCycleNumber = dataInputStream.readInt();
+            //            if (peerCycleNumber != cycleNumber * 2) {
+            //                throw new IOException("Expected cycle " + cycleNumber * 2 + ", got " + peerCycleNumber);
+            //            }
             logger.info(STARTUP.getMarker(), "sync complete with peer " + peerId + ", cycle = " + cycleNumber); // TODO
 
         } finally {
@@ -701,7 +701,7 @@ public class TurboSyncRunner {
                 .map(ShadowEvent::getEvent)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        return filterLikelyDuplicates( // TODO double check sorting in develop...
+        return filterLikelyDuplicates(
                 selfId,
                 nonAncestorFilterThreshold,
                 platformContext.getTime().now(),

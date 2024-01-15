@@ -49,7 +49,7 @@ public class ProtocolNegotiated extends NegotiationStateWithDescription {
         return this;
     }
 
-    private final int magic = 1337; // TODO remove
+    //    private final int magic = 1337; // TODO remove
 
     /**
      * {@inheritDoc}
@@ -62,21 +62,24 @@ public class ProtocolNegotiated extends NegotiationStateWithDescription {
         }
         try {
 
-            connection.getDos().writeInt(magic);
-            connection.getDos().flush();
-            if (connection.getDis().readInt() != magic) {
-                throw new IOException("magic number mismatch before protocol " + protocol.getProtocolName()
-                        + " with peer " + connection.getOtherId());
-            }
+            // TODO
+            //            connection.getDos().writeInt(magic);
+            //            connection.getDos().flush();
+            //            if (connection.getDis().readInt() != magic) {
+            //                throw new IOException("magic number mismatch before protocol " +
+            // protocol.getProtocolName()
+            //                        + " with peer " + connection.getOtherId());
+            //            }
 
             protocol.runProtocol(connection);
 
-            connection.getDos().writeInt(magic);
-            connection.getDos().flush();
-            if (connection.getDis().readInt() != magic) {
-                throw new IOException("magic number mismatch after protocol " + protocol.getProtocolName()
-                        + " with peer " + connection.getOtherId());
-            }
+            // TODO
+            //            connection.getDos().writeInt(magic);
+            //            connection.getDos().flush();
+            //            if (connection.getDis().readInt() != magic) {
+            //                throw new IOException("magic number mismatch after protocol " + protocol.getProtocolName()
+            //                        + " with peer " + connection.getOtherId());
+            //            }
 
         } finally {
             setDescription("ran protocol " + protocol.getProtocolName());

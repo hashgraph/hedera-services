@@ -62,7 +62,6 @@ public final class TurboSyncTestFramework {
     public record TestSynchronizationResult(
             @NonNull List<GossipEvent> eventsReceivedA, @NonNull List<GossipEvent> eventsReceivedB) {}
 
-    // TODO if the arg count gets too high, consider using a builder
     /**
      * Simulates a turbo sync between two nodes for a period of time.
      *
@@ -126,8 +125,8 @@ public final class TurboSyncTestFramework {
                 })
                 .start();
 
-        assertEventuallyTrue(completedA::get, Duration.ofSeconds(10000), "Node A did not finish"); // TODO
-        assertEventuallyTrue(completedB::get, Duration.ofSeconds(10000), "Node A did not finish"); // TODO
+        assertEventuallyTrue(completedA::get, Duration.ofSeconds(1), "Node A did not finish");
+        assertEventuallyTrue(completedB::get, Duration.ofSeconds(1), "Node A did not finish");
         assertFalse(errorA.get(), "Node A had an error");
         assertFalse(errorB.get(), "Node B had an error");
 

@@ -440,14 +440,6 @@ public final class SyncUtils {
 
             final long latestGenerationInAncestry = latestSelfEventTipset.getTipGenerationForNode(event.getCreatorId());
 
-            // TODO back port this deletion
-            //            if (latestGenerationInAncestry == Tipset.UNDEFINED) {
-            //                // Special case: we don't have enough information to decide if this node is in our
-            // ancestry.
-            //                filteredList.add(event);
-            //                continue;
-            //            }
-
             if (latestGenerationInAncestry >= event.getGeneration()) {
                 // This event is an ancestor* of our latest self event.
                 //
