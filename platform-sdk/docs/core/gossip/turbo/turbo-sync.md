@@ -21,8 +21,8 @@ same steps.
 
 In the first phase of a sync, each node sends the other node its tips.
 
-A tip is defined as an event with no children (yet). When calculating a node's tips, do not consider events stuck in
-the orphan buffer or otherwise still enqueued in the intake pipeline. We are interested in the tips of all events
+A tip is defined as an event with no self children (yet). When calculating a node's tips, do not consider events stuck
+in the orphan buffer or otherwise still enqueued in the intake pipeline. We are interested in the tips of all events
 currently registered in gossip's data structures used to track events.
 
 A useful property of a node's tips is that all events known by that node will be ancestors of at least
@@ -33,12 +33,6 @@ After sending tips, each node also immediately sends its ancient thresholds. Thi
 node to considers to be ancient and/or expired. Nodes will never send their peer events that the peer thinks are
 ancient. This exchange of ancient thresholds is also sufficient to determine if one of the nodes has fallen behind
 and needs to reconnect (not discussed in this document).
-
-### Historical Tip Definition
-
-In the original sync algorithm, the definition of a tip was slightly different. A tip was defined as an event with
-no self children, not an event with no children at all. The current definition of a tip is equally effective and
-results in fewer tips, which is why it was changed.
 
 ## Phase 2: Exchange Booleans
 

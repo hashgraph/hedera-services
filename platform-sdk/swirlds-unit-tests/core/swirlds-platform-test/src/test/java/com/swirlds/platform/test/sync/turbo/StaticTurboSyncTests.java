@@ -155,7 +155,7 @@ class StaticTurboSyncTests {
      */
     @Test
     void nodesEachHaveEventsTheOtherNeeds() throws IOException {
-        final Random random = getRandomPrintSeed(5650957212556381039L); // TODO
+        final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(8).build();
@@ -192,13 +192,8 @@ class StaticTurboSyncTests {
             }
         }
 
-        System.out.println("tip count: " + tips.size()); // TODO
-
         final TestSynchronizationResult result =
                 simulateSynchronization(random, addressBook, initialEventsA, initialEventsB, startingTime);
-
-        System.out.println("A received: " + result.eventsReceivedA().size()); // TODO
-        System.out.println("B received: " + result.eventsReceivedB().size()); // TODO
 
         assertFalse(wereDuplicateEventsSent(initialEventsA, result.eventsReceivedA()));
         assertTrue(nodeHasAllEvents(initialEventsA, result.eventsReceivedA(), allEvents));

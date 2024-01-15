@@ -630,18 +630,14 @@ public final class SyncUtils {
             tips.put(event.getBaseHash(), event);
         }
 
-        // A tip is an event with children. Check the parents of each event, and remove any parent
+        // A tip in this context is an event with no self children.
+        // Check the parents of each event, and remove any parent
         // from the set if it exists.
 
         for (final EventImpl event : eventsToTransmit) {
             final EventImpl selfParent = event.getSelfParent();
             if (selfParent != null) {
                 tips.remove(selfParent.getBaseHash());
-            }
-
-            final EventImpl otherParent = event.getOtherParent();
-            if (otherParent != null) {
-                tips.remove(otherParent.getBaseHash());
             }
         }
 
