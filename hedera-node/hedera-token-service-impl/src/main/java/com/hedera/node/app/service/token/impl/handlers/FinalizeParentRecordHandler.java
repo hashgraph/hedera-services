@@ -34,6 +34,7 @@ import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -78,7 +79,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
+        final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         if (stakingConfig.isEnabled()) {
             // staking rewards are triggered for any balance changes to account's that are staked to
@@ -104,12 +106,13 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             }
             throw e;
         }
-        final var tokenChanges = tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.FUNGIBLE_COMMON);
-        final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
+        final var tokenChanges =
+                tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
 
         if (nftChanges.isEmpty()) {
             final var nonFungibleTokenChanges =
-                    tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
+                    tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
             nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
         }
 

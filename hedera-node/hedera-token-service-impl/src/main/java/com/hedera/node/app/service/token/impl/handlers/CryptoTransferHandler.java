@@ -448,6 +448,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = body.cryptoTransferOrThrow();
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
+        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
@@ -496,6 +497,18 @@ public class CryptoTransferHandler implements TransactionHandler {
                 involvedTokens.add(fee.tokenId());
             }
         }
+
+        //        if (assessedCustomFees.isEmpty()) {
+        //            // Even if the transaction fails we need to charge fees based on the token having customFees
+        //            // So we need to count the number of token transfers that have custom fees
+        //            for (final var xfer : op.tokenTransfersOrElse(emptyList())) {
+        //                final var token = readableTokenStore.get(xfer.token());
+        //                if (token != null && !token.customFeesOrElse(emptyList()).isEmpty()) {
+        //                    customFeeTokenTransfers++;
+        //                }
+        //            }
+        //        }
+
         weightedTokenXfers += tokenMultiplier * customFeeTokenTransfers;
         weightedTokensInvolved += tokenMultiplier * involvedTokens.size();
         long rbs = (totalXfers * LONG_ACCOUNT_AMOUNT_BYTES)

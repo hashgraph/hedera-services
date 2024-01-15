@@ -95,7 +95,10 @@ public class PrngSeedOperationSuite extends HapiSuite {
         final var gasToOffer = 400_000;
         final var numCalls = 5;
         final List<String> prngSeeds = new ArrayList<>();
-        return propertyPreservingHapiSpec("MultipleCallsHaveIndependentResults", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return propertyPreservingHapiSpec(
+                        "MultipleCallsHaveIndependentResults",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(CONTRACTS_DYNAMIC_EVM_VERSION, CONTRACTS_EVM_VERSION)
                 .given(
                         uploadInitCode(prng),
