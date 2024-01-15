@@ -33,8 +33,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -53,7 +53,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
     private HtsCallAttempt attempt;
 
     @Mock
-    private CryptoTransferRecordBuilder recordBuilder;
+    private ContractCallRecordBuilder recordBuilder;
 
     @Mock
     private AddressIdConverter addressIdConverter;

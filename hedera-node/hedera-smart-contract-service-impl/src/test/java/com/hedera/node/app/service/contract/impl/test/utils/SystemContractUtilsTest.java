@@ -39,20 +39,15 @@ class SystemContractUtilsTest {
 
     @Test
     void validateSuccessfulContractResults() {
-        final var gas = 100L;
-        final var inputData = org.apache.tuweni.bytes.Bytes.EMPTY;
         final var senderId = AccountID.newBuilder().build();
 
         final var expected = ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .contractCallResult(tuweniToPbjBytes(result))
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
-                .gas(gas)
                 .senderId(senderId)
-                .functionParameters(tuweniToPbjBytes(inputData))
                 .build();
-        final var actual =
-                SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, gas, inputData, senderId);
+        final var actual = SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, senderId);
         assertThat(actual).isEqualTo(expected);
     }
 
