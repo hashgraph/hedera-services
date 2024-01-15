@@ -36,6 +36,21 @@ public interface SingleTransactionRecordBuilder {
     ResponseCodeEnum status();
 
     /**
+     * Returns the parsed transaction body for this record.
+     *
+     * @return the transaction body
+     */
+    @NonNull
+    TransactionBody transactionBody();
+
+    /**
+     * Returns the current transaction fee.
+     *
+     * @return the current transaction fee
+     */
+    long transactionFee();
+
+    /**
      * Sets the receipt status.
      *
      * @param status the receipt status

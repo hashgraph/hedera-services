@@ -107,7 +107,6 @@ public class ContractDeleteSuite extends HapiSuite {
                 deleteTransfersToContract(),
                 cannotDeleteOrSelfDestructTokenTreasury(),
                 cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
-                cannotSendValueToTokenAccount(),
                 cannotUseMoreThanChildContractLimit());
     }
 

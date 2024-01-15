@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -38,8 +39,11 @@ public interface EvmProperties {
 
     boolean isLazyCreationEnabled();
 
-    /**
-     * Enables or disables Create2 operation.
-     */
     boolean isCreate2Enabled();
+
+    boolean allowCallsToNonContractAccounts();
+
+    Set<Address> grandfatherContracts();
+
+    boolean callsToNonExistingEntitiesEnabled(Address target);
 }

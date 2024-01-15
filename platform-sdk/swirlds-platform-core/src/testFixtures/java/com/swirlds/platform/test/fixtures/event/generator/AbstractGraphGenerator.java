@@ -85,21 +85,18 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
      * {@inheritDoc}
      */
     public final IndexedEvent generateEvent() {
-        final IndexedEvent next = buildNextEvent(numEventsGenerated);
-        next.getBaseEvent().buildDescriptor();
-        next.getBaseEvent().signalPrehandleCompletion();
-        numEventsGenerated++;
-        updateMaxGeneration(next);
+        final IndexedEvent next = generateEventWithoutIndex();
+
+        next.getBaseEvent().setStreamSequenceNumber(numEventsGenerated);
         return next;
     }
 
     /**
-     * Generate an event, but don't build the descriptor.
-     *
-     * @return the generated event with unbuilt descriptor
+     * The same as {@link #generateEvent()}, but does not set the stream sequence number.
      */
-    public final IndexedEvent generateEventWithoutDescriptor() {
+    public final IndexedEvent generateEventWithoutIndex() {
         final IndexedEvent next = buildNextEvent(numEventsGenerated);
+        next.getBaseEvent().buildDescriptor();
         next.getBaseEvent().signalPrehandleCompletion();
         numEventsGenerated++;
         updateMaxGeneration(next);

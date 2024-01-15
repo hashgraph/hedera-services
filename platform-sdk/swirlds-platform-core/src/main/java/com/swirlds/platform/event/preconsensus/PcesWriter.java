@@ -22,12 +22,17 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.LongRunningAverage;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,10 +55,10 @@ public class PcesWriter {
     private PcesMutableFile currentMutableFile;
 
     /**
-     * The current minimum generation required to be considered non-ancient. Only read and written on the handle
-     * thread.
+     * The current minimum ancient indicator required to be considered non-ancient. Only read and written on the handle
+     * thread. Either a round or generation depending on the {@link AncientMode}.
      */
-    private long minimumGenerationNonAncient = 0;
+    private long nonAncientBoundary = 0;
 
     /**
      * The desired file size, in megabytes. Is not a hard limit, it's possible that we may exceed this value by a small
@@ -63,52 +68,52 @@ public class PcesWriter {
     private final int preferredFileSizeMegabytes;
 
     /**
-     * When creating a new file, make sure that it has at least this much generational capacity for events after the
-     * first event written to the file.
+     * When creating a new file, make sure that it has at least this much capacity between the upper bound and lower
+     * bound for events after the first event written to the file.
      */
-    private final int minimumGenerationalCapacity;
+    private final int minimumSpan;
 
     /**
-     * The minimum generation that we are required to keep around.
+     * The minimum ancient indicator that we are required to keep around. Will be either a birth round or a generation,
+     * depending on the {@link AncientMode}.
      */
-    private long minimumGenerationToStore;
+    private long minimumAncientIdentifierToStore;
 
     /**
-     * A running average of the generational span utilization in each file. Generational span utilization is defined as
-     * the difference between the highest generation of all events in the file and the minimum legal generation for that
-     * file. Higher generational utilization is always better, as it means that we have a lower un-utilized generational
-     * span. Un-utilized generational span is defined as the difference between the highest legal generation in a file
-     * and the highest actual generation of all events in the file. The reason why we want to minimize un-utilized
-     * generational span is to reduce the generational overlap between files, which in turn makes it faster to search
-     * for events with particular generations. The purpose of this running average is to intelligently choose the
-     * maximum generation for each new file to minimize un-utilized generational span while still meeting file size
-     * requirements.
+     * A running average of the span utilization in each file. Span utilization is defined as the difference between the
+     * highest ancient indicator of all events in the file and the minimum legal ancient indicator for that file.
+     * Higher utilization is always better, as it means that we have a lower un-utilized span. Un-utilized span is
+     * defined as the difference between the highest legal ancient indicator in a file and the highest actual ancient
+     * identifier of all events in the file. The reason why we want to minimize un-utilized span is to reduce the
+     * overlap between files, which in turn makes it faster to search for events with particular ancient indicator. The
+     * purpose of this running average is to intelligently choose upper bound for each new file to minimize un-utilized
+     * span while still meeting file size requirements.
      */
-    private final LongRunningAverage averageGenerationalSpanUtilization;
+    private final LongRunningAverage averageSpanUtilization;
 
     /**
-     * The previous generational span. Set to a constant at bootstrap time.
+     * The previous span. Set to a constant at bootstrap time.
      */
-    private long previousGenerationalSpan;
+    private long previousSpan;
 
     /**
-     * If true then use {@link #bootstrapGenerationalSpanOverlapFactor} to compute the maximum generation for new files.
-     * If false then use {@link #generationalSpanOverlapFactor} to compute the maximum generation for new files.
-     * Bootstrap mode is used until we create the first file that exceeds the preferred file size.
+     * If true then use {@link #bootstrapSpanOverlapFactor} to compute the upper bound new files. If false then use
+     * {@link #spanOverlapFactor} to compute the upper bound for new files. Bootstrap mode is used until we create the
+     * first file that exceeds the preferred file size.
      */
     private boolean bootstrapMode = true;
 
     /**
-     * During bootstrap mode, multiply this value by the running average when deciding the generation span for a new
-     * file (i.e. the difference between the maximum and the minimum legal generation).
+     * During bootstrap mode, multiply this value by the running average when deciding the upper bound for a new file
+     * (i.e. the difference between the maximum and the minimum legal ancient indicator).
      */
-    private final double bootstrapGenerationalSpanOverlapFactor;
+    private final double bootstrapSpanOverlapFactor;
 
     /**
-     * When not in boostrap mode, multiply this value by the running average when deciding the generation span for a new
-     * file (i.e. the difference between the maximum and the minimum legal generation).
+     * When not in boostrap mode, multiply this value by the running average when deciding the span for a new file (i.e.
+     * the difference between the maximum and the minimum legal ancient indicator).
      */
-    private final double generationalSpanOverlapFactor;
+    private final double spanOverlapFactor;
 
     /**
      * The highest event sequence number that has been written to the stream (but possibly not yet flushed).
@@ -116,10 +121,29 @@ public class PcesWriter {
     private long lastWrittenEvent = -1;
 
     /**
-     * If true then all added events are new and need to be written to the stream. If false then all added events
-     * are already durable and do not need to be written to the stream.
+     * The highest event sequence number that has been durably flushed to disk.
+     */
+    private long lastFlushedEvent = -1;
+
+    /**
+     * If true then all added events are new and need to be written to the stream. If false then all added events are
+     * already durable and do not need to be written to the stream.
      */
     private boolean streamingNewEvents = false;
+
+    /**
+     * The type of the PCES file. There are currently two types: one bound by generations and one bound by birth rounds.
+     * The original type of files are bound by generations. The new type of files are bound by birth rounds. Once
+     * migration has been completed to birth round bound files, support for the generation bound files will be removed.
+     */
+    private final AncientMode fileType;
+
+    /**
+     * A collection of outstanding flush requests
+     * <p>
+     * Each flush request is a sequence number that needs to be flushed to disk as soon as possible.
+     */
+    private final Deque<Long> flushRequests = new ArrayDeque<>();
 
     /**
      * Constructor
@@ -128,22 +152,26 @@ public class PcesWriter {
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
     public PcesWriter(@NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
-
-        Objects.requireNonNull(platformContext, "platformContext must not be null");
-        Objects.requireNonNull(fileManager, "fileManager must not be null");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(fileManager);
 
         final PcesConfig config = platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
-
-        averageGenerationalSpanUtilization =
-                new LongRunningAverage(config.generationalUtilizationSpanRunningAverageLength());
-        previousGenerationalSpan = config.bootstrapGenerationalSpan();
-        bootstrapGenerationalSpanOverlapFactor = config.bootstrapGenerationalSpanOverlapFactor();
-        generationalSpanOverlapFactor = config.generationalSpanOverlapFactor();
-        minimumGenerationalCapacity = config.minimumGenerationalCapacity();
+        averageSpanUtilization = new LongRunningAverage(config.spanUtilizationRunningAverageLength());
+        previousSpan = config.bootstrapSpan();
+        bootstrapSpanOverlapFactor = config.bootstrapSpanOverlapFactor();
+        spanOverlapFactor = config.spanOverlapFactor();
+        minimumSpan = config.minimumSpan();
 
         this.fileManager = fileManager;
+
+        fileType = platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .useBirthRoundAncientThreshold()
+                ? AncientMode.BIRTH_ROUND_THRESHOLD
+                : AncientMode.GENERATION_THRESHOLD;
     }
 
     /**
@@ -161,6 +189,38 @@ public class PcesWriter {
     }
 
     /**
+     * Consider outstanding flush requests and perform a flush if needed.
+     *
+     * @return true if a flush was performed, otherwise false
+     */
+    private boolean processFlushRequests() {
+        boolean flushRequired = false;
+        while (!flushRequests.isEmpty() && flushRequests.peekFirst() <= lastWrittenEvent) {
+            final long flushRequest = flushRequests.removeFirst();
+
+            if (flushRequest > lastFlushedEvent) {
+                flushRequired = true;
+            }
+        }
+
+        if (flushRequired) {
+            if (currentMutableFile == null) {
+                logger.error(EXCEPTION.getMarker(), "Flush required, but no file is open. This should never happen");
+            }
+
+            try {
+                currentMutableFile.flush();
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            lastFlushedEvent = lastWrittenEvent;
+        }
+
+        return flushRequired;
+    }
+
+    /**
      * Write an event to the stream.
      *
      * @param event the event to be written
@@ -169,24 +229,30 @@ public class PcesWriter {
      */
     @Nullable
     public Long writeEvent(@NonNull final GossipEvent event) {
-        validateSequenceNumber(event);
-
-        if (!streamingNewEvents) {
-            lastWrittenEvent = event.getStreamSequenceNumber();
-            return lastWrittenEvent;
+        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("Event must have a valid stream sequence number");
         }
 
-        if (event.getGeneration() < minimumGenerationNonAncient) {
-            event.setStreamSequenceNumber(GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+        // if we aren't streaming new events yet, assume that the given event is already durable
+        if (!streamingNewEvents) {
+            lastWrittenEvent = event.getStreamSequenceNumber();
+            lastFlushedEvent = event.getStreamSequenceNumber();
+            return event.getStreamSequenceNumber();
+        }
+
+        // don't do anything with ancient events
+        if (event.getAncientIndicator(fileType) < nonAncientBoundary) {
             return null;
         }
 
         try {
-            final Long latestDurableSequenceNumberUpdate = prepareOutputStream(event);
+            final boolean fileClosed = prepareOutputStream(event);
             currentMutableFile.writeEvent(event);
             lastWrittenEvent = event.getStreamSequenceNumber();
 
-            return latestDurableSequenceNumberUpdate;
+            final boolean flushPerformed = processFlushRequests();
+
+            return fileClosed || flushPerformed ? lastFlushedEvent : null;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -205,65 +271,55 @@ public class PcesWriter {
             logger.error(EXCEPTION.getMarker(), "registerDiscontinuity() called while replaying events");
         }
 
-        final Long latestDurableSequenceNumberUpdate;
-        if (currentMutableFile != null) {
-            closeFile();
-            latestDurableSequenceNumberUpdate = lastWrittenEvent;
-        } else {
-            latestDurableSequenceNumberUpdate = null;
-        }
-
-        fileManager.registerDiscontinuity(newOriginRound);
-
-        return latestDurableSequenceNumberUpdate;
-    }
-
-    /**
-     * Make sure that the event has a valid stream sequence number.
-     */
-    private static void validateSequenceNumber(@NonNull final GossipEvent event) {
-        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER
-                || event.getStreamSequenceNumber() == GossipEvent.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event must have a valid stream sequence number");
+        try {
+            if (currentMutableFile != null) {
+                closeFile();
+                return lastFlushedEvent;
+            } else {
+                return null;
+            }
+        } finally {
+            fileManager.registerDiscontinuity(newOriginRound);
         }
     }
 
     /**
-     * Let the event writer know the minimum generation for non-ancient events. Ancient events will be ignored if added
-     * to the event writer.
+     * Submit a request to flush a given sequence number to disk as soon as possible. This flush request will be
+     * honored as soon as the event with the given sequence number is received.
      *
-     * @param minimumGenerationNonAncient the minimum generation of a non-ancient event
-     * @return the sequence number of the last event durably written to the stream if this method call resulted in any
-     * additional events being durably written to the stream, otherwise null
+     * @param sequenceNumber the sequence number to flush
+     * @return the sequence number of the last event durably written to the stream, or null if this method call didn't
+     * result in any additional events being durably written to the stream
      */
     @Nullable
-    public Long setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
-            throw new IllegalArgumentException("Minimum generation non-ancient cannot be decreased. Current = "
-                    + this.minimumGenerationNonAncient + ", requested = " + minimumGenerationNonAncient);
-        }
+    public Long submitFlushRequest(final long sequenceNumber) {
+        flushRequests.add(sequenceNumber);
 
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
-
-        if (!streamingNewEvents || currentMutableFile == null) {
-            return null;
-        }
-
-        try {
-            currentMutableFile.flush();
-            return lastWrittenEvent;
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to flush", e);
-        }
+        return processFlushRequests() ? lastFlushedEvent : null;
     }
 
     /**
-     * Set the minimum generation needed to be kept on disk.
+     * Let the event writer know the current non-ancient event boundary. Ancient events will be ignored if added to the
+     * event writer.
      *
-     * @param minimumGenerationToStore the minimum generation required to be stored on disk
+     * @param nonAncientBoundary describes the boundary between ancient and non-ancient events
      */
-    public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
-        this.minimumGenerationToStore = minimumGenerationToStore;
+    public void updateNonAncientEventBoundary(@NonNull final NonAncientEventWindow nonAncientBoundary) {
+        if (nonAncientBoundary.getAncientThreshold() < this.nonAncientBoundary) {
+            throw new IllegalArgumentException("Non-ancient boundary cannot be decreased. Current = "
+                    + this.nonAncientBoundary + ", requested = " + nonAncientBoundary);
+        }
+
+        this.nonAncientBoundary = nonAncientBoundary.getAncientThreshold();
+    }
+
+    /**
+     * Set the minimum ancient indicator needed to be kept on disk.
+     *
+     * @param minimumAncientIdentifierToStore the minimum ancient indicator required to be stored on disk
+     */
+    public void setMinimumAncientIdentifierToStore(final long minimumAncientIdentifierToStore) {
+        this.minimumAncientIdentifierToStore = minimumAncientIdentifierToStore;
         pruneOldFiles();
     }
 
@@ -279,7 +335,7 @@ public class PcesWriter {
         }
 
         try {
-            fileManager.pruneOldFiles(minimumGenerationToStore);
+            fileManager.pruneOldFiles(minimumAncientIdentifierToStore);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to prune old files", e);
         }
@@ -292,11 +348,12 @@ public class PcesWriter {
      */
     private void closeFile() {
         try {
-            previousGenerationalSpan = currentMutableFile.getUtilizedGenerationalSpan();
+            previousSpan = currentMutableFile.getUtilizedSpan();
             if (!bootstrapMode) {
-                averageGenerationalSpanUtilization.add(previousGenerationalSpan);
+                averageSpanUtilization.add(previousSpan);
             }
             currentMutableFile.close();
+            lastFlushedEvent = lastWrittenEvent;
 
             fileManager.finishedWritingFile(currentMutableFile);
             currentMutableFile = null;
@@ -310,20 +367,22 @@ public class PcesWriter {
     }
 
     /**
-     * Calculate the generation span for a new file that is about to be created.
+     * Calculate the span for a new file that is about to be created.
+     *
+     * @param minimumLowerBound            the minimum lower bound that is legal to use for the new file
+     * @param nextAncientIdentifierToWrite the ancient indicator of the next event that will be written
      */
-    private long computeNewFileSpan(final long minimumFileGeneration, final long nextGenerationToWrite) {
+    private long computeNewFileSpan(final long minimumLowerBound, final long nextAncientIdentifierToWrite) {
 
-        final long basisSpan = (bootstrapMode || averageGenerationalSpanUtilization.isEmpty())
-                ? previousGenerationalSpan
-                : averageGenerationalSpanUtilization.getAverage();
+        final long basisSpan = (bootstrapMode || averageSpanUtilization.isEmpty())
+                ? previousSpan
+                : averageSpanUtilization.getAverage();
 
-        final double overlapFactor =
-                bootstrapMode ? bootstrapGenerationalSpanOverlapFactor : generationalSpanOverlapFactor;
+        final double overlapFactor = bootstrapMode ? bootstrapSpanOverlapFactor : spanOverlapFactor;
 
         final long desiredSpan = (long) (basisSpan * overlapFactor);
 
-        final long minimumSpan = (nextGenerationToWrite + minimumGenerationalCapacity) - minimumFileGeneration;
+        final long minimumSpan = (nextAncientIdentifierToWrite + this.minimumSpan) - minimumLowerBound;
 
         return Math.max(desiredSpan, minimumSpan);
     }
@@ -332,19 +391,19 @@ public class PcesWriter {
      * Prepare the output stream for a particular event. May create a new file/stream if needed.
      *
      * @param eventToWrite the event that is about to be written
-     * @return the latest sequence number durably written to disk, if preparing the output stream caused a file to be
-     * closed. Otherwise, null.
+     * @return true if this method call resulted in the current file being closed
      */
-    private Long prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
-        Long latestDurableSequenceNumberUpdate = null;
+    private boolean prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
+        boolean fileClosed = false;
         if (currentMutableFile != null) {
-            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
+            final boolean fileCanContainEvent =
+                    currentMutableFile.canContain(eventToWrite.getAncientIndicator(fileType));
             final boolean fileIsFull =
                     UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES) >= preferredFileSizeMegabytes;
 
             if (!fileCanContainEvent || fileIsFull) {
                 closeFile();
-                latestDurableSequenceNumberUpdate = lastWrittenEvent;
+                fileClosed = true;
             }
 
             if (fileIsFull) {
@@ -352,16 +411,17 @@ public class PcesWriter {
             }
         }
 
+        // if the block above closed the file, then we need to create a new one
         if (currentMutableFile == null) {
-            final long maximumGeneration = minimumGenerationNonAncient
-                    + computeNewFileSpan(minimumGenerationNonAncient, eventToWrite.getGeneration());
+            final long upperBound = nonAncientBoundary
+                    + computeNewFileSpan(nonAncientBoundary, eventToWrite.getAncientIndicator(fileType));
 
             currentMutableFile = fileManager
-                    .getNextFileDescriptor(minimumGenerationNonAncient, maximumGeneration)
+                    .getNextFileDescriptor(nonAncientBoundary, upperBound)
                     .getMutableFile();
         }
 
-        return latestDurableSequenceNumberUpdate;
+        return fileClosed;
     }
 
     /**

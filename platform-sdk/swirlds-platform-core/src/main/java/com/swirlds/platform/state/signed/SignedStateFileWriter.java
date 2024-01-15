@@ -157,7 +157,10 @@ public final class SignedStateFileWriter {
         writeHashInfoFile(platformContext, directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
-        writeStateAddressBookFile(directory, signedState.getAddressBook());
+        if (!signedState.isGenesisState()) {
+            // Genesis states do not have address books.
+            writeStateAddressBookFile(directory, signedState.getAddressBook());
+        }
         writeSettingsUsed(directory, platformContext.getConfiguration());
 
         if (selfId != null) {

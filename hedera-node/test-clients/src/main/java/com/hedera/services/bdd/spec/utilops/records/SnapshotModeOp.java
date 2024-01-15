@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
@@ -590,6 +591,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
+            } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
+                Assertions.assertTrue(expected != null && actual != null, "Token name is null");
             } else {
                 Assertions.assertEquals(
                         expected,

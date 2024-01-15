@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -52,15 +55,19 @@ public class VirtualBlobKey implements VirtualKey {
     }
 
     @Override
-    public void serialize(final ByteBuffer buffer) {
-        buffer.put((byte) type.ordinal());
-        buffer.putInt(entityNumCode);
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeByte(type.ordinal());
+        out.writeInt(entityNumCode);
     }
 
-    @Override
-    public void deserialize(final ByteBuffer buffer, final int version) {
-        type = BLOB_TYPES[0xff & buffer.get()];
-        entityNumCode = buffer.getInt();
+    void serialize(final WritableSequentialData out) {
+        out.writeByte((byte) type.ordinal());
+        out.writeInt(entityNumCode);
+    }
+
+    void serialize(final ByteBuffer buffer) {
+        buffer.put((byte) type.ordinal());
+        buffer.putInt(entityNumCode);
     }
 
     @Override
@@ -69,15 +76,19 @@ public class VirtualBlobKey implements VirtualKey {
         entityNumCode = in.readInt();
     }
 
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
+    void deserialize(final ReadableSequentialData in) {
+        type = BLOB_TYPES[0xff & in.readByte()];
+        entityNumCode = in.readInt();
+    }
+
+    void deserialize(final ByteBuffer buffer) {
+        type = BLOB_TYPES[0xff & buffer.get()];
+        entityNumCode = buffer.getInt();
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeByte(type.ordinal());
-        out.writeInt(entityNumCode);
+    public long getClassId() {
+        return CLASS_ID;
     }
 
     @Override
@@ -102,6 +113,10 @@ public class VirtualBlobKey implements VirtualKey {
     @Override
     public int hashCode() {
         return Objects.hash(entityNumCode, ((long) type.ordinal()) << 4);
+    }
+
+    boolean equalsTo(final BufferedData buf) {
+        return type.ordinal() == (0xff & buf.readByte()) && entityNumCode == buf.readInt();
     }
 
     public static int sizeInBytes() {

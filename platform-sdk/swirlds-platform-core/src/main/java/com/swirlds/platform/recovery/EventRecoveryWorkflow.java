@@ -44,6 +44,7 @@ import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -188,6 +189,10 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
             final PcesFile preconsensusEventFile = PcesFile.of(
+                    platformContext
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .getAncientMode(),
                     Instant.now(),
                     0,
                     recoveredState.judge().getGeneration(),

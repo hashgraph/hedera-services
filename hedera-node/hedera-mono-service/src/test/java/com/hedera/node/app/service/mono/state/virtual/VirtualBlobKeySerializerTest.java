@@ -42,11 +42,17 @@ class VirtualBlobKeySerializerTest {
     void gettersWork() {
         final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
 
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(CLASS_ID, subject.getClassId());
         assertEquals(CURRENT_VERSION, subject.getVersion());
+    }
+
+    @Test
+    void getSerializedSizeWorks() {
+        final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
+
+        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize(virtualBlobKey));
     }
 
     @Test
@@ -65,7 +71,8 @@ class VirtualBlobKeySerializerTest {
         final ByteBuffer out = ByteBuffer.allocate(subject.getSerializedSize());
         final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
 
-        assertEquals(BYTES_IN_SERIALIZED_FORM, subject.serialize(virtualBlobKey, out));
+        subject.serialize(virtualBlobKey, out);
+        assertEquals(BYTES_IN_SERIALIZED_FORM, out.position());
     }
 
     @Test

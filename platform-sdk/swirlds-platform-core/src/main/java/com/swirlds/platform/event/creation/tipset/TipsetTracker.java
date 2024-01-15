@@ -25,6 +25,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,7 +60,7 @@ public class TipsetTracker {
 
     private final AddressBook addressBook;
 
-    private NonAncientEventWindow nonAncientEventWindow = NonAncientEventWindow.INITIAL_EVENT_WINDOW;
+    private NonAncientEventWindow nonAncientEventWindow;
 
     private final RateLimitedLogger ancientEventLogger;
 
@@ -68,8 +69,10 @@ public class TipsetTracker {
      *
      * @param time        provides wall clock time
      * @param addressBook the current address book
+     * @param ancientMode the {@link AncientMode} to use
      */
-    public TipsetTracker(@NonNull final Time time, @NonNull final AddressBook addressBook) {
+    public TipsetTracker(
+            @NonNull final Time time, @NonNull final AddressBook addressBook, @NonNull final AncientMode ancientMode) {
 
         this.addressBook = Objects.requireNonNull(addressBook);
 
@@ -78,6 +81,8 @@ public class TipsetTracker {
         tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
 
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+
+        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
     }
 
     /**
@@ -87,7 +92,7 @@ public class TipsetTracker {
      */
     public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
-        tipsets.shiftWindow(nonAncientEventWindow.getLowerBound());
+        tipsets.shiftWindow(nonAncientEventWindow.getAncientThreshold());
     }
 
     /**

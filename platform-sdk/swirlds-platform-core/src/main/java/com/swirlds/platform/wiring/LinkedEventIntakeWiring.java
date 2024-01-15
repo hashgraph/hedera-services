@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -36,8 +37,7 @@ import java.util.List;
  * @param consensusRoundOutput              the output wire for consensus rounds
  * @param nonAncientEventWindowOutput       the output wire for the {@link NonAncientEventWindow}. This output is
  *                                          transformed from the consensus round output
- * @param minimumGenerationNonAncientOutput the output wire for the minimum generation non-ancient. This output is
- *                                          transformed from the consensus round output
+ * @param keystoneEventSequenceNumberOutput the output wire for the keystone event sequence number
  * @param flushRunnable                     the runnable to flush the intake
  */
 public record LinkedEventIntakeWiring(
@@ -45,7 +45,7 @@ public record LinkedEventIntakeWiring(
         @NonNull InputWire<Boolean> pauseInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
         @NonNull OutputWire<NonAncientEventWindow> nonAncientEventWindowOutput,
-        @NonNull OutputWire<Long> minimumGenerationNonAncientOutput,
+        @NonNull StandardOutputWire<Long> keystoneEventSequenceNumberOutput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -66,10 +66,7 @@ public record LinkedEventIntakeWiring(
                         "getNonAncientEventWindow",
                         "rounds",
                         consensusRound -> consensusRound.getNonAncientEventWindow()),
-                consensusRoundOutput.buildTransformer(
-                        "getMinimumGenerationNonAncient",
-                        "rounds",
-                        consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient()),
+                taskScheduler.buildSecondaryOutputWire(),
                 taskScheduler::flush);
     }
 

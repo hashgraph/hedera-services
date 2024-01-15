@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,7 +74,9 @@ public class RecordFinalizerBase {
         // Since this is a finalization handler, we should have already succeeded in handling the transaction in a
         // handler before getting here. Therefore, if the sum is non-zero, something went wrong, and we'll respond with
         // FAIL_INVALID
-        validateTrue(netHbarBalance == 0, FAIL_INVALID);
+        if (netHbarBalance != 0) {
+            throw new HandleException(FAIL_INVALID);
+        }
 
         return hbarChanges;
     }
