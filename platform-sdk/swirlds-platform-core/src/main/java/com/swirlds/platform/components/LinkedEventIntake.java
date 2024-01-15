@@ -18,6 +18,7 @@ package com.swirlds.platform.components;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -68,6 +69,11 @@ public class LinkedEventIntake {
     private final IntakeEventCounter intakeEventCounter;
 
     /**
+     * The secondary wire that outputs the keystone event sequence number
+     */
+    private final StandardOutputWire<Long> keystoneEventSequenceNumberOutput;
+
+    /**
      * Whether or not the linked event intake is paused.
      * <p>
      * When paused, all received events will be tossed into the void
@@ -77,14 +83,16 @@ public class LinkedEventIntake {
     /**
      * Constructor
      *
-     * @param platformContext          the platform context
-     * @param time                     provides the wall clock time
-     * @param consensusSupplier        provides the current consensus instance
-     * @param dispatcher               invokes event related callbacks
-     * @param shadowGraph              tracks events in the hashgraph
-     * @param latestEventTipsetTracker tracks the tipset of the latest self event, null if feature is not enabled
-     * @param intakeEventCounter       tracks the number of events from each peer that are currently in the intake
-     *                                 pipeline
+     * @param platformContext                   the platform context
+     * @param time                              provides the wall clock time
+     * @param consensusSupplier                 provides the current consensus instance
+     * @param dispatcher                        invokes event related callbacks
+     * @param shadowGraph                       tracks events in the hashgraph
+     * @param latestEventTipsetTracker          tracks the tipset of the latest self event, null if feature is
+     *                                          not enabled
+     * @param intakeEventCounter                tracks the number of events from each peer that are currently in
+     *                                          the intake pipeline
+     * @param keystoneEventSequenceNumberOutput the secondary wire that outputs the keystone event sequence number
      */
     public LinkedEventIntake(
             @NonNull final PlatformContext platformContext,
@@ -93,13 +101,15 @@ public class LinkedEventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final ShadowGraph shadowGraph,
             @Nullable final LatestEventTipsetTracker latestEventTipsetTracker,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final StandardOutputWire<Long> keystoneEventSequenceNumberOutput) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+        this.keystoneEventSequenceNumberOutput = Objects.requireNonNull(keystoneEventSequenceNumberOutput);
         this.latestEventTipsetTracker = latestEventTipsetTracker;
 
         this.paused = false;
@@ -138,7 +148,15 @@ public class LinkedEventIntake {
             dispatcher.eventAdded(event);
 
             if (consensusRounds != null) {
-                consensusRounds.forEach(this::handleConsensus);
+                consensusRounds.forEach(round -> {
+                    // it is important that a flush request for the keystone event is submitted before starting
+                    // to handle the transactions in the round. Otherwise, the system could arrive at a place
+                    // where the transaction handler is waiting for a given event to become durable, but the
+                    // PCES writer hasn't been notified yet that the event should be flushed.
+                    keystoneEventSequenceNumberOutput.forward(
+                            round.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber());
+                    handleConsensus(round);
+                });
             }
 
             final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
