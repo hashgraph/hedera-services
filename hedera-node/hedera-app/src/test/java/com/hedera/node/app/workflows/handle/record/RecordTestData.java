@@ -20,6 +20,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -31,6 +32,7 @@ import com.hedera.hapi.streams.SidecarFile;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -81,6 +83,8 @@ public class RecordTestData {
             new boolean[] {false, true, true, true, false, true, false, false, true};
     //    block seconds       24,   26,   28,   30,    32,   34,    36,    38,   40
 
+    /** Transaction Outputs data */
+    private static final TransactionOutputs SIMPLE_OUTPUT = new TransactionOutputs(TokenType.FUNGIBLE_COMMON);
     /** Test Signer for signing record stream files */
     public static final Signer SIGNER;
     /** Test user public key */
@@ -104,8 +108,8 @@ public class RecordTestData {
             final RecordStreamFile recordStreamFile =
                     RecordStreamFile.JSON.parse(new ReadableStreamingData(Files.newInputStream(jsonPath)));
             final List<SingleTransactionRecord> realRecordStreamItems = recordStreamFile.recordStreamItems().stream()
-                    .map(item ->
-                            new SingleTransactionRecord(item.transaction(), item.record(), Collections.emptyList()))
+                    .map(item -> new SingleTransactionRecord(
+                            item.transaction(), item.record(), Collections.emptyList(), SIMPLE_OUTPUT))
                     .toList();
             // load real sidecar items from a JSON resource file
             final Path sidecarPath = Path.of(RecordTestData.class
@@ -240,6 +244,6 @@ public class RecordTestData {
             }
         }
         // return new SingleTransactionRecord
-        return new SingleTransactionRecord(newTransaction, newTransactionRecord, sidecarItems);
+        return new SingleTransactionRecord(newTransaction, newTransactionRecord, sidecarItems, SIMPLE_OUTPUT);
     }
 }
