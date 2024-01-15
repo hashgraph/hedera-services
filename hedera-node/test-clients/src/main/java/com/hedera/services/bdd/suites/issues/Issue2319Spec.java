@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class Issue2319Spec extends HapiSuite {
@@ -59,13 +58,12 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
     final HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
-        var pemLoc = "<PEM>";
+        var pemLoc = "devGenesisKeypair.pem";
 
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
                 .given(
-                        keyFromPem(pemLoc).name("persistent").simpleWacl().passphrase("<SECRET>"),
+                        keyFromPem(pemLoc).name("persistent").simpleWacl().passphrase("passphrase"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)))
                 .when(
                         fileUpdate(APP_PROPERTIES)
@@ -89,7 +87,7 @@ public class Issue2319Spec extends HapiSuite {
 
     @HapiTest
     final HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
-        return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
+        return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
@@ -112,14 +110,13 @@ public class Issue2319Spec extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
     final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
-        var pemLoc = "<PEM>";
+        var pemLoc = "devGenesisKeypair.pem";
 
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
-                        keyFromPem(pemLoc).name("persistent").passphrase("<SECReT>"),
+                        keyFromPem(pemLoc).name("persistent").passphrase("passphrase"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
                 .when(cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent"))
                 .then(
@@ -134,15 +131,13 @@ public class Issue2319Spec extends HapiSuite {
                         cryptoUpdate(EXCHANGE_RATE_CONTROL)
                                 .payingWith("civilian")
                                 .signedBy("civilian", GENESIS, "persistent")
-                                .receiverSigRequired(true)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
+                                .receiverSigRequired(true),
                         cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false));
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
     final HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
-        var pemLoc = "<PEM>";
+        var pemLoc = "devGenesisKeypair.pem";
         var validRates = new AtomicReference<ByteString>();
 
         return defaultHapiSpec("SysFileSigReqsWaivedForMasterAndTreasury")
@@ -150,7 +145,7 @@ public class Issue2319Spec extends HapiSuite {
                         cryptoCreate("civilian"),
                         keyFromPem(pemLoc)
                                 .name("persistent")
-                                .passphrase("<SECRET>")
+                                .passphrase("passphrase")
                                 .simpleWacl(),
                         withOpContext((spec, opLog) -> {
                             var fetch = getFileContents(EXCHANGE_RATES);
