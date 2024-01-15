@@ -33,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -98,7 +99,7 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
             }
             return reversionWith(status, gasRequirement);
         } else {
-            return completionWith(status, gasRequirement);
+            return completionWith(gasRequirement, (ContractCallRecordBuilder) recordBuilder);
         }
     }
 

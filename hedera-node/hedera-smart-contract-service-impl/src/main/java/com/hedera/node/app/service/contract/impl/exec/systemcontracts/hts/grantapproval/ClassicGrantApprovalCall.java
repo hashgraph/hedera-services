@@ -33,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -76,7 +77,10 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
 
-            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement), status, false);
+            return gasOnly(
+                    FullResult.successResult(encodedOutput, gasRequirement, (ContractCallRecordBuilder) recordBuilder),
+                    status,
+                    false);
         }
     }
 

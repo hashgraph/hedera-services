@@ -82,6 +82,15 @@ public abstract class AbstractHtsCall implements HtsCall {
         return gasOnly(successResult(output, gasRequirement, recordBuilder), recordBuilder.status(), isViewCall);
     }
 
+    protected PricedResult completionWith(
+            final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+        requireNonNull(recordBuilder);
+        return gasOnly(
+                successResult(encodedRc(standardized(recordBuilder.status())), gasRequirement, recordBuilder),
+                recordBuilder.status(),
+                isViewCall);
+    }
+
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
         return gasOnly(revertResult(standardized(status), gasRequirement), status, isViewCall);
     }
