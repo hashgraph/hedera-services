@@ -38,7 +38,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * changed before we got to handle transaction. If the value is "null", this means it was NOT
      * FOUND when we looked it up.
      */
-    private final Map<K, V> readCache = new HashMap<>();
+    private final Map<K, V> readCache = Collections.synchronizedMap(new HashMap<>());
 
     private final Set<K> unmodifiableReadKeys = Collections.unmodifiableSet(readCache.keySet());
 
