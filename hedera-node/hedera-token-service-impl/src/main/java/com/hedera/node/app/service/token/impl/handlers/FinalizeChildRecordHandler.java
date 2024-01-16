@@ -27,6 +27,7 @@ import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.ChildFinalizeContext;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -55,7 +56,8 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var writableAccountStore = context.writableStore(WritableAccountStore.class);
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
+        final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         /* ------------------------- Hbar changes from child transaction  ------------------------- */
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
@@ -71,12 +73,13 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers -------------------------
-        final var fungibleChanges = tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.FUNGIBLE_COMMON);
+        final var fungibleChanges =
+                tokenRelChangesFrom(writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON);
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers -------------------------
-        final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
         final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
         tokenTransferLists.addAll(nftTokenTransferLists);
 

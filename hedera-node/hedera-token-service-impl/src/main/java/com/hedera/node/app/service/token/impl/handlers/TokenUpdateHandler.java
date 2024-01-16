@@ -178,6 +178,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
+        recordBuilder.tokenType(token.tokenType());
     }
 
     /**
@@ -273,8 +274,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 toTreasuryCopy.numberOwnedNfts(toNftsWOwned + fromRelBalance).build());
         tokenRelStore.put(fromRelCopy.balance(0).build());
         tokenRelStore.put(toRelCopy.balance(toRelBalance + fromRelBalance).build());
-        // TODO : Need to build record transfer list for this case. Not needed for this PR.
-        // Need to do in finalize
     }
 
     /**

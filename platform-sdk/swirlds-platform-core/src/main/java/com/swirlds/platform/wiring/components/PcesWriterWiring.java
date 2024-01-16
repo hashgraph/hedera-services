@@ -35,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param discontinuityInputWire                   the input wire for PCES discontinuities
  * @param nonAncientEventWindowInput               the input wire for non ancient event windows
  * @param minimumAncientIdentifierToStoreInputWire the input wire for the minimum ancient identifier of events to store
+ * @param flushRequestInputWire                    the input wire for flush requests
  * @param latestDurableSequenceNumberOutput        the output wire for the latest durable sequence number
  */
 public record PcesWriterWiring(
@@ -43,6 +44,7 @@ public record PcesWriterWiring(
         @NonNull InputWire<Long> discontinuityInputWire,
         @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput,
         @NonNull InputWire<Long> minimumAncientIdentifierToStoreInputWire,
+        @NonNull InputWire<Long> flushRequestInputWire,
         @NonNull OutputWire<Long> latestDurableSequenceNumberOutput) {
 
     /**
@@ -59,6 +61,7 @@ public record PcesWriterWiring(
                 taskScheduler.buildInputWire("discontinuity"),
                 taskScheduler.buildInputWire("non-ancient event window"),
                 taskScheduler.buildInputWire("minimum identifier to store"),
+                taskScheduler.buildInputWire("flush request"),
                 taskScheduler.getOutputWire());
     }
 
@@ -76,5 +79,6 @@ public record PcesWriterWiring(
                 .bind(pcesWriter::updateNonAncientEventBoundary);
         ((BindableInputWire<Long, Long>) minimumAncientIdentifierToStoreInputWire)
                 .bind(pcesWriter::setMinimumAncientIdentifierToStore);
+        ((BindableInputWire<Long, Long>) flushRequestInputWire).bind(pcesWriter::submitFlushRequest);
     }
 }
