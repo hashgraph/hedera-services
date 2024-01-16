@@ -23,7 +23,6 @@ plugins {
 
 description = "Hedera API"
 
-// val hapiProtoBranchOrTag = "add-first-cons-of-current-block-to-info"
 val hapiProtoBranchOrTag = "use-ContractID-in-SlotKey"
 val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
 

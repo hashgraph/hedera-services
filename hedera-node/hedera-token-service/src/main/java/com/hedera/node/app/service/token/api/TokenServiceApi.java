@@ -209,7 +209,7 @@ public interface TokenServiceApi {
     /**
      * Refunds the given fees to the given receiver, and records those fees in the given record builder.
      *
-     * @param receiver      the id of the account that should be refunded
+     * @param receiver      the id of the contract that should be refunded
      * @param fees          the fees to refund
      * @param recordBuilder the record builder to record the fees in
      */

@@ -101,8 +101,12 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         this.contractStateStore = requireNonNull(contractStateStore);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void setStorageValue(final ContractID contractID, @NonNull final UInt256 key, @NonNull final UInt256 value) {
+    public void setStorageValue(
+            @Nullable final ContractID contractID, @NonNull final UInt256 key, @NonNull final UInt256 value) {
         final var slotKey = new SlotKey(contractID, tuweniToPbjBytes(requireNonNull(key)));
         final var oldSlotValue = contractStateStore.getSlotValue(slotKey);
         // Ensure we don't change any prev/next keys until the base commit
@@ -505,14 +509,6 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         return alias != null
                 && alias.length() == EVM_ADDRESS_LENGTH_AS_LONG
                 && !address.equals(pbjToBesuAddress(alias));
-    }
-
-    private com.hedera.hapi.node.state.token.Account validatedAccount(final long number) {
-        final var account = nativeOperations.getAccount(number);
-        if (account == null) {
-            throw new IllegalArgumentException("No account has number " + number);
-        }
-        return account;
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final AccountID accountID) {

@@ -140,16 +140,36 @@ public interface EvmFrameState {
     @Nullable
     MutableAccount getMutableAccount(Address address);
 
+    /**
+     * Returns the storage value for the contract with the given contract id and key.
+     *
+     * @param contractID the contract id
+     * @param key the key
+     * @return the storage value
+     */
     @NonNull
     UInt256 getStorageValue(ContractID contractID, @NonNull UInt256 key);
 
+    /**
+     * Sets the storage value for the contract with the given contract id and key.
+     * @param contractID the contract id
+     * @param key the key
+     * @param value the value to set
+     */
     void setStorageValue(ContractID contractID, @NonNull UInt256 key, @NonNull UInt256 value);
 
+    /**
+     * Returns the original storage value for the contract with the given contract id and key.
+     *
+     * @param contractID the contract id
+     * @param key the key
+     * @return the original storage value
+     */
     @NonNull
     UInt256 getOriginalStorageValue(ContractID contractID, @NonNull UInt256 key);
 
     /**
-     * Returns the code for the account with the given number, or empty code if no such code exists.
+     * Returns the code for the account with the given contract id, or empty code if no such code exists.
      *
      * @param contractID the contract id
      * @return the code for the account
@@ -158,7 +178,7 @@ public interface EvmFrameState {
     Bytes getCode(ContractID contractID);
 
     /**
-     * Sets the code for the contract with the given number. Only used during contract creation.
+     * Sets the code for the contract with the given contract id. Only used during contract creation.
      *
      * @param contractID the contract id
      * @param code the new code
@@ -194,7 +214,7 @@ public interface EvmFrameState {
     Hash getTokenRedirectCodeHash(@NonNull Address address);
 
     /**
-     * Returns the native account with the given number.
+     * Returns the native account with the given account id.
      *
      * @param accountID the account id
      * @return the native account
@@ -202,7 +222,7 @@ public interface EvmFrameState {
     com.hedera.hapi.node.state.token.Account getNativeAccount(AccountID accountID);
 
     /**
-     * Returns the nonce for the account with the given number.
+     * Returns the nonce for the account with the given id.
      *
      * @param accountID the account id
      * @return the nonce
@@ -210,7 +230,7 @@ public interface EvmFrameState {
     long getNonce(AccountID accountID);
 
     /**
-     * Returns the number of treasury titles for the account with the given number.
+     * Returns the number of treasury titles for the account with the given id.
      *
      * @param accountID the account ID
      * @return the number of treasury titles
@@ -218,15 +238,15 @@ public interface EvmFrameState {
     int getNumTreasuryTitles(AccountID accountID);
 
     /**
-     * Returns the number of positive token balances.
+     * Returns the number of positive token balances for the account with the given id.
      *
-     * @param accountID the contract ID
+     * @param accountID the account ID
      * @return the number of positive token balances
      */
     int getNumPositiveTokenBalances(AccountID accountID);
 
     /**
-     * Returns whether the account with the given number is a contract.
+     * Returns whether the account with the given id is a contract.
      *
      * @param accountID the account id number
      * @return whether the account is a contract
@@ -250,19 +270,30 @@ public interface EvmFrameState {
     Wei getBalance(AccountID accountID);
 
     /**
-     * Returns the "priority" EVM address of the account with the given number, or null if the
+     * Returns the "priority" EVM address of the account or token with the given number, or null if the
      * account has been deleted.
      *
      * <p>The priority address is its 20-byte alias if applicable; or else the "long-zero" address
      * with the account number as the last 8 bytes of the zero address.
      *
-     * @param number the account number
+     * @param number the account or token number
      * @return the priority EVM address of the account, or null if the account has been deleted
      * @throws IllegalArgumentException if the account does not exist
      */
     @Nullable
     Address getAddress(long number);
 
+    /**
+     * Returns the "priority" EVM address of the account with the given id, or null if the
+     * account has been deleted.
+     *
+     * <p>The priority address is its 20-byte alias if applicable; or else the "long-zero" address
+     * with the account number as the last 8 bytes of the zero address.
+     *
+     * @param accountID the account id
+     * @return the priority EVM address of the account, or null if the account has been deleted
+     * @throws IllegalArgumentException if the account does not exist
+     */
     @Nullable
     Address getAddress(AccountID accountID);
 
@@ -291,15 +322,12 @@ public interface EvmFrameState {
      */
     long getKvStateSize();
 
-    //    /**
-    //     * Returns the rent factors for the account with the given number.
-    //     *
-    //     * @param number the account number
-    //     * @return the rent factors
-    //     */
-    //    @NonNull
-    //    RentFactors getRentFactorsFor(long number);
-
+    /**
+     * Returns the rent factors for the contract with the given id.
+     *
+     * @param contractID the contract id
+     * @return the rent factors
+     */
     @NonNull
     RentFactors getRentFactorsFor(ContractID contractID);
 }

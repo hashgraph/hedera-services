@@ -151,17 +151,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
             final long fromEntityNumber,
             final long toEntityNumber,
             @NonNull final VerificationStrategy strategy) {
-        final var to = requireNonNull(getAccount(toEntityNumber));
-        final var signatureTest = strategy.asSignatureTestIn(context);
-        if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
-            return INVALID_SIGNATURE;
-        }
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.transferFromTo(
+        return transferWithReceiverSigCheck(
+                amount,
                 AccountID.newBuilder().accountNum(fromEntityNumber).build(),
                 AccountID.newBuilder().accountNum(toEntityNumber).build(),
-                amount);
-        return OK;
+                strategy);
     }
 
     /**
@@ -170,16 +164,16 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public @NonNull ResponseCodeEnum transferWithReceiverSigCheck(
             final long amount,
-            final AccountID fromEntityNumber,
-            final AccountID toEntityNumber,
+            final AccountID fromEntityId,
+            final AccountID toEntityId,
             @NonNull final VerificationStrategy strategy) {
-        final var to = requireNonNull(getAccount(toEntityNumber));
+        final var to = requireNonNull(getAccount(toEntityId));
         final var signatureTest = strategy.asSignatureTestIn(context);
         if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
             return INVALID_SIGNATURE;
         }
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.transferFromTo(fromEntityNumber, toEntityNumber, amount);
+        tokenServiceApi.transferFromTo(fromEntityId, toEntityId, amount);
         return OK;
     }
 
@@ -188,9 +182,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void trackSelfDestructBeneficiary(
-            final AccountID deletedNumber, final AccountID beneficiaryNumber, @NonNull final MessageFrame frame) {
+            final AccountID deletedId, final AccountID beneficiaryId, @NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        selfDestructBeneficiariesFor(frame).addBeneficiaryForDeletedAccount(deletedNumber, beneficiaryNumber);
+        selfDestructBeneficiariesFor(frame).addBeneficiaryForDeletedAccount(deletedId, beneficiaryId);
     }
 
     @Override

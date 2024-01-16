@@ -136,16 +136,16 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
      * Refuses to transfer value.
      *
      * @param amount           the amount to transfer
-     * @param fromEntityNumber the number of the account to transfer from
-     * @param toEntityNumber   the number of the account to transfer to
+     * @param fromEntityId the id of the account to transfer from
+     * @param toEntityId   the id of the account to transfer to
      * @param strategy         the {@link VerificationStrategy} to use
      * @throws UnsupportedOperationException always
      */
     @Override
     public ResponseCodeEnum transferWithReceiverSigCheck(
             final long amount,
-            final AccountID fromEntityNumber,
-            final AccountID toEntityNumber,
+            final AccountID fromEntityId,
+            final AccountID toEntityId,
             @NonNull final VerificationStrategy strategy) {
         throw new UnsupportedOperationException("Cannot transfer value in query context");
     }
@@ -153,13 +153,13 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     /**
      * Refuses to track a deletion.
      *
-     * @param deletedNumber the number of the deleted contract
-     * @param beneficiaryNumber the number of the beneficiary
+     * @param deletedId the number of the deleted contract
+     * @param beneficiaryId the number of the beneficiary
      * @param frame the frame in which to track the beneficiary
      */
     @Override
     public void trackSelfDestructBeneficiary(
-            final AccountID deletedNumber, final AccountID beneficiaryNumber, @NonNull final MessageFrame frame) {
+            final AccountID deletedId, final AccountID beneficiaryId, @NonNull final MessageFrame frame) {
         throw new UnsupportedOperationException("Cannot track deletion in query context");
     }
 }
