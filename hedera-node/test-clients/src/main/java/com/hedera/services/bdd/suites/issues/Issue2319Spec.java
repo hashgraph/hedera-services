@@ -143,9 +143,7 @@ public class Issue2319Spec extends HapiSuite {
         return defaultHapiSpec("SysFileSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
-                        keyFromPem(pemLoc)
-                                .name("persistent")
-                                .passphrase("passphrase"),
+                        keyFromPem(pemLoc).name("persistent").passphrase("passphrase"),
                         withOpContext((spec, opLog) -> {
                             var fetch = getFileContents(EXCHANGE_RATES);
                             CustomSpecAssert.allRunFor(spec, fetch);
