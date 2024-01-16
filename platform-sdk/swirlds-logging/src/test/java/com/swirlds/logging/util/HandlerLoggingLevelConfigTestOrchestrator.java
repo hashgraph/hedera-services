@@ -22,18 +22,12 @@ import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Assertions;
 
 /**
@@ -41,80 +35,51 @@ import org.junit.jupiter.api.Assertions;
  *  <ol>
  * <li>Store all {@code TestScenario}s
  * <li>reload the configuration
- * <li>keep track of which scenario is currently loaded
  * <li>verify the scenario when the configuration is loaded
  *  <ol>
  */
-public final class LoggingTestOrchestrator {
-
-    // To be able to stop assertions for previously loaded scenario if the config was reloaded
-    private final Lock lock = new ReentrantLock();
-    private final AtomicInteger configIndexReference;
-    private final List<TestScenario> reloadingConfigAndAssertionRules;
+public final class HandlerLoggingLevelConfigTestOrchestrator {
+    private final List<TestScenario> scenarios;
 
     /**
-     * Run the different {@code testScenarios} up to {@code duration} and randomly reloading and updating
-     * {@code configUnderTest}.
-     * first element on {@code testScenarios} is assumed to be the default configuration
+     * Runs the different {@code testScenarios} in random order up to {@code durationLimit}.
+     * All scenarios are run at least once.
      */
     public static void runScenarios(
-            final HandlerLoggingLevelConfig configUnderTest, Duration duration, TestScenario... testScenarios)
-            throws InterruptedException {
+            final HandlerLoggingLevelConfig configUnderTest, Duration durationLimit, TestScenario... testScenarios) {
 
-        LoggingTestOrchestrator orchestrator = new LoggingTestOrchestrator(testScenarios);
-        try (ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2)) {
-            // Config the test to run up to duration
-            final AtomicBoolean continueTest = new AtomicBoolean(true);
-            ScheduledFuture<?> continueFuture =
-                    executorService.schedule(() -> continueTest.set(false), duration.toMillis(), TimeUnit.MILLISECONDS);
-            // concurrently & randomly selects and load a scenario every 10 ms
-            ScheduledFuture<?> configUpdateFuture = executorService.scheduleAtFixedRate(
-                    () -> orchestrator.randomlySetScenario(configUnderTest), 10, 10, TimeUnit.MILLISECONDS);
-            try {
-                while (continueTest.get()) { // Keep testing until we run out of time
-                    orchestrator.verifyLoadedScenario(configUnderTest);
-                }
-            } finally {
-                continueFuture.cancel(true);
-                configUpdateFuture.cancel(true);
-            }
-            // Shutdown executor and await termination
-            executorService.awaitTermination(1, TimeUnit.SECONDS);
+        HandlerLoggingLevelConfigTestOrchestrator orchestrator =
+                new HandlerLoggingLevelConfigTestOrchestrator(testScenarios);
+
+        final List<Integer> list =
+                IntStream.rangeClosed(0, testScenarios.length - 1).boxed().collect(Collectors.toList());
+        Collections.shuffle(list);
+        long startTime = System.currentTimeMillis();
+
+        for (Integer index : list) {
+            orchestrator.testScenario(index, configUnderTest);
+        }
+
+        long availableTime = durationLimit.toMillis() - (System.currentTimeMillis() - startTime);
+        for (int i = 0; availableTime > 0; i++) {
+            orchestrator.testScenario(list.get(i % list.size()), configUnderTest);
+            availableTime -= (System.currentTimeMillis() - startTime);
         }
     }
 
-    private LoggingTestOrchestrator(TestScenario... testScenarios) {
-        this.configIndexReference = new AtomicInteger(0);
-        this.reloadingConfigAndAssertionRules = List.of(testScenarios);
+    private HandlerLoggingLevelConfigTestOrchestrator(TestScenario... testScenarios) {
+        this.scenarios = List.of(testScenarios);
     }
 
     /**
-     * Randomly selects a scenario
+     * Performs the verification of scenario given by its index on the list
      */
-    public void randomlySetScenario(HandlerLoggingLevelConfig config) {
-        // Leaves out the first default scenario given that is only for the initial setting
-        int chosenIndex = ThreadLocalRandom.current().nextInt(reloadingConfigAndAssertionRules.size() - 1) + 1;
-        lock.lock();
-        try {
-            // Reload Configuration
-            config.update(reloadingConfigAndAssertionRules.get(chosenIndex).configuration());
-            this.configIndexReference.set(chosenIndex);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * verifies the assertions for selected scenario
-     */
-    public void verifyLoadedScenario(final HandlerLoggingLevelConfig config) {
-        lock.lock(); // We don't want the configuration to change while we are asserting
-        final int currentConfigIndex = this.configIndexReference.get();
-        try {
-            this.reloadingConfigAndAssertionRules.get(currentConfigIndex).verifyAssertionRules(config);
-        } finally {
-            lock.unlock();
-        }
+    private void testScenario(int scenario, HandlerLoggingLevelConfig config) {
+        System.out.printf("Testing scenario %d%n", scenario);
+        // Reload Configuration for desired scenario
+        config.update(this.scenarios.get(scenario).configuration());
+        // Performs the check
+        this.scenarios.get(scenario).verifyAssertionRules(config);
     }
 
     /**
