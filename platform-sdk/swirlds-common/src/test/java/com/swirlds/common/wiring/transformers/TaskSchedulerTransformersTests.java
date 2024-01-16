@@ -283,19 +283,11 @@ class TaskSchedulerTransformersTests {
         taskSchedulerA.getOutputWire().solderTo(inB);
         taskSchedulerA
                 .getOutputWire()
-                .buildAdvancedTransformer(new AdvancedTransformationHelper<>(
-                        "getValue",
-                        TestData::value,
-                        null,
-                        null))
+                .buildAdvancedTransformer(new AdvancedTransformationHelper<>("getValue", TestData::value, null, null))
                 .solderTo(inC);
         taskSchedulerA
                 .getOutputWire()
-                .buildAdvancedTransformer(new AdvancedTransformationHelper<>(
-                        "getInvert",
-                        TestData::invert,
-                        null,
-                        null))
+                .buildAdvancedTransformer(new AdvancedTransformationHelper<>("getInvert", TestData::invert, null, null))
                 .solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);
@@ -408,7 +400,7 @@ class TaskSchedulerTransformersTests {
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new AdvancedTransformationHelper<>(
-                        "reserve FooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release));
+                "reserve FooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release));
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
@@ -524,8 +516,8 @@ class TaskSchedulerTransformersTests {
             @NonNull String name,
             @NonNull Function<A, B> transform,
             @Nullable Consumer<A> inputCleanup,
-            @Nullable Consumer<B> outputCleanup
-    ) implements AdvancedTransformation<A, B>{
+            @Nullable Consumer<B> outputCleanup)
+            implements AdvancedTransformation<A, B> {
 
         @Nullable
         @Override
