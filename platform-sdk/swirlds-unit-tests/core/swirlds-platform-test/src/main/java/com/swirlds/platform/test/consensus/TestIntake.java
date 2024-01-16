@@ -23,6 +23,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.LinkedEventIntake;
@@ -108,7 +109,8 @@ public class TestIntake implements LoadableFromSignedState {
                 dispatcher,
                 shadowGraph,
                 latestEventTipsetTracker,
-                intakeEventCounter);
+                intakeEventCounter,
+                mock(StandardOutputWire.class));
 
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
         linkedEventIntakeWiring.bind(linkedEventIntake);

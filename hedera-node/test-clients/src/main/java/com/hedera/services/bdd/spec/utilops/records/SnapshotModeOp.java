@@ -137,7 +137,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "bloom",
             // runningHash in SubmitMessageHandler
             "topicRunningHash",
-            "prng_bytes");
+            "prng_bytes",
+            "tokenNum");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
     private static final String MONO_STREAMS_LOC = "hedera-node/hedera-app/build/node/data/recordStreams/record0.0.3";

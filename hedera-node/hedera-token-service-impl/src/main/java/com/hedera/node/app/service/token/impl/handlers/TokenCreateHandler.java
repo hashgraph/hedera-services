@@ -168,6 +168,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // Update record with newly created token id
         recordBuilder.tokenID(newTokenId);
+        recordBuilder.tokenType(newToken.tokenType());
     }
 
     /**

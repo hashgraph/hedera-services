@@ -683,9 +683,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
-                // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
-                // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
-                // production.
                 new NonAncientEventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
