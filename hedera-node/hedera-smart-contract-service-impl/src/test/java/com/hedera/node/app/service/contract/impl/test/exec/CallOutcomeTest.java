@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -23,9 +24,15 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -37,6 +44,28 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CallOutcomeTest {
     @Mock
     private RootProxyWorldUpdater updater;
+
+    @Mock
+    private ContractCallRecordBuilder contractCallRecordBuilder;
+
+    @Mock
+    private ContractCreateRecordBuilder contractCreateRecordBuilder;
+
+    @Test
+    void onlySetsCallResultIfNotAborted() {
+        final var abortedCall =
+                new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, CALLED_CONTRACT_ID, 123L, null, null);
+        abortedCall.addCallDetailsTo(contractCallRecordBuilder);
+        verify(contractCallRecordBuilder, never()).contractCallResult(any());
+    }
+
+    @Test
+    void onlySetsCreateResultIfNotAborted() {
+        final var abortedCreate =
+                new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, null, 123L, null, null);
+        abortedCreate.addCreateDetailsTo(contractCreateRecordBuilder);
+        verify(contractCreateRecordBuilder, never()).contractCreateResult(any());
+    }
 
     @Test
     void recognizesCreatedIdWhenEvmAddressIsSet() {

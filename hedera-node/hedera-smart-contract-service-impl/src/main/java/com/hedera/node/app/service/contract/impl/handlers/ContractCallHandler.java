@@ -59,10 +59,8 @@ public class ContractCallHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        context.recordBuilder(ContractCallRecordBuilder.class)
-                .contractCallResult(outcome.result())
-                .contractID(outcome.recipientId())
-                .withCommonFieldsSetFrom(outcome);
+        outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class));
+
         throwIfUnsuccessful(outcome.status());
     }
 
