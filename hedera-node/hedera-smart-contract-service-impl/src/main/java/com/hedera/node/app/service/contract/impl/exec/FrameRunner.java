@@ -35,12 +35,15 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
@@ -139,7 +142,16 @@ public class FrameRunner {
                     case MESSAGE_CALL -> messageCall;
                     case CONTRACT_CREATION -> contractCreation;
                 };
-        executor.process(frame, tracer);
+        try {
+            executor.process(frame, tracer);
+        } catch (final HandleException e) {
+            if (e.getStatus().equals(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED)) {
+                frame.setState(EXCEPTIONAL_HALT);
+                frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_CHILD_RECORDS));
+            } else {
+                throw e;
+            }
+        }
 
         frame.getExceptionalHaltReason().ifPresent(haltReason -> propagateHaltException(frame, haltReason));
         // For mono-service compatibility, we need to also halt the frame on the stack that
@@ -164,7 +176,7 @@ public class FrameRunner {
     }
 
     // potentially other cases could be handled here if necessary
-    private void propagateHaltException(MessageFrame frame, ExceptionalHaltReason haltReason) {
+    private void propagateHaltException(final MessageFrame frame, final ExceptionalHaltReason haltReason) {
         if (haltReason.equals(INSUFFICIENT_CHILD_RECORDS)) {
             setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
         }

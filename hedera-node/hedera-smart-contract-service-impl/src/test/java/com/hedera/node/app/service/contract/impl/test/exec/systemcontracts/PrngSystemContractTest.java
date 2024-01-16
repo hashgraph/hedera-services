@@ -118,7 +118,13 @@ class PrngSystemContractTest {
     void computePrecompileMutableSuccessTest() {
         // given:
         givenCommon();
-        commonMocks();
+        final var address = Address.fromHexString("0x100");
+        when(messageFrame.getSenderAddress()).thenReturn(address);
+        when(proxyWorldUpdater.getAccount(any())).thenReturn(mutableAccount);
+        when(proxyWorldUpdater.enhancement()).thenReturn(enhancement);
+        when(enhancement.systemOperations()).thenReturn(systemContractOperations);
+        when(mutableAccount.hederaId()).thenReturn(accountID);
+
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);

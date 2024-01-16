@@ -291,14 +291,12 @@ public record HederaEvmTransactionResult(
     /**
      * Create a result for a transaction that failed due to validation exceptions.
      *
-     * @param gasPrice the gas price of the transaction
      * @param senderId the sender of the EVM transaction
      * @param transaction the transaction object
      * @param reason   the reason for the failure
      * @return the result
      */
     public static HederaEvmTransactionResult fromAborted(
-            final long gasPrice,
             @NonNull final AccountID senderId,
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final ResponseCodeEnum reason) {
@@ -306,8 +304,8 @@ public record HederaEvmTransactionResult(
         requireNonNull(transaction);
         requireNonNull(reason);
         return new HederaEvmTransactionResult(
-                transaction.gasLimit(),
-                gasPrice,
+                0,
+                0,
                 senderId,
                 transaction.contractId(),
                 null,

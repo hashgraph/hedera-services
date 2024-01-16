@@ -116,8 +116,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         } catch (AbortException e) {
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
-            final var result = HederaEvmTransactionResult.fromAborted(
-                    hederaEvmContext.gasPrice(), e.senderId(), hevmTransaction, e.getStatus());
+            final var result = HederaEvmTransactionResult.fromAborted(e.senderId(), hevmTransaction, e.getStatus());
             return CallOutcome.fromResultsWithoutSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
         }
