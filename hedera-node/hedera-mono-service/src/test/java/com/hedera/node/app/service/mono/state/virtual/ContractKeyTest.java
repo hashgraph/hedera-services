@@ -210,7 +210,7 @@ class ContractKeyTest {
         bin.put(subject.getUint256Byte(0));
         bin.rewind();
 
-        testSubject.deserialize(bin, 1);
+        testSubject.deserialize(bin);
         bin.rewind();
 
         assertEquals(subject, testSubject);

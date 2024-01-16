@@ -26,6 +26,8 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -80,6 +82,34 @@ public record CallOutcome(
      */
     public boolean isSuccess() {
         return status == SUCCESS;
+    }
+
+    /**
+     * Adds the call details to the given record builder.
+     *
+     * @param recordBuilder the record builder
+     */
+    public void addCallDetailsTo(@NonNull final ContractCallRecordBuilder recordBuilder) {
+        recordBuilder.contractID(recipientId);
+        // Intentionally omit result on aborted calls (i.e., when gasUsed = 0)
+        if (result.gasUsed() != 0L) {
+            recordBuilder.contractCallResult(result);
+        }
+        recordBuilder.withCommonFieldsSetFrom(this);
+    }
+
+    /**
+     * Adds the create details to the given record builder.
+     *
+     * @param recordBuilder the record builder
+     */
+    public void addCreateDetailsTo(@NonNull final ContractCreateRecordBuilder recordBuilder) {
+        recordBuilder.contractID(recipientIdIfCreated());
+        // Intentionally omit result on aborted calls (i.e., when gasUsed = 0)
+        if (result.gasUsed() != 0L) {
+            recordBuilder.contractCreateResult(result);
+        }
+        recordBuilder.withCommonFieldsSetFrom(this);
     }
 
     /**

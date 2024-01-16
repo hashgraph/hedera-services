@@ -62,6 +62,7 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
@@ -356,8 +357,7 @@ public final class Hedera implements SwirldMain {
     @Override
     @NonNull
     public SwirldState newState() {
-        return new MerkleHederaState(
-                this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized, this::onUpdateWeight);
+        return new MerkleHederaState(new HederaLifecyclesImpl(this));
     }
 
     /*==================================================================================================================
@@ -372,7 +372,7 @@ public final class Hedera implements SwirldMain {
      * {@link #init(Platform, NodeId)} and after {@link #newState()}.
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
-    private void onStateInitialized(
+    public void onStateInitialized(
             @NonNull final MerkleHederaState state,
             @NonNull final Platform platform,
             @NonNull final PlatformState platformState,
@@ -704,7 +704,7 @@ public final class Hedera implements SwirldMain {
     /**
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
-    private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
+    public void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
@@ -724,7 +724,7 @@ public final class Hedera implements SwirldMain {
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
-    private void onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.handleWorkflow().handleRound(state, platformState, round);
@@ -749,8 +749,8 @@ public final class Hedera implements SwirldMain {
             final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
             final var allNodeIds = stakingInfoStore.getAll();
             for (final var nodeId : allNodeIds) {
-                final var stakingInfo = stakingInfoStore.get(nodeId);
-                NodeId id = new NodeId(nodeId.longValue());
+                final var stakingInfo = requireNonNull(stakingInfoStore.get(nodeId));
+                NodeId id = new NodeId(nodeId);
                 // ste weight for the nodes that exist in state and remove from
                 // nodes given in config.txt. This is needed to recognize newly added nodes
                 configAddressBook.updateWeight(id, stakingInfo.weight());

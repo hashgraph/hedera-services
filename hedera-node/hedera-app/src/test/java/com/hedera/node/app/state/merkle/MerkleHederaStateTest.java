@@ -28,12 +28,16 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.state.HederaState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import java.util.ArrayList;
@@ -43,20 +47,53 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class MerkleHederaStateTest extends MerkleTestBase {
     /** The merkle tree we will test with */
     private MerkleHederaState hederaMerkle;
 
-    private final AtomicBoolean onMigrateCalled = new AtomicBoolean(false);
     private final AtomicBoolean onPreHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
+
+    private final HederaLifecycles lifecycles = new HederaLifecycles() {
+        @Override
+        public void onPreHandle(@NotNull Event event, @NotNull HederaState state) {
+            onPreHandleCalled.set(true);
+        }
+
+        @Override
+        public void onHandleConsensusRound(
+                @NotNull Round round, @NotNull PlatformState platformState, @NotNull HederaState state) {
+            onHandleCalled.set(true);
+        }
+
+        @Override
+        public void onStateInitialized(
+                @NotNull MerkleHederaState state,
+                @NotNull Platform platform,
+                @NotNull PlatformState platformState,
+                @NotNull InitTrigger trigger,
+                @Nullable SoftwareVersion previousVersion) {}
+
+        @Override
+        public void onUpdateWeight(
+                @NotNull MerkleHederaState state,
+                @NotNull AddressBook configAddressBook,
+                @NotNull PlatformContext context) {
+            onUpdateWeightCalled.set(true);
+        }
+    };
 
     /**
      * Start with an empty Merkle Tree, but with the "fruit" map and metadata created and ready to
@@ -65,13 +102,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         setupFruitMerkleMap();
-        hederaMerkle = new MerkleHederaState(
-                (tree, state) -> onPreHandleCalled.set(true),
-                (evt, meta, state) -> onHandleCalled.set(true),
-                (state, platform, platformState, trigger, version) -> onMigrateCalled.set(true),
-                (state, configAddressBook, context) -> {
-                    onUpdateWeightCalled.set(true);
-                });
+        hederaMerkle = new MerkleHederaState(lifecycles);
     }
 
     /** Looks for a merkle node with the given label */
@@ -695,14 +726,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
             final var platformState = Mockito.mock(PlatformState.class);
-            final var state = new MerkleHederaState(
-                    (tree, st) -> onPreHandleCalled.set(true),
-                    (evt, meta, provider) -> {
-                        assertThat(round).isSameAs(evt);
-                        onHandleCalled.set(true);
-                    },
-                    (s, p, d, t, v) -> {},
-                    (s, p, d) -> {});
+            final var state = new MerkleHederaState(lifecycles);
 
             state.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();

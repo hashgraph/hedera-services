@@ -22,7 +22,6 @@ plugins {
 testModuleInfo {
     requires("com.swirlds.common.testing")
     requires("com.swirlds.merkle")
-    requires("com.swirlds.sign.tool") // should be removed in future
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
