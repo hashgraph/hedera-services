@@ -165,7 +165,7 @@ public class HandlerLoggingLevelConfig {
         configuration.getPropertyNames().filter(n -> n.startsWith(fullPrefix)).forEach(configPropertyName -> {
             final String name = configPropertyName.substring(fullPrefix.length());
             final MarkerState markerState =
-                    configuration.getValue(configPropertyName, MarkerState.class, MarkerState.DEFAULT);
+                    configuration.getValue(configPropertyName, MarkerState.class, MarkerState.UNDEFINED);
             result.put(name, markerState);
         });
 
@@ -226,8 +226,8 @@ public class HandlerLoggingLevelConfig {
         if (marker != null) {
             final List<String> allMarkerNames = marker.getAllMarkerNames();
             final List<MarkerState> markerStates = allMarkerNames.stream()
-                    .map(markerName -> markerConfigCache.get().computeIfAbsent(markerName, n -> MarkerState.DEFAULT))
-                    .filter(markerState -> markerState != MarkerState.DEFAULT)
+                    .map(markerName -> markerConfigCache.get().computeIfAbsent(markerName, n -> MarkerState.UNDEFINED))
+                    .filter(markerState -> markerState != MarkerState.UNDEFINED)
                     .toList();
             if (!markerStates.isEmpty()) {
                 if (markerStates.stream().anyMatch(markerState -> markerState == MarkerState.ENABLED)) {

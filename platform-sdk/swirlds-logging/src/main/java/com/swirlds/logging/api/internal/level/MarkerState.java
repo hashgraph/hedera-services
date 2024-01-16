@@ -29,5 +29,5 @@ package com.swirlds.logging.api.internal.level;
 public enum MarkerState {
     ENABLED,
     DISABLED,
-    DEFAULT;
+    UNDEFINED;
 }
