@@ -215,6 +215,8 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
         // methods that are overridden will appear more than once, so we filter them out
         final Method[] methods = Arrays.stream(constructorType.getDeclaredMethods())
                 .filter(m -> !IGNORE_METHOD_NAMES.contains(m.getName()))
+                // filter only RuntimeConstructable
+                .filter(m -> m.getReturnType().equals(RuntimeConstructable.class))
                 .map(MethodWrapper::new)
                 .distinct()
                 .map(MethodWrapper::method)

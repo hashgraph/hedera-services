@@ -33,7 +33,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.token.codec.GrantedCryptoAllowanceJsonCodec;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
@@ -46,7 +45,6 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -72,76 +70,84 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         }
         final var spenderAccount = enhancement.nativeOperations().getAccount(spender.accountNum());
         final var body = callGrantApproval();
-        //validate NFT approval call
-        if(tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+        // validate NFT approval call
+        if (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
             // check for INVALID_TOKEN_NFT_SERIAL_NUMBER
             final var nft = nativeOperations().getNft(token.tokenNum(), amount.longValue());
-            if(nft == null) {
+            if (nft == null) {
                 return externalizeAndRevert(INVALID_TOKEN_NFT_SERIAL_NUMBER, body, frame);
             }
-            //check for INVALID_ALLOWANCE_SPENDER_ID
-            if(spenderAccount == null && spender.accountNum() != 0) {
+            // check for INVALID_ALLOWANCE_SPENDER_ID
+            if (spenderAccount == null && spender.accountNum() != 0) {
                 return externalizeAndRevert(INVALID_ALLOWANCE_SPENDER_ID, body, frame);
             }
-            //check for SENDER_DOES_NOT_OWN_NFT_SERIAL_NO
-            if(!senderId.equals(getOwnerId()) && !senderHasAllowance()) {
+            // check for SENDER_DOES_NOT_OWN_NFT_SERIAL_NO
+            if (!senderId.equals(getOwnerId()) && !senderHasAllowance()) {
                 return externalizeAndRevert(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, body, frame);
             }
         }
 
-//        if (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE) && nativeOperations().getNft(token.tokenNum(), amount.longValue()) == null ) {
-//            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-//            var revertResult = FullResult.revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasRequirement);
-//            var result = gasOnly(revertResult, INVALID_TOKEN_NFT_SERIAL_NUMBER, false);
-//
-//            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-//            var encodedRc = ReturnTypes.encodedRc(INVALID_TOKEN_NFT_SERIAL_NUMBER).array();
-//            var contractFunctionResult = contractFunctionResultFailedForProto(
-//                    gasRequirement, INVALID_TOKEN_NFT_SERIAL_NUMBER.protoName(), contractID, Bytes.wrap(encodedRc));
-//
-//            enhancement.systemOperations().externalizeResult(contractFunctionResult, INVALID_TOKEN_NFT_SERIAL_NUMBER);
-//
-//            return result;
-//        }
-//
-//        if (spenderAccount == null && spender.accountNum() != 0) {
-//            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-//            var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
-//            var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);
-//
-//            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-//            var encodedRc = ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
-//            var contractFunctionResult = contractFunctionResultFailedForProto(
-//                    gasRequirement, INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID, Bytes.wrap(encodedRc));
-//
-//            enhancement.systemOperations().externalizeResult(contractFunctionResult, INVALID_ALLOWANCE_SPENDER_ID);
-//
-//            return result;
-//        }
-//
-//        if(tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE) &&
-//                !senderId.equals(getOwnerId()) &&
-//                !senderHasAllowance()
-//        ) {
-//            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
-//            var revertResult = FullResult.revertResult(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, gasRequirement);
-//            var result = gasOnly(revertResult, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, false);
-//
-//            var encodedRc = ReturnTypes.encodedRc(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO).array();
-//            var contractFunctionResult = contractFunctionResultSuccessFor(
-//                    gasRequirement, org.apache.tuweni.bytes.Bytes.wrap(encodedRc), frame.getRemainingGas(), frame.getInputData(), senderId);
-//            contractFunctionResult = contractFunctionResult.copyBuilder().errorMessage(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName()).build();
-//            final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-//            final var signedTransaction =
-//                    SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-//            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-//            final var transaction = Transaction.newBuilder()
-//                    .signedTransactionBytes(signedTransactionBytes)
-//                    .build();
-//
-//            enhancement.systemOperations().externalizeResult(contractFunctionResult, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, transaction);
-//            return result;
-//        }
+        //        if (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE) && nativeOperations().getNft(token.tokenNum(),
+        // amount.longValue()) == null ) {
+        //            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
+        //            var revertResult = FullResult.revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasRequirement);
+        //            var result = gasOnly(revertResult, INVALID_TOKEN_NFT_SERIAL_NUMBER, false);
+        //
+        //            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+        //            var encodedRc = ReturnTypes.encodedRc(INVALID_TOKEN_NFT_SERIAL_NUMBER).array();
+        //            var contractFunctionResult = contractFunctionResultFailedForProto(
+        //                    gasRequirement, INVALID_TOKEN_NFT_SERIAL_NUMBER.protoName(), contractID,
+        // Bytes.wrap(encodedRc));
+        //
+        //            enhancement.systemOperations().externalizeResult(contractFunctionResult,
+        // INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        //
+        //            return result;
+        //        }
+        //
+        //        if (spenderAccount == null && spender.accountNum() != 0) {
+        //            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
+        //            var revertResult = FullResult.revertResult(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
+        //            var result = gasOnly(revertResult, INVALID_ALLOWANCE_SPENDER_ID, false);
+        //
+        //            var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
+        //            var encodedRc = ReturnTypes.encodedRc(INVALID_ALLOWANCE_SPENDER_ID).array();
+        //            var contractFunctionResult = contractFunctionResultFailedForProto(
+        //                    gasRequirement, INVALID_ALLOWANCE_SPENDER_ID.protoName(), contractID,
+        // Bytes.wrap(encodedRc));
+        //
+        //            enhancement.systemOperations().externalizeResult(contractFunctionResult,
+        // INVALID_ALLOWANCE_SPENDER_ID);
+        //
+        //            return result;
+        //        }
+        //
+        //        if(tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE) &&
+        //                !senderId.equals(getOwnerId()) &&
+        //                !senderHasAllowance()
+        //        ) {
+        //            var gasRequirement = gasCalculator.canonicalGasRequirement(DispatchType.APPROVE);
+        //            var revertResult = FullResult.revertResult(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, gasRequirement);
+        //            var result = gasOnly(revertResult, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, false);
+        //
+        //            var encodedRc = ReturnTypes.encodedRc(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO).array();
+        //            var contractFunctionResult = contractFunctionResultSuccessFor(
+        //                    gasRequirement, org.apache.tuweni.bytes.Bytes.wrap(encodedRc), frame.getRemainingGas(),
+        // frame.getInputData(), senderId);
+        //            contractFunctionResult =
+        // contractFunctionResult.copyBuilder().errorMessage(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName()).build();
+        //            final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
+        //            final var signedTransaction =
+        //                    SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        //            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        //            final var transaction = Transaction.newBuilder()
+        //                    .signedTransactionBytes(signedTransactionBytes)
+        //                    .build();
+        //
+        //            enhancement.systemOperations().externalizeResult(contractFunctionResult,
+        // SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, transaction);
+        //            return result;
+        //        }
 
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
@@ -149,7 +155,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         final var status = recordBuilder.status();
 
         // log approve
-        if(tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+        if (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
             GrantApprovalLoggingUtils.logSuccessfulNFTApprove(
                     token, senderId, spender, amount.longValue(), readableAccountStore(), frame);
         } else {
@@ -182,11 +188,18 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
         var encodedRc = ReturnTypes.encodedRc(response).array();
 
-        //match mono record structure
-        if(response.equals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)) {
+        // match mono record structure
+        if (response.equals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO)) {
             var contractFunctionResult = contractFunctionResultSuccessFor(
-                    gasRequirement, org.apache.tuweni.bytes.Bytes.wrap(encodedRc), frame.getRemainingGas(), frame.getInputData(), senderId);
-            contractFunctionResult = contractFunctionResult.copyBuilder().errorMessage(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName()).build();
+                    gasRequirement,
+                    org.apache.tuweni.bytes.Bytes.wrap(encodedRc),
+                    frame.getRemainingGas(),
+                    frame.getInputData(),
+                    senderId);
+            contractFunctionResult = contractFunctionResult
+                    .copyBuilder()
+                    .errorMessage(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName())
+                    .build();
             final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
             final var signedTransaction =
                     SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -195,7 +208,9 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
                     .signedTransactionBytes(signedTransactionBytes)
                     .build();
 
-            enhancement.systemOperations().externalizeResult(contractFunctionResult, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, transaction);
+            enhancement
+                    .systemOperations()
+                    .externalizeResult(contractFunctionResult, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, transaction);
         } else {
             var contractFunctionResult = contractFunctionResultFailedForProto(
                     gasRequirement, response.protoName(), contractID, Bytes.wrap(encodedRc));

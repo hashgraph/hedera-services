@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 
 import com.hedera.hapi.node.base.TokenType;
@@ -26,7 +24,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

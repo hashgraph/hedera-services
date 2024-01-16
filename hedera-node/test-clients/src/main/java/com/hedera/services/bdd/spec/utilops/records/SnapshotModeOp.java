@@ -669,11 +669,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         } else if (message instanceof TransactionID transactionID) {
             // if node stake update transaction was found, nonce of any following transaction id
             // should be decreased by one.
-            final var normalizedNonce = nodeStakeUpdateFound
-                    ? transactionID.getNonce() - 1
-                    : transactionID.getNonce();
+            final var normalizedNonce = nodeStakeUpdateFound ? transactionID.getNonce() - 1 : transactionID.getNonce();
             return transactionID.toBuilder().setNonce(normalizedNonce).build();
-        }else {
+        } else {
             return message;
         }
     }

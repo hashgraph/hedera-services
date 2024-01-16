@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -67,7 +65,9 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     public TransactionBody callGrantApproval() {
         if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE) {
             var ownerId = getOwnerId();
-            var nominalOwnerId = ownerId != null ? ownerId : AccountID.newBuilder().accountNum(0L).build();
+            var nominalOwnerId = ownerId != null
+                    ? ownerId
+                    : AccountID.newBuilder().accountNum(0L).build();
 
             if (ownerId != null && !isNftApprovalRevocation()) {
                 if (!ownerId.equals(senderId)) {
@@ -134,7 +134,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     }
 
     protected AccountID getOwnerId() {
-        final var nft = enhancement.nativeOperations().getNft(token.tokenNum(),  amount.longValue());
+        final var nft = enhancement.nativeOperations().getNft(token.tokenNum(), amount.longValue());
         final var tokenAccount = nativeOperations().getToken(token.tokenNum());
         return nft != null ? nft.ownerIdOrElse(tokenAccount.treasuryAccountIdOrThrow()) : null;
     }
