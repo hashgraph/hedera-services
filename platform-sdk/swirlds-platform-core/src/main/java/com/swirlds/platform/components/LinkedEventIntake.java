@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.LatestEventTipsetTracker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -150,11 +151,11 @@ public class LinkedEventIntake {
                 if (latestEventTipsetTracker != null) {
                     // FUTURE WORK: When this class is refactored, it should not be constructing the
                     // NonAncientEventWindow, but receiving it through the PlatformWiring instead.
-                    latestEventTipsetTracker.setNonAncientEventWindow(NonAncientEventWindow.createUsingPlatformContext(
+                    latestEventTipsetTracker.setNonAncientEventWindow(new NonAncientEventWindow(
                             consensusSupplier.get().getLastRoundDecided(),
                             minimumGenerationNonAncient,
                             consensusSupplier.get().getMinRoundGeneration(),
-                            platformContext));
+                            AncientMode.getAncientMode(platformContext)));
                 }
             }
 

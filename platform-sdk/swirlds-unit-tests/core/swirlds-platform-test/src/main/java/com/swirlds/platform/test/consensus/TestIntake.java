@@ -185,12 +185,10 @@ public class TestIntake implements LoadableFromSignedState {
         // production.
         linkerWiring
                 .nonAncientEventWindowInput()
-                .put(NonAncientEventWindow.createUsingRoundsNonAncient(
+                .put(new NonAncientEventWindow(
                         consensus.getLastRoundDecided(),
                         consensus.getMinGenerationNonAncient(),
                         consensus.getMinRoundGeneration(),
-                        consensusConfig.roundsNonAncient(),
-                        consensusConfig.roundsExpired(),
                         AncientMode.GENERATION_THRESHOLD));
 
         shadowGraph.clear();

@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
@@ -660,6 +661,23 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 lastConsensusTime = ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             }
         }
+
+        // Future work: enable the ancient mode to be configurable
+        final AncientMode ancientMode = GENERATION_THRESHOLD;
+
+        // Future work: prior to enabling a generation based ancient mode, we need to use real values for
+        // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
+        final long previousRoundNonAncient = 0;
+        final long previousRoundNonExpired = 0;
+
+        final long nonAncientThreshold = ancientMode.selectIndicator(
+                getMinGenerationNonAncient(),
+                Math.max(previousRoundNonAncient, decidedRoundNumber - config.roundsNonAncient() + 1));
+
+        final long nonExpiredThreshold = ancientMode.selectIndicator(
+                getMinRoundGeneration(),
+                Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
+
         return new ConsensusRound(
                 addressBook,
                 consensusEvents,
@@ -668,13 +686,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
                 // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
                 // production.
-                NonAncientEventWindow.createUsingRoundsNonAncient(
-                        decidedRoundNumber,
-                        getMinGenerationNonAncient(),
-                        getMinRoundGeneration(),
-                        config.roundsNonAncient(),
-                        config.roundsExpired(),
-                        AncientMode.GENERATION_THRESHOLD),
+                new NonAncientEventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),

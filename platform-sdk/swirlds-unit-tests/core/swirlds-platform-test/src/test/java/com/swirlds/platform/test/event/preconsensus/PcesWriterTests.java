@@ -320,13 +320,8 @@ class PcesWriterTests {
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
-                    writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                            1,
-                            lowerBound,
-                            lowerBound,
-                            -1 /* ignored in this context */,
-                            -1 /* ignored in this context */,
-                            ancientMode)),
+                    writer.updateNonAncientEventBoundary(
+                            new NonAncientEventWindow(1, lowerBound, 1 /* ignored in this context */, ancientMode)),
                     eventDurabilityNexus);
 
             if (event.getAncientIndicator(ancientMode) < lowerBound) {
@@ -385,13 +380,8 @@ class PcesWriterTests {
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
-                    writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                            1,
-                            lowerBound,
-                            lowerBound,
-                            -1 /* ignored in this context */,
-                            -1 /* ignored in this context */,
-                            ancientMode)),
+                    writer.updateNonAncientEventBoundary(
+                            new NonAncientEventWindow(1, lowerBound, 1 /* ignored in this context */, ancientMode)),
                     eventDurabilityNexus);
 
             if (event.getAncientIndicator(ancientMode) < lowerBound) {
@@ -411,9 +401,7 @@ class PcesWriterTests {
                         writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
                                 1,
                                 ancientEvent.getAncientIndicator(ancientMode) + 1,
-                                ancientEvent.getAncientIndicator(ancientMode) + 1,
-                                -1 /* ignored in this context */,
-                                -1 /* ignored in this context */,
+                                1 /* ignored in this context */,
                                 ancientMode)),
                         eventDurabilityNexus);
             } catch (final IllegalArgumentException e) {
@@ -509,13 +497,8 @@ class PcesWriterTests {
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
-                    writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                            1,
-                            lowerBound,
-                            lowerBound,
-                            -1 /* ignored in this context */,
-                            -1 /* ignored in this context */,
-                            ancientMode)),
+                    writer.updateNonAncientEventBoundary(
+                            new NonAncientEventWindow(1, lowerBound, 1 /* ignored in this context */, ancientMode)),
                     eventDurabilityNexus);
         }
 
@@ -573,13 +556,8 @@ class PcesWriterTests {
 
                 lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
                 passValueToDurabilityNexus(
-                        writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                                1,
-                                lowerBound,
-                                lowerBound,
-                                -1 /* ignored in this context */,
-                                -1 /* ignored in this context */,
-                                ancientMode)),
+                        writer.updateNonAncientEventBoundary(
+                                new NonAncientEventWindow(1, lowerBound, 1 /* ignored in this context */, ancientMode)),
                         eventDurabilityNexus);
 
                 if (event.getAncientIndicator(ancientMode) < lowerBound) {
@@ -616,13 +594,8 @@ class PcesWriterTests {
 
                 lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
                 passValueToDurabilityNexus(
-                        writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                                1,
-                                lowerBound,
-                                lowerBound,
-                                -1 /* ignored in this context */,
-                                -1 /* ignored in this context */,
-                                ancientMode)),
+                        writer.updateNonAncientEventBoundary(
+                                new NonAncientEventWindow(1, lowerBound, 1 /* ignored in this context */, ancientMode)),
                         eventDurabilityNexus);
 
                 if (event.getAncientIndicator(ancientMode) < lowerBound) {
@@ -691,13 +664,8 @@ class PcesWriterTests {
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
             passValueToDurabilityNexus(
-                    writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
-                            1,
-                            lowerBound,
-                            lowerBound,
-                            -1 /* ignored in this context */,
-                            -1 /* ignored in this context */,
-                            ancientMode)),
+                    writer.updateNonAncientEventBoundary(
+                            new NonAncientEventWindow(1, lowerBound, 1 /* ignored in this context */, ancientMode)),
                     eventDurabilityNexus);
         }
 

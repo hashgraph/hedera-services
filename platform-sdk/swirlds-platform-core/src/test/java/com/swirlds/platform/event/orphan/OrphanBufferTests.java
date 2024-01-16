@@ -314,13 +314,14 @@ class OrphanBufferTests {
             }
             // simulate advancing consensus rounds periodically
             latestConsensusRound += maybeAdvanceRound.apply(random);
+            final AncientMode ancientMode =
+                    useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
             final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
                     latestConsensusRound,
-                    Math.max(0, latestConsensusRound - 26 + 1),
-                    minimumGenerationNonAncient,
-                    -1 /* ignored in this context */,
-                    -1 /* ignored in this context */,
-                    useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD);
+                    ancientMode.selectIndicator(
+                            minimumGenerationNonAncient, Math.max(0, latestConsensusRound - 26 + 1)),
+                    0 /* ignored in this context */,
+                    ancientMode);
             unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {

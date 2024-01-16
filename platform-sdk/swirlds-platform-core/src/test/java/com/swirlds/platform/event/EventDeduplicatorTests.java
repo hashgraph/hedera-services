@@ -191,10 +191,8 @@ class EventDeduplicatorTests {
                 // FUTURE WORK: change from minGenNonAncient to minRoundNonAncient
                 deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
                         ConsensusConstants.ROUND_FIRST,
-                        ConsensusConstants.ROUND_FIRST,
                         minimumGenerationNonAncient,
-                        -1 /* ignored in this context */,
-                        -1 /* ignored in this context */,
+                        0 /* ignored in this context */,
                         AncientMode.GENERATION_THRESHOLD));
             }
         }
