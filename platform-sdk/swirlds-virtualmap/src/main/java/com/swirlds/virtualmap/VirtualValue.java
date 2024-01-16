@@ -18,8 +18,6 @@ package com.swirlds.virtualmap;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -39,19 +37,4 @@ public interface VirtualValue extends SelfSerializable, FastCopyable {
      * @return A non-null copy that is read-only. Can be a view rather than a copy.
      */
     VirtualValue asReadOnly();
-
-    /**
-     * Serialize this value into the specified buffer. The buffer will be pre-sized and
-     * prepared. The specific {@link VirtualDataSource}
-     * implementation you use will require information on the number of bytes per
-     * value so that it can prepare such a buffer ahead of time.
-     *
-     * @param buffer
-     * 		The buffer to fill. Will never be null.
-     * @throws IOException
-     * 		If an I/O exception happens during serialization.
-     */
-    void serialize(final ByteBuffer buffer) throws IOException;
-
-    void deserialize(final ByteBuffer buffer, final int version) throws IOException;
 }

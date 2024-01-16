@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -57,6 +59,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaOperationUtilV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
     private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
     private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
 
@@ -93,6 +96,9 @@ class HederaOperationUtilV038Test {
     @Mock
     private PrecompileContractRegistry precompileContractRegistry;
 
+    @Mock
+    private GlobalDynamicProperties globalDynamicProperties;
+
     private final long expectedHaltGas = 10L;
 
     @Test
@@ -100,6 +106,7 @@ class HederaOperationUtilV038Test {
         final var degenerateResult = new Operation.OperationResult(0, null);
         given(executionSupplier.get()).willReturn(degenerateResult);
         given(isChildStatic.getAsBoolean()).willReturn(true);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
@@ -109,7 +116,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         assertSame(degenerateResult, result);
         verifyNoInteractions(sigsVerifier);
@@ -119,6 +127,7 @@ class HederaOperationUtilV038Test {
     void haltsWithInvalidSolidityAddressWhenAccountSignatureCheckExecution() {
         // given:
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -129,7 +138,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> false,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
@@ -153,6 +163,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -163,7 +174,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -193,7 +205,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
         // then:
         assertEquals(operationResult, result);
         verify(executionSupplier).get();
@@ -213,6 +226,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -223,7 +237,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -252,6 +267,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(true);
         long expectedSuccessfulGas = 100L;
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
+        given(globalDynamicProperties.callsToNonExistingEntitiesEnabled(any())).willReturn(false);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -262,7 +278,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertNull(result.getHaltReason());

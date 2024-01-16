@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -259,12 +260,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // 1a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
         final VersionedConfiguration configuration = configProvider.getConfiguration();
+        final TransactionBody txBody = txInfo.txBody();
         try {
             // NOTE: Once PreHandleContext is moved from being a concrete implementation in SPI, to being an Interface/
             // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
             // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
             // that as a public API in the SPI, so for now, we do a double lookup. Boo.
-            context = new PreHandleContextImpl(storeFactory, txInfo.txBody(), configuration, dispatcher);
+            context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         } catch (PreCheckException preCheck) {
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
@@ -291,10 +293,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // 2b. Call Pre-Transaction Handlers
         try {
             // First, perform semantic checks on the transaction
-            dispatcher.dispatchPureChecks(txInfo.txBody());
+            dispatcher.dispatchPureChecks(txBody);
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
-            // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
+            // Finally, let the transaction handler do warm up of other state it may want to use later
+            dispatcher.dispatchWarmup(context);
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature

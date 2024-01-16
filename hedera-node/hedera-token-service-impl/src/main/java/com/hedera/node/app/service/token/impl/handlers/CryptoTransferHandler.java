@@ -80,6 +80,9 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -91,6 +94,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
+    private final Logger log = LogManager.getLogger(CryptoTransferHandler.class);
     private final CryptoTransferValidator validator;
 
     @Inject
@@ -236,6 +240,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
         final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
+        log.info("customFeeAssessedOps: " + customFeeAssessedOps);
 
         for (final var txn : customFeeAssessedOps) {
             steps.add(new AssociateTokenRecipientsStep(txn));
@@ -480,6 +485,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         boolean triedAndFailedToUseCustomFees = false;
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
+            System.out.println("assessedCustomFees: " + assessedCustomFees);
         } catch (HandleException ignore) {
             final var status = ignore.getStatus();
             // If the transaction tried and failed to use custom fees, enable this flag.
@@ -489,14 +495,6 @@ public class CryptoTransferHandler implements TransactionHandler {
             assessedCustomFees = new ArrayList<>();
         }
         totalXfers += assessedCustomFees.size();
-        // Even if the transaction fails we need to charge fees based on the token having customFees
-        // So we need to count the number of token transfers that have custom fees
-        for (final var xfer : op.tokenTransfersOrElse(emptyList())) {
-            final var token = readableTokenStore.get(xfer.token());
-            if (token != null && !token.customFeesOrElse(emptyList()).isEmpty()) {
-                customFeeTokenTransfers++;
-            }
-        }
         for (final var fee : assessedCustomFees) {
             if (!fee.hasTokenId()) {
                 customFeeHbarTransfers++;

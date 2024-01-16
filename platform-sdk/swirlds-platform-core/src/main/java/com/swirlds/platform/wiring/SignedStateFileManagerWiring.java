@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -31,13 +33,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * The wiring for the {@link SignedStateFileManager}
  *
  * @param saveStateToDisk                         the input wire for saving the state to disk
+ * @param saveToDiskFilter                        the input wire that filters out states that should not be saved
  * @param dumpStateToDisk                         the input wire for dumping the state to disk
  * @param stateSavingResultOutputWire             the output wire for the state saving result
  * @param oldestMinimumGenerationOnDiskOutputWire the output wire for the oldest minimum generation on disk
  * @param stateWrittenToDiskOutputWire            the output wire for the state written to disk action
  */
 public record SignedStateFileManagerWiring(
-        @NonNull InputWire<ReservedSignedState> saveStateToDisk,
+        @NonNull BindableInputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
+        @NonNull InputWire<ReservedSignedState> saveToDiskFilter,
         @NonNull InputWire<StateDumpRequest> dumpStateToDisk,
         @NonNull OutputWire<StateSavingResult> stateSavingResultOutputWire,
         @NonNull OutputWire<Long> oldestMinimumGenerationOnDiskOutputWire,
@@ -48,9 +52,22 @@ public record SignedStateFileManagerWiring(
      * @param scheduler the task scheduler for this wiring
      * @return the new wiring instance
      */
-    public static SignedStateFileManagerWiring create(@NonNull final TaskScheduler<StateSavingResult> scheduler) {
+    public static SignedStateFileManagerWiring create(
+            @NonNull final WiringModel model, @NonNull final TaskScheduler<StateSavingResult> scheduler) {
+        final WireFilter<ReservedSignedState> saveToDiskFilter =
+                new WireFilter<>(model, "saveToDiskFilter", "states", rs -> {
+                    if (rs.get().isStateToSave()) {
+                        return true;
+                    }
+                    rs.close();
+                    return false;
+                });
+        final BindableInputWire<ReservedSignedState, StateSavingResult> saveStateToDisk =
+                scheduler.buildInputWire("states to save");
+        saveToDiskFilter.getOutputWire().solderTo(saveStateToDisk);
         return new SignedStateFileManagerWiring(
-                scheduler.buildInputWire("save state to disk"),
+                saveStateToDisk,
+                saveToDiskFilter.getInputWire(),
                 scheduler.buildInputWire("dump state to disk"),
                 scheduler.getOutputWire(),
                 scheduler
@@ -73,8 +90,7 @@ public record SignedStateFileManagerWiring(
      * @param signedStateFileManager the signed state file manager
      */
     public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
-        ((BindableInputWire<ReservedSignedState, StateSavingResult>) saveStateToDisk)
-                .bind(signedStateFileManager::saveStateTask);
+        saveStateToDisk.bind(signedStateFileManager::saveStateTask);
         ((BindableInputWire<StateDumpRequest, Void>) dumpStateToDisk).bind(signedStateFileManager::dumpStateTask);
     }
 }

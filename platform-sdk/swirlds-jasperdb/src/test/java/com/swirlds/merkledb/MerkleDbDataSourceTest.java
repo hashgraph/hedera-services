@@ -74,7 +74,7 @@ class MerkleDbDataSourceTest {
     }
 
     /**
-     * Keep track of initial direct memory used already, so we can check if we leek over and above
+     * Keep track of initial direct memory used already, so we can check if we leak over and above
      * what we started with
      */
     private long directMemoryUsedAtStart;
@@ -279,7 +279,7 @@ class MerkleDbDataSourceTest {
                 "same call to createVirtualLeafRecord returns different results");
         // check all the leaf data
         IntStream.range(incFirstLeafPath, exclLastLeafPath)
-                .forEach(i -> assertLeaf(testType, dataSource, i, i, i + 10_000));
+                .forEach(i -> assertLeaf(testType, dataSource, i, i, i, i + 10_000));
         // delete a couple leaves
         dataSource.saveRecords(
                 incFirstLeafPath,
@@ -295,9 +295,9 @@ class MerkleDbDataSourceTest {
         }
         // check all remaining leaf data
         IntStream.range(incFirstLeafPath, incFirstLeafPath + 10)
-                .forEach(i -> assertLeaf(testType, dataSource, i, i, i + 10_000));
+                .forEach(i -> assertLeaf(testType, dataSource, i, i, i, i + 10_000));
         IntStream.range(incFirstLeafPath + 21, exclLastLeafPath)
-                .forEach(i -> assertLeaf(testType, dataSource, i, i, i + 10_000));
+                .forEach(i -> assertLeaf(testType, dataSource, i, i, i, i + 10_000));
         // close data source
         dataSource.close();
 
@@ -422,6 +422,64 @@ class MerkleDbDataSourceTest {
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
     }
 
+    boolean directMemoryUsageByDataFileIteratorWorkaroundApplied = false;
+
+    // When the first DataFileIterator is initialized, it allocates 16Mb direct byte buffer internally.
+    // Since we have direct memory usage checks after each test case, it's reported as a memory leak.
+    // A workaround is to reset memory usage value right after the first usage of iterator. No need to
+    // do it before each test run, it's enough to do just once
+    void reinitializeDirectMemoryUsage() {
+        if (!directMemoryUsageByDataFileIteratorWorkaroundApplied) {
+            initializeDirectMemoryAtStart();
+            directMemoryUsageByDataFileIteratorWorkaroundApplied = true;
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void snapshotRestoreIndex(final TestType testType) throws IOException {
+        final int count = 1000;
+        final String tableName = "vm";
+        final Path originalDbPath = testDirectory.resolve("merkledb-snapshotRestoreIndex-" + testType);
+        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+                createDataSource(originalDbPath, tableName, testType, count, 0);
+        final int tableId = dataSource.getTableId();
+        // create some leaves
+        dataSource.saveRecords(
+                count,
+                count * 2,
+                IntStream.range(0, count * 2).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
+                IntStream.range(count, count * 2)
+                        .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)),
+                Stream.empty());
+        // create a snapshot
+        final Path snapshotDbPath = testDirectory.resolve("merkledb-snapshotRestoreIndex-" + testType + "_SNAPSHOT");
+        dataSource.getDatabase().snapshot(snapshotDbPath, dataSource);
+        // close data source
+        dataSource.close();
+
+        final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath);
+        final MerkleDbPaths snapshotPaths = new MerkleDbPaths(snapshotDb.getTableDir(tableName, tableId));
+        // Delete all indices
+        Files.delete(snapshotPaths.pathToDiskLocationLeafNodesFile);
+        Files.delete(snapshotPaths.pathToDiskLocationInternalNodesFile);
+        Files.deleteIfExists(snapshotPaths.longKeyToPathFile);
+        // There is no way to use MerkleDbPaths to get bucket index file path
+        Files.deleteIfExists(snapshotPaths.objectKeyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
+
+        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> snapshotDataSource =
+                snapshotDb.getDataSource(tableName, false);
+        reinitializeDirectMemoryUsage();
+        IntStream.range(0, count * 2).forEach(i -> assertHash(snapshotDataSource, i, i + 1));
+        IntStream.range(count, count * 2).forEach(i -> assertLeaf(testType, snapshotDataSource, i, i, i + 1, i));
+        // close data source
+        snapshotDataSource.close();
+
+        // check db count
+        assertEventuallyEquals(
+                0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
+    }
+
     @Test
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void preservesInterruptStatusWhenInterruptedClosing() throws IOException, InterruptedException {
@@ -529,7 +587,23 @@ class MerkleDbDataSourceTest {
     }
 
     public static VirtualHashRecord createVirtualInternalRecord(final int i) {
-        return new VirtualHashRecord(i, hash(i));
+        return createVirtualInternalRecord(i, i);
+    }
+
+    public static VirtualHashRecord createVirtualInternalRecord(final long path, final int i) {
+        return new VirtualHashRecord(path, hash(i));
+    }
+
+    public static void assertHash(
+            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
+            final long path,
+            final int i) {
+        try {
+            assertEqualsAndPrint(hash(i), dataSource.loadHash(path));
+        } catch (final Exception e) {
+            e.printStackTrace();
+            fail("Exception should not have been thrown here!");
+        }
     }
 
     public static void assertLeaf(
@@ -537,7 +611,7 @@ class MerkleDbDataSourceTest {
             final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
             final long path,
             final int i) {
-        assertLeaf(testType, dataSource, path, i, i);
+        assertLeaf(testType, dataSource, path, i, i, i);
     }
 
     public static void assertLeaf(
@@ -545,6 +619,7 @@ class MerkleDbDataSourceTest {
             final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
             final long path,
             final int i,
+            final int hashIndex,
             final int valueIndex) {
         try {
             final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> expectedRecord =
@@ -553,15 +628,14 @@ class MerkleDbDataSourceTest {
             // things that should have changed
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(key));
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(path));
-            assertEquals(hash(i), dataSource.loadHash(path), "unexpected Hash value for path " + path);
+            assertEquals(hash(hashIndex), dataSource.loadHash(path), "unexpected Hash value for path " + path);
         } catch (final Exception e) {
             e.printStackTrace();
             fail("Exception should not have been thrown here!");
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public static void assertEqualsAndPrint(final VirtualLeafRecord recordA, final VirtualLeafRecord recordB) {
+    public static void assertEqualsAndPrint(final Object recordA, final Object recordB) {
         assertEquals(
                 recordA == null ? null : recordA.toString(),
                 recordB == null ? null : recordB.toString(),

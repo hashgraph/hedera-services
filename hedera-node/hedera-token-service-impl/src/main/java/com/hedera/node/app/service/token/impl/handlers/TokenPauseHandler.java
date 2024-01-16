@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -66,15 +67,15 @@ public class TokenPauseHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param handleContext the {@link HandleContext} for the active transaction
+     * @param context the {@link HandleContext} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Override
-    public void handle(@NonNull final HandleContext handleContext) {
-        requireNonNull(handleContext);
+    public void handle(@NonNull final HandleContext context) {
+        requireNonNull(context);
 
-        final var op = handleContext.body().tokenPause();
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
+        final var op = context.body().tokenPause();
+        final var tokenStore = context.writableStore(WritableTokenStore.class);
         var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         validateTrue(token != null, INVALID_TOKEN_ID);
         validateTrue(token.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
@@ -82,6 +83,8 @@ public class TokenPauseHandler implements TransactionHandler {
         final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(true);
         tokenStore.put(copyBuilder.build());
+        final var record = context.recordBuilder(TokenBaseRecordBuilder.class);
+        record.tokenType(token.tokenType());
     }
 
     /**

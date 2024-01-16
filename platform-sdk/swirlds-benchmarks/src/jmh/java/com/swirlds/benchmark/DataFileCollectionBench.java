@@ -18,6 +18,7 @@ package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.DataFileReader;
@@ -52,16 +53,17 @@ public class DataFileCollectionBench extends BaseBench {
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         final var store =
                 new DataFileCollection<BenchmarkRecord>(
+                        getConfig(MerkleDbConfig.class),
                         getTestDir(),
                         storeName,
                         null,
                         new BenchmarkRecordSerializer(),
-                        (key, dataLocation, dataValue) -> {}) {
+                        (dataLocation, dataValue) -> {}) {
                     BenchmarkRecord read(long dataLocation) throws IOException {
                         return readDataItem(dataLocation);
                     }
                 };
-        final var compactor = new DataFileCompactor(storeName, store, index, null, null, null, null);
+        final var compactor = new DataFileCompactor<>(storeName, store, index, null, null, null, null);
         System.out.println();
 
         // Write files

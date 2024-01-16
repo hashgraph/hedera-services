@@ -40,6 +40,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.MerkleDb;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.Set;
@@ -397,7 +398,10 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("Migration State Impact Tests")
         class StateImpactTest {
             @BeforeEach
-            void setUp() {}
+            void setUp() {
+                // Use a fresh database instance for each test
+                MerkleDb.resetDefaultInstancePath();
+            }
 
             Schema createV1Schema() {
                 return new TestSchema(versions[1]) {

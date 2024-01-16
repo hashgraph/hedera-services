@@ -19,16 +19,16 @@ package com.swirlds.platform.gui.internal;
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
-import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JTextArea;
 
@@ -64,8 +64,8 @@ class WinTab2Consensus extends PrePaintableJPanel {
             long r1 = consensus.getDeleteRound();
             long r2 = consensus.getFameDecidedBelow();
             long r3 = consensus.getMaxRound();
-            final StateManagementComponent stateManagementComponent =
-                    GuiPlatformAccessor.getInstance().getStateManagementComponent(platform.getSelfId());
+            final SignedStateNexus latestImmutableStateComponent =
+                    GuiPlatformAccessor.getInstance().getLatestImmutableStateComponent(platform.getSelfId());
             final SignedStateNexus latestCompleteStateComponent =
                     GuiPlatformAccessor.getInstance().getLatestCompleteStateComponent(platform.getSelfId());
             long r0 = latestCompleteStateComponent.getRound();
@@ -84,42 +84,43 @@ class WinTab2Consensus extends PrePaintableJPanel {
             s += String.format("\n%,10d = latest round-decided (delete round +%,d)", r2, r2 - r1);
             s += String.format("\n%,10d = latest round-created (deleted round +%,d)", r3, r3 - r1);
 
-            // the hash of a signed state is: Reference.toHex(state.getHash(), 0, 2)
+            final List<GuiStateInfo> stateInfo = new ArrayList<>();
+            for (final SignedStateNexus nexus : List.of(latestCompleteStateComponent, latestImmutableStateComponent)) {
+                try (final ReservedSignedState state = nexus.getState("GUI")) {
+                    if (state == null) {
+                        continue;
+                    }
+                    stateInfo.add(GuiStateInfo.from(state));
+                }
+            }
 
-            final List<SignedStateInfo> stateInfo = stateManagementComponent.getSignedStateInfo();
-            SignedStateInfo first = null;
+            GuiStateInfo first = null;
             if (!stateInfo.isEmpty()) {
                 first = stateInfo.get(0);
             }
-            long d = first == null ? 0 : first.getRound();
+            long d = first == null ? 0 : first.round();
             // count of digits in round number
             d = String.format("%,d", d).length();
             // add 2 because earlier rounds might be 2 shorter, like 998 vs 1,002
             d += 2;
 
             s += "\n     Signed state for round:            ";
-            for (SignedStateInfo state : stateInfo) {
-                if (state != null && state.getSigSet() != null) {
-                    s += String.format("%," + d + "d ", state.getRound());
-                }
+            for (final GuiStateInfo state : stateInfo) {
+                s += String.format("%," + d + "d ", state.round());
             }
 
             s += "\n     Signatures collected:              ";
-            for (SignedStateInfo state : stateInfo) {
-                if (state != null && state.getSigSet() != null) {
-                    int c = state.getSigSet().size();
-                    s += String.format("%," + d + "d ", c);
-                }
+            for (final GuiStateInfo state : stateInfo) {
+                int c = state.numSigs();
+                s += String.format("%," + d + "d ", c);
             }
 
             s += "\n                                        ";
-            for (SignedStateInfo state : stateInfo) {
-                if (state != null && state.getSigSet() != null) {
-                    int c = state.getSigSet().size();
-                    int size = platform.getAddressBook().getSize();
+            for (GuiStateInfo state : stateInfo) {
+                int c = state.numSigs();
+                int size = platform.getAddressBook().getSize();
 
-                    s += String.format("%" + d + "s ", c == size ? "___" : state.isComplete() ? "ooo" : "###");
-                }
+                s += String.format("%" + d + "s ", c == size ? "___" : state.isComplete() ? "ooo" : "###");
             }
 
             s += wrap(
