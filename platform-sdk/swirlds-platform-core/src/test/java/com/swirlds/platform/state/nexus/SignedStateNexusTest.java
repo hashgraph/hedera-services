@@ -24,23 +24,44 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class SignedStateNexusTest {
-    @Test
-    void basicUsage() {
+    private static Stream<SignedStateNexus> allInstances() {
+        return Stream.concat(
+                raceConditionInstances(),
+                Stream.of(new LatestCompleteStateNexus(
+                        ConfigurationBuilder.create()
+                                .withConfigDataType(StateConfig.class)
+                                .build()
+                                .getConfigData(StateConfig.class),
+                        new NoOpMetrics())));
+    }
+
+    private static Stream<SignedStateNexus> raceConditionInstances() {
+        return Stream.of(new LockFreeStateNexus(), new EmergencyStateNexus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("allInstances")
+    void basicUsage(@NonNull final SignedStateNexus nexus) {
         final int round = 123;
         final ReservedSignedState original =
                 new RandomSignedStateGenerator().setRound(round).build().reserve("test");
-        final SignedStateNexus nexus = new SignedStateNexus();
 
         assertNull(nexus.getState("reason"), "Should be null when initialized");
         assertEquals(ConsensusConstants.ROUND_UNDEFINED, nexus.getRound(), "Should be undefined when initialized");
@@ -61,9 +82,9 @@ class SignedStateNexusTest {
         assertEquals(ConsensusConstants.ROUND_UNDEFINED, nexus.getRound(), "Should be undefined when cleared");
     }
 
-    @Test
-    void closedStateTest() {
-        final SignedStateNexus nexus = new SignedStateNexus();
+    @ParameterizedTest
+    @MethodSource("allInstances")
+    void closedStateTest(@NonNull final SignedStateNexus nexus) {
         final ReservedSignedState reservedSignedState = realState();
         nexus.setState(reservedSignedState);
         reservedSignedState.close();
@@ -75,10 +96,9 @@ class SignedStateNexusTest {
      * Tests a race condition where the state is replaced while a thread trying to reserve it. In this case, the nexus
      * should reserve the replacement state instead.
      */
-    @Test
-    void raceConditionTest() throws InterruptedException {
-        final SignedStateNexus nexus = new SignedStateNexus();
-
+    @ParameterizedTest
+    @MethodSource("raceConditionInstances")
+    void raceConditionTest(@NonNull final SignedStateNexus nexus) throws InterruptedException {
         final ReservedSignedState state1 = mockState();
         final CountDownLatch unblockThread = new CountDownLatch(1);
         final CountDownLatch threadWaiting = new CountDownLatch(1);

@@ -172,27 +172,6 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Set the consensusTimestamp to an estimate of what it will be when consensus is reached even
-     * if it has already reached consensus. Callers are responsible for checking the consensus
-     * systemIndicesStatus of this event and using the consensus time or estimated time
-     * appropriately.
-     *
-     * <p>Estimated consensus times are predicted only here and in Platform.estimateTime().
-     *
-     * @param selfId the ID of this platform
-     * @param avgSelfCreatedTimestamp self event consensus timestamp minus time created
-     * @param avgOtherReceivedTimestamp other event consensus timestamp minus time received
-     * @deprecated this is only used for SwirldState1 which we no longer support, and it did not do
-     *     any estimates
-     */
-    @SuppressWarnings("unused")
-    @Deprecated(forRemoval = true)
-    public synchronized void estimateTime(
-            final NodeId selfId, final double avgSelfCreatedTimestamp, final double avgOtherReceivedTimestamp) {
-        setEstimatedTime(selfId.equals(getCreatorId()) ? getTimeCreated() : baseEvent.getTimeReceived());
-    }
-
-    /**
      * Returns the timestamp of the last transaction in this event. If this event has no transaction, then the timestamp
      * of the event will be returned
      *
@@ -368,6 +347,7 @@ public class EventImpl extends EventMetadata
      * @return system transaction iterator
      */
     public Iterator<SystemTransaction> systemTransactionIterator() {
+        // FUTURE WORK: remove this once ConsensusSystemTransactionManager is removed
         return new TypedIterator<>(systemTransactions.iterator());
     }
 
@@ -537,18 +517,6 @@ public class EventImpl extends EventMetadata
 
     public void setLastInRoundReceived(final boolean lastInRoundReceived) {
         consensusData.setLastInRoundReceived(lastInRoundReceived);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @NonNull Instant getEstimatedTime() {
-        // Return the real thing if we have it
-        if (getConsensusTimestamp() != null) {
-            return getConsensusTimestamp();
-        }
-        return super.getEstimatedTime();
     }
 
     //////////////////////////////////////////
