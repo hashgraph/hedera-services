@@ -45,9 +45,9 @@ class SystemContractUtilsTest {
 
         final var expected = ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
-                .gas(gas)
                 .contractCallResult(tuweniToPbjBytes(result))
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                .gas(gas)
                 .senderId(senderId)
                 .functionParameters(tuweniToPbjBytes(inputData))
                 .build();
@@ -77,6 +77,20 @@ class SystemContractUtilsTest {
                 .build();
         final var actual = SystemContractUtils.contractFunctionResultFailedForProto(
                 gasUsed, errorMessage, contractID, contractCallResult);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void validateSuccessfulContractResultsWithoutGasAndFunctionParameters() {
+        final var senderId = AccountID.newBuilder().build();
+
+        final var expected = ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .contractCallResult(tuweniToPbjBytes(result))
+                .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                .senderId(senderId)
+                .build();
+        final var actual = SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, senderId);
         assertThat(actual).isEqualTo(expected);
     }
 }
